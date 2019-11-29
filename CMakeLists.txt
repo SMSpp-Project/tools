@@ -33,3 +33,15 @@ target_compile_features(block_solver PUBLIC cxx_std_17)
 target_link_libraries(block_solver PRIVATE
                       SMS++::UCBlock
                       SMS++::MILPSolver)
+
+# ----- thermalunit_solver -------------------------------------------------- #
+add_executable(thermalunit_solver thermalunit_solver.cpp)
+target_link_libraries(thermalunit_solver PRIVATE
+                      SMS++::UCBlock
+                      SMS++::MILPSolver)
+
+# ----- ucblock_solver ------------------------------------------------------ #
+add_executable(ucblock_solver ucblock_solver.cpp)
+target_link_libraries(ucblock_solver PRIVATE
+                      SMS++::UCBlock
+                      SMS++::MILPSolver)

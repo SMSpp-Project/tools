@@ -1,7 +1,11 @@
 # SMS++ Tools
 
-A set of tools and examples that use SMS++ library.
-At the moment we provide only a generic block solver with some example input files.
+A set of tools and examples that use SMS++ library and other modules.
+At the moment we provide:
+
+- a generic Block Solver with some example input files
+- a single Thermal Unit solver
+- a UCBlock solver
 
 ## Getting started
 
@@ -10,20 +14,24 @@ These instructions will let you build SMS++ Tools on your system.
 ### Requirements
 
 - SMS++
-
-At the moment, the block solver also requires:
-
 - UCBlock
 - MILPSolver
 
 ### Build and install
 
 Configure and build with:
+
 ```sh
 mkdir build
 cd build
 cmake ..
 make
+```
+
+Optionally, install with:
+
+```sh
+make install
 ```
 
 ## Usage
@@ -45,9 +53,47 @@ The input netCDF file can be a problem file or a block file:
 - a block file needs a Block configuration and a Solver configuration to be solved.
 
 See the [`examples`](examples) directory for sample input files.
+
+### Thermal Unit solver
+
+```sh
+Usage: thermalunit_solver [options] <nc4-file>
+
+Options:
+  -s <solver>, --solver <solver>  Choose solver.
+                                  Available solvers are: cplex, dp.
+  -w <file>, --writelp <file>     Write LP problem on file.
+  -n <file>, --nc4problem <file>  Write nc4 problem on file.
+  -h, --help                      Print this help.
+```
+
+The input netCDF file must be a block file.
+At the moment, DP solver support is limited.
+
+### Unit Commitment Block solver
+
+```sh
+Usage: uc_solver [options] <nc4-file>
+
+Options:
+  -s <solver>, --solver <solver>  Choose solver.
+                                  Available solvers are: cplex, dp.
+  -w <file>, --writelp <file>     Write LP problem on file.
+  -n <file>, --nc4problem <file>  Write nc4 problem on file.
+  -h, --help                      Print this help.
+```
+
+The input netCDF file must be a block file.
+At the moment, DP solver support is limited.
+
 ## Authors
 
 - **Antonio Frangioni**  
+  *Operations Research Group*  
+  Dipartimento di Informatica  
+  Università di Pisa
+
+- **Ali Ghezelsoflu**  
   *Operations Research Group*  
   Dipartimento di Informatica  
   Università di Pisa
