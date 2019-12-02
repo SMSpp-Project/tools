@@ -45,3 +45,7 @@ add_executable(ucblock_solver ucblock_solver.cpp)
 target_link_libraries(ucblock_solver PRIVATE
                       SMS++::UCBlock
                       SMS++::MILPSolver)
+
+# ----- Install instructions ------------------------------------------------ #
+install(TARGETS block_solver thermalunit_solver ucblock_solver
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
