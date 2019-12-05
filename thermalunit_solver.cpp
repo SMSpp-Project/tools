@@ -127,8 +127,9 @@ int main( int argc, char ** argv ) {
   slv_conf->v_SolverConfigs.emplace_back( new ComputeConfig() );
 
  } else if( solver_name == "dp" ) {
-  std::cerr << "Sorry, DP Solver is not available yet..." << std::endl;
-  exit( 0 );
+  slv_conf->v_SolverNames.emplace_back( "ThermalUnitDPSolver" );
+  slv_conf->v_SolverConfigs.emplace_back( new ComputeConfig() );
+
  } else {
   std::cerr << "Available solvers are: cplex, dp" << std::endl;
   exit( 1 );
@@ -137,13 +138,9 @@ int main( int argc, char ** argv ) {
  tub->set_SolverConfig( slv_conf );
  auto solver = tub->get_registered_solvers().front();
 
- // Write LP problem
- // TODO: Use configuration instead, so no dependency from CPXMILPSolver
- if( !lp_file.empty() ) {
-  dynamic_cast<CPXMILPSolver *>(solver)->write_lp( lp_file );
- }
  // Solve
  int status = solver->compute();
+ solver->get_var_solution();
  auto ub = solver->get_ub();
  auto lb = solver->get_lb();
 
