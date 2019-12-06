@@ -17,35 +17,38 @@ project(SMS++_tools VERSION 0.1.0 LANGUAGES CXX)
 if (NOT BUILD_SHARED_LIBS)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
         add_link_options("-Wl,-all_load")
-    else()
+    else ()
         add_link_options("-Wl,--whole-archive,--allow-multiple-definition")
     endif ()
 endif ()
 
 # ----- Requirements -------------------------------------------------------- #
-find_package(UCBlock REQUIRED)
-find_package(MILPSolver REQUIRED)
+find_package(UCBlock)
+find_package(MILPSolver)
 
-# ----- block_solver -------------------------------------------------------- #
-add_executable(block_solver block_solver.cpp)
-target_compile_features(block_solver PUBLIC cxx_std_17)
+if (UCBlock_FOUND AND MILPSolver_FOUND)
+    # ----- block_solver ---------------------------------------------------- #
+    add_executable(block_solver block_solver.cpp)
+    target_compile_features(block_solver PUBLIC cxx_std_17)
 
-target_link_libraries(block_solver PRIVATE
-                      SMS++::UCBlock
-                      SMS++::MILPSolver)
+    target_link_libraries(block_solver PRIVATE
+                          SMS++::UCBlock
+                          SMS++::MILPSolver)
 
-# ----- thermalunit_solver -------------------------------------------------- #
-add_executable(thermalunit_solver thermalunit_solver.cpp)
-target_link_libraries(thermalunit_solver PRIVATE
-                      SMS++::UCBlock
-                      SMS++::MILPSolver)
+    # ----- thermalunit_solver ---------------------------------------------- #
+    add_executable(thermalunit_solver thermalunit_solver.cpp)
+    target_link_libraries(thermalunit_solver PRIVATE
+                          SMS++::UCBlock
+                          SMS++::MILPSolver)
 
-# ----- ucblock_solver ------------------------------------------------------ #
-add_executable(ucblock_solver ucblock_solver.cpp)
-target_link_libraries(ucblock_solver PRIVATE
-                      SMS++::UCBlock
-                      SMS++::MILPSolver)
+    # ----- ucblock_solver -------------------------------------------------- #
+    add_executable(ucblock_solver ucblock_solver.cpp)
+    target_link_libraries(ucblock_solver PRIVATE
+                          SMS++::UCBlock
+                          SMS++::MILPSolver)
 
-# ----- Install instructions ------------------------------------------------ #
-install(TARGETS block_solver thermalunit_solver ucblock_solver
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    # ----- Install instructions -------------------------------------------- #
+    include(GNUInstallDirs)
+    install(TARGETS block_solver thermalunit_solver ucblock_solver
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif ()

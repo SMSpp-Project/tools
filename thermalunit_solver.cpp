@@ -3,7 +3,6 @@
 
 #include <AbstractBlock.h>
 #include <ThermalUnitBlock.h>
-#include <CPXMILPSolver.h>
 
 using namespace SMSpp_di_unipi_it;
 
