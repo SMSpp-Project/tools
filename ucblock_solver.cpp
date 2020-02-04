@@ -6,6 +6,10 @@
 #include <ThermalUnitBlock.h>
 #include <BusNetworkBlock.h>
 #include <BatteryUnitBlock.h>
+#include <HydroUnitBlock.h>
+
+#include <IntermittentUnitBlock.h>
+
 
 using namespace SMSpp_di_unipi_it;
 
@@ -167,44 +171,35 @@ int main( int argc, char ** argv ) {
  std::cout << std::endl;
 
  for( auto i: ucb->get_nested_Blocks() ) {
+
   auto unit_block = dynamic_cast<UnitBlock *>(i);
+
   if( unit_block != nullptr ) {
    std::cout << "----- UnitBlock " << n_unit_blocks++ << std::endl;
 
    auto obj = dynamic_cast<FRealObjective*>(unit_block->get_objective());
-   auto fun = obj->get_function();
-   fun->compute();
-   std::cout << "Function value = " << fun->get_value() << std::endl;
-
-
-   auto commitment = unit_block->get_commitment();
-   for( UnitBlock::Index g = 0; g < unit_block->get_number_generators(); ++g ) {
-    if( g == 0 ) {
-     std::cout << "Commitment   = [";
-    } else {
-     std::cout << "               [";
-    }
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 2 ) << ( unsigned int ) round( commitment[t][g].get_value());
-    }
-    std::cout << " ]" << std::endl;
-   }
-
-   auto active_power = unit_block->get_active_power();
-   for( UnitBlock::Index g = 0; g < unit_block->get_number_generators(); ++g ) {
-    if( g == 0 ) {
-     std::cout << "Active power = [";
-    } else {
-     std::cout << "               [";
-    }
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << " " << active_power[t][g].get_value();
-    }
-    std::cout << " ]" << std::endl;
+   if (obj != nullptr) {
+    auto fun = obj->get_function();
+    fun->compute();
+    std::cout << "Function value = " << fun->get_value() << std::endl;
    }
 
    auto thermal_unit_block = dynamic_cast<ThermalUnitBlock *>(unit_block);
    if( thermal_unit_block != nullptr ) {
+
+    auto commitment = thermal_unit_block->get_commitment(0);
+    std::cout << "Commitment     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 2 ) << ( unsigned int ) round( commitment[t].get_value());
+    }
+    std::cout << " ]" << std::endl;
+    auto active_power = thermal_unit_block->get_active_power(0);
+    std::cout << "active_power     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 5 ) <<  ( unsigned int ) round( active_power[t].get_value());
+    }
+    std::cout << " ]" << std::endl;
+
     auto startup = thermal_unit_block->get_start_up();
     std::cout << "Start up     = [";
     for( auto & t : startup ) {
@@ -247,14 +242,47 @@ int main( int argc, char ** argv ) {
     std::cout << " ]" << std::endl;
 
 
-    auto Bainary_var = battery_unit_block->get_battery_binary();
+    auto Binary_var = battery_unit_block->get_battery_binary();
     std::cout << "BinaryVar    = [";
-    for( auto & t : Bainary_var ) {
+    for( auto & t : Binary_var ) {
      std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value());
     }
     std::cout << " ]" << std::endl;
    }
 
+
+   auto hydro_unit_block = dynamic_cast<HydroUnitBlock *>(unit_block);
+   if( hydro_unit_block != nullptr ) {
+    for( UnitBlock::Index g = 0; g < unit_block->get_number_generators(); ++g ) {
+     auto active_power = hydro_unit_block->get_active_power( g );
+     std::cout << "active_power     = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 10 ) << ( unsigned int ) round (active_power[t].get_value());
+     }
+     std::cout << " ]" << std::endl;
+    }
+
+
+    for( UnitBlock::Index l = 0; l < hydro_unit_block->get_number_generators(); ++l ) {
+     auto flow_rate = hydro_unit_block->get_flow_rate( l );
+      std::cout << "FlowRate   = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 10 ) << ( unsigned int ) round(flow_rate[t].get_value());
+     }
+     std::cout << " ]" << std::endl;
+    }
+
+    for( UnitBlock::Index n = 0; n < hydro_unit_block->get_number_reservoirs(); ++n ) {
+     auto volumetric = hydro_unit_block->get_volumetric( n );
+      std::cout << "Volumetric   = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 10 ) << ( unsigned int ) round(volumetric[t].get_value());
+     }
+     std::cout << " ]" << std::endl;
+    }
+
+
+   }
   }
 
   auto network_block = dynamic_cast<BusNetworkBlock *>(i);
