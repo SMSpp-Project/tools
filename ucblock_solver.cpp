@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <getopt.h>
 
 #include <UCBlock.h>
@@ -168,6 +169,9 @@ int main( int argc, char ** argv ) {
  int n_unit_blocks = 0;
  int n_netw_blocks = 0;
 
+ std::cout.setf( std::ios::scientific, std::ios::floatfield );
+ std::cout << std::setprecision( 8 );
+
  std::cout << std::endl;
 
  for( auto i: ucb->get_nested_Blocks() ) {
@@ -196,7 +200,7 @@ int main( int argc, char ** argv ) {
     auto active_power = thermal_unit_block->get_active_power(0);
     std::cout << "active_power     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 5 ) <<  ( unsigned int ) round( active_power[t].get_value());
+     std::cout << std::setw( 20 ) <<   active_power[t].get_value();
     }
     std::cout << " ]" << std::endl;
 
@@ -222,7 +226,7 @@ int main( int argc, char ** argv ) {
     auto storage_level = battery_unit_block->get_storage_level();
     std::cout << "StorageLevel = [";
     for( auto & t : storage_level ) {
-     std::cout << std::setw( 5 ) << ( unsigned int ) round( t.get_value());
+     std::cout << std::setw( 5 ) <<  t.get_value();
     }
     std::cout << " ]" << std::endl;
 
@@ -257,7 +261,7 @@ int main( int argc, char ** argv ) {
      auto active_power = hydro_unit_block->get_active_power( g );
      std::cout << "active_power     = [";
      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-      std::cout << std::setw( 10 ) << ( unsigned int ) round (active_power[t].get_value());
+      std::cout << std::setw( 20 ) << active_power[t].get_value();
      }
      std::cout << " ]" << std::endl;
     }
@@ -267,16 +271,16 @@ int main( int argc, char ** argv ) {
      auto flow_rate = hydro_unit_block->get_flow_rate( l );
       std::cout << "FlowRate   = [";
      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-      std::cout << std::setw( 10 ) << ( unsigned int ) round(flow_rate[t].get_value());
+      std::cout << std::setw( 20 ) << flow_rate[t].get_value();
      }
      std::cout << " ]" << std::endl;
     }
 
     for( UnitBlock::Index n = 0; n < hydro_unit_block->get_number_reservoirs(); ++n ) {
      auto volumetric = hydro_unit_block->get_volumetric( n );
-      std::cout << "Volumetric   = [";
+      std::cout << "Volumetric  = [";
      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-      std::cout << std::setw( 10 ) << ( unsigned int ) round(volumetric[t].get_value());
+      std::cout << std::setw( 20 ) << volumetric[t].get_value();
      }
      std::cout << " ]" << std::endl;
     }
