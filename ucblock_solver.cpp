@@ -134,7 +134,8 @@ int main( int argc, char ** argv ) {
   std::pair< std::string, std::string > problem_name = { "strProblemName",
                                                          "testCPX" };
   std::pair< std::string, double > accuracy = { "dblAAccSol", 1e-04 };
-  std::pair< std::string, double > timelimit = { "dblMaxTime", 2000 };
+  std::pair< std::string, double > timelimit = { "dblMaxTime", 20000 };
+
   comp_conf.str_pars.emplace_back( problem_name );
   comp_conf.dbl_pars.emplace_back( accuracy );
   comp_conf.dbl_pars.emplace_back( timelimit );
@@ -156,7 +157,8 @@ int main( int argc, char ** argv ) {
 
  ucb->set_BlockConfig( conf );
  ucb->set_SolverConfig( slv_conf );
-
+ std::cout.setf( std::ios::scientific, std::ios::floatfield );
+ std::cout << std::setprecision( 8 );
  auto solver = ucb->get_registered_solvers().front();
  int status = solver->compute();
  solver->get_var_solution();
@@ -168,9 +170,6 @@ int main( int argc, char ** argv ) {
 
  int n_unit_blocks = 0;
  int n_netw_blocks = 0;
-
- std::cout.setf( std::ios::scientific, std::ios::floatfield );
- std::cout << std::setprecision( 8 );
 
  std::cout << std::endl;
 
