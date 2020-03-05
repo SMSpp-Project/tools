@@ -1,4 +1,3 @@
-ThermalUnitBlock
 *
 *
 SimpleConfiguration<int> 15
