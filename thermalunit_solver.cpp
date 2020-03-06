@@ -115,7 +115,6 @@ int main( int argc, char ** argv ) {
  // Configure block
  auto conf = new BlockConfig();
  conf->f_static_variables_Configuration = new SimpleConfiguration< int >( 15 );
- conf->f_name = "ThermalUnitBlock";
  tub->set_BlockConfig( conf );
 
  // Configure solver

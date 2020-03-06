@@ -286,6 +286,19 @@ int main( int argc, char ** argv ) {
 
 
    }
+
+   auto intermittent_unit_block = dynamic_cast<IntermittentUnitBlock *>(unit_block);
+   if( intermittent_unit_block != nullptr ) {
+
+    auto active_power = intermittent_unit_block->get_active_power(0);
+    std::cout << "active_power     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 20 ) <<   active_power[t].get_value();
+    }
+    std::cout << " ]" << std::endl;
+
+   }
+
   }
 
   auto network_block = dynamic_cast<BusNetworkBlock *>(i);
