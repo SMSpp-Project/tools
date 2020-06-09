@@ -196,12 +196,32 @@ int main( int argc, char ** argv ) {
      std::cout << std::setw( 2 ) << ( unsigned int ) round( commitment[t].get_value());
     }
     std::cout << " ]" << std::endl;
+
     auto active_power = thermal_unit_block->get_active_power(0);
-    std::cout << "active_power     = [";
+
+    auto fixed_consumption = thermal_unit_block->get_fixed_consumption(0);
+    std::cout << "active_power  = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) <<   active_power[t].get_value();
+     std::cout << std::setw( 20 ) <<  active_power[t].get_value() -
+             fixed_consumption[t] * ( unsigned int ) round( 1 - commitment[t].get_value());
     }
     std::cout << " ]" << std::endl;
+
+    auto PrimarySR = thermal_unit_block->get_primary_spinning_reserve( 0 );
+    std::cout << "PrimarySR     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 20 ) <<  PrimarySR[t].get_value();
+    }
+    std::cout << " ]" << std::endl;
+
+
+    auto SecondarySR = thermal_unit_block->get_secondary_spinning_reserve( 0 );
+    std::cout << "SecondarySR     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 20 ) <<  SecondarySR[t].get_value();
+    }
+    std::cout << " ]" << std::endl;
+
 
     auto startup = thermal_unit_block->get_start_up();
     std::cout << "Start up     = [";
