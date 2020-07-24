@@ -17,6 +17,7 @@ using namespace SMSpp_di_unipi_it;
 std::string filename{};
 std::string lp_file{};
 std::string solver_name{};
+int solvVerbose;
 
 void print_help() {
  // http://docopt.org
@@ -26,6 +27,7 @@ void print_help() {
            << "  -s <solver>, --solver <solver>  Choose solver." << std::endl
            << "                                  Available solvers are: cplex, dp." << std::endl
            << "  -w <file>, --writelp <file>     Write LP problem on file." << std::endl
+           << "  -v, --verbose                   Make the solver verbose. " << std::endl
            << "  -h, --help                      Print this help." << std::endl;
 }
 
@@ -36,10 +38,11 @@ void process_args( int argc, char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "s:w:h";
+ const char * const short_opts = "s:w:v:h";
  const option long_opts[] = {
   { "solver",  required_argument, nullptr, 's' },
   { "writelp", required_argument, nullptr, 'w' },
+  { "verbose", no_argument,       nullptr, 'v' },
   { "help",    no_argument,       nullptr, 'h' },
   { nullptr,   no_argument,       nullptr, 0 }
  };
@@ -51,12 +54,16 @@ void process_args( int argc, char ** argv ) {
   if( -1 == opt ) {
    break;
   }
-
+  solvVerbose=0;
   switch( opt ) {
    case 's':
     solver_name = std::string( optarg );
+    break;
    case 'w':
     lp_file = std::string( optarg );
+    break;
+   case 'v':
+    solvVerbose=1;
     break;
    case 'h': // -h or --help
     print_help();
@@ -110,6 +117,9 @@ int main( int argc, char ** argv ) {
   exit( 1 );
  }
 
+ std::cout << "Data Step -- Attempting to deserialize" << std::endl;
+ std::cout.flush();
+
  // Deserialize block
  auto ucb = dynamic_cast<UCBlock *>(Block::new_Block( "UCBlock" ));
  ucb->deserialize( bg );
@@ -125,6 +135,9 @@ int main( int argc, char ** argv ) {
   conf->v_sub_BlockConfig.emplace_back( subconf );
  }
 
+ std::cout << "Next in line : configure solver" << std::endl;
+ std::cout.flush();
+
  // Configure solver
  auto slv_conf = new BlockSolverConfig();
  ComputeConfig comp_conf;
@@ -135,10 +148,13 @@ int main( int argc, char ** argv ) {
                                                          "testCPX" };
   std::pair< std::string, double > accuracy = { "dblAAccSol", 1e-04 };
   std::pair< std::string, double > timelimit = { "dblMaxTime", 20000 };
+  std::pair< std::string, int > verbslvl = { "intLogVerb", 1};
 
   comp_conf.str_pars.emplace_back( problem_name );
   comp_conf.dbl_pars.emplace_back( accuracy );
   comp_conf.dbl_pars.emplace_back( timelimit );
+  if ( solvVerbose > 0 )
+    comp_conf.int_pars.emplace_back( verbslvl );
 
   if( !lp_file.empty() ) {
    std::pair< std::string, std::string > output_file = { "strOutputFile",
@@ -157,6 +173,10 @@ int main( int argc, char ** argv ) {
 
  ucb->set_BlockConfig( conf );
  ucb->set_SolverConfig( slv_conf );
+
+ std::cout << "Data Loaded -- without foreseeable errors -- attempting to solve" << std::endl;
+ std::cout.flush();
+  
  std::cout.setf( std::ios::scientific, std::ios::floatfield );
  std::cout << std::setprecision( 8 );
  auto solver = ucb->get_registered_solvers().front();
@@ -197,32 +217,6 @@ int main( int argc, char ** argv ) {
     }
     std::cout << " ]" << std::endl;
 
-    auto active_power = thermal_unit_block->get_active_power(0);
-
-    auto fixed_consumption = thermal_unit_block->get_fixed_consumption(0);
-    std::cout << "active_power  = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) <<  active_power[t].get_value() -
-             fixed_consumption[t] * ( unsigned int ) round( 1 - commitment[t].get_value());
-    }
-    std::cout << " ]" << std::endl;
-
-    auto PrimarySR = thermal_unit_block->get_primary_spinning_reserve( 0 );
-    std::cout << "PrimarySR     = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) <<  PrimarySR[t].get_value();
-    }
-    std::cout << " ]" << std::endl;
-
-
-    auto SecondarySR = thermal_unit_block->get_secondary_spinning_reserve( 0 );
-    std::cout << "SecondarySR     = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) <<  SecondarySR[t].get_value();
-    }
-    std::cout << " ]" << std::endl;
-
-
     auto startup = thermal_unit_block->get_start_up();
     std::cout << "Start up     = [";
     for( auto & t : startup ) {
@@ -235,6 +229,13 @@ int main( int argc, char ** argv ) {
     for( auto & t : shutdown ) {
      std::cout << std::setw( 2 )
                << ( unsigned int ) round( t.get_value());
+    }
+    std::cout << " ]" << std::endl;
+
+    auto active_power = thermal_unit_block->get_active_power(0);
+    std::cout << "active_power     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 20 ) <<   active_power[t].get_value();
     }
     std::cout << " ]" << std::endl;
    }
