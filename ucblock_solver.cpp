@@ -243,28 +243,27 @@ int main( int argc, char ** argv ) {
    auto battery_unit_block = dynamic_cast<BatteryUnitBlock *>(unit_block);
    if( battery_unit_block != nullptr ) {
 
-    auto storage_level = battery_unit_block->get_storage_level();
-    std::cout << "StorageLevel = [";
-    for( auto & t : storage_level ) {
-     std::cout << std::setw( 5 ) <<  t.get_value();
-    }
-    std::cout << " ]" << std::endl;
-
     auto Intake_level = battery_unit_block->get_intake_level();
-    std::cout << "IntakeLevel  = [";
+    std::cout << "IntakeLevel[:Storage]  = [";
     for( auto & t : Intake_level ) {
-     std::cout << std::setw( 5 ) << ( unsigned int ) round( t.get_value());
+     std::cout << std::setw( 20 ) << ( unsigned int ) round( t.get_value());
     }
     std::cout << " ]" << std::endl;
 
 
     auto Outtake_level = battery_unit_block->get_outtake_level();
-    std::cout << "OuttakeLevel = [";
+    std::cout << "OuttakeLevel[:Generation] = [";
     for( auto & t : Outtake_level ) {
-     std::cout << std::setw( 5 ) << ( unsigned int ) round( t.get_value());
+     std::cout << std::setw( 20 ) << ( unsigned int ) round( t.get_value());
     }
     std::cout << " ]" << std::endl;
 
+    auto storage_level = battery_unit_block->get_storage_level();
+    std::cout << "StorageLevel = [";
+    for( auto & t : storage_level ) {
+     std::cout << std::setw( 20 ) <<  t.get_value();
+    }
+    std::cout << " ]" << std::endl;
 
     auto Binary_var = battery_unit_block->get_battery_binary();
     std::cout << "BinaryVar    = [";
@@ -291,7 +290,7 @@ int main( int argc, char ** argv ) {
      auto flow_rate = hydro_unit_block->get_flow_rate( l );
       std::cout << "FlowRate   = [";
      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-      std::cout << std::setw( 20 ) << flow_rate[t].get_value();
+      std::cout << std::setw( 25 ) << std::setprecision( 14 ) << flow_rate[t].get_value();
      }
      std::cout << " ]" << std::endl;
     }
@@ -300,11 +299,11 @@ int main( int argc, char ** argv ) {
      auto volumetric = hydro_unit_block->get_volumetric( n );
       std::cout << "Volumetric  = [";
      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-      std::cout << std::setw( 20 ) << volumetric[t].get_value();
+      std::cout << std::setw( 25 ) << std::setprecision( 14 ) << volumetric[t].get_value();
      }
      std::cout << " ]" << std::endl;
     }
-
+    std::cout << std::setprecision( 8 );
 
    }
 
