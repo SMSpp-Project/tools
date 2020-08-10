@@ -316,7 +316,7 @@ int main( int argc, char ** argv ) {
        // for each hydro block inside, print the solution
        auto hydro_unit_block = hydro_sytem_block->get_hydro_unit_block( hIdx ) ;  //dynamic_cast<HydroUnitBlock *>(unit_block);
        if (hydro_unit_block != nullptr) {
-         for (UnitBlock::Index g = 0; g < hydro_sytem_block->get_number_generators(); ++g) {
+         for (UnitBlock::Index g = 0; g < hydro_unit_block->get_number_generators(); ++g) {
            auto active_power = hydro_unit_block->get_active_power(g);
            std::cout << "active_power     = [";
            for (UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t) {
