@@ -8,6 +8,7 @@
 #include <BusNetworkBlock.h>
 #include <BatteryUnitBlock.h>
 #include <HydroUnitBlock.h>
+#include <HydroSystemUnitBlock.h>
 
 #include <IntermittentUnitBlock.h>
 
@@ -305,6 +306,45 @@ int main( int argc, char ** argv ) {
     }
     std::cout << std::setprecision( 8 );
 
+   }
+
+   // If HydroSystemBlocks are there:
+   auto hydro_sytem_block = dynamic_cast<HydroSystemUnitBlock *>(unit_block);
+   if ( hydro_sytem_block != nullptr ) {
+     for( UnitBlock::Index hIdx = 0; hIdx < hydro_sytem_block->get_number_hydro_units(); ++hIdx ) {
+       std::cout << "----- SubHydroBlock " << hIdx << std::endl;
+       // for each hydro block inside, print the solution
+       auto hydro_unit_block = hydro_sytem_block->get_hydro_unit_block( hIdx ) ;  //dynamic_cast<HydroUnitBlock *>(unit_block);
+       if (hydro_unit_block != nullptr) {
+         for (UnitBlock::Index g = 0; g < hydro_sytem_block->get_number_generators(); ++g) {
+           auto active_power = hydro_unit_block->get_active_power(g);
+           std::cout << "active_power     = [";
+           for (UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t) {
+             std::cout << std::setw(20) << active_power[t].get_value();
+           }
+           std::cout << " ]" << std::endl;
+         }
+
+         for (UnitBlock::Index l = 0; l < hydro_unit_block->get_number_generators(); ++l) {
+           auto flow_rate = hydro_unit_block->get_flow_rate(l);
+           std::cout << "FlowRate   = [";
+           for (UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t) {
+             std::cout << std::setw(25) << std::setprecision(14) << flow_rate[t].get_value();
+           }
+           std::cout << " ]" << std::endl;
+         }
+
+         for (UnitBlock::Index n = 0; n < hydro_unit_block->get_number_reservoirs(); ++n)  {
+           auto volumetric = hydro_unit_block->get_volumetric(n);
+           std::cout << "Volumetric  = [";
+           for (UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t) {
+             std::cout << std::setw(25) << std::setprecision(14) << volumetric[t].get_value();
+           }
+           std::cout << " ]" << std::endl;
+         }
+         std::cout << std::setprecision(8);
+       }
+     }
    }
 
    auto intermittent_unit_block = dynamic_cast<IntermittentUnitBlock *>(unit_block);
