@@ -8,6 +8,7 @@
 #include <BusNetworkBlock.h>
 #include <BatteryUnitBlock.h>
 #include <HydroUnitBlock.h>
+
 #include <IntermittentUnitBlock.h>
 
 
@@ -248,31 +249,6 @@ int main( int argc, char ** argv ) {
     }
     std::cout << " ]" << std::endl;
 
-    auto active_power = battery_unit_block->get_active_power(0);
-    std::cout << "active_power  = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) <<  active_power[t].get_value();
-    }
-    std::cout << " ]" << std::endl;
-
-
-    auto PrimarySR = battery_unit_block->get_primary_spinning_reserve( 0 );
-    std::cout << "PrimarySR     = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) <<  PrimarySR[t].get_value();
-    }
-    std::cout << " ]" << std::endl;
-
-
-    auto SecondarySR = battery_unit_block->get_secondary_spinning_reserve( 0 );
-    std::cout << "SecondarySR     = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) <<  SecondarySR[t].get_value();
-    }
-    std::cout << " ]" << std::endl;
-
-
-
     auto Intake_level = battery_unit_block->get_intake_level();
     std::cout << "IntakeLevel  = [";
     for( auto & t : Intake_level ) {
@@ -302,7 +278,7 @@ int main( int argc, char ** argv ) {
    if( hydro_unit_block != nullptr ) {
     for( UnitBlock::Index g = 0; g < unit_block->get_number_generators(); ++g ) {
      auto active_power = hydro_unit_block->get_active_power( g );
-     std::cout << "active_power [" + std::to_string( g ) + "]" " = [";
+     std::cout << "active_power     = [";
      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
       std::cout << std::setw( 20 ) << active_power[t].get_value();
      }
@@ -312,7 +288,7 @@ int main( int argc, char ** argv ) {
 
     for( UnitBlock::Index l = 0; l < hydro_unit_block->get_number_generators(); ++l ) {
      auto flow_rate = hydro_unit_block->get_flow_rate( l );
-      std::cout << "FlowRate [" + std::to_string( l ) + "]" " = [";
+      std::cout << "FlowRate   = [";
      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
       std::cout << std::setw( 20 ) << flow_rate[t].get_value();
      }
@@ -321,7 +297,7 @@ int main( int argc, char ** argv ) {
 
     for( UnitBlock::Index n = 0; n < hydro_unit_block->get_number_reservoirs(); ++n ) {
      auto volumetric = hydro_unit_block->get_volumetric( n );
-      std::cout << "Volumetric [" + std::to_string( n ) + "]" " = [";
+      std::cout << "Volumetric  = [";
      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
       std::cout << std::setw( 20 ) << volumetric[t].get_value();
      }
