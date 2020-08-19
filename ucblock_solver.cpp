@@ -17,15 +17,21 @@ using namespace SMSpp_di_unipi_it;
 std::string filename{};
 std::string lp_file{};
 std::string solver_name{};
+std::string bconf_file{};
+std::string sconf_file{};
+bool solvVerbose = false;
 
 void print_help() {
  // http://docopt.org
  std::cout << "Usage: ucblock_solver [options] <nc4-file>" << std::endl
            << std::endl
            << "Options:" << std::endl
+           << "  -B <file>, --blockcfg <file>    Block configuration." << std::endl
+           << "  -S <file>, --solvercfg <file>   Solver configuration." << std::endl
            << "  -s <solver>, --solver <solver>  Choose solver." << std::endl
            << "                                  Available solvers are: cplex, dp." << std::endl
            << "  -w <file>, --writelp <file>     Write LP problem on file." << std::endl
+           << "  -v, --verbose                   Make the solver verbose. " << std::endl
            << "  -h, --help                      Print this help." << std::endl;
 }
 
@@ -36,12 +42,15 @@ void process_args( int argc, char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "s:w:h";
+ const char * const short_opts = "B:S:s:w:vh";
  const option long_opts[] = {
-  { "solver",  required_argument, nullptr, 's' },
-  { "writelp", required_argument, nullptr, 'w' },
-  { "help",    no_argument,       nullptr, 'h' },
-  { nullptr,   no_argument,       nullptr, 0 }
+  { "blockcfg",  required_argument, nullptr, 'b' },
+  { "solvercfg", required_argument, nullptr, 's' },
+  { "solver",    required_argument, nullptr, 's' },
+  { "writelp",   required_argument, nullptr, 'w' },
+  { "verbose",   no_argument,       nullptr, 'v' },
+  { "help",      no_argument,       nullptr, 'h' },
+  { nullptr,     no_argument,       nullptr, 0 }
  };
 
  // Options
@@ -51,12 +60,21 @@ void process_args( int argc, char ** argv ) {
   if( -1 == opt ) {
    break;
   }
-
   switch( opt ) {
+   case 'B':
+    bconf_file = std::string( optarg );
+    break;
+   case 'S':
+    sconf_file = std::string( optarg );
+    break;
    case 's':
     solver_name = std::string( optarg );
+    break;
    case 'w':
     lp_file = std::string( optarg );
+    break;
+   case 'v':
+    solvVerbose = true;
     break;
    case 'h': // -h or --help
     print_help();
@@ -96,67 +114,147 @@ int main( int argc, char ** argv ) {
   exit( 1 );
  }
 
- int type;
+ int type = 0;
  gtype.getValues( &type );
-
- if( type != eBlockFile ) {
-  std::cerr << filename << " is not an SMS++ nc4 Block file" << std::endl;
-  exit( 1 );
- }
-
- netCDF::NcGroup bg = f.getGroup( "Block_0" );
- if( bg.isNull() ) {
-  std::cerr << "Block_0 empty or undefined in " << filename << std::endl;
-  exit( 1 );
- }
-
- // Deserialize block
  auto ucb = dynamic_cast<UCBlock *>(Block::new_Block( "UCBlock" ));
- ucb->deserialize( bg );
 
- // Configure blocks
- auto conf = new BlockConfig();
- for( auto i: ucb->get_nested_Blocks() ) {
-  auto subconf = new BlockConfig();
-  auto unit_block = dynamic_cast<UnitBlock *>(i);
-  if( unit_block != nullptr ) {
-   subconf->f_static_variables_Configuration = new SimpleConfiguration< int >( 15 );
+ switch( type ) {
+  case eProbFile: {
+   std::cout << filename
+             << " is a problem file, ignoring Block/Solver configurations..."
+             << std::endl;
+  // TODO
+
+  //  std::multimap< std::string, netCDF::NcGroup > problems = f.getGroups();
+  //  // for each problem descriptor:
+  //  for( auto & p : problems ) {
+  //
+  //   // Deserialize block
+  //   auto gb = p.second.getGroup( "Block" );
+  //   auto * block = Block::new_Block( gb );
+  //
+  //   // Configure block
+  //   auto bgc = p.second.getGroup( "BlockConfig" );
+  //   auto * b_config = dynamic_cast<BlockConfig *>(BlockConfig::new_Configuration( bgc ));
+  //   block->set_BlockConfig( b_config );
+  //
+  //   // Configure solver
+  //   auto bgs = p.second.getGroup( "BlockSolver" );
+  //   auto * b_solver = dynamic_cast<BlockSolverConfig *>(BlockSolverConfig::new_Configuration( bgs ));
+  //   block->set_SolverConfig( b_solver );
+  //
+  //   std::cout << "Problem: " << p.first << std::endl;
+  //  }
+   break;
   }
-  conf->v_sub_BlockConfig.emplace_back( subconf );
+
+  case eBlockFile: {
+   std::cout << filename << " is a block file" << std::endl;
+
+   netCDF::NcGroup bg = f.getGroup( "Block_0" );
+   if( bg.isNull() ) {
+    std::cerr << "Block_0 empty or undefined in " << filename << std::endl;
+    exit( 1 );
+   }
+
+   std::cout << "Data Step -- Attempting to deserialize..." << std::endl;
+
+   // Deserialize block
+   ucb->deserialize( bg );
+
+   // Configure block
+   auto b_config = new BlockConfig;
+   std::ifstream bcf;
+   bcf.open( bconf_file, std::ifstream::in );
+
+   if( bcf ) {
+    std::cout << "Using Block configuration in " << bconf_file << std::endl;
+    try {
+     bcf >> *b_config;
+    } catch( const std::exception& e ) {
+     std::cerr << "Block configuration not valid: " << e.what() << std::endl;
+     exit( 1 );
+    }
+   } else {
+    std::cout << "Block configuration not provided" << std::endl;
+
+    // Default configuration
+    for( auto i: ucb->get_nested_Blocks() ) {
+     auto subconf = new BlockConfig();
+     auto unit_block = dynamic_cast<UnitBlock *>(i);
+     if( unit_block != nullptr ) {
+      subconf->f_static_variables_Configuration = new SimpleConfiguration< int >( 15 );
+     }
+     b_config->v_sub_BlockConfig.emplace_back( subconf );
+    }
+   }
+   ucb->set_BlockConfig( b_config );
+
+   // Configure solver
+   std::cout << "Next in line : configure solver" << std::endl;
+   std::cout.flush();
+
+   auto s_config = new BlockSolverConfig;
+   ;
+   std::ifstream scf;
+   scf.open( sconf_file, std::ifstream::in );
+
+   if( scf ) {
+    std::cout << "Using Solver configuration in " << sconf_file << std::endl;
+    try {
+     scf >> *s_config;
+    } catch( ... ) {
+     std::cout << "Solver configuration not valid" << std::endl;
+     exit( 1 );
+    }
+   } else {
+    std::cout << "Solver configuration not provided" << std::endl;
+
+    ComputeConfig comp_conf;
+    // Default configuration
+    if( solver_name == "cplex" ) {
+     s_config->v_SolverNames.emplace_back( "CPXMILPSolver" );
+     std::pair< std::string, std::string > problem_name = { "strProblemName",
+                                                            "testCPX" };
+     std::pair< std::string, double > accuracy = { "dblAAccSol", 1e-04 };
+     std::pair< std::string, double > timelimit = { "dblMaxTime", 20000 };
+     std::pair< std::string, int > verbslvl = { "intLogVerb", 1 };
+
+     comp_conf.str_pars.emplace_back( problem_name );
+     comp_conf.dbl_pars.emplace_back( accuracy );
+     comp_conf.dbl_pars.emplace_back( timelimit );
+     if( solvVerbose > 0 )
+      comp_conf.int_pars.emplace_back( verbslvl );
+
+     if( !lp_file.empty() ) {
+      std::pair< std::string, std::string > output_file = { "strOutputFile",
+                                                            lp_file };
+      comp_conf.str_pars.emplace_back( output_file );
+     }
+     s_config->v_SolverConfigs.emplace_back( &comp_conf );
+
+    } else if( solver_name == "dp" ) {
+     std::cerr << "Sorry, DP Solver is not available yet..." << std::endl;
+     exit( 0 );
+    } else {
+     std::cerr << "Available solvers are: cplex, dp" << std::endl;
+     exit( 1 );
+    }
+   }
+
+   ucb->set_SolverConfig( s_config );
+
+   break;
+  }
+
+  default:
+   std::cerr << filename << " is not a valid SMS++ file" << std::endl;
+   exit( 1 );
  }
 
- // Configure solver
- auto slv_conf = new BlockSolverConfig();
- ComputeConfig comp_conf;
-
- if( solver_name == "cplex" ) {
-  slv_conf->v_SolverNames.emplace_back( "CPXMILPSolver" );
-  std::pair< std::string, std::string > problem_name = { "strProblemName",
-                                                         "testCPX" };
-  std::pair< std::string, double > accuracy = { "dblAAccSol", 1e-04 };
-  std::pair< std::string, double > timelimit = { "dblMaxTime", 20000 };
-
-  comp_conf.str_pars.emplace_back( problem_name );
-  comp_conf.dbl_pars.emplace_back( accuracy );
-  comp_conf.dbl_pars.emplace_back( timelimit );
-
-  if( !lp_file.empty() ) {
-   std::pair< std::string, std::string > output_file = { "strOutputFile",
-                                                         lp_file };
-   comp_conf.str_pars.emplace_back( output_file );
-  }
-  slv_conf->v_SolverConfigs.emplace_back( &comp_conf );
-
- } else if( solver_name == "dp" ) {
-  std::cerr << "Sorry, DP Solver is not available yet..." << std::endl;
-  exit( 0 );
- } else {
-  std::cerr << "Available solvers are: cplex, dp" << std::endl;
-  exit( 1 );
- }
-
- ucb->set_BlockConfig( conf );
- ucb->set_SolverConfig( slv_conf );
+ std::cout << "Data Loaded -- without foreseeable errors -- attempting to solve" << std::endl;
+ std::cout.flush();
+  
  std::cout.setf( std::ios::scientific, std::ios::floatfield );
  std::cout << std::setprecision( 8 );
  auto solver = ucb->get_registered_solvers().front();
