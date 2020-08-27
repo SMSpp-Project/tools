@@ -188,9 +188,16 @@ int main( int argc, char ** argv ) {
       subconf->f_static_variables_Configuration = new SimpleConfiguration< int >( 15 );
      }
 
-     auto pf_block = dynamic_cast<PolyhedralFunctionBlock *>(i);
-     if( pf_block != nullptr ) {
-      subconf->f_static_variables_Configuration = new SimpleConfiguration< int >( 1 );
+     auto hu_block = dynamic_cast<HydroSystemUnitBlock *>(i);
+     if( hu_block != nullptr ) {
+      auto subsubconf = new BlockConfig();
+      for( auto j: i->get_nested_Blocks() ) {
+       auto sub_pf_block = dynamic_cast<PolyhedralFunctionBlock *>(j);
+       if( sub_pf_block != nullptr ) {
+        subsubconf->f_static_variables_Configuration = new SimpleConfiguration< int >( 1 );
+       }
+       subconf->v_sub_BlockConfig.emplace_back( subsubconf );
+      }
      }
 
      b_config->v_sub_BlockConfig.emplace_back( subconf );
