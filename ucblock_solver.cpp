@@ -11,6 +11,7 @@
 #include <HydroSystemUnitBlock.h>
 
 #include <IntermittentUnitBlock.h>
+#include <CPXMILPSolver.h>
 
 
 using namespace SMSpp_di_unipi_it;
@@ -186,6 +187,12 @@ int main( int argc, char ** argv ) {
      if( unit_block != nullptr ) {
       subconf->f_static_variables_Configuration = new SimpleConfiguration< int >( 15 );
      }
+
+     auto pf_block = dynamic_cast<PolyhedralFunctionBlock *>(i);
+     if( pf_block != nullptr ) {
+      subconf->f_static_variables_Configuration = new SimpleConfiguration< int >( 1 );
+     }
+
      b_config->v_sub_BlockConfig.emplace_back( subconf );
     }
    }
@@ -259,6 +266,9 @@ int main( int argc, char ** argv ) {
  std::cout.setf( std::ios::scientific, std::ios::floatfield );
  std::cout << std::setprecision( 8 );
  auto solver = ucb->get_registered_solvers().front();
+
+ dynamic_cast<CPXMILPSolver*>(solver)->write_lp("test.lp");
+
  int status = solver->compute();
  solver->get_var_solution();
  auto ub = solver->get_ub();
