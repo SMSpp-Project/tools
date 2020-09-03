@@ -126,27 +126,6 @@ int main( int argc, char ** argv ) {
              << " is a problem file, ignoring Block/Solver configurations..."
              << std::endl;
   // TODO
-
-  //  std::multimap< std::string, netCDF::NcGroup > problems = f.getGroups();
-  //  // for each problem descriptor:
-  //  for( auto & p : problems ) {
-  //
-  //   // Deserialize block
-  //   auto gb = p.second.getGroup( "Block" );
-  //   auto * block = Block::new_Block( gb );
-  //
-  //   // Configure block
-  //   auto bgc = p.second.getGroup( "BlockConfig" );
-  //   auto * b_config = dynamic_cast<BlockConfig *>(BlockConfig::new_Configuration( bgc ));
-  //   block->set_BlockConfig( b_config );
-  //
-  //   // Configure solver
-  //   auto bgs = p.second.getGroup( "BlockSolver" );
-  //   auto * b_solver = dynamic_cast<BlockSolverConfig *>(BlockSolverConfig::new_Configuration( bgs ));
-  //   block->set_SolverConfig( b_solver );
-  //
-  //   std::cout << "Problem: " << p.first << std::endl;
-  //  }
    break;
   }
 
@@ -229,23 +208,24 @@ int main( int argc, char ** argv ) {
     // Default configuration
     if( solver_name == "cplex" ) {
      s_config->v_SolverNames.emplace_back( "CPXMILPSolver" );
-     std::pair< std::string, std::string > problem_name = { "strProblemName",
-                                                            "testCPX" };
-     std::pair< std::string, double > accuracy = { "dblAAccSol", 1e-04 };
-     std::pair< std::string, double > timelimit = { "dblMaxTime", 20000 };
-     std::pair< std::string, int > verbslvl = { "intLogVerb", 1 };
+     // std::pair< std::string, std::string > problem_name = { "strProblemName",
+     //                                                        "testCPX" };
+     // std::pair< std::string, double > accuracy = { "dblAAccSol", 1e-04 };
+     // std::pair< std::string, double > timelimit = { "dblMaxTime", 20000 };
+     // std::pair< std::string, int > verbslvl = { "intLogVerb", 1 };
 
-     comp_conf.str_pars.emplace_back( problem_name );
-     comp_conf.dbl_pars.emplace_back( accuracy );
-     comp_conf.dbl_pars.emplace_back( timelimit );
-     if( solvVerbose > 0 )
-      comp_conf.int_pars.emplace_back( verbslvl );
+     // comp_conf.str_pars.emplace_back( problem_name );
+     // comp_conf.dbl_pars.emplace_back( accuracy );
+     // comp_conf.dbl_pars.emplace_back( timelimit );
+     // if( solvVerbose == true ) {
+     //  comp_conf.int_pars.emplace_back( verbslvl );
+     // }
 
-     if( !lp_file.empty() ) {
-      std::pair< std::string, std::string > output_file = { "strOutputFile",
-                                                            lp_file };
-      comp_conf.str_pars.emplace_back( output_file );
-     }
+     // if( !lp_file.empty() ) {
+     //  std::pair< std::string, std::string > output_file = { "strOutputFile",
+     //                                                        lp_file };
+     //  comp_conf.str_pars.emplace_back( output_file );
+     // }
      s_config->v_SolverConfigs.emplace_back( &comp_conf );
 
     } else if( solver_name == "dp" ) {
