@@ -479,21 +479,22 @@ int main( int argc, char ** argv ) {
 
    auto node_inj = network_block->get_node_injection();
    std::cout << "Node injection     = [";
-   for (int n = 0; n < node_inj.size(); ++n) {
-    std::cout << std::setw( 20 ) <<   node_inj[n].get_value();
+   for( int n = 0; n < node_inj.size(); ++n ) {
+    std::cout << std::setw( 20 ) << node_inj[n].get_value();
    }
    std::cout << " ]" << std::endl;
 
    auto dc_network_block = dynamic_cast<DCNetworkBlock *>(network_block);
 
-   auto power_flow = dc_network_block->get_power_flow();
+   if( dc_network_block != nullptr ) {
+    auto power_flow = dc_network_block->get_power_flow();
 
-   std::cout << "power_flow     = [";
-   for (int n = 0; n < power_flow.size(); ++n) {
-    std::cout << std::setw( 20 ) <<   power_flow[n].get_value();
+    std::cout << "power_flow     = [";
+   for( int n = 0; n < power_flow.size(); ++n ) {
+    std::cout << std::setw( 20 ) << power_flow[n].get_value();
    }
    std::cout << " ]" << std::endl;
-
+  }
   }
 
 
