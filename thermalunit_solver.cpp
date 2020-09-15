@@ -2,6 +2,7 @@
 #include <getopt.h>
 
 #include <AbstractBlock.h>
+#include <BlockSolverConfig.h>
 #include <ThermalUnitBlock.h>
 
 using namespace SMSpp_di_unipi_it;
@@ -115,25 +116,31 @@ int main( int argc, char ** argv ) {
  // Configure block
  auto conf = new BlockConfig();
  conf->f_static_variables_Configuration = new SimpleConfiguration< int >( 15 );
- tub->set_BlockConfig( conf );
+ conf->apply( tub );
 
  // Configure solver
  auto slv_conf = new BlockSolverConfig();
 
  if( solver_name == "cplex" ) {
+  // TODO
+  /*
   slv_conf->v_SolverNames.emplace_back( "CPXMILPSolver" );
   slv_conf->v_SolverConfigs.emplace_back( new ComputeConfig() );
+  */
 
  } else if( solver_name == "dp" ) {
+  // TODO
+  /*
   slv_conf->v_SolverNames.emplace_back( "ThermalUnitDPSolver" );
   slv_conf->v_SolverConfigs.emplace_back( new ComputeConfig() );
+  */
 
  } else {
   std::cerr << "Available solvers are: cplex, dp" << std::endl;
   exit( 1 );
  }
 
- tub->set_SolverConfig( slv_conf );
+ slv_conf->apply( tub );
  auto solver = tub->get_registered_solvers().front();
 
  // Solve

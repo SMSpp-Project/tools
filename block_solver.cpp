@@ -2,7 +2,9 @@
 #include <getopt.h>
 
 #include <Block.h>
+#include <BlockSolverConfig.h>
 #include <FRealObjective.h>
+#include <RBlockConfig.h>
 
 using namespace SMSpp_di_unipi_it;
 
@@ -105,12 +107,14 @@ int main( int argc, char ** argv ) {
     // Configure block
     auto bgc = p.second.getGroup( "BlockConfig" );
     auto b_config = static_cast<BlockConfig *>(BlockConfig::new_Configuration( bgc ));
-    block->set_BlockConfig( b_config );
+    if( b_config )
+     b_config->apply( block );
 
     // Configure solver
     auto bgs = p.second.getGroup( "BlockSolver" );
-    auto b_solver = static_cast<BlockSolverConfig *>(BlockSolverConfig::new_Configuration( bgs ));
-    block->set_SolverConfig( b_solver );
+    auto s_config = static_cast<BlockSolverConfig *>(BlockSolverConfig::new_Configuration( bgs ));
+    if( s_config )
+     s_config->apply( block );
 
     std::cout << "Problem: " << p.first << std::endl;
 
@@ -141,12 +145,20 @@ int main( int argc, char ** argv ) {
     auto block = Block::new_Block( b.second );
 
     // Configure block
-    auto b_config = new BlockConfig;
+    BlockConfig * b_config = nullptr;
     std::ifstream bcf;
     bcf.open( bconf_file, std::ifstream::in );
 
     if( bcf ) {
      std::cout << "Using Block configuration in " << bconf_file << std::endl;
+     std::string config_name;
+     bcf >> eatcomments >> config_name;
+     b_config = dynamic_cast<BlockConfig *>
+      ( Configuration::new_Configuration( config_name ) );
+     if( ! b_config ) {
+      std::cerr << "Block configuration not valid: " << config_name << std::endl;
+      exit( 1 );
+     }
      try {
       bcf >> *b_config;
      } catch( const std::exception& e ) {
@@ -156,15 +168,25 @@ int main( int argc, char ** argv ) {
     } else {
      std::cout << "Block configuration not provided" << std::endl;
     }
-    block->set_BlockConfig( b_config );
+
+    if( b_config )
+     b_config->apply( block );
 
     // Configure solver
-    auto s_config = new BlockSolverConfig;
+    BlockSolverConfig * s_config = nullptr;
     std::ifstream scf;
     scf.open( sconf_file, std::ifstream::in );
 
     if( scf ) {
      std::cout << "Using Solver configuration in " << sconf_file << std::endl;
+     std::string config_name;
+     scf >> eatcomments >> config_name;
+     s_config = dynamic_cast<BlockSolverConfig *>
+      ( Configuration::new_Configuration( config_name ) );
+     if( ! s_config ) {
+      std::cerr << "Solver configuration not valid: " << config_name << std::endl;
+      exit( 1 );
+     }
      try {
       scf >> *s_config;
      } catch( ... ) {
@@ -175,7 +197,8 @@ int main( int argc, char ** argv ) {
      std::cout << "Solver configuration not provided" << std::endl;
     }
 
-    block->set_SolverConfig( s_config );
+    if( s_config )
+     s_config->apply( block );
 
     // Solve
     auto solver = block->get_registered_solvers().front();

@@ -3,17 +3,17 @@
 #include <fstream>
 #include <getopt.h>
 
-#include <UCBlock.h>
-#include <ThermalUnitBlock.h>
+#include <CPXMILPSolver.h>
+#include <BatteryUnitBlock.h>
+#include <BlockSolverConfig.h>
 #include <BusNetworkBlock.h>
 #include <DCNetworkBlock.h>
-#include <BatteryUnitBlock.h>
-#include <HydroUnitBlock.h>
 #include <HydroSystemUnitBlock.h>
-
+#include <HydroUnitBlock.h>
 #include <IntermittentUnitBlock.h>
-#include <CPXMILPSolver.h>
-
+#include <RBlockConfig.h>
+#include <ThermalUnitBlock.h>
+#include <UCBlock.h>
 
 using namespace SMSpp_di_unipi_it;
 
@@ -145,12 +145,19 @@ int main( int argc, char ** argv ) {
    ucb->deserialize( bg );
 
    // Configure block
-   auto b_config = new BlockConfig;
+   BlockConfig * b_config = nullptr;
    std::ifstream bcf;
    bcf.open( bconf_file, std::ifstream::in );
-
    if( bcf ) {
     std::cout << "Using Block configuration in " << bconf_file << std::endl;
+    std::string config_name;
+    bcf >> eatcomments >> config_name;
+    b_config = dynamic_cast<BlockConfig *>
+     ( Configuration::new_Configuration( config_name ) );
+    if( ! b_config ) {
+     std::cerr << "Block configuration not valid: " << config_name << std::endl;
+     exit( 1 );
+    }
     try {
      bcf >> *b_config;
     } catch( const std::exception& e ) {
@@ -161,41 +168,59 @@ int main( int argc, char ** argv ) {
     std::cout << "Block configuration not provided" << std::endl;
 
     // Default configuration
-    for( auto i: ucb->get_nested_Blocks() ) {
-     auto subconf = new BlockConfig();
-     auto unit_block = dynamic_cast<UnitBlock *>(i);
+    b_config = new RBlockConfig;
+    auto num_nested_Blocks_ucb = ucb->get_number_nested_Blocks();
+    for( Block::Index i = 0 ; i < num_nested_Blocks_ucb ; ++i ) {
+     auto sub_Block_ucb = ucb->get_nested_Block( i );
+     auto subconf = new RBlockConfig();
+     auto unit_block = dynamic_cast<UnitBlock *>( sub_Block_ucb );
      if( unit_block != nullptr ) {
-      subconf->f_static_variables_Configuration = new SimpleConfiguration< int >( 15 );
+      subconf->f_static_variables_Configuration =
+       new SimpleConfiguration< int >( 15 );
      }
 
-     auto hu_block = dynamic_cast<HydroSystemUnitBlock *>(i);
+     auto hu_block = dynamic_cast<HydroSystemUnitBlock *>( sub_Block_ucb );
      if( hu_block != nullptr ) {
       auto subsubconf = new BlockConfig();
-      for( auto j: i->get_nested_Blocks() ) {
-       auto sub_pf_block = dynamic_cast<PolyhedralFunctionBlock *>(j);
+      auto num_nested_blocks_hydro = hu_block->get_number_nested_Blocks();
+      for( Block::Index j = 0 ; j < num_nested_blocks_hydro ; ++j ) {
+       auto sub_Block_hydro = hu_block->get_nested_Block( j );
+       auto sub_pf_block =
+        dynamic_cast<PolyhedralFunctionBlock *>( sub_Block_hydro );
        if( sub_pf_block != nullptr ) {
-        subsubconf->f_static_variables_Configuration = new SimpleConfiguration< int >( 1 );
+        subsubconf->f_static_variables_Configuration =
+         new SimpleConfiguration< int >( 1 );
        }
-       subconf->v_sub_BlockConfig.emplace_back( subsubconf );
+       subconf->add_sub_BlockConfig( subsubconf , j );
       }
      }
 
-     b_config->v_sub_BlockConfig.emplace_back( subconf );
+     static_cast<RBlockConfig *>( b_config )->
+      add_sub_BlockConfig( subconf , i );
     }
    }
-   ucb->set_BlockConfig( b_config );
+
+   if( b_config )
+    b_config->apply( ucb );
 
    // Configure solver
    std::cout << "Next in line : configure solver" << std::endl;
    std::cout.flush();
 
-   auto s_config = new BlockSolverConfig;
-   ;
+   BlockSolverConfig * s_config = nullptr;
    std::ifstream scf;
    scf.open( sconf_file, std::ifstream::in );
 
    if( scf ) {
     std::cout << "Using Solver configuration in " << sconf_file << std::endl;
+    std::string config_name;
+    scf >> eatcomments >> config_name;
+    s_config = dynamic_cast<BlockSolverConfig *>
+     ( Configuration::new_Configuration( config_name ) );
+    if( ! s_config ) {
+     std::cerr << "Solver configuration not valid: " << config_name << std::endl;
+     exit( 1 );
+    }
     try {
      scf >> *s_config;
     } catch( ... ) {
@@ -204,30 +229,29 @@ int main( int argc, char ** argv ) {
     }
    } else {
     std::cout << "Solver configuration not provided" << std::endl;
-
-    ComputeConfig comp_conf;
+    s_config = new BlockSolverConfig;
+    auto comp_conf = new ComputeConfig;
     // Default configuration
     if( solver_name == "cplex" ) {
-     s_config->v_SolverNames.emplace_back( "CPXMILPSolver" );
      // std::pair< std::string, std::string > problem_name = { "strProblemName",
      //                                                        "testCPX" };
      // std::pair< std::string, double > accuracy = { "dblAAccSol", 1e-04 };
      // std::pair< std::string, double > timelimit = { "dblMaxTime", 20000 };
      // std::pair< std::string, int > verbslvl = { "intLogVerb", 1 };
 
-     // comp_conf.str_pars.emplace_back( problem_name );
-     // comp_conf.dbl_pars.emplace_back( accuracy );
-     // comp_conf.dbl_pars.emplace_back( timelimit );
+     // comp_conf->str_pars.emplace_back( problem_name );
+     // comp_conf->dbl_pars.emplace_back( accuracy );
+     // comp_conf->dbl_pars.emplace_back( timelimit );
      // if( solvVerbose == true ) {
-     //  comp_conf.int_pars.emplace_back( verbslvl );
+     //  comp_conf->int_pars.emplace_back( verbslvl );
      // }
 
      // if( !lp_file.empty() ) {
      //  std::pair< std::string, std::string > output_file = { "strOutputFile",
      //                                                        lp_file };
-     //  comp_conf.str_pars.emplace_back( output_file );
+     //  comp_conf->str_pars.emplace_back( output_file );
      // }
-     s_config->v_SolverConfigs.emplace_back( &comp_conf );
+     s_config->add_ComputeConfig( "CPXMILPSolver" , comp_conf );
 
     } else if( solver_name == "dp" ) {
      std::cerr << "Sorry, DP Solver is not available yet..." << std::endl;
@@ -238,7 +262,8 @@ int main( int argc, char ** argv ) {
     }
    }
 
-   ucb->set_SolverConfig( s_config );
+   if( s_config )
+    s_config->apply( ucb );
 
    break;
   }
