@@ -1,3 +1,5 @@
+BlockConfig
+0
 *
 *
 SimpleConfiguration<int> 15
@@ -7,4 +9,3 @@ SimpleConfiguration<int> 15
 *
 *
 *
-0

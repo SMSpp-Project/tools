@@ -149,7 +149,7 @@ int main( int argc, char ** argv ) {
     std::ifstream bcf;
     bcf.open( bconf_file, std::ifstream::in );
 
-    if( bcf ) {
+    if( bcf.is_open() ) {
      std::cout << "Using Block configuration in " << bconf_file << std::endl;
      std::string config_name;
      bcf >> eatcomments >> config_name;
@@ -177,7 +177,7 @@ int main( int argc, char ** argv ) {
     std::ifstream scf;
     scf.open( sconf_file, std::ifstream::in );
 
-    if( scf ) {
+    if( scf.is_open() ) {
      std::cout << "Using Solver configuration in " << sconf_file << std::endl;
      std::string config_name;
      scf >> eatcomments >> config_name;
