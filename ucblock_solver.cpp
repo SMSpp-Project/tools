@@ -171,27 +171,28 @@ int main( int argc, char ** argv ) {
     b_config = new RBlockConfig;
     auto num_nested_Blocks_ucb = ucb->get_number_nested_Blocks();
     for( Block::Index i = 0 ; i < num_nested_Blocks_ucb ; ++i ) {
+
      auto sub_Block_ucb = ucb->get_nested_Block( i );
-     auto subconf = new RBlockConfig();
-     auto unit_block = dynamic_cast<UnitBlock *>( sub_Block_ucb );
-     if( unit_block != nullptr ) {
-      subconf->f_static_variables_Configuration =
-       new SimpleConfiguration< int >( 15 );
-     }
+     if( ! dynamic_cast<UnitBlock *>( sub_Block_ucb ) )
+      continue;
+
+     auto subconf = new RBlockConfig;
+     subconf->f_static_variables_Configuration =
+      new SimpleConfiguration< int >( 15 );
 
      auto hu_block = dynamic_cast<HydroSystemUnitBlock *>( sub_Block_ucb );
      if( hu_block != nullptr ) {
-      auto subsubconf = new BlockConfig();
       auto num_nested_blocks_hydro = hu_block->get_number_nested_Blocks();
       for( Block::Index j = 0 ; j < num_nested_blocks_hydro ; ++j ) {
        auto sub_Block_hydro = hu_block->get_nested_Block( j );
        auto sub_pf_block =
         dynamic_cast<PolyhedralFunctionBlock *>( sub_Block_hydro );
        if( sub_pf_block != nullptr ) {
+        auto subsubconf = new BlockConfig();
         subsubconf->f_static_variables_Configuration =
          new SimpleConfiguration< int >( 1 );
+        subconf->add_sub_BlockConfig( subsubconf , j );
        }
-       subconf->add_sub_BlockConfig( subsubconf , j );
       }
      }
 
