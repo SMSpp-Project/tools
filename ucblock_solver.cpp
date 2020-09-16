@@ -126,7 +126,7 @@ int main( int argc, char ** argv ) {
    std::cout << filename
              << " is a problem file, ignoring Block/Solver configurations..."
              << std::endl;
-  // TODO
+   // TODO
    break;
   }
 
@@ -153,14 +153,14 @@ int main( int argc, char ** argv ) {
     std::string config_name;
     bcf >> config_name;
     b_config = dynamic_cast<BlockConfig *>
-     ( Configuration::new_Configuration( config_name ) );
-    if( ! b_config ) {
+    ( Configuration::new_Configuration( config_name ) );
+    if( !b_config ) {
      std::cerr << "Block configuration not valid: " << config_name << std::endl;
      exit( 1 );
     }
     try {
      bcf >> *b_config;
-    } catch( const std::exception& e ) {
+    } catch( const std::exception & e ) {
      std::cerr << "Block configuration not valid: " << e.what() << std::endl;
      exit( 1 );
     }
@@ -170,10 +170,10 @@ int main( int argc, char ** argv ) {
     // Default configuration
     b_config = new RBlockConfig;
     auto num_nested_Blocks_ucb = ucb->get_number_nested_Blocks();
-    for( Block::Index i = 0 ; i < num_nested_Blocks_ucb ; ++i ) {
+    for( Block::Index i = 0; i < num_nested_Blocks_ucb; ++i ) {
 
      auto sub_Block_ucb = ucb->get_nested_Block( i );
-     if( ! dynamic_cast<UnitBlock *>( sub_Block_ucb ) )
+     if( !dynamic_cast<UnitBlock *>( sub_Block_ucb ) )
       continue;
 
      auto subconf = new RBlockConfig;
@@ -183,7 +183,7 @@ int main( int argc, char ** argv ) {
      auto hu_block = dynamic_cast<HydroSystemUnitBlock *>( sub_Block_ucb );
      if( hu_block != nullptr ) {
       auto num_nested_blocks_hydro = hu_block->get_number_nested_Blocks();
-      for( Block::Index j = 0 ; j < num_nested_blocks_hydro ; ++j ) {
+      for( Block::Index j = 0; j < num_nested_blocks_hydro; ++j ) {
        auto sub_Block_hydro = hu_block->get_nested_Block( j );
        auto sub_pf_block =
         dynamic_cast<PolyhedralFunctionBlock *>( sub_Block_hydro );
@@ -191,13 +191,13 @@ int main( int argc, char ** argv ) {
         auto subsubconf = new BlockConfig();
         subsubconf->f_static_variables_Configuration =
          new SimpleConfiguration< int >( 1 );
-        subconf->add_sub_BlockConfig( subsubconf , j );
+        subconf->add_sub_BlockConfig( subsubconf, j );
        }
       }
      }
 
      static_cast<RBlockConfig *>( b_config )->
-      add_sub_BlockConfig( subconf , i );
+      add_sub_BlockConfig( subconf, i );
     }
    }
 
@@ -217,9 +217,10 @@ int main( int argc, char ** argv ) {
     std::string config_name;
     scf >> eatcomments >> config_name;
     s_config = dynamic_cast<BlockSolverConfig *>
-     ( Configuration::new_Configuration( config_name ) );
-    if( ! s_config ) {
-     std::cerr << "Solver configuration not valid: " << config_name << std::endl;
+    ( Configuration::new_Configuration( config_name ) );
+    if( !s_config ) {
+     std::cerr << "Solver configuration not valid: " << config_name
+               << std::endl;
      exit( 1 );
     }
     try {
@@ -252,7 +253,7 @@ int main( int argc, char ** argv ) {
      //                                                        lp_file };
      //  comp_conf->str_pars.emplace_back( output_file );
      // }
-     s_config->add_ComputeConfig( "CPXMILPSolver" , comp_conf );
+     s_config->add_ComputeConfig( "CPXMILPSolver", comp_conf );
 
     } else if( solver_name == "dp" ) {
      std::cerr << "Sorry, DP Solver is not available yet..." << std::endl;
@@ -274,14 +275,16 @@ int main( int argc, char ** argv ) {
    exit( 1 );
  }
 
- std::cout << "Data Loaded -- without foreseeable errors -- attempting to solve" << std::endl;
+ std::cout << "Data Loaded -- without foreseeable errors -- attempting to solve"
+           << std::endl;
  std::cout.flush();
-  
+
  std::cout.setf( std::ios::scientific, std::ios::floatfield );
  std::cout << std::setprecision( 8 );
  auto solver = ucb->get_registered_solvers().front();
 
- dynamic_cast<CPXMILPSolver*>(solver)->write_lp("test.lp");
+ // FIXME: Remove this when Config works properly
+ dynamic_cast<CPXMILPSolver *>(solver)->write_lp( lp_file );
 
  int status = solver->compute();
  solver->get_var_solution();
@@ -299,12 +302,11 @@ int main( int argc, char ** argv ) {
  for( auto i: ucb->get_nested_Blocks() ) {
 
   auto unit_block = dynamic_cast<UnitBlock *>(i);
-
   if( unit_block != nullptr ) {
    std::cout << "----- UnitBlock " << n_unit_blocks++ << std::endl;
 
-   auto obj = dynamic_cast<FRealObjective*>(unit_block->get_objective());
-   if (obj != nullptr) {
+   auto obj = dynamic_cast<FRealObjective *>(unit_block->get_objective());
+   if( obj != nullptr ) {
     auto fun = obj->get_function();
     fun->compute();
     std::cout << "Function value = " << fun->get_value() << std::endl;
@@ -313,8 +315,6 @@ int main( int argc, char ** argv ) {
    auto thermal_unit_block = dynamic_cast<ThermalUnitBlock *>(unit_block);
    if( thermal_unit_block != nullptr ) {
 
-   // auto Index= unit_block->get_nested_Block_index();
-
     auto ramp_up = thermal_unit_block->get_delta_ramp_up();
     auto ramp_down = thermal_unit_block->get_delta_ramp_down();
     auto init_up_down = thermal_unit_block->get_init_up_down_time();
@@ -322,33 +322,33 @@ int main( int argc, char ** argv ) {
     auto min_power = thermal_unit_block->get_min_power();
     auto max_power = thermal_unit_block->get_max_power();
 
-
-    if( ! ramp_up.empty() && ! ramp_down.empty() ) {
+    if( !ramp_up.empty() && !ramp_down.empty() ) {
 
      if( init_up_down > 0 ) {
-      for( UnitBlock:: Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-       if( initial_power + ramp_up[0] < min_power[0] ||
-               initial_power - ramp_down[0] > max_power[0] ) {
+      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+       if( initial_power + ramp_up[ 0 ] < min_power[ 0 ] ||
+           initial_power - ramp_down[ 0 ] > max_power[ 0 ] ) {
         std::cout << "----- ThermalUnitBlock " << n_unit_blocks++ << std::endl;
         throw ( std::logic_error
-        (         "::Ramp Constraints: when f_InitUpDownTime > 0, it must be "
-                  "that f_initial_power + v_DeltaRampUp[ 0 ] >= v_MinPower[ 0 ]"
-                  "f_initial_power - v_DeltaRampDown[ 0 ] <= v_MaxPower[ 0 ]" ));
+         ( "::Ramp Constraints: when f_InitUpDownTime > 0, it must be "
+           "that f_initial_power + v_DeltaRampUp[ 0 ] >= v_MinPower[ 0 ]"
+           "f_initial_power - v_DeltaRampDown[ 0 ] <= v_MaxPower[ 0 ]" ) );
        }
-       }
+      }
      }
     }
-    auto commitment = thermal_unit_block->get_commitment(0);
+    auto commitment = thermal_unit_block->get_commitment( 0 );
     std::cout << "Commitment     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 2 ) << ( unsigned int ) round( commitment[t].get_value());
+     std::cout << std::setw( 2 )
+               << ( unsigned int ) round( commitment[ t ].get_value() );
     }
     std::cout << " ]" << std::endl;
 
     auto startup = thermal_unit_block->get_start_up();
     std::cout << "Start up     = [";
     for( auto & t : startup ) {
-     std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value());
+     std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value() );
     }
     std::cout << " ]" << std::endl;
 
@@ -356,14 +356,14 @@ int main( int argc, char ** argv ) {
     std::cout << "Shut down    = [";
     for( auto & t : shutdown ) {
      std::cout << std::setw( 2 )
-               << ( unsigned int ) round( t.get_value());
+               << ( unsigned int ) round( t.get_value() );
     }
     std::cout << " ]" << std::endl;
 
-    auto active_power = thermal_unit_block->get_active_power(0);
+    auto active_power = thermal_unit_block->get_active_power( 0 );
     std::cout << "active_power     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) <<   active_power[t].get_value();
+     std::cout << std::setw( 20 ) << active_power[ t ].get_value();
     }
     std::cout << " ]" << std::endl;
    }
@@ -371,167 +371,158 @@ int main( int argc, char ** argv ) {
    auto battery_unit_block = dynamic_cast<BatteryUnitBlock *>(unit_block);
    if( battery_unit_block != nullptr ) {
 
-
-    auto active_power = battery_unit_block->get_active_power(0);
+    auto active_power = battery_unit_block->get_active_power( 0 );
     std::cout << "active_power  = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) <<  active_power[t].get_value();
+     std::cout << std::setw( 20 ) << active_power[ t ].get_value();
     }
     std::cout << " ]" << std::endl;
-
 
     auto PrimarySR = battery_unit_block->get_primary_spinning_reserve( 0 );
-
     std::cout << "PrimarySR     = [";
-
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-
-     std::cout << std::setw( 20 ) <<  PrimarySR[t].get_value();
-
+     std::cout << std::setw( 20 ) << PrimarySR[ t ].get_value();
     }
-
     std::cout << " ]" << std::endl;
 
-
     auto SecondarySR = battery_unit_block->get_secondary_spinning_reserve( 0 );
-
     std::cout << "SecondarySR     = [";
-
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-
-     std::cout << std::setw( 20 ) <<  SecondarySR[t].get_value();
-
+     std::cout << std::setw( 20 ) << SecondarySR[ t ].get_value();
     }
-
     std::cout << " ]" << std::endl;
 
     auto Intake_level = battery_unit_block->get_intake_level();
     std::cout << "IntakeLevel[:Storage]  = [";
     for( auto & t : Intake_level ) {
-     std::cout << std::setw( 20 ) << ( unsigned int ) round( t.get_value());
+     std::cout << std::setw( 20 ) << ( unsigned int ) round( t.get_value() );
     }
     std::cout << " ]" << std::endl;
-
 
     auto Outtake_level = battery_unit_block->get_outtake_level();
     std::cout << "OuttakeLevel[:Generation] = [";
     for( auto & t : Outtake_level ) {
-     std::cout << std::setw( 20 ) << ( unsigned int ) round( t.get_value());
+     std::cout << std::setw( 20 ) << ( unsigned int ) round( t.get_value() );
     }
     std::cout << " ]" << std::endl;
 
     auto storage_level = battery_unit_block->get_storage_level();
     std::cout << "StorageLevel = [";
     for( auto & t : storage_level ) {
-     std::cout << std::setw( 20 ) <<  t.get_value();
+     std::cout << std::setw( 20 ) << t.get_value();
     }
     std::cout << " ]" << std::endl;
 
     auto Binary_var = battery_unit_block->get_battery_binary();
     std::cout << "BinaryVar    = [";
     for( auto & t : Binary_var ) {
-     std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value());
+     std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value() );
     }
     std::cout << " ]" << std::endl;
    }
 
-
-   auto hydro_unit_block = dynamic_cast<HydroUnitBlock *>(unit_block);
-   if( hydro_unit_block != nullptr ) {
-    for( UnitBlock::Index g = 0; g < unit_block->get_number_generators(); ++g ) {
-     auto active_power = hydro_unit_block->get_active_power( g );
+   auto hydro_unitblock = dynamic_cast<HydroUnitBlock *>(unit_block);
+   if( hydro_unitblock != nullptr ) {
+    for( UnitBlock::Index g = 0;
+         g < unit_block->get_number_generators(); ++g ) {
+     auto active_power = hydro_unitblock->get_active_power( g );
      std::cout << "active_power [" + std::to_string( g ) + "]" " = [";
      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-      std::cout << std::setw( 20 ) << active_power[t].get_value();
+      std::cout << std::setw( 20 ) << active_power[ t ].get_value();
      }
      std::cout << " ]" << std::endl;
     }
 
-
-    for( UnitBlock::Index l = 0; l < hydro_unit_block->get_number_generators(); ++l ) {
-     auto flow_rate = hydro_unit_block->get_flow_rate( l );
+    for( UnitBlock::Index l = 0;
+         l < hydro_unitblock->get_number_generators(); ++l ) {
+     auto flow_rate = hydro_unitblock->get_flow_rate( l );
      std::cout << "FlowRate [" + std::to_string( l ) + "]" " = [";
      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-      std::cout << std::setw( 25 ) << std::setprecision( 14 ) << flow_rate[t].get_value();
+      std::cout << std::setw( 25 ) << std::setprecision( 14 )
+                << flow_rate[ t ].get_value();
      }
      std::cout << " ]" << std::endl;
     }
 
-    for( UnitBlock::Index n = 0; n < hydro_unit_block->get_number_reservoirs(); ++n ) {
-     auto volumetric = hydro_unit_block->get_volumetric( n );
+    for( UnitBlock::Index n = 0;
+         n < hydro_unitblock->get_number_reservoirs(); ++n ) {
+     auto volumetric = hydro_unitblock->get_volumetric( n );
      std::cout << "Volumetric [" + std::to_string( n ) + "]" " = [";
      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-      std::cout << std::setw( 25 ) << std::setprecision( 14 ) << volumetric[t].get_value();
+      std::cout << std::setw( 25 ) << std::setprecision( 14 )
+                << volumetric[ t ].get_value();
      }
      std::cout << " ]" << std::endl;
     }
     std::cout << std::setprecision( 8 );
-
    }
 
    // If HydroSystemBlocks are there:
-   auto hydro_sytem_block = dynamic_cast<HydroSystemUnitBlock *>(unit_block);
-   if ( hydro_sytem_block != nullptr ) {
-     for( UnitBlock::Index hIdx = 0; hIdx < hydro_sytem_block->get_number_hydro_units(); ++hIdx ) {
-       std::cout << "----- SubHydroBlock " << hIdx << std::endl;
-       // for each hydro block inside, print the solution
-       auto hydro_unit_block = hydro_sytem_block->get_hydro_unit_block( hIdx ) ;  //dynamic_cast<HydroUnitBlock *>(unit_block);
-       if (hydro_unit_block != nullptr) {
-         for (UnitBlock::Index g = 0; g < hydro_unit_block->get_number_generators(); ++g) {
-           auto active_power = hydro_unit_block->get_active_power(g);
-          std::cout << "active_power [" + std::to_string( g ) + "]" " = [";
-           for (UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t) {
-             std::cout << std::setw(20) << active_power[t].get_value();
-           }
-           std::cout << " ]" << std::endl;
-         }
-
-         for (UnitBlock::Index l = 0; l < hydro_unit_block->get_number_generators(); ++l) {
-           auto flow_rate = hydro_unit_block->get_flow_rate(l);
-          std::cout << "FlowRate [" + std::to_string( l ) + "]" " = [";
-           for (UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t) {
-             std::cout << std::setw(25) << std::setprecision(14) << flow_rate[t].get_value();
-           }
-           std::cout << " ]" << std::endl;
-         }
-
-         for (UnitBlock::Index n = 0; n < hydro_unit_block->get_number_reservoirs(); ++n)  {
-           auto volumetric = hydro_unit_block->get_volumetric(n);
-          std::cout << "Volumetric [" + std::to_string( n ) + "]" " = [";
-           for (UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t) {
-             std::cout << std::setw(25) << std::setprecision(14) << volumetric[t].get_value();
-           }
-           std::cout << " ]" << std::endl;
-         }
-         std::cout << std::setprecision(8);
+   auto hydrosystem_unitblock = dynamic_cast<HydroSystemUnitBlock *>(unit_block);
+   if( hydrosystem_unitblock != nullptr ) {
+    for( UnitBlock::Index hIdx = 0;
+         hIdx < hydrosystem_unitblock->get_number_hydro_units(); ++hIdx ) {
+     std::cout << "----- SubHydroBlock " << hIdx << std::endl;
+     // for each hydro block inside, print the solution
+     auto sub_hydro_unitblock = hydrosystem_unitblock
+      ->get_hydro_unit_block( hIdx );  //dynamic_cast<HydroUnitBlock *>(unit_block);
+     if( sub_hydro_unitblock != nullptr ) {
+      for( UnitBlock::Index g = 0;
+           g < sub_hydro_unitblock->get_number_generators(); ++g ) {
+       auto active_power = sub_hydro_unitblock->get_active_power( g );
+       std::cout << "active_power [" + std::to_string( g ) + "]" " = [";
+       for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+        std::cout << std::setw( 20 ) << active_power[ t ].get_value();
        }
+       std::cout << " ]" << std::endl;
+      }
+
+      for( UnitBlock::Index l = 0;
+           l < sub_hydro_unitblock->get_number_generators(); ++l ) {
+       auto flow_rate = sub_hydro_unitblock->get_flow_rate( l );
+       std::cout << "FlowRate [" + std::to_string( l ) + "]" " = [";
+       for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+        std::cout << std::setw( 25 ) << std::setprecision( 14 )
+                  << flow_rate[ t ].get_value();
+       }
+       std::cout << " ]" << std::endl;
+      }
+
+      for( UnitBlock::Index n = 0;
+           n < sub_hydro_unitblock->get_number_reservoirs(); ++n ) {
+       auto volumetric = sub_hydro_unitblock->get_volumetric( n );
+       std::cout << "Volumetric [" + std::to_string( n ) + "]" " = [";
+       for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+        std::cout << std::setw( 25 ) << std::setprecision( 14 )
+                  << volumetric[ t ].get_value();
+       }
+       std::cout << " ]" << std::endl;
+      }
+      std::cout << std::setprecision( 8 );
      }
+    }
    }
 
    auto intermittent_unit_block = dynamic_cast<IntermittentUnitBlock *>(unit_block);
    if( intermittent_unit_block != nullptr ) {
 
-    auto active_power = intermittent_unit_block->get_active_power(0);
+    auto active_power = intermittent_unit_block->get_active_power( 0 );
     std::cout << "active_power     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) <<   active_power[t].get_value();
+     std::cout << std::setw( 20 ) << active_power[ t ].get_value();
     }
     std::cout << " ]" << std::endl;
-
    }
-
   }
-
 
   auto network_block = dynamic_cast<NetworkBlock *>(i);
   if( network_block != nullptr ) {
    std::cout << "----- NetworkBlock " << n_netw_blocks++ << std::endl;
 
-
    auto node_inj = network_block->get_node_injection();
    std::cout << "Node injection     = [";
-   for( int n = 0; n < node_inj.size(); ++n ) {
-    std::cout << std::setw( 20 ) << node_inj[n].get_value();
+   for(auto & n : node_inj) {
+    std::cout << std::setw( 20 ) << n.get_value();
    }
    std::cout << " ]" << std::endl;
 
@@ -539,18 +530,13 @@ int main( int argc, char ** argv ) {
 
    if( dc_network_block != nullptr ) {
     auto power_flow = dc_network_block->get_power_flow();
-
     std::cout << "power_flow     = [";
-   for( int n = 0; n < power_flow.size(); ++n ) {
-    std::cout << std::setw( 20 ) << power_flow[n].get_value();
+    for(auto & n : power_flow) {
+     std::cout << std::setw( 20 ) << n.get_value();
+    }
+    std::cout << " ]" << std::endl;
    }
-   std::cout << " ]" << std::endl;
   }
-  }
-
-
  }
-
-
  return 0;
 }
