@@ -30,7 +30,7 @@
  *
  * \version 0.1
  *
- * \date 16 - 09 - 2020
+ * \date 20 - 09 - 2020
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -47,6 +47,7 @@
 #include <BendersBlock.h>
 #include <BlockSolverConfig.h>
 #include <CPXMILPSolver.h>
+#include <HydroSystemUnitBlock.h>
 #include <RBlockConfig.h>
 #include <SDDPBlock.h>
 #include <SDDPSolver.h>
@@ -196,6 +197,67 @@ void show_status( SDDPGreedySolver * solver ) {
 
 /*--------------------------------------------------------------------------*/
 
+void output_solution( SDDPBlock * sddp_block ) {
+
+ auto outer_time_horizon = sddp_block->get_number_nested_Blocks();
+
+ // Outer time horizon
+ std::cout << outer_time_horizon << std::endl;
+
+ for( Block::Index outer_time = 0 ;
+      outer_time < outer_time_horizon ; ++outer_time ) {
+
+  auto sub_block = sddp_block->get_nested_Block( outer_time );
+
+  auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
+  auto benders_block = static_cast<BendersBlock *>
+   ( stochastic_block-> get_nested_Blocks().front() );
+  auto objective = static_cast<FRealObjective *>
+   ( benders_block->get_objective() );
+  auto benders_function = static_cast<BendersBFunction *>
+   ( objective->get_function() );
+  auto uc_block = benders_function->get_inner_block();
+
+  auto hydro_system = dynamic_cast<HydroSystemUnitBlock *>
+   ( uc_block->get_nested_Block( 0 ) );
+
+  assert( hydro_system );
+
+  auto n = hydro_system->get_number_nested_Blocks();
+
+  // inner time horizon
+  std::cout << hydro_system->get_time_horizon() << std::endl;
+
+  // count the number of HydroUnitBlock
+  Block::Index num_hydros = 0;
+  for( decltype( n ) i = 0 ; i < n ; ++i )
+   if( dynamic_cast<HydroUnitBlock *>( hydro_system->get_nested_Block( i ) ) )
+    ++num_hydros;
+
+  // number of HydroUnitBlock
+  std::cout << num_hydros << std::endl;
+
+  for( decltype( n ) i = 0 ; i < n ; ++i ) {
+   if( const auto hydro =
+       dynamic_cast<HydroUnitBlock *>( hydro_system->get_nested_Block( i ) ) ) {
+
+    // number of reservoirs and time horizon
+    std::cout << hydro->get_number_reservoirs() << std::endl;
+
+    for( Block::Index r = 0 ; r < hydro->get_number_reservoirs() ; ++r )
+     for( Block::Index t = 0 ; t < hydro->get_time_horizon() ; ++t ) {
+      if( t > 0 )
+       std::cout << ", ";
+      std::cout << hydro->get_volume( r , t )->get_value();
+     }
+    std::cout << std::endl;
+   }
+  }
+ }
+}
+
+/*--------------------------------------------------------------------------*/
+
 void solve( SDDPBlock * sddp_block ) {
 
  auto solver = dynamic_cast< SDDPGreedySolver * >
@@ -217,6 +279,10 @@ void solve( SDDPBlock * sddp_block ) {
  std::cout << "Status: " << status << std::endl;
  std::cout << "Lower bound: " << lb << std::endl;
  std::cout << "Upper bound: " << ub << std::endl;
+
+ if( solver->has_var_solution() ) {
+  output_solution( sddp_block );
+ }
 }
 
 /*--------------------------------------------------------------------------*/
