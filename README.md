@@ -75,6 +75,11 @@ The input netCDF file can be a problem file or a block file:
 - for a block file, if a Block configuration or a Solver configuration is nor
   provided, a default configuration will be used.
 
+The -i option specifies the index of the scenario for which the problem must
+be solved. The index must be a number between 0 and n-1, where n is the number
+of scenarios in the SDDPBlock. If this index is not provided, then the problem
+is solved for the first scenario.
+
 ### Thermal Unit solver
 
 ```sh
