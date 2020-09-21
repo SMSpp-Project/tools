@@ -6,6 +6,7 @@ At the moment we provide:
 - a generic Block Solver with some example input files
 - a single Thermal Unit solver
 - a UCBlock solver
+- an SDDPBlock greedy (simulation) solver
 
 ## Getting started
 
@@ -14,8 +15,9 @@ These instructions will let you build SMS++ Tools on your system.
 ### Requirements
 
 - SMS++
-- UCBlock
 - MILPSolver
+- SDDPBlock
+- UCBlock
 
 ### Build and install
 
@@ -53,6 +55,25 @@ The input netCDF file can be a problem file or a block file:
 - a block file needs a Block configuration and a Solver configuration to be solved.
 
 See the [`examples`](examples) directory for sample input files.
+
+### SDDPBlock Greedy Solver
+
+```sh
+Usage: sddp_greedy_solver [options] <nc4-file>
+
+Options:
+  -i <index>, --scenario <index> The index of the scenario.
+  -b <file>, --blockcfg <file>   Block configuration.
+  -s <file>, --solvercfg <file>  Solver configuration.
+  -h, --help                     Print this help.
+```
+
+The input netCDF file can be a problem file or a block file:
+- a problem file already contains a Block configuration and a Solver
+  configuration; any Block or Solver configuration provided by command line
+  will be ignored;
+- for a block file, if a Block configuration or a Solver configuration is nor
+  provided, a default configuration will be used.
 
 ### Thermal Unit solver
 
@@ -99,6 +120,11 @@ At the moment, DP solver support is limited.
   Università di Pisa
 
 - **Niccolò Iardella**  
+  *Operations Research Group*  
+  Dipartimento di Informatica  
+  Università di Pisa
+
+- **Rafael Durbano Lobato**  
   *Operations Research Group*  
   Dipartimento di Informatica  
   Università di Pisa

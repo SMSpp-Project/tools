@@ -25,6 +25,20 @@ endif ()
 # ----- Requirements -------------------------------------------------------- #
 find_package(UCBlock)
 find_package(MILPSolver)
+find_package(SDDPBlock)
+
+if (SDDPBlock_FOUND AND MILPSolver_FOUND)
+
+    # ----- sddp_greedy_solver ---------------------------------------------------- #
+    add_executable(sddp_greedy_solver sddp_greedy_solver.cpp)
+    target_compile_features(sddp_greedy_solver PUBLIC cxx_std_17)
+
+    target_link_libraries(sddp_greedy_solver PRIVATE
+                          SMS++::UCBlock
+                          SMS++::SDDPBlock
+                          SMS++::StochasticBlock
+                          SMS++::MILPSolver)
+endif ()
 
 if (UCBlock_FOUND AND MILPSolver_FOUND)
     # ----- block_solver ---------------------------------------------------- #
