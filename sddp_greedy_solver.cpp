@@ -50,7 +50,6 @@
 #include <HydroSystemUnitBlock.h>
 #include <RBlockConfig.h>
 #include <SDDPBlock.h>
-#include <SDDPSolver.h>
 #include <StochasticBlock.h>
 #include <SDDPGreedySolver.h>
 
