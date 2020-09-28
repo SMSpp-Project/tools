@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.01] - 2020-09-28
+
+### Fixed
+
+- A bug in ucblock_solver that prevented configuration loading.
+
 ## [0.3.0] - 2020-09-16
 
 ### Added
@@ -29,7 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First test release.
 
-[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.3.0...develop
+[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.3.1...develop
+[0.3.0]: https://gitlab.com/smspp/tools/-/compare/0.3.0...0.3.1
 [0.3.0]: https://gitlab.com/smspp/tools/-/compare/0.2.0...0.3.0
 [0.2.0]: https://gitlab.com/smspp/tools/-/compare/0.1.0...0.2.0
 [0.1.0]: https://gitlab.com/smspp/tools/-/tags/0.1.0

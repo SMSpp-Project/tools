@@ -47,8 +47,8 @@ void process_args( int argc, char ** argv ) {
 
  const char * const short_opts = "B:S:s:w:vh";
  const option long_opts[] = {
-  { "blockcfg",  required_argument, nullptr, 'b' },
-  { "solvercfg", required_argument, nullptr, 's' },
+  { "blockcfg",  required_argument, nullptr, 'B' },
+  { "solvercfg", required_argument, nullptr, 'S' },
   { "solver",    required_argument, nullptr, 's' },
   { "writelp",   required_argument, nullptr, 'w' },
   { "verbose",   no_argument,       nullptr, 'v' },
@@ -283,8 +283,10 @@ int main( int argc, char ** argv ) {
  std::cout << std::setprecision( 8 );
  auto solver = ucb->get_registered_solvers().front();
 
- // FIXME: Remove this when Config works properly
- dynamic_cast<CPXMILPSolver *>(solver)->write_lp( lp_file );
+ // FIXME: Redundant with config
+ if( !lp_file.empty() ) {
+  dynamic_cast<CPXMILPSolver *>(solver)->write_lp( lp_file );
+ }
 
  int status = solver->compute();
  solver->get_var_solution();
