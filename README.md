@@ -73,13 +73,15 @@ At the moment, DP solver support is limited.
 ### Unit Commitment Block solver
 
 ```sh
-Usage: uc_solver [options] <nc4-file>
+Usage: ucblock_solver [options] <nc4-file>
 
 Options:
+  -B <file>, --blockcfg <file>    Block configuration.
+  -S <file>, --solvercfg <file>   Solver configuration.
   -s <solver>, --solver <solver>  Choose solver.
                                   Available solvers are: cplex, dp.
   -w <file>, --writelp <file>     Write LP problem on file.
-  -n <file>, --nc4problem <file>  Write nc4 problem on file.
+  -v, --verbose                   Make the solver verbose.
   -h, --help                      Print this help.
 ```
 
