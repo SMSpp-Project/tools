@@ -122,19 +122,9 @@ int main( int argc, char ** argv ) {
  auto slv_conf = new BlockSolverConfig();
 
  if( solver_name == "cplex" ) {
-  // TODO
-  /*
-  slv_conf->v_SolverNames.emplace_back( "CPXMILPSolver" );
-  slv_conf->v_SolverConfigs.emplace_back( new ComputeConfig() );
-  */
-
+  slv_conf->add_ComputeConfig( "CPXMILPSolver" );
  } else if( solver_name == "dp" ) {
-  // TODO
-  /*
-  slv_conf->v_SolverNames.emplace_back( "ThermalUnitDPSolver" );
-  slv_conf->v_SolverConfigs.emplace_back( new ComputeConfig() );
-  */
-
+  slv_conf->add_ComputeConfig( "ThermalUnitDPSolver" );
  } else {
   std::cerr << "Available solvers are: cplex, dp" << std::endl;
   exit( 1 );
