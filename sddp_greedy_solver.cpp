@@ -272,10 +272,9 @@ void solve( SDDPBlock * sddp_block ) {
 
  show_status( solver );
 
- auto ub = solver->get_ub();
  auto lb = solver->get_lb();
+ auto ub = solver->get_ub();
 
- std::cout << "Status: " << status << std::endl;
  std::cout << "Lower bound: " << lb << std::endl;
  std::cout << "Upper bound: " << ub << std::endl;
 
@@ -331,8 +330,7 @@ void process_prob_file( const netCDF::NcFile & file ) {
   auto block_group = problem_group.getGroup( "Block" );
   auto sddp_block = dynamic_cast<SDDPBlock *>( Block::new_Block( block_group ) );
   if( ! sddp_block )
-   throw( std::logic_error( "Invalid Block type or Block group "
-                            "was not provided." ) );
+   throw( std::logic_error( "Error while deserializing the SDDPBlock." ) );
 
   // Configure block
   auto block_config_group = problem_group.getGroup( "BlockConfig" );
@@ -511,8 +509,7 @@ void process_block_file( const netCDF::NcFile & file ) {
    ( Block::new_Block( block_description.second ) );
 
   if( ! sddp_block )
-   throw( std::logic_error
-          ( "Invalid Block type (or Block group was not provided)." ) );
+   throw( std::logic_error( "Error while deserializing the SDDPBlock." ) );
 
   // Configure the SDDPBlock
 
