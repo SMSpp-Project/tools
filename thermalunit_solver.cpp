@@ -122,7 +122,9 @@ int main( int argc, char ** argv ) {
  auto slv_conf = new BlockSolverConfig();
 
  if( solver_name == "cplex" ) {
-  slv_conf->add_ComputeConfig( "CPXMILPSolver" );
+  auto cplex_config = new ComputeConfig;
+  cplex_config->set_par( "dblRAccSol" , 1.0e-8 );
+  slv_conf->add_ComputeConfig( "CPXMILPSolver" , cplex_config );
  } else if( solver_name == "dp" ) {
   slv_conf->add_ComputeConfig( "ThermalUnitDPSolver" );
  } else {
