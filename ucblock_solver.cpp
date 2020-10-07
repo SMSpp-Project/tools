@@ -317,6 +317,7 @@ int main( int argc, char ** argv ) {
    auto thermal_unit_block = dynamic_cast<ThermalUnitBlock *>(unit_block);
    if( thermal_unit_block != nullptr ) {
 
+/*
     auto ramp_up = thermal_unit_block->get_delta_ramp_up();
     auto ramp_down = thermal_unit_block->get_delta_ramp_down();
     auto init_up_down = thermal_unit_block->get_init_up_down_time();
@@ -338,7 +339,7 @@ int main( int argc, char ** argv ) {
        }
       }
      }
-    }
+    }*/
     auto commitment = thermal_unit_block->get_commitment( 0 );
     std::cout << "Commitment     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
