@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.01] - 2020-09-28
+### Changed
+
+- A redundant option removed from ucblock_solver.
+
+## [0.3.1] - 2020-09-28
 
 ### Fixed
 

@@ -19,7 +19,6 @@ using namespace SMSpp_di_unipi_it;
 
 std::string filename{};
 std::string lp_file{};
-std::string solver_name{};
 std::string bconf_file{};
 std::string sconf_file{};
 bool solvVerbose = false;
@@ -31,8 +30,6 @@ void print_help() {
            << "Options:" << std::endl
            << "  -B <file>, --blockcfg <file>    Block configuration." << std::endl
            << "  -S <file>, --solvercfg <file>   Solver configuration." << std::endl
-           << "  -s <solver>, --solver <solver>  Choose solver." << std::endl
-           << "                                  Available solvers are: cplex, dp." << std::endl
            << "  -w <file>, --writelp <file>     Write LP problem on file." << std::endl
            << "  -v, --verbose                   Make the solver verbose. " << std::endl
            << "  -h, --help                      Print this help." << std::endl;
@@ -45,11 +42,10 @@ void process_args( int argc, char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:S:s:w:vh";
+ const char * const short_opts = "B:S:w:vh";
  const option long_opts[] = {
   { "blockcfg",  required_argument, nullptr, 'B' },
   { "solvercfg", required_argument, nullptr, 'S' },
-  { "solver",    required_argument, nullptr, 's' },
   { "writelp",   required_argument, nullptr, 'w' },
   { "verbose",   no_argument,       nullptr, 'v' },
   { "help",      no_argument,       nullptr, 'h' },
@@ -69,9 +65,6 @@ void process_args( int argc, char ** argv ) {
     break;
    case 'S':
     sconf_file = std::string( optarg );
-    break;
-   case 's':
-    solver_name = std::string( optarg );
     break;
    case 'w':
     lp_file = std::string( optarg );
@@ -100,7 +93,6 @@ void process_args( int argc, char ** argv ) {
 
 int main( int argc, char ** argv ) {
 
- solver_name = "cplex";
  process_args( argc, argv );
 
  netCDF::NcFile f;
@@ -231,37 +223,22 @@ int main( int argc, char ** argv ) {
     }
    } else {
     std::cout << "Solver configuration not provided" << std::endl;
+
+    // Default configuration
     s_config = new BlockSolverConfig;
     auto comp_conf = new ComputeConfig;
-    // Default configuration
-    if( solver_name == "cplex" ) {
-     // std::pair< std::string, std::string > problem_name = { "strProblemName",
-     //                                                        "testCPX" };
-     // std::pair< std::string, double > accuracy = { "dblAAccSol", 1e-04 };
-     // std::pair< std::string, double > timelimit = { "dblMaxTime", 20000 };
-     // std::pair< std::string, int > verbslvl = { "intLogVerb", 1 };
 
-     // comp_conf->str_pars.emplace_back( problem_name );
-     // comp_conf->dbl_pars.emplace_back( accuracy );
-     // comp_conf->dbl_pars.emplace_back( timelimit );
-     // if( solvVerbose == true ) {
-     //  comp_conf->int_pars.emplace_back( verbslvl );
-     // }
-
-     // if( !lp_file.empty() ) {
-     //  std::pair< std::string, std::string > output_file = { "strOutputFile",
-     //                                                        lp_file };
-     //  comp_conf->str_pars.emplace_back( output_file );
-     // }
-     s_config->add_ComputeConfig( "CPXMILPSolver", comp_conf );
-
-    } else if( solver_name == "dp" ) {
-     std::cerr << "Sorry, DP Solver is not available yet..." << std::endl;
-     exit( 0 );
-    } else {
-     std::cerr << "Available solvers are: cplex, dp" << std::endl;
-     exit( 1 );
+    if( solvVerbose ) {
+     std::pair< std::string, int > verbslvl = { "intLogVerb", 1 };
+     comp_conf->int_pars.emplace_back( verbslvl );
     }
+    if( !lp_file.empty() ) {
+     std::pair< std::string, std::string > output_file = { "strOutputFile",
+                                                           lp_file };
+     comp_conf->str_pars.emplace_back( output_file );
+    }
+
+    s_config->add_ComputeConfig( "CPXMILPSolver", comp_conf );
    }
 
    if( s_config )
@@ -282,11 +259,6 @@ int main( int argc, char ** argv ) {
  std::cout.setf( std::ios::scientific, std::ios::floatfield );
  std::cout << std::setprecision( 8 );
  auto solver = ucb->get_registered_solvers().front();
-
- // FIXME: Redundant with config
- if( !lp_file.empty() ) {
-  dynamic_cast<CPXMILPSolver *>(solver)->write_lp( lp_file );
- }
 
  int status = solver->compute();
  solver->get_var_solution();
