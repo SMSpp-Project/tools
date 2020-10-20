@@ -13,9 +13,8 @@ CPXMILPSolver
 ComputeConfig  # Type of the object
 0  # Not differential
 
-2  # Number of integer parameters
+1  # Number of integer parameters
 intLogVerb 1
-intMaxSol 10
 
 2  # Number of double parameters
 dblAAccSol 1e-04
