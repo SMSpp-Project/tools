@@ -341,6 +341,20 @@ int main( int argc, char ** argv ) {
      std::cout << std::setw( 20 ) << active_power[ t ].get_value();
     }
     std::cout << " ]" << std::endl;
+
+    auto primary_reserve = thermal_unit_block->get_primary_spinning_reserve( 0 );
+    std::cout << "primary_reserve     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 20 ) << primary_reserve[ t ].get_value();
+    }
+    std::cout << " ]" << std::endl;
+
+    auto secondary_reserve = thermal_unit_block->get_secondary_spinning_reserve( 0 );
+    std::cout << "secondary_reserve     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 20 ) << secondary_reserve[ t ].get_value();
+    }
+    std::cout << " ]" << std::endl;
    }
 
    auto battery_unit_block = dynamic_cast<BatteryUnitBlock *>(unit_block);
@@ -408,6 +422,26 @@ int main( int argc, char ** argv ) {
      std::cout << " ]" << std::endl;
     }
 
+    for( UnitBlock::Index g = 0;
+         g < unit_block->get_number_generators(); ++g ) {
+     auto primary_reserve = hydro_unitblock->get_primary_spinning_reserve( g );
+     std::cout << "primary_reserve [" + std::to_string( g ) + "]" " = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 20 ) << primary_reserve[ t ].get_value();
+     }
+     std::cout << " ]" << std::endl;
+    }
+
+    for( UnitBlock::Index g = 0;
+         g < unit_block->get_number_generators(); ++g ) {
+     auto secondary_reserve = hydro_unitblock->get_secondary_spinning_reserve( g );
+     std::cout << "secondary_reserve [" + std::to_string( g ) + "]" " = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 20 ) << secondary_reserve[ t ].get_value();
+     }
+     std::cout << " ]" << std::endl;
+    }
+
     for( UnitBlock::Index l = 0;
          l < hydro_unitblock->get_number_generators(); ++l ) {
      auto flow_rate = hydro_unitblock->get_flow_rate( l );
@@ -452,6 +486,26 @@ int main( int argc, char ** argv ) {
        std::cout << " ]" << std::endl;
       }
 
+
+      for( UnitBlock::Index g = 0;
+           g < sub_hydro_unitblock->get_number_generators(); ++g ) {
+       auto primary_reserve = sub_hydro_unitblock->get_primary_spinning_reserve( g );
+       std::cout << "primary_reserve [" + std::to_string( g ) + "]" " = [";
+       for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+        std::cout << std::setw( 20 ) << primary_reserve[ t ].get_value();
+       }
+       std::cout << " ]" << std::endl;
+      }
+
+      for( UnitBlock::Index g = 0;
+           g < sub_hydro_unitblock->get_number_generators(); ++g ) {
+       auto secondary_reserve = sub_hydro_unitblock->get_secondary_spinning_reserve( g );
+       std::cout << "secondary_reserve [" + std::to_string( g ) + "]" " = [";
+       for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+        std::cout << std::setw( 20 ) << secondary_reserve[ t ].get_value();
+       }
+       std::cout << " ]" << std::endl;
+      }
       for( UnitBlock::Index l = 0;
            l < sub_hydro_unitblock->get_number_generators(); ++l ) {
        auto flow_rate = sub_hydro_unitblock->get_flow_rate( l );
