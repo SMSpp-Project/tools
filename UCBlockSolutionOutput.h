@@ -4,11 +4,132 @@
 /** @file
  *
  * The UCBlockSolutionOutput is a convenient class to export the solution of a
- * UCBlock in the form of a CSV file.
+ * UCBlock in the form of CSV files. The exported solution contains the values
+ * of the variables of the UnitBlock and the NetworkBlock, as well as, the
+ * dual values of some constraints of the UCBlock and the NetworkBlock. To
+ * identify the data associated with a Block, we use the name of the Block. If
+ * the string returned by the name() method of the Block is not empty, it is
+ * used as the name of the Block. Otherwise, the class name of the Block
+ * (returned by the classname() method) is used. The solution is output in
+ * multiple files, each one containing one type of data. The files containing
+ * the active power, primary spinning reserve, and secondary spinning reserve
+ * have the following format:
+ *
+ *   Timestep , Name_0     , Name_1     , ... , Name_k
+ *   0        , v_0_0      , v_0_1      , ... , v_0_k
+ *   1        , v_1_0      , v_1_1      , ... , v_1_k
+ *   ...
+ *   T-1      , v_{T-1}_0  , v_{T-1}_1  , ... , v_{T-1}_k
+ *
+ * where
+ *
+ * - T is the time horizon;
+ *
+ * - Name_j is the name of a generator. If the Block has a single generator,
+ *   the name of the generator is the name of the Block. If the Block has
+ *   multiple generators, the string "_i" is appended to the name of the Block
+ *   to indicate the data associated with its i-th generator;
+ *
+ * - val_t_j is the value (active power, primary spinning reserve, or
+ *   secondary spinning reserve) at time t for the generator whose name is
+ *   Name_j.
+ *
+ * These files contain the data of each UnitBlock (that is not a
+ * HydroSystemUnitBlock) of the UCBlock (including every HydroUnitBlock of all
+ * HydroSystemUnitBlock). The default names for these files are
+ * ActivePowerOUT.csv, PrimaryOUT.csv, and SecondaryOUT.csv.
+ *
+ * The volumes of the reservoirs (of all HydroUnitBlock and BatteryUnitBlock)
+ * are output to a file with a similar format, whose default name is
+ * VolumeOUT.csv. The only difference is that the data (i.e., the volumes) is
+ * associated with a reservoir. If the Block has a single reservoir, then
+ * Name_j is the name of the Block. If the Block has multiple reservoirs, then
+ * "_i" is appended to the name of the Block to form Name_j in order to
+ * identify the data associated with the i-th reservoir of the Block.
+ *
+ * The power flow of the NetworkBlock are output to a file named FlowsOUT.csv
+ * having the following format:
+ *
+ *   Timestep , Line_0     , Line_1     , ... , Line_m
+ *   0        , v_0_0      , v_0_1      , ... , v_0_m
+ *   1        , v_1_0      , v_1_1      , ... , v_1_m
+ *   ...
+ *   T-1      , v_{T-1}_0  , v_{T-1}_1  , ... , v_{T-1}_m
+ *
+ * where
+ *
+ * - T is the time horizon;
+ *
+ * - m+1 is the number of lines in the network (which is assumed to be
+ *   constant over time);
+ *
+ * - v_t_j is the power flow at time t at line j.
+ *
+ * The dual values of the following constraints are also part of the
+ * output. The dual values of each constraint is output to a dedicated file,
+ * whose default name is indicated between parentheses.
+ *
+ * - power flow limit (MarginalCostFlowsOUT.csv);
+ * - node injection (MarginalCostActivePowerDemandOUT.csv);
+ * - primary demand (MarginalCostPrimaryOUT.csv);
+ * - secondary demand (MarginalCostSecondaryOUT.csv);
+ * - inertia demand (MarginalCostInertiaOUT.csv);
+ * - maximum pollutant emission (MarginalPollutant_pOUT.csv, for each
+ *   pollutant p in {0, ..., number_of_pollutants - 1}).
+ *
+ * The files containing the dual values of the power flow limit and the node
+ * injection constraints have the following format:
+ *
+ *   Timestep , Node_0     , Node_1     , ... , Node_n
+ *   0        , v_0_0      , v_0_1      , ... , v_0_n
+ *   1        , v_1_0      , v_1_1      , ... , v_1_n
+ *   ...
+ *   T-1      , v_{T-1}_0  , v_{T-1}_1  , ... , v_{T-1}_n
+ *
+ * where
+ *
+ * - T is the time horizon;
+ *
+ * - n+1 is the number of nodes;
+ *
+ * - val_t_j is the dual value of the constraint (power flow limit or node
+ *   injection constraint) associated with time t and node j.
+ *
+ * The format of the files for the primary demand, secondary demand, and
+ * inertia demand is very similar:
+ *
+ *   Timestep , Zone_0     , Zone_1     , ... , Zone_z
+ *   0        , v_0_0      , v_0_1      , ... , v_0_z
+ *   1        , v_1_0      , v_1_1      , ... , v_1_z
+ *   ...
+ *   T-1      , v_{T-1}_0  , v_{T-1}_1  , ... , v_{T-1}_z
+ *
+ * where
+ *
+ * - T is the time horizon;
+ *
+ * - z+1 is the number of zones;
+ *
+ * - val_t_j is the dual value of the constraint (primary demand, secondary
+ *   demand, or inertia demand) associated with time t and zone j.
+ *
+ * Finally, the duals values of the maximum pollutant emission constraints are
+ * output in multiple files, each one for a pollutant. For each p in {0, ...,
+ * number_of_pollutants - 1}, the file containing the dual values of the
+ * maximum pollutant emission constraints for the pollutant p has the
+ * following format:
+ *
+ *   Zone_0 , Zone_1 , ... , Zone_pz
+ *   v_0    , v_1    , ... , v_pz
+ *
+ * where
+ *
+ * - pz+1 is the number of zones for pollutant p and v_j is the dual value of
+ *   the constraint associated with zone j.
  *
  * \version 0.1
  *
- * \date 08 - 10 - 2020
+ * \date 21 - 10 - 2020
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -30,6 +151,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "BatteryUnitBlock.h"
+#include "BusNetworkBlock.h"
 #include "DCNetworkBlock.h"
 #include "HydroSystemUnitBlock.h"
 #include "IntermittentUnitBlock.h"
@@ -67,154 +189,248 @@ public:
 /*--------------------- PUBLIC METHODS OF THE CLASS ------------------------*/
 /*--------------------------------------------------------------------------*/
 
- template<class T>
- void print( std::ostream & output , T * ) const;
+ void print_flow( const std::vector< NetworkBlock * > & blocks ) const {
+
+  std::ofstream output( flow_filename );
+
+  auto get_power_flow =
+   []( NetworkBlock * block , Index line ) -> double {
+    if( auto dc = dynamic_cast<DCNetworkBlock *>( block ) )
+     return dc->get_power_flow()[ line ].get_value();
+    return 0;
+   };
+
+  print_line_data( output , blocks , get_power_flow );
+
+  output.close();
+ }
 
 /*--------------------------------------------------------------------------*/
 
- template<>
- void print( std::ostream & output , BatteryUnitBlock * block ) const {
+ void print_node_injection_duals( UCBlock * uc_block ) const {
 
-  print_basic_info( output , block );
-  print_unit_block_data( output , block );
+  std::ofstream output( marginal_cost_active_power_demand_filename );
 
-  // storage level
-  print_array( output , block->get_storage_level() );
+  auto get_node_injection_dual =
+   []( UCBlock * block , Index time , Index node ) {
+    return block->get_node_injection_constraints()
+     [ time ][ node ].get_dual(); };
 
-  if( full_output ) {
-   // intake level
-   print_rounded_array( output , block->get_intake_level() );
+  print_data( output , uc_block , get_node_injection_dual ,
+              get_number_nodes( uc_block ) );
 
-   // outtake level
-   print_rounded_array( output , block->get_outtake_level() );
+  output.close();
+ }
 
-   // battery binary
-   print_rounded_array( output , block->get_battery_binary() );
+/*--------------------------------------------------------------------------*/
+
+ /// duals values for the primary demand constraints
+ void print_primary_demand_duals( UCBlock * uc_block ) const {
+
+  std::ofstream output( marginal_cost_primary_filename );
+
+  auto get_primary_demand_dual =
+   []( UCBlock * block , Index time , Index zone ) {
+    return block->get_primary_demand_constraints()
+     [ time ][ zone ].get_dual(); };
+
+  print_data( output , uc_block , get_primary_demand_dual ,
+              uc_block->get_number_primary_zones() , "Zone_" );
+
+  output.close();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ /// duals values for the secondary demand constraints
+ void print_secondary_demand_duals( UCBlock * uc_block ) const {
+  std::ofstream output( marginal_cost_secondary_filename );
+
+  auto get_secondary_demand_dual =
+   []( UCBlock * block , Index time , Index zone ) {
+    return block->get_secondary_demand_constraints()
+     [ time ][ zone ].get_dual(); };
+
+  print_data( output , uc_block , get_secondary_demand_dual ,
+              uc_block->get_number_secondary_zones() , "Zone_" );
+
+  output.close();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ /// duals values for the inertia demand constraints
+ void print_inertia_demand_duals( UCBlock * uc_block ) const {
+  std::ofstream output( marginal_cost_inertia_filename );
+
+  auto get_inertia_demand_dual =
+   []( UCBlock * block , Index time , Index zone ) {
+    return block->get_inertia_demand_constraints()
+     [ time ][ zone ].get_dual(); };
+
+  print_data( output , uc_block , get_inertia_demand_dual ,
+              uc_block->get_number_inertia_zones() , "Zone_" );
+
+  output.close();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ /// duals values for the mazimum pollutant emmision constraints
+ void print_maximum_pollutant_emission_duals( UCBlock * uc_block ) const {
+
+  const auto number_pollutants = uc_block->get_number_pollutants();
+
+  for( Index p = 0 ; p < number_pollutants ; ++p ) {
+
+   std::ofstream output( get_marginal_pollutant_filename( p ) );
+
+   // Header
+
+   for( Index z = 0 ; z < uc_block->get_number_pollutant_zones()[ p ] ; ++z )
+    output << separator_character << "Zone_" << 0;
+   output << std::endl;
+
+   // Values
+   for( Index z = 0 ; z < uc_block->get_number_pollutant_zones()[ p ] ; ++z ) {
+    if( z > 0 ) output << separator_character;
+    output << uc_block->get_pollutant_constraints()[ p ][ z ].get_dual();
+   }
   }
  }
 
 /*--------------------------------------------------------------------------*/
 
- template<>
- void print( std::ostream & output , HydroUnitBlock * block ) const {
+ /// dual values for the power flow limit constraints
+ void print_power_flow_limit_duals( UCBlock * uc_block ) const {
 
-  print_basic_info( output , block );
-  print_unit_block_data( output , block );
+  std::ofstream output( marginal_cost_flows_filename );
 
-  const auto time_horizon = block->get_time_horizon();
+  auto get_power_flow_limit_dual =
+   []( NetworkBlock * block , Index line ) -> double {
+    if( auto dc = dynamic_cast<DCNetworkBlock *>( block ) )
+     return dc->get_power_flow_limit_constraints()[ line ].get_dual();
+    return 0;
+   };
 
-  if( full_output ) {
-   const auto number_generators = block->get_number_generators();
+  print_line_data( output , uc_block->get_network_blocks() ,
+                   get_power_flow_limit_dual );
 
-   // flow rate
-   for( Index l = 0 ; l < number_generators ; ++l )
-    print_array( output , block->get_flow_rate( l ) , time_horizon );
+  output.close();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void print_duals( UCBlock * block ) const {
+  print_power_flow_limit_duals( block );
+  print_node_injection_duals( block );
+  print_primary_demand_duals( block );
+  print_secondary_demand_duals( block );
+  print_inertia_demand_duals( block );
+  print_maximum_pollutant_emission_duals( block );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void print_active_power( const std::vector< UnitBlock * > & blocks ) const {
+
+  std::ofstream output( active_power_filename );
+
+  auto get_active_power =
+   []( UnitBlock * block , Index g , Index t ) {
+    return ( block->get_active_power( g ) + t )->get_value(); };
+
+  print_generator_data( output , blocks , get_active_power );
+
+  output.close();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void print_primary_spinning_reserve
+ ( const std::vector< UnitBlock * > & blocks ) const {
+
+  std::ofstream output( primary_spinning_reserve_filename );
+
+  auto get_primary_spinning_reserve =
+   []( UnitBlock * block , Index g , Index t ) {
+    return ( block->get_primary_spinning_reserve( g ) + t )->get_value(); };
+
+  print_generator_data( output , blocks , get_primary_spinning_reserve );
+
+  output.close();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void print_secondary_spinning_reserve
+ ( const std::vector< UnitBlock * > & blocks ) const {
+
+  std::ofstream output( secondary_spinning_reserve_filename );
+
+  auto get_secondary_spinning_reserve =
+   []( UnitBlock * block , Index g , Index t ) {
+    return ( block->get_secondary_spinning_reserve( g ) + t )->get_value(); };
+
+  print_generator_data( output , blocks , get_secondary_spinning_reserve );
+
+  output.close();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void print_volume( const std::vector< HydroUnitBlock * > & blocks ) const {
+
+  std::ofstream output( volume_filename );
+
+  auto get_volume =
+   []( HydroUnitBlock * block , Index r , Index t ) {
+    return block->get_volume( r , t )->get_value(); };
+
+  print_reservoir_data( output , blocks , get_volume );
+
+  output.close();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void print_node_injection( std::ostream & output ,
+                            const UCBlock * uc_block )  const {
+  auto & network_blocks = uc_block->get_network_blocks();
+  if( network_blocks.empty() ) return;
+
+  auto network_data = network_blocks.front()->get_NetworkData();
+  assert( network_data );
+
+  // Header
+
+  output << "Timestep";
+  for( Index n = 0 ; n < network_data->get_number_nodes() ; ++n )
+   output << separator_character << "Node_" << n;
+  output << std::endl;
+
+  // Values
+
+  Index t = 0;
+  for( auto network_block : network_blocks ) {
+   output << t++;
+   for( auto injection : network_block->get_node_injection() )
+    output << separator_character << injection.get_value();
+   output << std::endl;
   }
-
-  output << block->get_number_reservoirs() << std::endl;
-
-  // volumes
-  for( Index r = 0 ; r < block->get_number_reservoirs() ; ++r )
-   print_array( output , block->get_volumetric( r ) , time_horizon );
  }
 
 /*--------------------------------------------------------------------------*/
 
- template<>
- void print( std::ostream & output , HydroSystemUnitBlock * block ) const {
-  for( Index h = 0 ; h < block->get_number_hydro_units() ; ++h ) {
-   auto hydro_unit_block = block->get_hydro_unit_block( h );
-   if( ! hydro_unit_block ) continue;
-   print( output , hydro_unit_block );
-  }
+ void print( UCBlock * uc_block ) const {
+  auto unit_blocks = get_unit_blocks( uc_block );
+  print_active_power( unit_blocks );
+  print_primary_spinning_reserve( unit_blocks );
+  print_secondary_spinning_reserve( unit_blocks );
+  print_volume( get_hydro_unit_blocks( uc_block ) );
+  print_flow( uc_block->get_network_blocks() );
+  print_duals( uc_block );
  }
-
-/*--------------------------------------------------------------------------*/
-
- template<>
- void print( std::ostream & output , IntermittentUnitBlock * block ) const {
-
-  print_basic_info( output , block );
-  print_unit_block_data( output , block );
- }
-
-/*--------------------------------------------------------------------------*/
-
- template<>
- void print( std::ostream & output , NetworkBlock * block ) const {
-
-  print_basic_info( output , block );
-
-  // number of nodes and number of lines
-  if( auto network_data = block->get_NetworkData() )
-   output << network_data->get_number_nodes() << separator_character
-          << network_data->get_number_lines() << std::endl;
-  else if( dynamic_cast<BusNetworkBlock *>( block ) )
-   output << 1 << separator_character << 0 << std::endl;
-  else
-   output << 0 << separator_character << 0 << std::endl;
-
-  // node injection
-  print_array( output , block->get_node_injection() );
-
-  // power flow
-  if( auto dc_network_block = dynamic_cast<DCNetworkBlock *>( block ) ) {
-   print_array( output , dc_network_block->get_power_flow() );
-  }
- }
-
-/*--------------------------------------------------------------------------*/
-
- template<>
- void print( std::ostream & output , SlackUnitBlock * block ) const {
-  print_basic_info( output , block );
-  print_unit_block_data( output , block );
- }
-
-/*--------------------------------------------------------------------------*/
-
- template<>
- void print( std::ostream & output , ThermalUnitBlock * block ) const {
-
-  print_basic_info( output , block );
-  print_unit_block_data( output , block );
-
-  if( full_output ) {
-   // start up
-   print_rounded_array( output , block->get_start_up() );
-
-   // shutdown
-   print_rounded_array( output , block->get_shut_down() );
-  }
- }
-
-/*--------------------------------------------------------------------------*/
-
- template<>
- void print( std::ostream & output , UCBlock * uc_block ) const {
-
-  print_name( output , uc_block );
-
-  output << uc_block->get_time_horizon() << separator_character
-         << count_blocks( uc_block ) << std::endl;
-
-  for( auto b : uc_block->get_nested_Blocks() ) {
-   if( auto block = dynamic_cast<BatteryUnitBlock *>( b ) )
-    print( output , block );
-   else if( auto block = dynamic_cast<HydroSystemUnitBlock *>( b ) )
-    print( output , block );
-   else if( auto block = dynamic_cast<HydroUnitBlock *>( b ) )
-    print( output , block );
-   else if( auto block = dynamic_cast<IntermittentUnitBlock *>( b ) )
-    print( output , block );
-   else if( auto block = dynamic_cast<NetworkBlock *>( b ) )
-    print( output , block );
-   else if( auto block = dynamic_cast<SlackUnitBlock *>( b ) )
-    print( output , block );
-   else if( auto block = dynamic_cast<ThermalUnitBlock *>( b ) )
-    print( output , block );
-  }
- } // end( print( UCBlock * ) )
 
 /*--------------------------------------------------------------------------*/
 
@@ -238,15 +454,223 @@ private:
 /*--------------------------- PRIVATE METHODS ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
- Index count_blocks( Block * block ) const {
-  Index num_blocks = 0;
-  for( auto b : block->get_nested_Blocks() ) {
-   if( auto sub_block = dynamic_cast<HydroSystemUnitBlock *>( b ) )
-    num_blocks += count_blocks( sub_block );
-   else if( ! dynamic_cast<PolyhedralFunctionBlock *>( b ) )
-    ++num_blocks;
+ std::string get_name( const Block * block ) const {
+  const auto name = block->name();
+  if( ! name.empty() )
+   return name;
+  return block->classname();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ Index get_number_nodes( UCBlock * block ) const {
+  if( ! block ) return 0;
+  auto network_data = block->get_NetworkData();
+  return network_data ? network_data->get_number_nodes() : 1;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ Index get_number_lines( NetworkBlock * block ) const {
+  if( ! block ) return 0;
+  auto network_data = block->get_NetworkData();
+  return network_data ? network_data->get_number_lines() : 0;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ std::string get_marginal_pollutant_filename( Index pollutant ) const {
+  return marginal_pollutant_filename_prefix + std::to_string( pollutant ) +
+   marginal_pollutant_filename_suffix;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ template<class F>
+ void print_line_data( std::ostream & output ,
+                       const std::vector< NetworkBlock * > & blocks ,
+                       const F & get_data , const int precision = 20 ) const {
+  if( blocks.empty() ) return;
+
+  auto number_lines = get_number_lines( blocks.front() );
+
+  // Header
+
+  output << "Timestep";
+  for( Index line = 0 ; line < number_lines ; ++line )
+   output << separator_character << "Line_" << line;
+  output << std::endl;
+
+  // Values
+  Index t = 0;
+  for( auto block : blocks ) {
+   output << t;
+   for( Index line = 0 ; line < number_lines ; ++line )
+    output << separator_character << std::setprecision( precision )
+           << get_data( block , line );
+   output << std::endl;
   }
-  return num_blocks;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ template<class F>
+ void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
+                  const Index columns , const std::string header_prefix ,
+                  const std::string first_column_header ,
+                  const Index rows , const int precision = 20 ) const {
+  // Header
+
+  output << first_column_header;
+  for( Index i = 0 ; i < columns ; ++i )
+   output << separator_character << header_prefix << "_" << i;
+  output << std::endl;
+
+  // Values
+
+  for( Index r = 0 ; r < rows ; ++r ) {
+   output << r;
+   for( Index i = 0 ; i < columns ; ++i )
+    output << separator_character << std::setprecision( precision )
+           << get_data( block , r , i );
+   output << std::endl;
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ template<class F>
+ void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
+                  const Index columns , const int precision = 20 ) const {
+  print_data( output , block , get_data , columns , "Node_" ,
+              "Timestep" , block->get_time_horizon() , precision );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ template<class F>
+ void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
+                  const Index columns , const std::string header_prefix ,
+                  const int precision = 20 ) const {
+  print_data( output , block , get_data , columns , header_prefix ,
+              "Timestep" , block->get_time_horizon() , precision );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ std::vector< UnitBlock * > get_unit_blocks( UCBlock * uc_block ) const {
+
+  std::vector< UnitBlock * > unit_blocks;
+  unit_blocks.reserve( uc_block->get_number_units() );
+
+  for( Index i = 0 ; i < uc_block->get_number_units() ; ++i ) {
+
+   auto block = uc_block->get_unit_block( i );
+   if( auto hydro_system = dynamic_cast<HydroSystemUnitBlock *>( block ) )
+    for( Index h = 0 ; h < hydro_system->get_number_hydro_units() ; ++h )
+     unit_blocks.push_back( hydro_system->get_hydro_unit_block( h ) );
+   else
+    unit_blocks.push_back( block );
+  }
+
+  return unit_blocks;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ std::vector< HydroUnitBlock * >
+ get_hydro_unit_blocks( UCBlock * uc_block ) const {
+
+  std::vector< HydroUnitBlock * > hydro_unit_blocks;
+
+  for( Index i = 0 ; i < uc_block->get_number_units() ; ++i ) {
+   auto block = uc_block->get_unit_block( i );
+   if( auto hydro_system = dynamic_cast<HydroSystemUnitBlock *>( block ) )
+    for( Index h = 0 ; h < hydro_system->get_number_hydro_units() ; ++h )
+     hydro_unit_blocks.push_back( hydro_system->get_hydro_unit_block( h ) );
+   else if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) )
+    hydro_unit_blocks.push_back( hydro );
+  }
+
+  return hydro_unit_blocks;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ template<class F>
+ void print_generator_data
+ ( std::ostream & output , const std::vector< UnitBlock * > & blocks ,
+   const F & get_data , const int precision = 20 ) const {
+
+  if( blocks.empty() ) return;
+
+  // Header
+
+  output << "Timestep";
+  for( auto block : blocks ) {
+   auto block_name = get_name( block );
+   const auto number_generators = block->get_number_generators();
+   if( number_generators <= 1 )
+    output << separator_character << block_name;
+   else
+    for( Index g = 0 ; g < number_generators ; ++g )
+     output << separator_character << block_name << "_" << g;
+  }
+  output << std::endl;
+
+  // Values
+
+  auto time_horizon = blocks.front()->get_time_horizon();
+
+  for( Index t = 0 ; t < time_horizon ; ++t ) {
+   output << t;
+   for( auto block : blocks ) {
+    const auto number_generators = block->get_number_generators();
+    for( Index g = 0 ; g < number_generators ; ++g )
+     output << separator_character << std::setprecision( precision )
+            << get_data( block , g , t );
+   }
+   output << std::endl;
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ template<class F>
+ void print_reservoir_data
+ ( std::ostream & output , const std::vector< HydroUnitBlock * > & blocks ,
+   const F & get_data , const int precision = 20 ) const {
+
+  if( blocks.empty() ) return;
+
+  // Header
+
+  output << "Timestep";
+  for( auto block : blocks ) {
+   auto block_name = get_name( block );
+   const auto number_reservoirs = block->get_number_reservoirs();
+   if( number_reservoirs <= 1 )
+    output << separator_character << block_name;
+   else
+    for( Index r = 0 ; r < number_reservoirs ; ++r )
+     output << separator_character << block_name << "_" << r;
+  }
+  output << std::endl;
+
+  // Values
+
+  auto time_horizon = blocks.front()->get_time_horizon();
+
+  for( Index t = 0 ; t < time_horizon ; ++t ) {
+   output << t;
+   for( auto block : blocks ) {
+    const auto number_reservoirs = block->get_number_reservoirs();
+    for( Index r = 0 ; r < number_reservoirs ; ++r )
+     output << separator_character << std::setprecision( precision )
+            << get_data( block , r , t );
+   }
+   output << std::endl;
+  }
  }
 
 /*--------------------------------------------------------------------------*/
@@ -275,7 +699,6 @@ private:
   for( Index i = 0 ; i < size && array ; ++i , ++array ) {
    if( i > 0 )
     output << separator_character;
-
    output << std::setprecision( precision ) << array->get_value();
   }
   output << std::endl;
@@ -291,61 +714,19 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- void print_name( std::ostream & output , const Block * block  ) const {
-  const auto name = block->name();
-  if( ! name.empty() )
-   output << name << std::endl;
-  else
-   output << block->classname() << std::endl;
- }
-
-/*--------------------------------------------------------------------------*/
-
- void print_cost( std::ostream & output , const Block * block  ) const {
+ void print_cost( std::ostream & output , const Block * block ) const {
   if( auto obj = dynamic_cast<FRealObjective *>( block->get_objective() ) ) {
    auto status = obj->compute();
-   assert( status == ThinComputeInterface::kOK );
-   output << obj->value() << std::endl;
+   if( status == ThinComputeInterface::kOK )
+    output << obj->value() << std::endl;
+   else {
+    std::cerr << "UCBlockSolutionOutput::print_cost: It was not possible to "
+              << "compute the cost of Block " << get_name( block ) << std::endl;
+    output << 0 << std::endl;
+   }
   }
   else
    output << 0 << std::endl;
- }
-
-/*--------------------------------------------------------------------------*/
-
- void print_basic_info( std::ostream & output , const Block * block  ) const {
-  print_name( output , block );
-  print_cost( output , block );
- }
-
-/*--------------------------------------------------------------------------*/
-
- /// print values of Variables that are common to all UnitBlock
- void print_unit_block_data( std::ostream & output ,
-                             UnitBlock * block ) const {
-
-  const auto time_horizon = block->get_time_horizon();
-  const auto number_generators = block->get_number_generators();
-
-  output << number_generators << std::endl;
-
-  // commitment
-  for( Index g = 0 ; g < number_generators ; ++g )
-   print_array( output , block->get_commitment( g ) , time_horizon );
-
-  // active power
-  for( Index g = 0 ; g < number_generators ; ++g )
-   print_array( output , block->get_active_power( g ) , time_horizon );
-
-  // primary spinning reserve
-  for( Index g = 0 ; g < number_generators ; ++g )
-   print_array( output , block->get_primary_spinning_reserve( g ) ,
-                time_horizon );
-
-  // secondary spinning reserve
-  for( Index g = 0 ; g < number_generators ; ++g )
-   print_array( output , block->get_secondary_spinning_reserve( g ) ,
-                time_horizon );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -354,6 +735,20 @@ private:
 
  char separator_character = ',';
  bool full_output = false;
+
+ std::string active_power_filename = "ActivePowerOUT.csv";
+ std::string primary_spinning_reserve_filename = "PrimaryOUT.csv";
+ std::string secondary_spinning_reserve_filename = "SecondaryOUT.csv";
+ std::string volume_filename = "VolumeOUT.csv";
+ std::string flow_filename = "FlowsOUT.csv";
+ std::string marginal_cost_active_power_demand_filename =
+                  "MarginalCostActivePowerDemandOUT.csv";
+ std::string marginal_cost_primary_filename = "MarginalCostPrimaryOUT.csv";
+ std::string marginal_cost_secondary_filename = "MarginalCostSecondaryOUT.csv";
+ std::string marginal_cost_inertia_filename = "MarginalCostInertiaOUT.csv";
+ std::string marginal_cost_flows_filename = "MarginalCostFlowsOUT.csv";
+ std::string marginal_pollutant_filename_prefix = "MarginalPollutant_";
+ std::string marginal_pollutant_filename_suffix = "OUT.csv";
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/
