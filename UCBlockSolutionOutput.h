@@ -417,6 +417,7 @@ public:
    for( auto injection : network_block->get_node_injection() )
     output << separator_character << injection.get_value();
    output << std::endl;
+   ++t;
   }
  }
 
@@ -509,6 +510,7 @@ private:
     output << separator_character << std::setprecision( precision )
            << get_data( block , line );
    output << std::endl;
+   ++t;
   }
  }
 
@@ -523,7 +525,7 @@ private:
 
   output << first_column_header;
   for( Index i = 0 ; i < columns ; ++i )
-   output << separator_character << header_prefix << "_" << i;
+   output << separator_character << header_prefix << i;
   output << std::endl;
 
   // Values
