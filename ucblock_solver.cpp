@@ -3,7 +3,6 @@
 #include <fstream>
 #include <getopt.h>
 
-#include <CPXMILPSolver.h>
 #include <BatteryUnitBlock.h>
 #include <BlockSolverConfig.h>
 #include <BusNetworkBlock.h>
