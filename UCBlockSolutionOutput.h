@@ -189,9 +189,30 @@ public:
 /*--------------------- PUBLIC METHODS OF THE CLASS ------------------------*/
 /*--------------------------------------------------------------------------*/
 
+ UCBlockSolutionOutput() {
+  filenames.resize( number_of_files );
+
+  filenames[ active_power ] = { "ActivePower" , "OUT.csv" };
+  filenames[ primary_spinning_reserve ] = { "Primary" , "OUT.csv" };
+  filenames[ secondary_spinning_reserve ] = { "Secondary" , "OUT.csv" };
+  filenames[ volume ] = { "Volume" , "OUT.csv" };
+  filenames[ flow ] = { "Flows" , "OUT.csv" };
+  filenames[ marginal_cost_active_power_demand ] =
+   { "MarginalCostActivePowerDemand" , "OUT.csv" };
+  filenames[ marginal_cost_primary ] = { "MarginalCostPrimary" , "OUT.csv" };
+  filenames[ marginal_cost_secondary ] = { "MarginalCostSecondary" ,
+                                           "OUT.csv" };
+  filenames[ marginal_cost_inertia ] = { "MarginalCostInertia" , "OUT.csv" };
+  filenames[ marginal_cost_flows ] = { "MarginalCostFlows" , "OUT.csv" };
+  filenames[ marginal_pollutant ] = { "MarginalPollutant_" , "OUT.csv" };
+
+ }
+
+/*--------------------------------------------------------------------------*/
+
  void print_flow( const std::vector< NetworkBlock * > & blocks ) const {
 
-  std::ofstream output( flow_filename );
+  std::ofstream output( filenames[ flow ].name() , open_mode() );
 
   auto get_power_flow =
    []( NetworkBlock * block , Index line ) -> double {
@@ -209,7 +230,8 @@ public:
 
  void print_node_injection_duals( UCBlock * uc_block ) const {
 
-  std::ofstream output( marginal_cost_active_power_demand_filename );
+  std::ofstream output( filenames[ marginal_cost_active_power_demand ].name() ,
+                        open_mode() );
 
   auto get_node_injection_dual =
    []( UCBlock * block , Index time , Index node ) {
@@ -227,7 +249,8 @@ public:
  /// duals values for the primary demand constraints
  void print_primary_demand_duals( UCBlock * uc_block ) const {
 
-  std::ofstream output( marginal_cost_primary_filename );
+  std::ofstream output( filenames[ marginal_cost_primary ].name() ,
+                        open_mode() );
 
   auto get_primary_demand_dual =
    []( UCBlock * block , Index time , Index zone ) {
@@ -244,7 +267,8 @@ public:
 
  /// duals values for the secondary demand constraints
  void print_secondary_demand_duals( UCBlock * uc_block ) const {
-  std::ofstream output( marginal_cost_secondary_filename );
+  std::ofstream output( filenames[ marginal_cost_secondary ].name() ,
+                        open_mode() );
 
   auto get_secondary_demand_dual =
    []( UCBlock * block , Index time , Index zone ) {
@@ -261,7 +285,8 @@ public:
 
  /// duals values for the inertia demand constraints
  void print_inertia_demand_duals( UCBlock * uc_block ) const {
-  std::ofstream output( marginal_cost_inertia_filename );
+  std::ofstream output( filenames[ marginal_cost_inertia ].name() ,
+                        open_mode() );
 
   auto get_inertia_demand_dual =
    []( UCBlock * block , Index time , Index zone ) {
@@ -283,7 +308,7 @@ public:
 
   for( Index p = 0 ; p < number_pollutants ; ++p ) {
 
-   std::ofstream output( get_marginal_pollutant_filename( p ) );
+   std::ofstream output( get_marginal_pollutant_filename( p ) , open_mode() );
 
    // Header
 
@@ -304,7 +329,7 @@ public:
  /// dual values for the power flow limit constraints
  void print_power_flow_limit_duals( UCBlock * uc_block ) const {
 
-  std::ofstream output( marginal_cost_flows_filename );
+  std::ofstream output( filenames[ marginal_cost_flows ].name() , open_mode() );
 
   auto get_power_flow_limit_dual =
    []( NetworkBlock * block , Index line ) -> double {
@@ -334,7 +359,7 @@ public:
 
  void print_active_power( const std::vector< UnitBlock * > & blocks ) const {
 
-  std::ofstream output( active_power_filename );
+  std::ofstream output( filenames[ active_power ].name() , open_mode() );
 
   auto get_active_power =
    []( UnitBlock * block , Index g , Index t ) {
@@ -350,7 +375,8 @@ public:
  void print_primary_spinning_reserve
  ( const std::vector< UnitBlock * > & blocks ) const {
 
-  std::ofstream output( primary_spinning_reserve_filename );
+  std::ofstream output( filenames[ primary_spinning_reserve ].name() ,
+                        open_mode() );
 
   auto get_primary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) {
@@ -366,7 +392,8 @@ public:
  void print_secondary_spinning_reserve
  ( const std::vector< UnitBlock * > & blocks ) const {
 
-  std::ofstream output( secondary_spinning_reserve_filename );
+  std::ofstream output( filenames[ secondary_spinning_reserve ].name() ,
+                        open_mode() );
 
   auto get_secondary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) {
@@ -381,7 +408,7 @@ public:
 
  void print_volume( const std::vector< HydroUnitBlock * > & blocks ) const {
 
-  std::ofstream output( volume_filename );
+  std::ofstream output( filenames[ volume ].name() , open_mode() );
 
   auto get_volume =
    []( HydroUnitBlock * block , Index r , Index t ) {
@@ -403,15 +430,19 @@ public:
   assert( network_data );
 
   // Header
-
-  output << "Timestep";
-  for( Index n = 0 ; n < network_data->get_number_nodes() ; ++n )
-   output << separator_character << "Node_" << n;
-  output << std::endl;
+  if( ! append ) {
+   output << "Timestep";
+   for( Index n = 0 ; n < network_data->get_number_nodes() ; ++n )
+    output << separator_character << "Node_" << n;
+   output << std::endl;
+  }
 
   // Values
 
   Index t = 0;
+  if( append )
+   t = initial_time;
+
   for( auto network_block : network_blocks ) {
    output << t++;
    for( auto injection : network_block->get_node_injection() )
@@ -441,8 +472,21 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- void set_full_output( bool full_output ) {
-  this->full_output = full_output;
+ void set_filenames_suffix( const std::string & suffix ) {
+  for( auto & filename : filenames )
+   filename.suffix = suffix;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void set_append( bool append = true ) {
+  this->append = append;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void set_initial_time( Index initial_time = 0 ) {
+  this->initial_time = initial_time;
  }
 
 /*--------------------------------------------------------------------------*/
@@ -481,8 +525,8 @@ private:
 /*--------------------------------------------------------------------------*/
 
  std::string get_marginal_pollutant_filename( Index pollutant ) const {
-  return marginal_pollutant_filename_prefix + std::to_string( pollutant ) +
-   marginal_pollutant_filename_suffix;
+  return filenames[ marginal_pollutant ].prefix +
+   std::to_string( pollutant ) + filenames[ marginal_pollutant ].suffix;
  }
 
 /*--------------------------------------------------------------------------*/
@@ -497,13 +541,19 @@ private:
 
   // Header
 
-  output << "Timestep";
-  for( Index line = 0 ; line < number_lines ; ++line )
-   output << separator_character << "Line_" << line;
-  output << std::endl;
+  if( ! append ) {
+   output << "Timestep";
+   for( Index line = 0 ; line < number_lines ; ++line )
+    output << separator_character << "Line_" << line;
+   output << std::endl;
+  }
 
   // Values
+
   Index t = 0;
+  if( append )
+   t = initial_time;
+
   for( auto block : blocks ) {
    output << t;
    for( Index line = 0 ; line < number_lines ; ++line )
@@ -523,10 +573,12 @@ private:
                   const Index rows , const int precision = 20 ) const {
   // Header
 
-  output << first_column_header;
-  for( Index i = 0 ; i < columns ; ++i )
-   output << separator_character << header_prefix << i;
-  output << std::endl;
+  if( ! append ) {
+   output << first_column_header;
+   for( Index i = 0 ; i < columns ; ++i )
+    output << separator_character << header_prefix << i;
+   output << std::endl;
+  }
 
   // Values
 
@@ -608,24 +660,32 @@ private:
 
   // Header
 
-  output << "Timestep";
-  for( auto block : blocks ) {
-   auto block_name = get_name( block );
-   const auto number_generators = block->get_number_generators();
-   if( number_generators <= 1 )
-    output << separator_character << block_name;
-   else
-    for( Index g = 0 ; g < number_generators ; ++g )
-     output << separator_character << block_name << "_" << g;
+  if( ! append ) {
+
+   output << "Timestep";
+   for( auto block : blocks ) {
+    auto block_name = get_name( block );
+    const auto number_generators = block->get_number_generators();
+    if( number_generators <= 1 )
+     output << separator_character << block_name;
+    else
+     for( Index g = 0 ; g < number_generators ; ++g )
+      output << separator_character << block_name << "_" << g;
+   }
+   output << std::endl;
   }
-  output << std::endl;
 
   // Values
 
   auto time_horizon = blocks.front()->get_time_horizon();
 
   for( Index t = 0 ; t < time_horizon ; ++t ) {
-   output << t;
+
+   Index time = t;
+   if( append )
+    time = initial_time + t;
+
+   output << time;
    for( auto block : blocks ) {
     const auto number_generators = block->get_number_generators();
     for( Index g = 0 ; g < number_generators ; ++g )
@@ -647,24 +707,31 @@ private:
 
   // Header
 
-  output << "Timestep";
-  for( auto block : blocks ) {
-   auto block_name = get_name( block );
-   const auto number_reservoirs = block->get_number_reservoirs();
-   if( number_reservoirs <= 1 )
-    output << separator_character << block_name;
-   else
-    for( Index r = 0 ; r < number_reservoirs ; ++r )
-     output << separator_character << block_name << "_" << r;
+  if( ! append ) {
+   output << "Timestep";
+   for( auto block : blocks ) {
+    auto block_name = get_name( block );
+    const auto number_reservoirs = block->get_number_reservoirs();
+    if( number_reservoirs <= 1 )
+     output << separator_character << block_name;
+    else
+     for( Index r = 0 ; r < number_reservoirs ; ++r )
+      output << separator_character << block_name << "_" << r;
+   }
+   output << std::endl;
   }
-  output << std::endl;
 
   // Values
 
   auto time_horizon = blocks.front()->get_time_horizon();
 
   for( Index t = 0 ; t < time_horizon ; ++t ) {
-   output << t;
+
+   Index time = t;
+   if( append )
+    time = initial_time + t;
+
+   output << time;
    for( auto block : blocks ) {
     const auto number_reservoirs = block->get_number_reservoirs();
     for( Index r = 0 ; r < number_reservoirs ; ++r )
@@ -677,80 +744,45 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- void print_rounded_array( std::ostream & output , const ColVariable * array ,
-                           const std::size_t size ) const {
-  for( Index i = 0 ; i < size && array ; ++i , ++array ) {
-   if( i > 0 )
-    output << separator_character;
-   output << ( unsigned int ) std::round( array->get_value() );
-  }
-  output << std::endl;
+ std::ios_base::openmode open_mode() const {
+  if( append )
+   return ( std::ios::out | std::ios::app );
+  return std::ios::out;
  }
 
 /*--------------------------------------------------------------------------*/
-
- void print_rounded_array( std::ostream & output ,
-                           const std::vector< ColVariable > & array ) const {
-  print_rounded_array( output , array.data() , array.size() );
- }
-
+/*---------------------------- PRIVATE TYPES  ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
- void print_array( std::ostream & output , const ColVariable * array ,
-                   const std::size_t size , const int precision = 15 ) const {
-  for( Index i = 0 ; i < size && array ; ++i , ++array ) {
-   if( i > 0 )
-    output << separator_character;
-   output << std::setprecision( precision ) << array->get_value();
-  }
-  output << std::endl;
- }
+ struct filename {
+  std::string prefix;
+  std::string suffix;
+  std::string name() const { return prefix + suffix; };
+ };
 
-/*--------------------------------------------------------------------------*/
-
- void print_array( std::ostream & output ,
-                   const std::vector< ColVariable > & array ,
-                   const int precision = 15 ) const {
-  print_array( output , array.data() , array.size() , precision );
- }
-
-/*--------------------------------------------------------------------------*/
-
- void print_cost( std::ostream & output , const Block * block ) const {
-  if( auto obj = dynamic_cast<FRealObjective *>( block->get_objective() ) ) {
-   auto status = obj->compute();
-   if( status == ThinComputeInterface::kOK )
-    output << obj->value() << std::endl;
-   else {
-    std::cerr << "UCBlockSolutionOutput::print_cost: It was not possible to "
-              << "compute the cost of Block " << get_name( block ) << std::endl;
-    output << 0 << std::endl;
-   }
-  }
-  else
-   output << 0 << std::endl;
- }
+ enum files {
+  active_power = 0 ,
+  primary_spinning_reserve ,
+  secondary_spinning_reserve ,
+  volume ,
+  flow ,
+  marginal_cost_active_power_demand ,
+  marginal_cost_primary ,
+  marginal_cost_secondary ,
+  marginal_cost_inertia ,
+  marginal_cost_flows ,
+  marginal_pollutant ,
+  number_of_files
+ };
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- PRIVATE FIELDS  -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
  char separator_character = ',';
- bool full_output = false;
-
- std::string active_power_filename = "ActivePowerOUT.csv";
- std::string primary_spinning_reserve_filename = "PrimaryOUT.csv";
- std::string secondary_spinning_reserve_filename = "SecondaryOUT.csv";
- std::string volume_filename = "VolumeOUT.csv";
- std::string flow_filename = "FlowsOUT.csv";
- std::string marginal_cost_active_power_demand_filename =
-                  "MarginalCostActivePowerDemandOUT.csv";
- std::string marginal_cost_primary_filename = "MarginalCostPrimaryOUT.csv";
- std::string marginal_cost_secondary_filename = "MarginalCostSecondaryOUT.csv";
- std::string marginal_cost_inertia_filename = "MarginalCostInertiaOUT.csv";
- std::string marginal_cost_flows_filename = "MarginalCostFlowsOUT.csv";
- std::string marginal_pollutant_filename_prefix = "MarginalPollutant_";
- std::string marginal_pollutant_filename_suffix = "OUT.csv";
+ bool append = false;
+ Index initial_time = 0;
+ std::vector<filename> filenames;
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/
