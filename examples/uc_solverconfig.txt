@@ -18,10 +18,10 @@ intLogVerb 1
 
 2  # Number of double parameters
 dblAAccSol 1e-04
-dblMaxTime 20000
+dblMaxTime 3600
 
 1  # Number of string parameters
-strOutputFile uc_lp.lp
+strOutputFile france.lp
 
 # Pointer to the "extra" Configuration
 * # [none]
