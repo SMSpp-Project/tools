@@ -263,7 +263,30 @@ int main( int argc, char ** argv ) {
  solver->get_var_solution();
  auto ub = solver->get_ub();
  auto lb = solver->get_lb();
- std::cout << "Status = " << status << std::endl;
+ std::cout << "Status = " << status << " (";
+
+ switch( status ) {
+  case Solver::kOK:
+   std::cout << "Success)" << std::endl;
+   break;
+  case Solver::kError:
+   std::cout << "Error)" << std::endl;
+   break;
+  case Solver::kInfeasible:
+   std::cout << "Infeasible)" << std::endl;
+   break;
+  case Solver::kUnbounded:
+   std::cout << "Unbounded)" << std::endl;
+   break;
+  case Solver::kStopTime:
+   std::cout << "Stopped for time limit)" << std::endl;
+   break;
+  case Solver::kStopIter:
+   std::cout << "Stopped for iteration limit)" << std::endl;
+   break;
+  default:;
+ }
+
  std::cout << "Upper bound = " << ub << std::endl;
  std::cout << "Lower bound = " << lb << std::endl;
 
