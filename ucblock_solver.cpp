@@ -9,6 +9,7 @@
 #include <DCNetworkBlock.h>
 #include <HydroSystemUnitBlock.h>
 #include <HydroUnitBlock.h>
+#include <SlackUnitBlock.h>
 #include <IntermittentUnitBlock.h>
 #include <RBlockConfig.h>
 #include <ThermalUnitBlock.h>
@@ -563,6 +564,47 @@ int main( int argc, char ** argv ) {
      std::cout << std::setw( 20 ) << active_power[ t ].get_value();
     }
     std::cout << " ]" << std::endl;
+
+    auto primary_spinning_reserve = intermittent_unit_block->get_primary_spinning_reserve( 0 );
+    std::cout << "PrimarySR     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 20 ) << primary_spinning_reserve[ t ].get_value();
+    }
+    std::cout << " ]" << std::endl;
+
+    auto secondary_spinning_reserve = intermittent_unit_block->get_secondary_spinning_reserve( 0 );
+    std::cout << "SecondarySR     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 20 ) << secondary_spinning_reserve[ t ].get_value();
+    }
+    std::cout << " ]" << std::endl;
+
+   }
+
+   auto slack_unit_block = dynamic_cast<SlackUnitBlock *>(unit_block);
+   if( slack_unit_block != nullptr ) {
+
+    auto active_power = slack_unit_block->get_active_power( 0 );
+    std::cout << "active_power     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 20 ) << active_power[ t ].get_value();
+    }
+    std::cout << " ]" << std::endl;
+
+    auto primary_spinning_reserve = slack_unit_block->get_primary_spinning_reserve( 0 );
+    std::cout << "PrimarySR     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 20 ) << primary_spinning_reserve[ t ].get_value();
+    }
+    std::cout << " ]" << std::endl;
+
+    auto secondary_spinning_reserve = slack_unit_block->get_secondary_spinning_reserve( 0 );
+    std::cout << "SecondarySR     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 20 ) << secondary_spinning_reserve[ t ].get_value();
+    }
+    std::cout << " ]" << std::endl;
+
    }
   }
 
