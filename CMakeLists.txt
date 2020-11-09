@@ -29,7 +29,7 @@ find_package(SDDPBlock)
 
 if (SDDPBlock_FOUND AND MILPSolver_FOUND)
 
-    # ----- sddp_greedy_solver ---------------------------------------------------- #
+    # ----- sddp_greedy_solver ---------------------------------------------- #
     add_executable(sddp_greedy_solver sddp_greedy_solver.cpp)
     target_compile_features(sddp_greedy_solver PUBLIC cxx_std_17)
 
@@ -65,4 +65,8 @@ if (UCBlock_FOUND AND MILPSolver_FOUND)
     include(GNUInstallDirs)
     install(TARGETS block_solver thermalunit_solver ucblock_solver
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif ()
+
+if (BUILD_TESTING)
+    # Just consuming BUILD_TESTING to avoid warnings
 endif ()
