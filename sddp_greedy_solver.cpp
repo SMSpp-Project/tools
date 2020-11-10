@@ -30,7 +30,7 @@
  *
  * \version 0.1
  *
- * \date 20 - 09 - 2020
+ * \date 10 - 11 - 2020
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -145,19 +145,17 @@ void process_args( int argc , char ** argv ) {
 
 /*--------------------------------------------------------------------------*/
 
-void show_status( SDDPGreedySolver * solver ) {
-
- auto status = solver->get_status();
+void show_status( Index status , Index fault_stage ) {
 
  switch( status ) {
 
   case( SDDPGreedySolver::kError ):
    std::cout << "Error while solving the subproblem at stage "
-             << solver->get_fault_stage() << std::endl;
+             << fault_stage << std::endl;
    break;
 
   case( SDDPGreedySolver::kUnbounded ):
-   std::cout << "The subproblem at stage " << solver->get_fault_stage()
+   std::cout << "The subproblem at stage " << fault_stage
              << " is unbounded." << std::endl;
    break;
 
@@ -167,13 +165,13 @@ void show_status( SDDPGreedySolver * solver ) {
 
   case( SDDPGreedySolver::kStopTime ):
    std::cout << "A feasible solution has been found. The solution process "
-             << "of subproblem at stage " << solver->get_fault_stage()
+             << "of subproblem at stage " << fault_stage
              << " terminated due a time limit." << std::endl;
    break;
 
   case( SDDPGreedySolver::kStopIter ):
    std::cout << "A feasible solution has been found. The solution process "
-             << "of subproblem at stage " << solver->get_fault_stage()
+             << "of subproblem at stage " << fault_stage
              << " terminated due an iteration limit." << std::endl;
    break;
 
@@ -182,76 +180,14 @@ void show_status( SDDPGreedySolver * solver ) {
    break;
 
   case( SDDPGreedySolver::kSubproblemInfeasible ):
-   std::cout << "The subproblem at stage " << solver->get_fault_stage()
+   std::cout << "The subproblem at stage " << fault_stage
              << " is infeasible." << std::endl;
    break;
 
   case( SDDPGreedySolver::kSolutionNotFound ):
    std::cout << "A solution for the subproblem at stage "
-             << solver->get_fault_stage() << " has not been found."
-             << std::endl;
+             << fault_stage << " has not been found." << std::endl;
    break;
- }
-}
-
-/*--------------------------------------------------------------------------*/
-
-void output_solution( SDDPBlock * sddp_block ) {
-
- auto outer_time_horizon = sddp_block->get_number_nested_Blocks();
-
- // Outer time horizon
- std::cout << outer_time_horizon << std::endl;
-
- for( Block::Index outer_time = 0 ;
-      outer_time < outer_time_horizon ; ++outer_time ) {
-
-  auto sub_block = sddp_block->get_nested_Block( outer_time );
-
-  auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
-  auto benders_block = static_cast<BendersBlock *>
-   ( stochastic_block-> get_nested_Blocks().front() );
-  auto objective = static_cast<FRealObjective *>
-   ( benders_block->get_objective() );
-  auto benders_function = static_cast<BendersBFunction *>
-   ( objective->get_function() );
-  auto uc_block = benders_function->get_inner_block();
-
-  auto hydro_system = dynamic_cast<HydroSystemUnitBlock *>
-   ( uc_block->get_nested_Block( 0 ) );
-
-  assert( hydro_system );
-
-  auto n = hydro_system->get_number_nested_Blocks();
-
-  // inner time horizon
-  std::cout << hydro_system->get_time_horizon() << std::endl;
-
-  // count the number of HydroUnitBlock
-  Block::Index num_hydros = 0;
-  for( decltype( n ) i = 0 ; i < n ; ++i )
-   if( dynamic_cast<HydroUnitBlock *>( hydro_system->get_nested_Block( i ) ) )
-    ++num_hydros;
-
-  // number of HydroUnitBlock
-  std::cout << num_hydros << std::endl;
-
-  for( decltype( n ) i = 0 ; i < n ; ++i ) {
-   if( const auto hydro =
-       dynamic_cast<HydroUnitBlock *>( hydro_system->get_nested_Block( i ) ) ) {
-
-    // number of reservoirs and time horizon
-    std::cout << hydro->get_number_reservoirs() << std::endl;
-
-    for( Block::Index r = 0 ; r < hydro->get_number_reservoirs() ; ++r )
-     for( Block::Index t = 0 ; t < hydro->get_time_horizon() ; ++t ) {
-      if( t > 0 )
-       std::cout << ", ";
-      std::cout << hydro->get_volume( r , t )->get_value();
-     }
-    std::cout << std::endl;
-   }
-  }
  }
 }
 
@@ -270,17 +206,13 @@ void solve( SDDPBlock * sddp_block ) {
 
  auto status = solver->compute();
 
- show_status( solver );
+ show_status( status , solver->get_fault_stage() );
 
  auto lb = solver->get_lb();
  auto ub = solver->get_ub();
 
  std::cout << "Lower bound: " << lb << std::endl;
  std::cout << "Upper bound: " << ub << std::endl;
-
- if( solver->has_var_solution() ) {
-  output_solution( sddp_block );
- }
 }
 
 /*--------------------------------------------------------------------------*/
@@ -395,7 +327,7 @@ BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block ) {
      ( nullptr , inner_benders_function_solver ) );
 
   auto stochastic_block_config = new RBlockConfig;
-  sddp_config->add_sub_BlockConfig( stochastic_block_config , index++ );
+  sddp_config->add_sub_BlockConfig( stochastic_block_config , index );
 
   auto benders_block_config = new OBlockConfig;
   stochastic_block_config->add_sub_BlockConfig( benders_block_config , 0 );
@@ -505,6 +437,7 @@ void process_block_file( const netCDF::NcFile & file ) {
  for( auto block_description : blocks ) {
 
   // Deserialize the SDDPBlock
+
   auto sddp_block = dynamic_cast<SDDPBlock *>
    ( Block::new_Block( block_description.second ) );
 
