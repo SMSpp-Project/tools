@@ -67,6 +67,10 @@ if (UCBlock_FOUND AND MILPSolver_FOUND)
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif ()
 
+
+# Just consuming these to avoid warnings
 if (BUILD_TESTING)
-    # Just consuming BUILD_TESTING to avoid warnings
 endif ()
+
+if (CMAKE_EXPORT_PACKAGE_REGISTRY)
+endif()
