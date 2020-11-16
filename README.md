@@ -19,7 +19,7 @@ These instructions will let you build SMS++ Tools on your system.
 - SDDPBlock
 - UCBlock
 
-### Build and install
+### Build and install with CMake
 
 Configure and build with:
 
