@@ -1,6 +1,15 @@
 # --------------------------------------------------------------------------- #
 #    Main CMake file for SMS++ tools                                          #
 #                                                                             #
+#    This file allows one to build the tests using CMake.                     #
+#    To do so, you can use the following commands:                            #
+#                                                                             #
+#        $ cmake -S <source-path> -B <build-path>                             #
+#        $ cmake --build <build-path>                                         #
+#                                                                             #
+#    Note: this file tries to respect the principles of Modern CMake,         #
+#          keep it in mind when editing it.                                   #
+#                                                                             #
 #                              Niccolo' Iardella                              #
 #                          Operations Research Group                          #
 #                         Dipartimento di Informatica                         #
@@ -13,7 +22,6 @@ project(SMS++_tools VERSION 0.3.1 LANGUAGES CXX)
 # Since we are using the block factory, objects from statically linked libraries
 # may wrongly appear unused, and by default the linker does not include them,
 # so we have to force the linking.
-
 if (NOT BUILD_SHARED_LIBS)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
         add_link_options("-Wl,-all_load")
@@ -22,6 +30,7 @@ if (NOT BUILD_SHARED_LIBS)
     endif ()
 endif ()
 
+# TODO: Better put these in subdirectories
 # ----- Requirements -------------------------------------------------------- #
 find_package(UCBlock)
 find_package(MILPSolver)
@@ -73,4 +82,4 @@ if (BUILD_TESTING)
 endif ()
 
 if (CMAKE_EXPORT_PACKAGE_REGISTRY)
-endif()
+endif ()
