@@ -1,3 +1,21 @@
+/** @file
+ * SMS++ Thermal Unit solver.
+ *
+ * A tool that loads an ThermalUnitBlock from a SMS++ nc4 Block file,
+ * optionally configures it with a BlockConfig and a BlockSolverConfig,
+ * and solves it with all the loaded Solvers.
+ *
+ * Optionally, it writes back the Block, the BlockConfig and the
+ * BlockSolverConfig on a SMS++ nc4 problem file.
+ *
+ * \author Niccolo' Iardella \n
+ *         Operations Research Group \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * Copyright &copy; by Niccolo' Iardella
+ */
+
 #include <iostream>
 #include <iomanip>
 
@@ -15,10 +33,12 @@ using namespace SMSpp_di_unipi_it;
 
 int main( int argc, char ** argv ) {
 
+ // Manage options and help, see common_utils.h
  docopt_desc = "SMS++ thermal unit solver.\n";
  exe = get_filename( argv[ 0 ] );
  process_args( argc, argv );
 
+ // Read nc4 file
  netCDF::NcFile f;
  try {
   f.open( filename, netCDF::NcFile::read );
@@ -34,6 +54,7 @@ int main( int argc, char ** argv ) {
   exit( 1 );
  }
 
+ // Read nc4 group
  int type;
  gtype.getValues( &type );
 

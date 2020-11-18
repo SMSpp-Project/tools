@@ -1,3 +1,24 @@
+/** @file
+ * SMS++ generic block and problem solver.
+ *
+ * A tool that loads a SMS++ nc4 Block or Problem file and solves it.
+ *
+ * In case of a Block file, i.e. a file that contains one or more Blocks,
+ * it optionally configures all the Blocks with a BlockConfig and/or a
+ * BlockSolverConfig, then it solves it with all the loaded solvers.
+ *
+ * In case of a Problem file, i.e. one that contains one or more Problems
+ * (with a problem being a Block/BlockConfig/BlockSolverConfig tuple),
+ * it solves each problem with all the loaded solvers.
+ *
+ * \author Niccolo' Iardella \n
+ *         Operations Research Group \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * Copyright &copy; by Niccolo' Iardella
+ */
+
 #include <iostream>
 #include <iomanip>
 
@@ -23,10 +44,12 @@ using namespace SMSpp_di_unipi_it;
 
 int main( int argc, char ** argv ) {
 
+ // Manage options and help, see common_utils.h
  docopt_desc = "SMS++ generic block and problem solver.\n";
  exe = get_filename( argv[ 0 ] );
  process_args( argc, argv );
 
+ // Read nc4 file
  netCDF::NcFile f;
  try {
   f.open( filename, netCDF::NcFile::read );

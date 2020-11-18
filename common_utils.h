@@ -1,6 +1,12 @@
 /** @file
  * Some common utilities for SMS++ tools.
  *
+ * \author Niccolo' Iardella \n
+ *         Operations Research Group \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * Copyright &copy; by Niccolo' Iardella
  */
 
 #ifndef __COMMON_UTILS
@@ -16,16 +22,23 @@
 
 using namespace SMSpp_di_unipi_it;
 
-std::string filename{};
-std::string bconf_file{};
-std::string sconf_file{};
-bool solvVerbose = false;
-bool writeprob = false;
-std::string exe{};
-std::string docopt_desc{};
+/**
+ * @name Global variables used by every tool
+ * @{
+ */
+
+std::string filename{};    ///< Input filename
+std::string bconf_file{};  ///< BlockConfig filename
+std::string sconf_file{};  ///< BlockSolverConfig filename
+bool solvVerbose = false;  ///< If the solver should be verbose
+bool writeprob = false;    ///< If the problem should be written back
+std::string exe{};         ///< Name of the executable file
+std::string docopt_desc{}; ///< Tool description
+/// @}
 
 /*--------------------------------------------------------------------------*/
 
+/// Gets the name of the executable from its full path
 std::string get_filename( const std::string & fullpath ) {
  std::size_t found = fullpath.find_last_of( "/\\" );
  return fullpath.substr( found + 1 );
@@ -33,6 +46,7 @@ std::string get_filename( const std::string & fullpath ) {
 
 /*--------------------------------------------------------------------------*/
 
+/// Prints the tool description and usage
 void docopt() {
  // http://docopt.org
  std::cout << docopt_desc << std::endl;
@@ -48,6 +62,7 @@ void docopt() {
 
 /*--------------------------------------------------------------------------*/
 
+/// Processes the command line arguments
 void process_args( int argc, char ** argv ) {
 
  if( argc < 2 ) {
@@ -108,7 +123,7 @@ void process_args( int argc, char ** argv ) {
 
 /*--------------------------------------------------------------------------*/
 
-// Returns a default ThermalUnitBlock configuration
+/// Returns a default ThermalUnitBlock configuration
 BlockConfig * default_configure_thermalunitblock() {
  auto conf = new BlockConfig();
  conf->f_static_variables_Configuration = new SimpleConfiguration< int >( 15 );
@@ -117,7 +132,7 @@ BlockConfig * default_configure_thermalunitblock() {
 
 /*--------------------------------------------------------------------------*/
 
-// Returns a default UCBlock configuration
+/// Returns a default UCBlock configuration
 BlockConfig * default_configure_ucblock( Block * uc_block ) {
 
  BlockConfig * b_config = new RBlockConfig;
@@ -199,7 +214,7 @@ BlockConfig * default_configure_ucblock( Block * uc_block ) {
 
 /*--------------------------------------------------------------------------*/
 
-// Returns a default Solver configuration
+/// Returns a default Solver configuration
 BlockSolverConfig * default_configure_solver( int verbose ) {
  auto s_config = new BlockSolverConfig;
  auto c_config = new ComputeConfig;
@@ -214,6 +229,7 @@ BlockSolverConfig * default_configure_solver( int verbose ) {
 
 /*--------------------------------------------------------------------------*/
 
+/// Prints the status in a human-readable form
 void print_status( int status ) {
  std::cout << "Status = " << status << " (";
 
@@ -242,6 +258,7 @@ void print_status( int status ) {
 
 /*--------------------------------------------------------------------------*/
 
+/// Solves the problem with all available solvers
 void solve_all( Block * block ) {
  for( auto solver : block->get_registered_solvers() ) {
   std::cout << "Solver: " << solver->classname() << std::endl;
@@ -256,7 +273,7 @@ void solve_all( Block * block ) {
 
 /*--------------------------------------------------------------------------*/
 
-// Configures a Block with a BlockConfig file
+/// Configures a Block with a BlockConfig file
 BlockConfig * configure_block( Block * block, const std::string & conf_file ) {
  BlockConfig * b_config = nullptr;
  std::ifstream bcf;
@@ -286,7 +303,7 @@ BlockConfig * configure_block( Block * block, const std::string & conf_file ) {
 
 /*--------------------------------------------------------------------------*/
 
-// Configures a Block with a BlockSolverConfig file
+/// Configures a Block with a BlockSolverConfig file
 BlockSolverConfig *
 configure_blocksolver( Block * block, const std::string & conf_file ) {
  BlockSolverConfig * s_config = nullptr;
@@ -317,7 +334,7 @@ configure_blocksolver( Block * block, const std::string & conf_file ) {
 
 /*--------------------------------------------------------------------------*/
 
-// Writes a new nc4 problem using the block and its configurations
+/// Writes a new nc4 problem using the block and its configurations
 void write_nc4problem( Block * block,
                        BlockConfig * b_config,
                        BlockSolverConfig * s_config ) {

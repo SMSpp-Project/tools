@@ -1,3 +1,19 @@
+/** @file
+ * A procedure for printing the content of a solved UCBlock.
+ *
+ * \author Ali Ghezelsoflu \n
+ *         Operations Research Group \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * \author Niccolo' Iardella \n
+ *         Operations Research Group \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * Copyright &copy; by Ali Ghezelsoflu, Niccolo' Iardella
+ */
+
 #include <BatteryUnitBlock.h>
 #include <BusNetworkBlock.h>
 #include <DCNetworkBlock.h>
@@ -7,6 +23,11 @@
 #include <IntermittentUnitBlock.h>
 #include <ThermalUnitBlock.h>
 
+using namespace SMSpp_di_unipi_it;
+
+/*--------------------------------------------------------------------------*/
+
+/// Prints the content of a solved UCBlock
 void print_ucblock_solver_results( Block * block ) {
  int n_unit_blocks = 0;
  int n_netw_blocks = 0;
