@@ -38,16 +38,23 @@ make install
 
 ## Usage
 
-### Block solver
+The Block solver (`block_solver`),
+the Thermal Unit solver (`thermalunit_solver`) and 
+the Unit Commitment solver (`ucblock_solver`) share the same interface:
 
 ```sh
-Usage: block_solver [options] <nc4-file>
+Usage: <solver-name> [options] <nc4-file>
 
-  -B <file>, --blockcfg <file>   Block configuration.
-  -S <file>, --solvercfg <file>  Solver configuration.
-  -v, --verbose                  Make the solver verbose.
-  -h, --help                     Print this help.
+  -B <file>, --blockcfg <file>    Block configuration.
+  -S <file>, --solvercfg <file>   Solver configuration.
+  -n <file>, --nc4problem <file>  Write nc4 problem on file.
+  -v, --verbose                   Make the solver verbose.
+  -h, --help                      Print this help.
 ```
+
+See the [`examples`](examples) directory for sample input files and configurations.
+
+### Block solver
 
 The input netCDF file can be a problem file or a block file:
 - a problem file already contains a Block configuration and a Solver configuration,
@@ -80,41 +87,10 @@ be solved. The index must be a number between 0 and n-1, where n is the number
 of scenarios in the SDDPBlock. If this index is not provided, then the problem
 is solved for the first scenario.
 
-### Thermal Unit solver
-
-```sh
-Usage: thermalunit_solver [options] <nc4-file>
-
-Options:
-  -B <file>, --blockcfg <file>    Block configuration.
-  -S <file>, --solvercfg <file>   Solver configuration.
-  -w <file>, --writelp <file>     Write LP problem on file.
-  -n <file>, --nc4problem <file>  Write nc4 problem on file.
-  -v, --verbose                   Make the solver verbose.
-  -h, --help                      Print this help.
-```
+### Thermal Unit solver / Unit Commitment solver
 
 The input netCDF file must be a block file. If you don't provide Block
 or Solver configurations, default configurations will be used.
-
-See the [`examples`](examples) directory for sample input files and configurations.
-
-### Unit Commitment solver
-
-```sh
-Usage: ucblock_solver [options] <nc4-file>
-
-Options:
-  -B <file>, --blockcfg <file>   Block configuration.
-  -S <file>, --solvercfg <file>  Solver configuration.
-  -v, --verbose                  Make the solver verbose.
-  -h, --help                     Print this help.
-```
-
-The input netCDF file must be a block file. If you don't provide Block
-or Solver configurations, default configurations will be used.
-
-See the [`examples`](examples) directory for sample input files and configurations.
 
 ## Authors
 

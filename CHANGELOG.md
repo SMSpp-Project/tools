@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- A redundant option removed from ucblock_solver.
+- block/ucblock/thermalunit solvers have now the same interface.
 
 ## [0.3.1] - 2020-09-28
 
