@@ -188,8 +188,8 @@ void solve_all( Block * block ) {
 
 /*--------------------------------------------------------------------------*/
 
-/// Configures a Block with a BlockConfig file
-BlockConfig * configure_block( Block * block, const std::string & conf_file ) {
+/// Gets a BlockConfig from a BlockConfig file
+BlockConfig * get_blockconfig( const std::string & conf_file ) {
  BlockConfig * b_config = nullptr;
  std::ifstream bcf;
 
@@ -212,15 +212,14 @@ BlockConfig * configure_block( Block * block, const std::string & conf_file ) {
   return nullptr;
  }
 
- b_config->apply( block );
  return b_config;
 }
 
 /*--------------------------------------------------------------------------*/
 
-/// Configures a Block with a BlockSolverConfig file
+/// Gets a BlockSolverConfig from a BlockSolverConfig file
 BlockSolverConfig *
-configure_blocksolver( Block * block, const std::string & conf_file ) {
+get_blocksolverconfig( const std::string & conf_file ) {
  BlockSolverConfig * s_config = nullptr;
  std::ifstream scf;
 
@@ -243,7 +242,6 @@ configure_blocksolver( Block * block, const std::string & conf_file ) {
   return nullptr;
  }
 
- s_config->apply( block );
  return s_config;
 }
 
