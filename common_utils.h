@@ -17,9 +17,6 @@
 #include <Block.h>
 #include <RBlockConfig.h>
 
-#include <UnitBlock.h>
-#include <HydroSystemUnitBlock.h>
-
 using namespace SMSpp_di_unipi_it;
 
 /**
@@ -129,88 +126,6 @@ BlockConfig * default_configure_thermalunitblock() {
  conf->f_static_variables_Configuration = new SimpleConfiguration< int >( 15 );
  return conf;
 }
-
-/*--------------------------------------------------------------------------*/
-
-/// Returns a default UCBlock configuration
-BlockConfig * default_configure_ucblock( Block * uc_block ) {
-
- BlockConfig * b_config = new RBlockConfig;
-
- for( auto sb: uc_block->get_nested_Blocks() ) {
-  if( !dynamic_cast<UnitBlock *>( sb ) ) {
-   continue;
-  }
-
-  // Common UnitBlock static variables configuration
-  auto sbc = new RBlockConfig;
-  sbc->f_static_variables_Configuration =
-   new SimpleConfiguration< int >( 15 );
-
-  // If HydroSystemUnitBlock, we configure its PolyhedralFunctionBlocks
-  auto hu_block = dynamic_cast<HydroSystemUnitBlock *>( sb );
-
-  if( hu_block != nullptr ) {
-   auto num_nested_blocks_hydro = hu_block->get_number_nested_Blocks();
-   for( auto ssb: hu_block->get_nested_Blocks() ) {
-
-    auto pf_block = dynamic_cast<PolyhedralFunctionBlock *>( ssb );
-
-    if( pf_block != nullptr ) {
-     auto ssbc = new BlockConfig();
-     ssbc->f_static_variables_Configuration =
-      new SimpleConfiguration< int >( 1 );
-
-     int idx = ssb->get_nested_Block_index( sb );
-     sbc->add_sub_BlockConfig( ssbc, idx );
-    }
-   }
-  }
-
-  int idx = sb->get_nested_Block_index( uc_block );
-  static_cast<RBlockConfig *>( b_config )->add_sub_BlockConfig( sbc, idx );
- }
-
- return b_config;
-}
-
-// BlockConfig * default_configure_ucblock( Block * uc_block ) {
-//
-//  BlockConfig * b_config = new RBlockConfig;
-//  auto num_nested_blocks = uc_block->get_number_nested_Blocks();
-//  for( Block::Index i = 0; i < num_nested_blocks; ++i ) {
-//
-//   auto sub_block = uc_block->get_nested_Block( i );
-//   if( !dynamic_cast<UnitBlock *>( sub_block ) )
-//    continue;
-//
-//   auto subconf = new RBlockConfig;
-//   subconf->f_static_variables_Configuration =
-//    new SimpleConfiguration< int >( 15 );
-//
-//   auto hu_block = dynamic_cast<HydroSystemUnitBlock *>( sub_block );
-//
-//   if( hu_block != nullptr ) {
-//    auto num_nested_blocks_hydro = hu_block->get_number_nested_Blocks();
-//    for( Block::Index j = 0; j < num_nested_blocks_hydro; ++j ) {
-//     auto sub_Block_hydro = hu_block->get_nested_Block( j );
-//     auto sub_pf_block =
-//      dynamic_cast<PolyhedralFunctionBlock *>( sub_Block_hydro );
-//
-//     if( sub_pf_block != nullptr ) {
-//      auto subsubconf = new BlockConfig();
-//      subsubconf->f_static_variables_Configuration =
-//       new SimpleConfiguration< int >( 1 );
-//      subconf->add_sub_BlockConfig( subsubconf, j );
-//     }
-//    }
-//   }
-//
-//   static_cast<RBlockConfig *>( b_config )->add_sub_BlockConfig( subconf, i );
-//  }
-//
-//  return b_config;
-// }
 
 /*--------------------------------------------------------------------------*/
 
