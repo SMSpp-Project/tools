@@ -1,3 +1,6 @@
+### CPLEX output files
+*.lp
+
 ### C/C++ template
 # Prerequisites
 *.d

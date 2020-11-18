@@ -3,15 +3,17 @@
 #include <fstream>
 #include <getopt.h>
 
-#include <BatteryUnitBlock.h>
+#include <Block.h>
 #include <BlockSolverConfig.h>
+#include <RBlockConfig.h>
+
+#include <BatteryUnitBlock.h>
 #include <BusNetworkBlock.h>
 #include <DCNetworkBlock.h>
 #include <HydroSystemUnitBlock.h>
 #include <HydroUnitBlock.h>
 #include <SlackUnitBlock.h>
 #include <IntermittentUnitBlock.h>
-#include <RBlockConfig.h>
 #include <ThermalUnitBlock.h>
 #include <UCBlock.h>
 
@@ -23,30 +25,92 @@ std::string bconf_file{};
 std::string sconf_file{};
 bool solvVerbose = false;
 
+/*--------------------------------------------------------------------------*/
+
+// Returns a default UCBlock configuration
+BlockConfig * default_configure_ucblock( Block * uc_block ) {
+
+ BlockConfig * b_config = new RBlockConfig;
+ auto num_nested_blocks = uc_block->get_number_nested_Blocks();
+ for( Block::Index i = 0; i < num_nested_blocks; ++i ) {
+
+  auto sub_block = uc_block->get_nested_Block( i );
+  if( !dynamic_cast<UnitBlock *>( sub_block ) )
+   continue;
+
+  auto subconf = new RBlockConfig;
+  subconf->f_static_variables_Configuration =
+   new SimpleConfiguration< int >( 15 );
+
+  auto hu_block = dynamic_cast<HydroSystemUnitBlock *>( sub_block );
+
+  if( hu_block != nullptr ) {
+   auto num_nested_blocks_hydro = hu_block->get_number_nested_Blocks();
+   for( Block::Index j = 0; j < num_nested_blocks_hydro; ++j ) {
+    auto sub_Block_hydro = hu_block->get_nested_Block( j );
+    auto sub_pf_block =
+     dynamic_cast<PolyhedralFunctionBlock *>( sub_Block_hydro );
+
+    if( sub_pf_block != nullptr ) {
+     auto subsubconf = new BlockConfig();
+     subsubconf->f_static_variables_Configuration =
+      new SimpleConfiguration< int >( 1 );
+     subconf->add_sub_BlockConfig( subsubconf, j );
+    }
+   }
+  }
+
+  static_cast<RBlockConfig *>( b_config )->add_sub_BlockConfig( subconf, i );
+ }
+
+ return b_config;
+}
+
+/*--------------------------------------------------------------------------*/
+
+// Returns a default Solver configuration
+BlockSolverConfig * default_configure_solver() {
+ auto s_config = new BlockSolverConfig;
+ auto c_config = new ComputeConfig;
+
+ if( solvVerbose ) {
+  c_config->set_par( "intLogVerb", 1 );
+ }
+
+ s_config->add_ComputeConfig( "CPXMILPSolver", c_config );
+ return s_config;
+}
+
+/*--------------------------------------------------------------------------*/
+
 void print_help() {
  // http://docopt.org
- std::cout << "Usage: ucblock_solver [options] <nc4-file>" << std::endl
+ std::cout << "SMS++ unit commitment solver.\n"
            << std::endl
-           << "Options:" << std::endl
-           << "  -B <file>, --blockcfg <file>    Block configuration." << std::endl
-           << "  -S <file>, --solvercfg <file>   Solver configuration." << std::endl
-           << "  -w <file>, --writelp <file>     Write LP problem on file." << std::endl
-           << "  -v, --verbose                   Make the solver verbose. " << std::endl
-           << "  -h, --help                      Print this help." << std::endl;
+           << "Usage: ucblock_solver [options] <nc4-file>\n"
+           << std::endl
+           << "Options:\n"
+           << "  -B <file>, --blockcfg <file>   Block configuration.\n"
+           << "  -S <file>, --solvercfg <file>  Solver configuration.\n"
+           << "  -v, --verbose                  Make the solver verbose.\n"
+           << "  -h, --help                     Print this help.\n";
 }
+
+/*--------------------------------------------------------------------------*/
 
 void process_args( int argc, char ** argv ) {
 
  if( argc < 2 ) {
-  print_help();
+  std::cout << "ucblock_solver: no input file\n"
+            << "Try ucblock_solver --help' for more information.\n";
   exit( 1 );
  }
+ /*--------------------------------------------------------------------------*/
 
- const char * const short_opts = "B:S:w:vh";
+ const char * const short_opts = "B:S:vh";
  const option long_opts[] = {
   { "blockcfg",  required_argument, nullptr, 'B' },
   { "solvercfg", required_argument, nullptr, 'S' },
-  { "writelp",   required_argument, nullptr, 'w' },
   { "verbose",   no_argument,       nullptr, 'v' },
   { "help",      no_argument,       nullptr, 'h' },
   { nullptr,     no_argument,       nullptr, 0 }
@@ -66,18 +130,15 @@ void process_args( int argc, char ** argv ) {
    case 'S':
     sconf_file = std::string( optarg );
     break;
-   case 'w':
-    lp_file = std::string( optarg );
-    break;
    case 'v':
     solvVerbose = true;
     break;
-   case 'h': // -h or --help
+   case 'h':
     print_help();
     exit( 0 );
-   case '?': // Unrecognized option
+   case '?':
    default:
-    print_help();
+    std::cout << "Try ucblock_solver --help' for more information.\n";
     exit( 1 );
   }
  }
@@ -86,184 +147,15 @@ void process_args( int argc, char ** argv ) {
  if( optind < argc ) {
   filename = std::string( argv[ optind ] );
  } else {
-  print_help();
+  std::cout << "ucblock_solver: no input file\n"
+            << "Try ucblock_solver --help' for more information.\n";
   exit( 1 );
  }
 }
 
-int main( int argc, char ** argv ) {
+/*--------------------------------------------------------------------------*/
 
- process_args( argc, argv );
-
- netCDF::NcFile f;
- try {
-  f.open( filename, netCDF::NcFile::read );
- } catch( netCDF::exceptions::NcException & e ) {
-  std::cerr << "Cannot open nc4 file " << filename << std::endl;
-  exit( 1 );
- }
-
- netCDF::NcGroupAtt gtype = f.getAtt( "SMS++_file_type" );
- if( gtype.isNull() ) {
-  std::cerr << filename << " is not an SMS++ nc4 file" << std::endl;
-  exit( 1 );
- }
-
- int type = 0;
- gtype.getValues( &type );
- auto ucb = dynamic_cast<UCBlock *>(Block::new_Block( "UCBlock" ));
-
- switch( type ) {
-  case eProbFile: {
-   std::cout << filename
-             << " is a problem file, ignoring Block/Solver configurations..."
-             << std::endl;
-   // TODO
-   break;
-  }
-
-  case eBlockFile: {
-   std::cout << filename << " is a block file" << std::endl;
-
-   netCDF::NcGroup bg = f.getGroup( "Block_0" );
-   if( bg.isNull() ) {
-    std::cerr << "Block_0 empty or undefined in " << filename << std::endl;
-    exit( 1 );
-   }
-
-   std::cout << "Data Step -- Attempting to deserialize..." << std::endl;
-
-   // Deserialize block
-   ucb->deserialize( bg );
-
-   // Configure block
-   BlockConfig * b_config = nullptr;
-   std::ifstream bcf;
-   bcf.open( bconf_file, std::ifstream::in );
-   if( bcf.is_open() ) {
-    std::cout << "Using Block configuration in " << bconf_file << std::endl;
-    std::string config_name;
-    bcf >> config_name;
-    b_config = dynamic_cast<BlockConfig *>
-    ( Configuration::new_Configuration( config_name ) );
-    if( !b_config ) {
-     std::cerr << "Block configuration not valid: " << config_name << std::endl;
-     exit( 1 );
-    }
-    try {
-     bcf >> *b_config;
-    } catch( const std::exception & e ) {
-     std::cerr << "Block configuration not valid: " << e.what() << std::endl;
-     exit( 1 );
-    }
-   } else {
-    std::cout << "Block configuration not provided" << std::endl;
-
-    // Default configuration
-    b_config = new RBlockConfig;
-    auto num_nested_Blocks_ucb = ucb->get_number_nested_Blocks();
-    for( Block::Index i = 0; i < num_nested_Blocks_ucb; ++i ) {
-
-     auto sub_Block_ucb = ucb->get_nested_Block( i );
-     if( !dynamic_cast<UnitBlock *>( sub_Block_ucb ) )
-      continue;
-
-     auto subconf = new RBlockConfig;
-     subconf->f_static_variables_Configuration =
-      new SimpleConfiguration< int >( 15 );
-
-     auto hu_block = dynamic_cast<HydroSystemUnitBlock *>( sub_Block_ucb );
-     if( hu_block != nullptr ) {
-      auto num_nested_blocks_hydro = hu_block->get_number_nested_Blocks();
-      for( Block::Index j = 0; j < num_nested_blocks_hydro; ++j ) {
-       auto sub_Block_hydro = hu_block->get_nested_Block( j );
-       auto sub_pf_block =
-        dynamic_cast<PolyhedralFunctionBlock *>( sub_Block_hydro );
-       if( sub_pf_block != nullptr ) {
-        auto subsubconf = new BlockConfig();
-        subsubconf->f_static_variables_Configuration =
-         new SimpleConfiguration< int >( 1 );
-        subconf->add_sub_BlockConfig( subsubconf, j );
-       }
-      }
-     }
-
-     static_cast<RBlockConfig *>( b_config )->
-      add_sub_BlockConfig( subconf, i );
-    }
-   }
-
-   if( b_config )
-    b_config->apply( ucb );
-
-   // Configure solver
-   std::cout << "Next in line : configure solver" << std::endl;
-   std::cout.flush();
-
-   BlockSolverConfig * s_config = nullptr;
-   std::ifstream scf;
-   scf.open( sconf_file, std::ifstream::in );
-
-   if( scf.is_open() ) {
-    std::cout << "Using Solver configuration in " << sconf_file << std::endl;
-    std::string config_name;
-    scf >> eatcomments >> config_name;
-    s_config = dynamic_cast<BlockSolverConfig *>
-    ( Configuration::new_Configuration( config_name ) );
-    if( !s_config ) {
-     std::cerr << "Solver configuration not valid: " << config_name
-               << std::endl;
-     exit( 1 );
-    }
-    try {
-     scf >> *s_config;
-    } catch( ... ) {
-     std::cout << "Solver configuration not valid" << std::endl;
-     exit( 1 );
-    }
-   } else {
-    std::cout << "Solver configuration not provided" << std::endl;
-
-    // Default configuration
-    s_config = new BlockSolverConfig;
-    auto comp_conf = new ComputeConfig;
-
-    if( solvVerbose ) {
-     std::pair< std::string, int > verbslvl = { "intLogVerb", 1 };
-     comp_conf->int_pars.emplace_back( verbslvl );
-    }
-    if( !lp_file.empty() ) {
-     std::pair< std::string, std::string > output_file = { "strOutputFile",
-                                                           lp_file };
-     comp_conf->str_pars.emplace_back( output_file );
-    }
-
-    s_config->add_ComputeConfig( "CPXMILPSolver", comp_conf );
-   }
-
-   if( s_config )
-    s_config->apply( ucb );
-
-   break;
-  }
-
-  default:
-   std::cerr << filename << " is not a valid SMS++ file" << std::endl;
-   exit( 1 );
- }
-
- std::cout << "Data Loaded -- without foreseeable errors -- attempting to solve"
-           << std::endl;
- std::cout.flush();
-
- std::cout.setf( std::ios::scientific, std::ios::floatfield );
- std::cout << std::setprecision( 8 );
- auto solver = ucb->get_registered_solvers().front();
-
- int status = solver->compute();
- solver->get_var_solution();
- auto ub = solver->get_ub();
- auto lb = solver->get_lb();
+void print_status( int status ) {
  std::cout << "Status = " << status << " (";
 
  switch( status ) {
@@ -287,16 +179,159 @@ int main( int argc, char ** argv ) {
    break;
   default:;
  }
+}
 
- std::cout << "Upper bound = " << ub << std::endl;
- std::cout << "Lower bound = " << lb << std::endl;
+/*--------------------------------------------------------------------------*/
 
+void solve_all( Block * block ) {
+ for( auto solver : block->get_registered_solvers() ) {
+  std::cout << "Solver: " << solver->classname() << std::endl;
+  auto status = solver->compute();
+  auto ub = solver->get_ub();
+  auto lb = solver->get_lb();
+  print_status( status );
+  std::cout << "Upper bound = " << ub << std::endl;
+  std::cout << "Lower bound = " << lb << std::endl;
+ }
+}
+
+/*--------------------------------------------------------------------------*/
+
+// Prints all the results
+void print_ucblock_solver_results( Block * block );
+
+/*--------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+int main( int argc, char ** argv ) {
+
+ process_args( argc, argv );
+
+ netCDF::NcFile f;
+ try {
+  f.open( filename, netCDF::NcFile::read );
+ } catch( netCDF::exceptions::NcException & e ) {
+  std::cerr << "ucblock_solver: "
+            << "cannot open nc4 file " << filename << std::endl;
+  exit( 1 );
+ }
+
+ netCDF::NcGroupAtt gtype = f.getAtt( "SMS++_file_type" );
+ if( gtype.isNull() ) {
+  std::cerr << "ucblock_solver: "
+            << filename << " is not an SMS++ nc4 file" << std::endl;
+  exit( 1 );
+ }
+
+ int type;
+ gtype.getValues( &type );
+
+ if( type != eBlockFile ) {
+  std::cerr << "ucblock_solver: "
+            << filename << " is not an SMS++ nc4 Block file" << std::endl;;
+  exit( 1 );
+ }
+
+ netCDF::NcGroup bg = f.getGroup( "Block_0" );
+ if( bg.isNull() ) {
+  std::cerr << "ucblock_solver: "
+            << "Block_0 empty or undefined in " << filename << std::endl;
+  exit( 1 );
+ }
+
+ // Deserialize block
+ auto block = dynamic_cast<UCBlock *>(Block::new_Block( "UCBlock" ));
+ block->deserialize( bg );
+
+ // Configure block
+ BlockConfig * b_config = nullptr;
+ std::ifstream bcf;
+ bcf.open( bconf_file, std::ifstream::in );
+
+ if( bcf.is_open() ) {
+  std::cout << "Using Block configuration in " << bconf_file << std::endl;
+  std::string config_name;
+  bcf >> eatcomments >> config_name;
+  b_config = dynamic_cast<BlockConfig *>
+  ( Configuration::new_Configuration( config_name ) );
+
+  if( !b_config ) {
+   std::cerr << "ucblock_solver: "
+             << "Block configuration not valid: " << config_name
+             << std::endl;
+  }
+
+  try {
+   bcf >> *b_config;
+  } catch( const std::exception & e ) {
+   std::cerr << "ucblock_solver: "
+             << "Block configuration not valid: " << e.what() << std::endl;
+   exit( 1 );
+  }
+
+ } else {
+  std::cout << "Block configuration not provided" << std::endl;
+  b_config = default_configure_ucblock( block );
+ }
+
+ if( b_config ) {
+  b_config->apply( block );
+ }
+
+ // Configure solver
+ BlockSolverConfig * s_config = nullptr;
+ std::ifstream scf;
+ scf.open( sconf_file, std::ifstream::in );
+
+ if( scf.is_open() ) {
+  std::cout << "Using Solver configuration in " << sconf_file << std::endl;
+  std::string config_name;
+  scf >> eatcomments >> config_name;
+  s_config = dynamic_cast<BlockSolverConfig *>
+  ( Configuration::new_Configuration( config_name ) );
+
+  if( !s_config ) {
+   std::cerr << "Solver configuration not valid: " << config_name
+             << std::endl;
+   exit( 1 );
+  }
+
+  try {
+   scf >> *s_config;
+  } catch( ... ) {
+   std::cout << "Solver configuration not valid" << std::endl;
+   exit( 1 );
+  }
+ } else {
+  std::cout << "Solver configuration not provided" << std::endl;
+  s_config = default_configure_solver();
+ }
+
+ if( s_config ) {
+  s_config->apply( block );
+ }
+
+ // Solve
+ std::cout.setf( std::ios::scientific, std::ios::floatfield );
+ std::cout << std::setprecision( 8 );
+ solve_all( block );
+
+ // Print the results
+ print_ucblock_solver_results( block );
+
+ return 0;
+}
+
+/*--------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+void print_ucblock_solver_results( Block * block ) {
  int n_unit_blocks = 0;
  int n_netw_blocks = 0;
 
  std::cout << std::endl;
 
- for( auto i: ucb->get_nested_Blocks() ) {
+ for( auto i: block->get_nested_Blocks() ) {
 
   auto unit_block = dynamic_cast<UnitBlock *>(i);
   if( unit_block != nullptr ) {
@@ -365,14 +400,16 @@ int main( int argc, char ** argv ) {
     }
     std::cout << " ]" << std::endl;
 
-    auto primary_reserve = thermal_unit_block->get_primary_spinning_reserve( 0 );
+    auto primary_reserve = thermal_unit_block
+     ->get_primary_spinning_reserve( 0 );
     std::cout << "primary_reserve     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
      std::cout << std::setw( 20 ) << primary_reserve[ t ].get_value();
     }
     std::cout << " ]" << std::endl;
 
-    auto secondary_reserve = thermal_unit_block->get_secondary_spinning_reserve( 0 );
+    auto secondary_reserve = thermal_unit_block
+     ->get_secondary_spinning_reserve( 0 );
     std::cout << "secondary_reserve     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
      std::cout << std::setw( 20 ) << secondary_reserve[ t ].get_value();
@@ -457,7 +494,8 @@ int main( int argc, char ** argv ) {
 
     for( UnitBlock::Index g = 0;
          g < unit_block->get_number_generators(); ++g ) {
-     auto secondary_reserve = hydro_unitblock->get_secondary_spinning_reserve( g );
+     auto secondary_reserve = hydro_unitblock
+      ->get_secondary_spinning_reserve( g );
      std::cout << "secondary_reserve [" + std::to_string( g ) + "]" " = [";
      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
       std::cout << std::setw( 20 ) << secondary_reserve[ t ].get_value();
@@ -512,7 +550,8 @@ int main( int argc, char ** argv ) {
 
       for( UnitBlock::Index g = 0;
            g < sub_hydro_unitblock->get_number_generators(); ++g ) {
-       auto primary_reserve = sub_hydro_unitblock->get_primary_spinning_reserve( g );
+       auto primary_reserve = sub_hydro_unitblock
+        ->get_primary_spinning_reserve( g );
        std::cout << "primary_reserve [" + std::to_string( g ) + "]" " = [";
        for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
         std::cout << std::setw( 20 ) << primary_reserve[ t ].get_value();
@@ -522,7 +561,8 @@ int main( int argc, char ** argv ) {
 
       for( UnitBlock::Index g = 0;
            g < sub_hydro_unitblock->get_number_generators(); ++g ) {
-       auto secondary_reserve = sub_hydro_unitblock->get_secondary_spinning_reserve( g );
+       auto secondary_reserve = sub_hydro_unitblock
+        ->get_secondary_spinning_reserve( g );
        std::cout << "secondary_reserve [" + std::to_string( g ) + "]" " = [";
        for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
         std::cout << std::setw( 20 ) << secondary_reserve[ t ].get_value();
@@ -565,17 +605,20 @@ int main( int argc, char ** argv ) {
     }
     std::cout << " ]" << std::endl;
 
-    auto primary_spinning_reserve = intermittent_unit_block->get_primary_spinning_reserve( 0 );
+    auto primary_spinning_reserve = intermittent_unit_block
+     ->get_primary_spinning_reserve( 0 );
     std::cout << "PrimarySR     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
      std::cout << std::setw( 20 ) << primary_spinning_reserve[ t ].get_value();
     }
     std::cout << " ]" << std::endl;
 
-    auto secondary_spinning_reserve = intermittent_unit_block->get_secondary_spinning_reserve( 0 );
+    auto secondary_spinning_reserve = intermittent_unit_block
+     ->get_secondary_spinning_reserve( 0 );
     std::cout << "SecondarySR     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) << secondary_spinning_reserve[ t ].get_value();
+     std::cout << std::setw( 20 )
+               << secondary_spinning_reserve[ t ].get_value();
     }
     std::cout << " ]" << std::endl;
 
@@ -591,17 +634,20 @@ int main( int argc, char ** argv ) {
     }
     std::cout << " ]" << std::endl;
 
-    auto primary_spinning_reserve = slack_unit_block->get_primary_spinning_reserve( 0 );
+    auto primary_spinning_reserve = slack_unit_block
+     ->get_primary_spinning_reserve( 0 );
     std::cout << "PrimarySR     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
      std::cout << std::setw( 20 ) << primary_spinning_reserve[ t ].get_value();
     }
     std::cout << " ]" << std::endl;
 
-    auto secondary_spinning_reserve = slack_unit_block->get_secondary_spinning_reserve( 0 );
+    auto secondary_spinning_reserve = slack_unit_block
+     ->get_secondary_spinning_reserve( 0 );
     std::cout << "SecondarySR     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) << secondary_spinning_reserve[ t ].get_value();
+     std::cout << std::setw( 20 )
+               << secondary_spinning_reserve[ t ].get_value();
     }
     std::cout << " ]" << std::endl;
 
@@ -614,7 +660,7 @@ int main( int argc, char ** argv ) {
 
    auto node_inj = network_block->get_node_injection();
    std::cout << "Node injection     = [";
-   for(auto & n : node_inj) {
+   for( auto & n : node_inj ) {
     std::cout << std::setw( 20 ) << n.get_value();
    }
    std::cout << " ]" << std::endl;
@@ -624,12 +670,11 @@ int main( int argc, char ** argv ) {
    if( dc_network_block != nullptr ) {
     auto power_flow = dc_network_block->get_power_flow();
     std::cout << "power_flow     = [";
-    for(auto & n : power_flow) {
+    for( auto & n : power_flow ) {
      std::cout << std::setw( 20 ) << n.get_value();
     }
     std::cout << " ]" << std::endl;
    }
   }
  }
- return 0;
 }

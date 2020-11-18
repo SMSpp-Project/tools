@@ -1,28 +1,27 @@
-BlockSolverConfig # The name of the configuration
+BlockSolverConfig  # The name of the configuration
 
-0  # The BlockSolverConfig is not "differential"
-1  # The number of Solvers
+0                  # The configuration is not "differential"
+1                  # Number of solvers
 
-#Nnow all the names of the Solvers
+# Names of the solvers
 CPXMILPSolver
 
-1  # The number of ComputeConfigs
+1                  # Number of ComputeConfigs
 
-# Now all the ComputeConfigs
-# 1st --------------------------------------
-ComputeConfig  # Type of the object
-0  # Not differential
+# ------ ComputeConfig 0 ------
+ComputeConfig      # Type of the object
+0                  # Not differential
 
-1  # Number of integer parameters
+1                  # Number of integer parameters
 intLogVerb 1
 
-2  # Number of double parameters
+2                  # Number of double parameters
 dblAAccSol 1e-04
 dblMaxTime 3600
 
-1  # Number of string parameters
-strOutputFile france.lp
+1                  # Number of string parameters
+strOutputFile uc_output.lp
 
-# Pointer to the "extra" Configuration
-* # [none]
-# 1st END ----------------------------------
+# Extra configuration
+*                  # [none]
+# -----------------------------
