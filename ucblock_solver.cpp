@@ -85,6 +85,7 @@ int main( int argc, char ** argv ) {
    exit( 1 );
   }
  } else {
+  // TODO: Try to remove this
   std::cout << "Using a default Block configuration" << std::endl;
   b_config = default_configure_ucblock( block );
  }

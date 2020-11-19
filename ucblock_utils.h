@@ -37,10 +37,7 @@ BlockConfig * default_configure_ucblock( Block * uc_block ) {
    continue;
   }
 
-  // Common UnitBlock static variables configuration
   auto sbc = new RBlockConfig;
-  sbc->f_static_variables_Configuration =
-   new SimpleConfiguration< int >( 15 );
 
   // If HydroSystemUnitBlock, we configure its PolyhedralFunctionBlocks
   auto hu_block = dynamic_cast<HydroSystemUnitBlock *>( sb );

@@ -83,11 +83,8 @@ int main( int argc, char ** argv ) {
    std::cerr << exe << ": Block configuration not valid" << std::endl;
    exit( 1 );
   }
- } else {
-  std::cout << "Using a default Block configuration" << std::endl;
-  b_config = default_configure_thermalunitblock();
+  b_config->apply( block );
  }
- b_config->apply( block );
 
  // Configure solver
  BlockSolverConfig * s_config;

@@ -120,15 +120,6 @@ void process_args( int argc, char ** argv ) {
 
 /*--------------------------------------------------------------------------*/
 
-/// Returns a default ThermalUnitBlock configuration
-BlockConfig * default_configure_thermalunitblock() {
- auto conf = new BlockConfig();
- conf->f_static_variables_Configuration = new SimpleConfiguration< int >( 15 );
- return conf;
-}
-
-/*--------------------------------------------------------------------------*/
-
 /// Returns a default Solver configuration
 BlockSolverConfig * default_configure_solver( int verbose ) {
  auto s_config = new BlockSolverConfig;
