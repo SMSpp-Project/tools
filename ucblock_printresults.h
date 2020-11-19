@@ -131,14 +131,14 @@ void print_ucblock_solver_results( Block * block ) {
     std::cout << " ]" << std::endl;
 
     auto PrimarySR = battery_unit_block->get_primary_spinning_reserve( 0 );
-    std::cout << "PrimarySR     = [";
+    std::cout << "primary_reserve     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
      std::cout << std::setw( 20 ) << PrimarySR[ t ].get_value();
     }
     std::cout << " ]" << std::endl;
 
     auto SecondarySR = battery_unit_block->get_secondary_spinning_reserve( 0 );
-    std::cout << "SecondarySR     = [";
+    std::cout << "secondary_reserve     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
      std::cout << std::setw( 20 ) << SecondarySR[ t ].get_value();
     }
@@ -310,7 +310,7 @@ void print_ucblock_solver_results( Block * block ) {
 
     auto primary_spinning_reserve = intermittent_unit_block
      ->get_primary_spinning_reserve( 0 );
-    std::cout << "PrimarySR     = [";
+    std::cout << "primary_reserve     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
      std::cout << std::setw( 20 ) << primary_spinning_reserve[ t ].get_value();
     }
@@ -318,7 +318,7 @@ void print_ucblock_solver_results( Block * block ) {
 
     auto secondary_spinning_reserve = intermittent_unit_block
      ->get_secondary_spinning_reserve( 0 );
-    std::cout << "SecondarySR     = [";
+    std::cout << "secondary_reserve     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
      std::cout << std::setw( 20 )
                << secondary_spinning_reserve[ t ].get_value();
@@ -339,7 +339,7 @@ void print_ucblock_solver_results( Block * block ) {
 
     auto primary_spinning_reserve = slack_unit_block
      ->get_primary_spinning_reserve( 0 );
-    std::cout << "PrimarySR     = [";
+    std::cout << "primary_reserve     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
      std::cout << std::setw( 20 ) << primary_spinning_reserve[ t ].get_value();
     }
@@ -347,7 +347,7 @@ void print_ucblock_solver_results( Block * block ) {
 
     auto secondary_spinning_reserve = slack_unit_block
      ->get_secondary_spinning_reserve( 0 );
-    std::cout << "SecondarySR     = [";
+    std::cout << "secondary_reserve     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
      std::cout << std::setw( 20 )
                << secondary_spinning_reserve[ t ].get_value();
