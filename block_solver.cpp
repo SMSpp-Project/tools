@@ -35,12 +35,17 @@
 
 using namespace SMSpp_di_unipi_it;
 
+#if __APPLE__
+#define LIBEXT ".dylib"
+#else
+#define LIBEXT ".so"
+#endif
+
 /*--------------------------------------------------------------------------*/
 
 #ifdef USE_DL
 std::vector< void * > dl_handles;
 
-const static std::string path = "/Users/niccolo/Progetti/smspp/smspp-project/cmake-build-debug/";
 const static std::map< std::string, std::string > class_to_lib{
  { "ThermalUnitBlock", "UCBlock" },
  { "UCBlock",          "UCBlock" },
@@ -52,7 +57,7 @@ const static std::map< std::string, std::string > class_to_lib{
 void load_library( const std::string & class_name ) {
 
  const std::string & lib = class_to_lib.at( class_name );
- auto lib_path = path + lib + "/lib" + lib + ".dylib";
+ auto lib_path = "lib" + lib + LIBEXT;
  void * handle = dlopen( lib_path.c_str(), RTLD_LAZY );
 
  if( !handle ) {
@@ -180,11 +185,8 @@ int main( int argc, char ** argv ) {
       std::cerr << exe << ": Block configuration not valid" << std::endl;
       exit( 1 );
      }
-    } else {
-     std::cerr << exe << ": provide a Block configuration" << std::endl;
-     exit( 1 );
+     b_config->apply( block );
     }
-    b_config->apply( block );
 
     // Configure solver
     BlockSolverConfig * s_config;

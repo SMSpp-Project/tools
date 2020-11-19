@@ -19,6 +19,9 @@ cmake_minimum_required(VERSION 3.11)
 project(SMS++_tools VERSION 0.3.1 LANGUAGES CXX)
 
 # ----- Settings ------------------------------------------------------------ #
+# An option is an ON/OFF user-settable cache variable
+option(tools_USE_DL "Use dynamic loading" ON)
+
 # Since we are using the block factory, objects from statically linked libraries
 # may wrongly appear unused, and by default the linker does not include them,
 # so we have to force the linking.
@@ -32,20 +35,27 @@ endif ()
 
 # TODO: Better put these in subdirectories
 # ----- Requirements -------------------------------------------------------- #
-find_package(SMSpp)
 find_package(UCBlock)
 find_package(MILPSolver)
 find_package(SDDPBlock)
 
 # ----- block_solver -------------------------------------------------------- #
-if (SMSpp_FOUND)
-    add_executable(block_solver block_solver.cpp)
-    target_compile_features(block_solver PUBLIC cxx_std_17)
-    target_link_libraries(block_solver PRIVATE SMS++::SMSpp)
+if (BUILD_SHARED_LIBS AND tools_USE_DL)
+    find_package(SMSpp)
+    if (SMSpp_FOUND)
 
-    if (BUILD_SHARED_LIBS)
+        set(CMAKE_BUILD_RPATH ${SMSPP_BUILD_RPATH})
+
+        add_executable(block_solver block_solver.cpp)
+        target_compile_features(block_solver PUBLIC cxx_std_17)
+        target_link_libraries(block_solver PRIVATE SMS++::SMSpp)
+
         target_compile_definitions(block_solver PRIVATE USE_DL)
         target_link_libraries(block_solver PRIVATE dl)
+
+        set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+        install(TARGETS block_solver
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
     endif ()
 endif ()
 
@@ -75,7 +85,7 @@ if (UCBlock_FOUND AND MILPSolver_FOUND)
                           SMS++::MILPSolver)
 
     include(GNUInstallDirs)
-    install(TARGETS block_solver thermalunit_solver ucblock_solver
+    install(TARGETS thermalunit_solver ucblock_solver
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif ()
 
