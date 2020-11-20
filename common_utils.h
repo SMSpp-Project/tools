@@ -135,7 +135,7 @@ BlockConfig * default_configure_thermalunitblock() {
 /// Returns a default UCBlock configuration
 BlockConfig * default_configure_ucblock( Block * uc_block ) {
 
- BlockConfig * b_config = new RBlockConfig;
+ auto b_config = new RBlockConfig;
 
  for( auto sb: uc_block->get_nested_Blocks() ) {
   if( !dynamic_cast<UnitBlock *>( sb ) ) {
@@ -161,14 +161,14 @@ BlockConfig * default_configure_ucblock( Block * uc_block ) {
      ssbc->f_static_variables_Configuration =
       new SimpleConfiguration< int >( 1 );
 
-     int idx = ssb->get_nested_Block_index( sb );
+     int idx = sb->get_nested_Block_index( ssb );
      sbc->add_sub_BlockConfig( ssbc, idx );
     }
    }
   }
 
-  int idx = sb->get_nested_Block_index( uc_block );
-  static_cast<RBlockConfig *>( b_config )->add_sub_BlockConfig( sbc, idx );
+  int idx = uc_block->get_nested_Block_index( sb );
+  b_config->add_sub_BlockConfig( sbc, idx );
  }
 
  return b_config;
