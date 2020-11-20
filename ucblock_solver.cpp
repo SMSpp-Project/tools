@@ -25,7 +25,7 @@
 #include <UCBlock.h>
 
 #include "common_utils.h"
-#include "ucblock_printresults.h"
+#include "ucblock_utils.h"
 
 using namespace SMSpp_di_unipi_it;
 
@@ -79,21 +79,22 @@ int main( int argc, char ** argv ) {
  // Configure block
  BlockConfig * b_config;
  if( !bconf_file.empty() ) {
-  b_config = configure_block( block, bconf_file );
+  b_config = get_blockconfig( bconf_file );
   if( b_config == nullptr ) {
    std::cerr << exe << ": Block configuration not valid" << std::endl;
    exit( 1 );
   }
  } else {
+  // TODO: Try to remove this
   std::cout << "Using a default Block configuration" << std::endl;
   b_config = default_configure_ucblock( block );
-  b_config->apply( block );
  }
+ b_config->apply( block );
 
  // Configure solver
  BlockSolverConfig * s_config;
  if( !sconf_file.empty() ) {
-  s_config = configure_blocksolver( block, sconf_file );
+  s_config = get_blocksolverconfig( sconf_file );
   if( s_config == nullptr ) {
    std::cerr << exe << ": Block configuration not valid" << std::endl;
    exit( 1 );
@@ -101,8 +102,8 @@ int main( int argc, char ** argv ) {
  } else {
   std::cout << "Using a default Solver configuration" << std::endl;
   s_config = default_configure_solver( solvVerbose );
-  s_config->apply( block );
  }
+ s_config->apply( block );
 
  // Write nc4 problem
  if( writeprob ) {

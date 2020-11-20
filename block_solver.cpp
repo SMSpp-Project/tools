@@ -22,6 +22,12 @@
 #include <iostream>
 #include <iomanip>
 
+#ifdef USE_DL
+
+#include <dlfcn.h>
+
+#endif
+
 #include <Block.h>
 #include <BlockSolverConfig.h>
 
@@ -29,16 +35,46 @@
 
 using namespace SMSpp_di_unipi_it;
 
+#if __APPLE__
+#define LIBEXT ".dylib"
+#else
+#define LIBEXT ".so"
+#endif
+
 /*--------------------------------------------------------------------------*/
 
-// std::string get_library_name( const std::string & class_name ) {
-//  const std::map< std::string, std::string > class_to_lib{
-//   { "ThermalUnitBlock", "UCBlock" },
-//   { "UCBlock",          "UCBlock" },
-//  };
-//
-//  return class_to_lib.at( class_name );
-// }
+#ifdef USE_DL
+std::vector< void * > dl_handles;
+
+const static std::map< std::string, std::string > class_to_lib{
+ { "ThermalUnitBlock", "UCBlock" },
+ { "UCBlock",          "UCBlock" },
+ { "CPXMILPSolver",    "MILPSolver" },
+};
+
+/*--------------------------------------------------------------------------*/
+
+void load_library( const std::string & class_name ) {
+
+ const std::string & lib = class_to_lib.at( class_name );
+ auto lib_path = "lib" + lib + LIBEXT;
+ void * handle = dlopen( lib_path.c_str(), RTLD_LAZY );
+
+ if( !handle ) {
+  std::cerr << "Error:" << dlerror();
+  exit( 1 );
+ } else {
+  dl_handles.push_back( handle );
+ }
+}
+
+void unload_libraries() {
+ for( auto handle: dl_handles ) {
+  dlclose( handle );
+ }
+}
+
+#endif
 
 /*--------------------------------------------------------------------------*/
 
@@ -84,6 +120,12 @@ int main( int argc, char ** argv ) {
 
     // Deserialize block
     auto gb = p.second.getGroup( "Block" );
+#ifdef USE_DL
+    netCDF::NcGroupAtt gbtype = gb.getAtt( "type" );
+    std::string classname;
+    gbtype.getValues( classname );
+    load_library( classname );
+#endif
     auto block = Block::new_Block( gb );
 
     // Configure block
@@ -97,6 +139,11 @@ int main( int argc, char ** argv ) {
     auto bgs = p.second.getGroup( "BlockSolver" );
     auto s_config = static_cast<BlockSolverConfig *>(BlockSolverConfig::new_Configuration( bgs ));
     if( s_config ) {
+#ifdef USE_DL
+     for( const auto & solvername : s_config->get_SolverNames() ) {
+      load_library( solvername );
+     }
+#endif
      s_config->apply( block );
     }
 
@@ -118,37 +165,33 @@ int main( int argc, char ** argv ) {
    std::multimap< std::string, netCDF::NcGroup > block_groups = f.getGroups();
 
    // For each Block
-   for( auto bg : block_groups ) {
+   for( const auto & bg : block_groups ) {
 
     // Deserialize block
-    auto block = Block::new_Block( bg.second );
+    auto gb = bg.second;
+#ifdef USE_DL
+    netCDF::NcGroupAtt gbtype = gb.getAtt( "type" );
+    std::string classname;
+    gbtype.getValues( classname );
+    load_library( classname );
+#endif
+    auto block = Block::new_Block( gb );
 
     // Configure block
     BlockConfig * b_config;
     if( !bconf_file.empty() ) {
-     b_config = configure_block( block, bconf_file );
+     b_config = get_blockconfig( bconf_file );
      if( b_config == nullptr ) {
       std::cerr << exe << ": Block configuration not valid" << std::endl;
       exit( 1 );
      }
-    } else {
-     if( block->classname() == "UCBlock" ) {
-      std::cout << "Using a default UCBlock configuration"
-                << std::endl;
-      b_config = default_configure_ucblock( block );
-      b_config->apply( block );
-     } else if( block->classname() == "ThermalUnitBlock" ) {
-      std::cout << "Using a default ThermalUnitBlock configuration"
-                << std::endl;
-      b_config = default_configure_thermalunitblock();
-      b_config->apply( block );
-     }
+     b_config->apply( block );
     }
 
     // Configure solver
     BlockSolverConfig * s_config;
     if( !sconf_file.empty() ) {
-     s_config = configure_blocksolver( block, sconf_file );
+     s_config = get_blocksolverconfig( sconf_file );
      if( s_config == nullptr ) {
       std::cerr << exe << ": Block configuration not valid" << std::endl;
       exit( 1 );
@@ -156,8 +199,14 @@ int main( int argc, char ** argv ) {
     } else {
      std::cout << "Using a default Solver configuration" << std::endl;
      s_config = default_configure_solver( solvVerbose );
-     s_config->apply( block );
     }
+
+#ifdef USE_DL
+    for( const auto & solvername : s_config->get_SolverNames() ) {
+     load_library( solvername );
+    }
+#endif
+    s_config->apply( block );
 
     // Solve
     std::cout.setf( std::ios::scientific, std::ios::floatfield );
@@ -173,5 +222,8 @@ int main( int argc, char ** argv ) {
    exit( 1 );
  }
 
+#ifdef USE_DL
+ unload_libraries();
+#endif
  return 0;
 }
