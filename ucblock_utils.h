@@ -108,6 +108,10 @@ BlockConfig * default_configure_ucblock( Block * uc_block ) {
 
 /// Prints the content of a solved UCBlock
 void print_ucblock_solver_results( Block * block ) {
+
+ auto solver = block->get_registered_solvers().front();
+ solver->get_var_solution();
+
  int n_unit_blocks = 0;
  int n_netw_blocks = 0;
 
