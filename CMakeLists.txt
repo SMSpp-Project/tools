@@ -16,7 +16,11 @@
 #                             Universita' di Pisa                             #
 # --------------------------------------------------------------------------- #
 cmake_minimum_required(VERSION 3.11)
-project(SMS++_tools VERSION 0.3.1 LANGUAGES CXX)
+project(SMS++_tools
+        VERSION 0.3.1
+        DESCRIPTION "SMS++ tools"
+        HOMEPAGE_URL https://gitlab.com/smspp/tools
+        LANGUAGES C CXX)
 
 # ----- Settings ------------------------------------------------------------ #
 # An option is an ON/OFF user-settable cache variable.
@@ -109,9 +113,12 @@ if (UCBlock_FOUND AND MILPSolver_FOUND)
 endif ()
 
 
+# --------------------------------------------------------------------------- #
 # Just consuming these to avoid warnings
 if (BUILD_TESTING)
 endif ()
 
 if (CMAKE_EXPORT_PACKAGE_REGISTRY)
 endif ()
+
+# --------------------------------------------------------------------------- #

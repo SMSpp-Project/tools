@@ -14,10 +14,10 @@ These instructions will let you build SMS++ Tools on your system.
 
 ### Requirements
 
-- SMS++
-- MILPSolver
-- SDDPBlock
-- UCBlock
+- [SMS++ core library](https://gitlab.com/smspp/smspp)
+- [MILPSolver](https://gitlab.com/smspp/milpsolver)
+- [SDDPBlock](https://gitlab.com/smspp/sddpblock)
+- [UCBlock](https://gitlab.com/smspp/ucblock)
 
 ### Build and install with CMake
 
@@ -116,7 +116,9 @@ or Solver configurations, default configurations will be used.
 
 ## License
 
-See SMS++ library for details.
+This code is provided free of charge under the [GNU Lesser General Public
+License version 3.0](https://opensource.org/licenses/lgpl-3.0.html) -
+see the [LICENSE](LICENSE) file for details.
 
 ## Disclaimer
 
