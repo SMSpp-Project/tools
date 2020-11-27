@@ -48,15 +48,15 @@ void docopt() {
  // http://docopt.org
  std::cout << docopt_desc << std::endl;
  std::cout << "Usage:\n"
-           << "  " << exe << " [-BSnv] <file>\n"
+           << "  " << exe << " [options] <file>\n"
            << "  " << exe << " -h | --help\n"
            << std::endl
            << "Options:\n"
-           << "  -B <file>, --blockcfg <file>    Block configuration.\n"
-           << "  -S <file>, --solvercfg <file>   Solver configuration.\n"
-           << "  -n <file>, --nc4problem <file>  Write nc4 problem on file.\n"
-           << "  -v, --verbose                   Make the solver verbose.\n"
-           << "  -h, --help                      Print this help.\n";
+           << "  -B, --blockcfg <file>    Block configuration.\n"
+           << "  -S, --solvercfg <file>   Solver configuration.\n"
+           << "  -n, --nc4problem <file>  Write nc4 problem on file.\n"
+           << "  -v, --verbose            Make the solver verbose.\n"
+           << "  -h, --help               Print this help.\n";
 }
 
 /*--------------------------------------------------------------------------*/
