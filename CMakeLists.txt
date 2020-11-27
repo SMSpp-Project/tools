@@ -28,6 +28,7 @@ option(tools_USE_DL "Use dynamic loading" ON)
 
 # This is needed for setting the runtime path when installing.
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+include(GNUInstallDirs)
 
 # Since we are using the block factory, objects from statically linked libraries
 # may wrongly appear unused, and by default the linker does not include them,
@@ -46,6 +47,9 @@ find_package(MILPSolver)
 find_package(SDDPBlock)
 
 # ----- block_solver -------------------------------------------------------- #
+add_executable(block_solver block_solver.cpp)
+target_compile_features(block_solver PUBLIC cxx_std_17)
+
 if (BUILD_SHARED_LIBS AND tools_USE_DL)
     # If shared libraries have been built and the option is ON,
     # block_solver will be using dynamic loading.
@@ -57,30 +61,22 @@ if (BUILD_SHARED_LIBS AND tools_USE_DL)
         # containing the libraries.
         set(CMAKE_BUILD_RPATH ${SMSPP_BUILD_RPATH})
 
-        add_executable(block_solver block_solver.cpp)
-        target_compile_features(block_solver PUBLIC cxx_std_17)
-        target_link_libraries(block_solver PRIVATE SMS++::SMSpp)
-
         # Enable DL in the code.
         target_compile_definitions(block_solver PRIVATE USE_DL)
 
-        # Link the dynamic loader.
-        target_link_libraries(block_solver PRIVATE dl)
-
-        install(TARGETS block_solver
-                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+        target_link_libraries(block_solver PRIVATE SMS++::SMSpp dl)
     endif ()
 else ()
     # Otherwise, link all the supported libraries.
     if (UCBlock_FOUND AND MILPSolver_FOUND)
-
-        add_executable(block_solver block_solver.cpp)
-        target_compile_features(block_solver PUBLIC cxx_std_17)
         target_link_libraries(block_solver PRIVATE
                               SMS++::MILPSolver
                               SMS++::UCBlock)
     endif ()
 endif ()
+
+install(TARGETS block_solver
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # ----- sddp_greedy_solver -------------------------------------------------- #
 if (SDDPBlock_FOUND AND MILPSolver_FOUND)
@@ -107,11 +103,23 @@ if (UCBlock_FOUND AND MILPSolver_FOUND)
                           SMS++::UCBlock
                           SMS++::MILPSolver)
 
-    include(GNUInstallDirs)
     install(TARGETS thermalunit_solver ucblock_solver
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif ()
 
+# ----- Generate and install shell completion scripts ----------------------- #
+get_directory_property(toolNames BUILDSYSTEM_TARGETS)
+foreach (toolName ${toolNames})
+    configure_file(scripts/completion.bash.in ${toolName}-completion.bash)
+    configure_file(scripts/completion.zsh.in ${toolName}-completion.zsh)
+
+    install(FILES ${PROJECT_BINARY_DIR}/${toolName}-completion.bash
+            DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
+            RENAME ${toolName})
+    install(FILES ${PROJECT_BINARY_DIR}/${toolName}-completion.zsh
+            DESTINATION ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
+            RENAME "_${toolName}")
+endforeach ()
 
 # --------------------------------------------------------------------------- #
 # Just consuming these to avoid warnings

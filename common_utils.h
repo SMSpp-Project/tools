@@ -47,7 +47,9 @@ std::string get_filename( const std::string & fullpath ) {
 void docopt() {
  // http://docopt.org
  std::cout << docopt_desc << std::endl;
- std::cout << "Usage: " << exe << " [options] <nc4-file>\n"
+ std::cout << "Usage:\n"
+           << "  " << exe << " [-BSnv] <file>\n"
+           << "  " << exe << " -h | --help\n"
            << std::endl
            << "Options:\n"
            << "  -B <file>, --blockcfg <file>    Block configuration.\n"
