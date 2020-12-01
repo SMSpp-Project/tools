@@ -420,6 +420,14 @@ void print_ucblock_solver_results( Block * block ) {
     }
     std::cout << " ]" << std::endl;
 
+    auto commitment = slack_unit_block->get_commitment( 0 );
+    std::cout << "Commitment     = [";
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 2 )
+               << ( unsigned int ) round( commitment[ t ].get_value() );
+    }
+    std::cout << " ]" << std::endl;
+
     auto primary_spinning_reserve = slack_unit_block
      ->get_primary_spinning_reserve( 0 );
     std::cout << "primary_reserve     = [";
