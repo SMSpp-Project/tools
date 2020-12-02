@@ -113,7 +113,7 @@
  * - val_t_j is the dual value of the constraint (primary demand, secondary
  *   demand, or inertia demand) associated with time t and zone j.
  *
- * Finally, the duals values of the maximum pollutant emission constraints are
+ * Finally, the dual values of the maximum pollutant emission constraints are
  * output in multiple files, each one for a pollutant. For each p in {0, ...,
  * number_of_pollutants - 1}, the file containing the dual values of the
  * maximum pollutant emission constraints for the pollutant p has the
@@ -152,6 +152,7 @@
 
 #include "BatteryUnitBlock.h"
 #include "BusNetworkBlock.h"
+#include "CDASolver.h"
 #include "DCNetworkBlock.h"
 #include "HydroSystemUnitBlock.h"
 #include "IntermittentUnitBlock.h"
@@ -192,20 +193,28 @@ public:
  UCBlockSolutionOutput() {
   filenames.resize( number_of_files );
 
-  filenames[ active_power ] = { "ActivePower" , "OUT.csv" };
-  filenames[ primary_spinning_reserve ] = { "Primary" , "OUT.csv" };
-  filenames[ secondary_spinning_reserve ] = { "Secondary" , "OUT.csv" };
-  filenames[ volume ] = { "Volume" , "OUT.csv" };
-  filenames[ flow ] = { "Flows" , "OUT.csv" };
-  filenames[ marginal_cost_active_power_demand ] =
-   { "MarginalCostActivePowerDemand" , "OUT.csv" };
-  filenames[ marginal_cost_primary ] = { "MarginalCostPrimary" , "OUT.csv" };
-  filenames[ marginal_cost_secondary ] = { "MarginalCostSecondary" ,
-                                           "OUT.csv" };
-  filenames[ marginal_cost_inertia ] = { "MarginalCostInertia" , "OUT.csv" };
-  filenames[ marginal_cost_flows ] = { "MarginalCostFlows" , "OUT.csv" };
-  filenames[ marginal_pollutant ] = { "MarginalPollutant_" , "OUT.csv" };
+  auto extension = "OUT.csv";
 
+  // Variables
+
+  filenames[ active_power ] = { "ActivePower" , extension };
+  filenames[ primary_spinning_reserve ] = { "Primary" , extension };
+  filenames[ secondary_spinning_reserve ] = { "Secondary" , extension };
+  filenames[ volume ] = { "Volume" , extension };
+  filenames[ flow ] = { "Flows" , extension };
+  filenames[ marginal_cost_active_power_demand ] =
+   { "MarginalCostActivePowerDemand" , extension };
+  filenames[ marginal_cost_primary ] = { "MarginalCostPrimary" , extension };
+  filenames[ marginal_cost_secondary ] = { "MarginalCostSecondary" ,
+                                           extension };
+  filenames[ marginal_cost_inertia ] = { "MarginalCostInertia" , extension };
+  filenames[ marginal_cost_flows ] = { "MarginalCostFlows" , extension };
+  filenames[ marginal_pollutant ] = { "MarginalPollutant_" , extension };
+
+  // Data
+
+  filenames[ demand ] = { "Demand" , extension };
+  filenames[ max_power ] = { "MaxPower" , extension };
  }
 
 /*--------------------------------------------------------------------------*/
@@ -246,7 +255,7 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- /// duals values for the primary demand constraints
+ /// dual values for the primary demand constraints
  void print_primary_demand_duals( UCBlock * uc_block ) const {
 
   std::ofstream output( filenames[ marginal_cost_primary ].name() ,
@@ -265,7 +274,7 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- /// duals values for the secondary demand constraints
+ /// dual values for the secondary demand constraints
  void print_secondary_demand_duals( UCBlock * uc_block ) const {
   std::ofstream output( filenames[ marginal_cost_secondary ].name() ,
                         open_mode() );
@@ -283,7 +292,7 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- /// duals values for the inertia demand constraints
+ /// dual values for the inertia demand constraints
  void print_inertia_demand_duals( UCBlock * uc_block ) const {
   std::ofstream output( filenames[ marginal_cost_inertia ].name() ,
                         open_mode() );
@@ -301,7 +310,7 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- /// duals values for the mazimum pollutant emmision constraints
+ /// dual values for the mazimum pollutant emmision constraints
  void print_maximum_pollutant_emission_duals( UCBlock * uc_block ) const {
 
   const auto number_pollutants = uc_block->get_number_pollutants();
@@ -357,6 +366,55 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
+ void print_demand( UCBlock * block ) const {
+
+  std::ofstream output( filenames[ demand ].name() , open_mode() );
+
+  auto get_demand =
+   []( UCBlock * block , Index time , Index node ) {
+    return block->get_network_blocks()[ time ]->get_active_demand()[ node ]; };
+
+  print_data( output , block , get_demand , get_number_nodes( block ) );
+
+  output.close();
+
+  return;
+
+
+  //  std::ofstream output( filenames[ demand ].name() , open_mode() );
+
+  auto & network_blocks = block->get_network_blocks();
+  if( network_blocks.empty() ) return;
+
+  auto number_nodes = get_number_nodes( block );
+
+  // Header
+  if( ! append ) {
+   output << "Timestep";
+   for( Index n = 0 ; n < number_nodes ; ++n )
+    output << separator_character << "Node_" << n;
+   output << std::endl;
+  }
+
+  // Values
+
+  Index t = 0;
+  if( append )
+   t = initial_time;
+
+  for( auto network_block : network_blocks ) {
+   output << t;
+   for( auto demand : network_block->get_active_demand() )
+    output << separator_character << demand;
+   output << std::endl;
+   ++t;
+  }
+
+  output.close();
+ }
+
+/*--------------------------------------------------------------------------*/
+
  void print_active_power( const std::vector< UnitBlock * > & blocks ) const {
 
   std::ofstream output( filenames[ active_power ].name() , open_mode() );
@@ -366,6 +424,37 @@ public:
     return ( block->get_active_power( g ) + t )->get_value(); };
 
   print_generator_data( output , blocks , get_active_power );
+
+  output.close();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void print_max_power( const std::vector< UnitBlock * > & blocks ) const {
+
+  std::ofstream output( filenames[ max_power ].name() , open_mode() );
+
+  auto get_max_power =
+   []( UnitBlock * block , Index g , Index t ) {
+    if( auto b = dynamic_cast<HydroUnitBlock *>( block ) ) {
+     return b->get_maximum_power()[ t ][ g ];
+    }
+    if( auto b = dynamic_cast<ThermalUnitBlock *>( block ) ) {
+     return b->get_max_power()[ t ];
+    }
+    if( auto b = dynamic_cast<SlackUnitBlock *>( block ) ) {
+     return b->get_max_power()[ t ];
+    }
+    if( auto b = dynamic_cast<IntermittentUnitBlock *>( block ) ) {
+     return b->get_maximum_power()[ t ];
+    }
+    if( auto b = dynamic_cast<BatteryUnitBlock *>( block ) ) {
+     return b->get_maximum_power()[ t ];
+    }
+    return Inf<double>();
+   };
+
+  print_generator_data( output , blocks , get_max_power );
 
   output.close();
  }
@@ -417,39 +506,6 @@ public:
   print_reservoir_data( output , blocks , get_volume );
 
   output.close();
- }
-
-/*--------------------------------------------------------------------------*/
-
- void print_node_injection( std::ostream & output ,
-                            const UCBlock * uc_block )  const {
-  auto & network_blocks = uc_block->get_network_blocks();
-  if( network_blocks.empty() ) return;
-
-  auto network_data = network_blocks.front()->get_NetworkData();
-  assert( network_data );
-
-  // Header
-  if( ! append ) {
-   output << "Timestep";
-   for( Index n = 0 ; n < network_data->get_number_nodes() ; ++n )
-    output << separator_character << "Node_" << n;
-   output << std::endl;
-  }
-
-  // Values
-
-  Index t = 0;
-  if( append )
-   t = initial_time;
-
-  for( auto network_block : network_blocks ) {
-   output << t++;
-   for( auto injection : network_block->get_node_injection() )
-    output << separator_character << injection.get_value();
-   output << std::endl;
-   ++t;
-  }
  }
 
 /*--------------------------------------------------------------------------*/
@@ -508,7 +564,7 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- Index get_number_nodes( UCBlock * block ) const {
+ Index get_number_nodes( const UCBlock * block ) const {
   if( ! block ) return 0;
   auto network_data = block->get_NetworkData();
   return network_data ? network_data->get_number_nodes() : 1;
@@ -516,7 +572,7 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- Index get_number_lines( NetworkBlock * block ) const {
+ Index get_number_lines( const NetworkBlock * block ) const {
   if( ! block ) return 0;
   auto network_data = block->get_NetworkData();
   return network_data ? network_data->get_number_lines() : 0;
@@ -570,7 +626,8 @@ private:
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
                   const Index columns , const std::string header_prefix ,
                   const std::string first_column_header ,
-                  const Index rows , const int precision = 20 ) const {
+                  const Index rows , const Index initial_row = 0 ,
+                  const int precision = 20 ) const {
   // Header
 
   if( ! append ) {
@@ -583,7 +640,7 @@ private:
   // Values
 
   for( Index r = 0 ; r < rows ; ++r ) {
-   output << r;
+   output << ( r + initial_row );
    for( Index i = 0 ; i < columns ; ++i )
     output << separator_character << std::setprecision( precision )
            << get_data( block , r , i );
@@ -596,8 +653,8 @@ private:
  template<class F>
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
                   const Index columns , const int precision = 20 ) const {
-  print_data( output , block , get_data , columns , "Node_" ,
-              "Timestep" , block->get_time_horizon() , precision );
+  print_data( output , block , get_data , columns , "Node_" , "Timestep" ,
+              block->get_time_horizon() , initial_time , precision );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -606,8 +663,8 @@ private:
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
                   const Index columns , const std::string header_prefix ,
                   const int precision = 20 ) const {
-  print_data( output , block , get_data , columns , header_prefix ,
-              "Timestep" , block->get_time_horizon() , precision );
+  print_data( output , block , get_data , columns , header_prefix , "Timestep" ,
+              block->get_time_horizon() , initial_time , precision );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -772,6 +829,8 @@ private:
   marginal_cost_inertia ,
   marginal_cost_flows ,
   marginal_pollutant ,
+  demand ,
+  max_power ,
   number_of_files
  };
 
