@@ -16,12 +16,15 @@
 
 #include <BatteryUnitBlock.h>
 #include <BusNetworkBlock.h>
+#include <CDASolver.h>
 #include <DCNetworkBlock.h>
 #include <HydroSystemUnitBlock.h>
 #include <HydroUnitBlock.h>
 #include <SlackUnitBlock.h>
 #include <IntermittentUnitBlock.h>
 #include <ThermalUnitBlock.h>
+
+#include "UCBlockSolutionOutput.h"
 
 using namespace SMSpp_di_unipi_it;
 
@@ -470,5 +473,31 @@ void print_ucblock_solver_results( Block * block ) {
     std::cout << " ]" << std::endl;
    }
   }
+ }
+}
+
+/*--------------------------------------------------------------------------*/
+
+/// Prints the content of a solved UCBlock
+void print_ucblock_solver_results( UCBlock * block ,
+                                   int solution_output_type ) {
+
+ if( ! ( solution_output_type > 0 && solution_output_type < 4 ) )
+  return;
+
+ if( solution_output_type == 1 || solution_output_type == 3 )
+  print_ucblock_solver_results( block );
+
+ if( solution_output_type == 2 || solution_output_type == 3 ) {
+  auto solver = block->get_registered_solvers().front();
+  solver->get_var_solution();
+
+  if( auto cda_solver = dynamic_cast< CDASolver * >( solver ) ) {
+   if( cda_solver->has_dual_solution() )
+    cda_solver->get_dual_solution();
+  }
+
+  UCBlockSolutionOutput output;
+  output.print( block );
  }
 }

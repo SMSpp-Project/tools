@@ -31,6 +31,18 @@ bool solvVerbose = false;  ///< If the solver should be verbose
 bool writeprob = false;    ///< If the problem should be written back
 std::string exe{};         ///< Name of the executable file
 std::string docopt_desc{}; ///< Tool description
+int solution_output_type = 1;
+/**< This indicates if and how a solution of the problem is output. If
+ *
+ * - solution_output_type = 0, then no solution is output;
+ *
+ * - solution_output_type = 1, then the solution is output to the screen;
+ *
+ * - solution_output_type = 2, then the solution is output to file(s);
+ *
+ * - solution_output_type = 3, then the solution is output to both the screen
+ *   and file(s);
+ */
 /// @}
 
 /*--------------------------------------------------------------------------*/
@@ -56,6 +68,9 @@ void docopt() {
            << "  -S, --solvercfg <file>   Solver configuration.\n"
            << "  -n, --nc4problem <file>  Write nc4 problem on file.\n"
            << "  -v, --verbose            Make the solver verbose.\n"
+           << "  -o, --output             Solution output type (0 = none, "
+           <<                             "1 = screen,\n"
+           << "                           2 = files, 3 = screen and files).\n"
            << "  -h, --help               Print this help.\n";
 }
 
@@ -70,10 +85,11 @@ void process_args( int argc, char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:S:nvh";
+ const char * const short_opts = "B:S:o:nvh";
  const option long_opts[] = {
   { "blockcfg",   required_argument, nullptr, 'B' },
   { "solvercfg",  required_argument, nullptr, 'S' },
+  { "output",     required_argument, nullptr, 'o' },
   { "nc4problem", no_argument,       nullptr, 'n' },
   { "verbose",    no_argument,       nullptr, 'v' },
   { "help",       no_argument,       nullptr, 'h' },
@@ -94,6 +110,16 @@ void process_args( int argc, char ** argv ) {
    case 'S':
     sconf_file = std::string( optarg );
     break;
+   case 'o': {
+    auto s = std::string( optarg );
+    if( s.size() != 1 || s.front() < '0' || s.front() > '3' ) {
+     std::cout << "Invalid output solution type: " << s << "\n";
+     std::cout << "Try " << exe << "' --help' for more information.\n";
+     exit( 1 );
+    }
+    solution_output_type = s.front() - '0';
+    break;
+   }
    case 'n':
     writeprob = true;
     break;

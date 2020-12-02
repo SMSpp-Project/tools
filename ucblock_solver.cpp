@@ -116,7 +116,7 @@ int main( int argc, char ** argv ) {
  solve_all( block );
 
  // Print the results
- print_ucblock_solver_results( block );
+ print_ucblock_solver_results( block , solution_output_type );
 
  return 0;
 }
