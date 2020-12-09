@@ -129,7 +129,7 @@
  *
  * \version 0.1
  *
- * \date 21 - 10 - 2020
+ * \date 09 - 12 - 2020
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -330,6 +330,8 @@ public:
     if( z > 0 ) output << separator_character;
     output << uc_block->get_pollutant_constraints()[ p ][ z ].get_dual();
    }
+
+   output.close();
   }
  }
 
@@ -375,40 +377,6 @@ public:
     return block->get_network_blocks()[ time ]->get_active_demand()[ node ]; };
 
   print_data( output , block , get_demand , get_number_nodes( block ) );
-
-  output.close();
-
-  return;
-
-
-  //  std::ofstream output( filenames[ demand ].name() , open_mode() );
-
-  auto & network_blocks = block->get_network_blocks();
-  if( network_blocks.empty() ) return;
-
-  auto number_nodes = get_number_nodes( block );
-
-  // Header
-  if( ! append ) {
-   output << "Timestep";
-   for( Index n = 0 ; n < number_nodes ; ++n )
-    output << separator_character << "Node_" << n;
-   output << std::endl;
-  }
-
-  // Values
-
-  Index t = 0;
-  if( append )
-   t = initial_time;
-
-  for( auto network_block : network_blocks ) {
-   output << t;
-   for( auto demand : network_block->get_active_demand() )
-    output << separator_character << demand;
-   output << std::endl;
-   ++t;
-  }
 
   output.close();
  }
@@ -510,12 +478,34 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
+ void print_storage( const std::vector< UnitBlock * > & blocks ) const {
+
+  std::ofstream output( filenames[ volume ].name() , open_mode() );
+
+  auto get_storage =
+   []( UnitBlock * block , Index r , Index t ) {
+    if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) )
+     return hydro->get_volume( r , t )->get_value();
+    else if( auto battery = dynamic_cast<BatteryUnitBlock *>( block ) )
+     return battery->get_storage_level()[ t ].get_value();
+    else
+     throw( "UCBlockSolutionOutput::print_storage: invalid type of "
+            "UnitBlock: " + block->classname() );
+   };
+
+  print_storage_data( output , blocks , get_storage );
+
+  output.close();
+ }
+
+/*--------------------------------------------------------------------------*/
+
  void print( UCBlock * uc_block ) const {
   auto unit_blocks = get_unit_blocks( uc_block );
   print_active_power( unit_blocks );
   print_primary_spinning_reserve( unit_blocks );
   print_secondary_spinning_reserve( unit_blocks );
-  print_volume( get_hydro_unit_blocks( uc_block ) );
+  print_storage( get_unit_blocks_with_storage( uc_block ) );
   print_flow( uc_block->get_network_blocks() );
   print_duals( uc_block );
  }
@@ -708,6 +698,27 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
+ std::vector< UnitBlock * >
+ get_unit_blocks_with_storage( UCBlock * uc_block ) const {
+
+  std::vector< UnitBlock * > unit_blocks;
+
+  for( Index i = 0 ; i < uc_block->get_number_units() ; ++i ) {
+   auto block = uc_block->get_unit_block( i );
+   if( auto battery = dynamic_cast<BatteryUnitBlock *>( block ) )
+    unit_blocks.push_back( battery );
+   else if( auto hydro_system = dynamic_cast<HydroSystemUnitBlock *>( block ) )
+    for( Index h = 0 ; h < hydro_system->get_number_hydro_units() ; ++h )
+     unit_blocks.push_back( hydro_system->get_hydro_unit_block( h ) );
+   else if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) )
+    unit_blocks.push_back( hydro );
+  }
+
+  return unit_blocks;
+ }
+
+/*--------------------------------------------------------------------------*/
+
  template<class F>
  void print_generator_data
  ( std::ostream & output , const std::vector< UnitBlock * > & blocks ,
@@ -794,6 +805,68 @@ private:
     for( Index r = 0 ; r < number_reservoirs ; ++r )
      output << separator_character << std::setprecision( precision )
             << get_data( block , r , t );
+   }
+   output << std::endl;
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ template<class F>
+ void print_storage_data
+ ( std::ostream & output , const std::vector< UnitBlock * > & blocks ,
+   const F & get_data , const int precision = 20 ) const {
+
+  if( blocks.empty() ) return;
+
+  // Header
+
+  if( ! append ) {
+   output << "Timestep";
+   for( auto block : blocks ) {
+    auto block_name = get_name( block );
+    if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) ) {
+     const auto number_reservoirs = hydro->get_number_reservoirs();
+     if( number_reservoirs <= 1 )
+      output << separator_character << block_name;
+     else
+      for( Index r = 0 ; r < number_reservoirs ; ++r )
+       output << separator_character << block_name << "_" << r;
+    }
+    else if( auto battery = dynamic_cast<BatteryUnitBlock *>( block ) )
+     output << separator_character << block_name;
+    else
+     throw( "UCBlockSolutionOutput::print_storage_data: invalid type of "
+            "UnitBlock: " + block->classname() );
+   }
+   output << std::endl;
+  }
+
+  // Values
+
+  auto time_horizon = blocks.front()->get_time_horizon();
+
+  for( Index t = 0 ; t < time_horizon ; ++t ) {
+
+   Index time = t;
+   if( append )
+    time = initial_time + t;
+
+   output << time;
+   for( auto block : blocks ) {
+
+    if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) ) {
+     const auto number_reservoirs = hydro->get_number_reservoirs();
+     for( Index r = 0 ; r < number_reservoirs ; ++r )
+      output << separator_character << std::setprecision( precision )
+             << get_data( hydro , r , t );
+    }
+    else if( auto battery = dynamic_cast<BatteryUnitBlock *>( block ) )
+     output << separator_character << std::setprecision( precision )
+            << get_data( battery , t , t );
+    else
+     throw( "UCBlockSolutionOutput::print_storage_data: invalid type of "
+            "UnitBlock: " + block->classname() );
    }
    output << std::endl;
   }

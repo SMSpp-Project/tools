@@ -6,6 +6,7 @@ At the moment we provide:
 - a generic Block Solver with some example input files
 - a single Thermal Unit solver
 - a UCBlock solver
+- a MILP solver
 - an SDDPBlock greedy (simulation) solver
 
 ## Getting started
@@ -39,17 +40,21 @@ make install
 ## Usage
 
 The Block solver (`block_solver`),
-the Thermal Unit solver (`thermalunit_solver`) and 
-the Unit Commitment solver (`ucblock_solver`) share the same interface:
+the Thermal Unit solver (`thermalunit_solver`), 
+the Unit Commitment solver (`ucblock_solver`) and the MILP solver (`milp_solver`) share the same interface:
 
 ```sh
-Usage: <solver-name> [options] <nc4-file>
+Usage:
+  <solver-name> [options] <file>
+  <solver-name> -h | --help
 
-  -B <file>, --blockcfg <file>    Block configuration.
-  -S <file>, --solvercfg <file>   Solver configuration.
-  -n <file>, --nc4problem <file>  Write nc4 problem on file.
-  -v, --verbose                   Make the solver verbose.
-  -h, --help                      Print this help.
+Options:
+  -B, --blockcfg <file>    Block configuration.
+  -S, --solvercfg <file>   Solver configuration.
+  -n, --nc4problem <file>  Write nc4 problem on file.
+  -v, --verbose            Make the solver verbose.
+  -o, --output <type>      Solution output type (0 none, 1 screen, 2 files, 3 both).
+  -h, --help               Print this help.
 ```
 
 See the [`examples`](examples) directory for sample input files and configurations.
@@ -91,6 +96,11 @@ is solved for the first scenario.
 
 The input netCDF file must be a block file. If you don't provide Block
 or Solver configurations, default configurations will be used.
+
+### MILP solver
+
+See SMILPBlock's documentation or the provided example for the input file format.
+If you don't provide Block  or Solver configurations, default configurations will be used.
 
 ## Authors
 
