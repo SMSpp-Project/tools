@@ -68,7 +68,9 @@ void docopt() {
            << "  -S, --solvercfg <file>   Solver configuration.\n"
            << "  -n, --nc4problem <file>  Write nc4 problem on file.\n"
            << "  -v, --verbose            Make the solver verbose.\n"
-           << "  -o, --output <type>      Solution output type (0 none, 1 screen, 2 files, 3 both).\n"
+           << "  -o, --output             Solution output type (0 = none, "
+           <<                             "1 = screen,\n"
+           << "                           2 = files, 3 = screen and files).\n"
            << "  -h, --help               Print this help.\n";
 }
 

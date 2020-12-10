@@ -44,7 +44,6 @@ endif ()
 # ----- Requirements -------------------------------------------------------- #
 find_package(UCBlock)
 find_package(MILPSolver)
-find_package(SMILPBlock)
 find_package(SDDPBlock)
 
 # ----- block_solver -------------------------------------------------------- #
@@ -93,6 +92,7 @@ endif ()
 
 # ----- ucblock/thermalunit_solver ------------------------------------------ #
 if (UCBlock_FOUND AND MILPSolver_FOUND)
+
     add_executable(thermalunit_solver thermalunit_solver.cpp)
     target_link_libraries(thermalunit_solver PRIVATE
                           SMS++::UCBlock
@@ -106,17 +106,6 @@ if (UCBlock_FOUND AND MILPSolver_FOUND)
     install(TARGETS thermalunit_solver ucblock_solver
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif ()
-
-# ----- milp_solver --------------------------------------------------------- #
-if (SMILPBlock_FOUND AND MILPSolver_FOUND)
-    add_executable(milp_solver milp_solver.cpp)
-    target_link_libraries(milp_solver PRIVATE
-                          SMS++::SMILPBlock
-                          SMS++::MILPSolver)
-
-    install(TARGETS milp_solver
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    endif()
 
 # ----- Generate and install shell completion scripts ----------------------- #
 get_directory_property(toolNames BUILDSYSTEM_TARGETS)
