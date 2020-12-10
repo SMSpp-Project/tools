@@ -17,6 +17,7 @@
  */
 
 #include <iostream>
+#include <iomanip>
 
 #include <CPXMILPSolver.h>
 #include <SimpleMILPBlock.h>
