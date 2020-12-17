@@ -78,12 +78,12 @@ endif ()
 install(TARGETS block_solver
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-# ----- sddp_greedy_solver -------------------------------------------------- #
+# ----- sddp_solver --------------------------------------------------------- #
 if (SDDPBlock_FOUND AND MILPSolver_FOUND)
-    add_executable(sddp_greedy_solver sddp_greedy_solver.cpp)
-    target_compile_features(sddp_greedy_solver PUBLIC cxx_std_17)
+    add_executable(sddp_solver sddp_solver.cpp)
+    target_compile_features(sddp_solver PUBLIC cxx_std_17)
 
-    target_link_libraries(sddp_greedy_solver PRIVATE
+    target_link_libraries(sddp_solver PRIVATE
                           SMS++::UCBlock
                           SMS++::SDDPBlock
                           SMS++::StochasticBlock
