@@ -98,6 +98,11 @@ if (UCBlock_FOUND AND MILPSolver_FOUND)
                           SMS++::UCBlock
                           SMS++::MILPSolver)
 
+    find_package(DPSolver)
+    if (DPSolver_FOUND)
+        target_link_libraries(thermalunit_solver PRIVATE SMS++::DPSolver)
+    endif ()
+
     add_executable(ucblock_solver ucblock_solver.cpp)
     target_link_libraries(ucblock_solver PRIVATE
                           SMS++::UCBlock
