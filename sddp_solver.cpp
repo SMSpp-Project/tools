@@ -137,6 +137,7 @@ void process_args( int argc , char ** argv ) {
    }
    case 's':
     simulation_mode = true;
+    break;
    case 'h': // -h or --help
     print_help();
     exit( 0 );

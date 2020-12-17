@@ -6,7 +6,7 @@ At the moment we provide:
 - a generic Block Solver with some example input files
 - a single Thermal Unit solver
 - a UCBlock solver
-- an SDDPBlock greedy (simulation) solver
+- an SDDPBlock solver
 
 ## Getting started
 
@@ -63,15 +63,16 @@ The input netCDF file can be a problem file or a block file:
 
 See the [`examples`](examples) directory for sample input files and configurations.
 
-### SDDPBlock Greedy Solver
+### SDDPBlock Solver
 
 ```sh
-Usage: sddp_greedy_solver [options] <nc4-file>
+Usage: sddp_solver [options] <nc4-file>
 
 Options:
+  -s, --simulation               Simulation mode.
   -i <index>, --scenario <index> The index of the scenario.
-  -b <file>, --blockcfg <file>   Block configuration.
-  -s <file>, --solvercfg <file>  Solver configuration.
+  -B <file>, --blockcfg <file>   Block configuration.
+  -S <file>, --solvercfg <file>  Solver configuration.
   -h, --help                     Print this help.
 ```
 
@@ -82,10 +83,15 @@ The input netCDF file can be a problem file or a block file:
 - for a block file, if a Block configuration or a Solver configuration is not
   provided, a default configuration will be used.
 
-The `-i` option specifies the index of the scenario for which the problem must
-be solved. The index must be a number between 0 and n-1, where n is the number
-of scenarios in the SDDPBlock. If this index is not provided, then the problem
-is solved for the first scenario.
+The `-s` option indicates whether a simulation should be performed. If this
+option is used, then the SDDPBlock is solved using the
+SDDPGreedySolver. Otherwise, the SDDPBlock is solved by the SDDPSolver.
+
+In simulation mode (i.e., when the `-s` option is used), the `-i` option specifies
+the index of the scenario for which the problem must be solved. The index must
+be a number between 0 and n-1, where n is the number of scenarios in the
+SDDPBlock. If this index is not provided, then the problem is solved for the
+first scenario.
 
 ### Thermal Unit solver / Unit Commitment solver
 
