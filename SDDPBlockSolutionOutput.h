@@ -59,6 +59,30 @@ public:
 /*--------------------- PUBLIC METHODS OF THE CLASS ------------------------*/
 /*--------------------------------------------------------------------------*/
 
+ void print_cuts( SDDPBlock * block ) const {
+
+  std::ofstream output( "BellmanValuesOUT.csv" , std::ios::out );
+
+  for( Index stage = 0 ; stage < block->get_time_horizon() ; ++stage ) {
+
+   const auto & b = block->get_polyhedral_functions()[ stage ]->get_b();
+   const auto & A = block->get_polyhedral_functions()[ stage ]->get_A();
+
+   assert( b.size() == A.size() );
+
+   for( Index i = 0 ; i < b.size() ; ++i ) {
+    output << stage;
+    for( Index j = 0 ; j < A[ i ].size() ; ++j )
+     output << separator_character << A[ i ][ j ];
+    output << separator_character << b[ i ] << std::endl;
+   }
+  }
+
+  output.close();
+ }
+
+/*--------------------------------------------------------------------------*/
+
  void print( SDDPBlock * block ) const {
 
   UCBlockSolutionOutput solution_output;
@@ -72,26 +96,16 @@ public:
     ( static_cast< StochasticBlock * >( block->get_nested_Blocks()[ stage ] )->
       get_nested_Blocks().front() );
 
-   std::cout << "benders " << benders_block << std::endl;
-
    auto objective = static_cast< FRealObjective * >
     ( benders_block->get_objective() );
-
-   std::cout << "obj " << objective << std::endl;
 
    auto benders_function = static_cast< BendersBFunction * >
     ( objective->get_function() );
 
-   std::cout << "fun " << benders_function << std::endl;
-
    auto uc_block = static_cast< UCBlock * >
     ( benders_function->get_inner_block() );
 
-   std::cout << "uc_block " << uc_block << std::endl;
-
    auto solver = benders_function->get_solver<CDASolver>();
-
-   std::cout << "solver " << solver << std::endl;
 
    assert( solver->has_var_solution() );
    if( solver->has_var_solution() )
@@ -99,9 +113,7 @@ public:
    if( solver->has_dual_solution() )
     solver->get_dual_solution();
 
-   std::cout << "printing UCBlock " << uc_block << std::endl;
    solution_output.print( uc_block );
-   std::cout << "done" << std::endl;
 
    solution_output.set_append();
    initial_time += uc_block->get_time_horizon();

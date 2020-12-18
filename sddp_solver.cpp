@@ -283,8 +283,8 @@ void solve( SDDPBlock * sddp_block ) {
 
  show_status( status );
 
- if( status == SDDPSolver::kOK )
-  std::cout << "Solution value: " << solver->get_var_value() << std::endl;
+ SDDPBlockSolutionOutput o;
+ o.print_cuts( sddp_block );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -410,6 +410,9 @@ BlockSolverConfig * build_BlockSolverConfig() {
  else {
   auto config = new ComputeConfig;
   config->set_par( "intLogVerbosity" , 100 );
+  //config->set_par( "dblAccuracy" , 1.0e-3 );
+  //config->set_par( "intNbSimulBackward" , 100 );
+  //config->set_par( "intNbSimulForward" , 5 );
   //config->set_par( "intNStepConv" , 5 );
   block_solver_config->add_ComputeConfig( "SDDPSolver" , config );
  }
