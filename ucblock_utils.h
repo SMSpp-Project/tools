@@ -62,6 +62,20 @@ BlockConfig * default_configure_ucblock( Block * uc_block ) {
    }
   }
 
+  // If binary variables of ThermalUnitBlock are relaxed
+  auto tu_block = dynamic_cast<ThermalUnitBlock *>( sb );
+  if( tu_block != nullptr ) {
+   sbc->f_static_variables_Configuration =
+           new SimpleConfiguration< int >( 1 );
+  }
+
+  // If binary variables of BatteryUnitBlock are relaxed
+  auto bu_block = dynamic_cast<BatteryUnitBlock *>( sb );
+  if( bu_block != nullptr ) {
+   sbc->f_static_variables_Configuration =
+           new SimpleConfiguration< int >( 1 );
+  }
+
   int idx = uc_block->get_nested_Block_index( sb );
   b_config->add_sub_BlockConfig( sbc, idx );
  }
@@ -108,7 +122,130 @@ BlockConfig * default_configure_ucblock( Block * uc_block ) {
 // }
 
 /*--------------------------------------------------------------------------*/
+/*
+void check_UCBlock_data( Block * block ) {
+ auto uc_block = dynamic_cast<UCBlock *>(block);
 
+ if( uc_block == nullptr )
+  return;
+ int n_network_blocks = 0;
+ for( UnitBlock::Index t = 0; t < uc_block->get_time_horizon(); ++t ) {
+  auto network = uc_block->get_network_block( t );
+  for( Index node = 0; node < network->get_number_nodes(); ++node ) {
+   double Active_power_demand;
+   Active_power_demand = network->get_active_demand()[node];
+
+   std::vector< double > v_Inflows;
+   std::vector< double > v_MinVolumetric;
+   std::vector< double > v_Water;
+   double sum_max_power = 0;
+   for( auto i: block->get_nested_Blocks()) {
+
+    auto thermal_unit_block = dynamic_cast<ThermalUnitBlock *>(i);
+    if( thermal_unit_block ) {
+     if( !thermal_unit_block->get_max_power().empty()) {
+      sum_max_power += thermal_unit_block->get_max_power()[t];
+     }
+     continue;
+    }
+    auto battery_unit_block = dynamic_cast<BatteryUnitBlock *>(i);
+    if( battery_unit_block ) {
+     if( !battery_unit_block->get_maximum_power().empty()) {
+      sum_max_power += battery_unit_block->get_maximum_power()[t];
+     }
+     continue;
+    }
+    auto slack_unit_block = dynamic_cast<SlackUnitBlock *>(i);
+    if( slack_unit_block ) {
+     if( !slack_unit_block->get_max_power().empty()) {
+      sum_max_power += slack_unit_block->get_max_power()[t];
+     }
+     continue;
+    }
+    int Kappa = 1;
+    auto intermittent_unit_block = dynamic_cast<IntermittentUnitBlock *>(i);
+    if( intermittent_unit_block ) {
+     Kappa = intermittent_unit_block->get_kappa();
+     if( !intermittent_unit_block->get_maximum_power().empty()) {
+      sum_max_power += ( intermittent_unit_block->get_maximum_power()[t] ) *
+                       ( Kappa );
+     }
+     continue;
+    }
+
+    auto hydro_unit_block = dynamic_cast<HydroUnitBlock *>(i);
+    if( hydro_unit_block ) {
+     if( !hydro_unit_block->get_maximum_flow().empty() &&
+         !hydro_unit_block->get_maximum_flow().empty()) {
+      if( !hydro_unit_block->get_maximum_power().empty()) {
+       for( Index g = 0; g < hydro_unit_block->get_number_generators(); ++g ) {
+        if( hydro_unit_block->get_maximum_flow()[t][g] > 0 &&
+            hydro_unit_block->get_maximum_flow()[t][g] >= 0 ) { //TURBINE
+         sum_max_power += hydro_unit_block->get_maximum_power()[t][g];
+        } else if( hydro_unit_block->get_maximum_flow()[t][g] <= 0 &&
+                   hydro_unit_block->get_maximum_flow()[t][g] < 0 ) {//PUMP TODO
+
+         v_Inflows.resize( hydro_unit_block->get_number_reservoirs());
+         v_MinVolumetric.resize( hydro_unit_block->get_number_reservoirs());
+         v_Water.resize( hydro_unit_block->get_number_reservoirs());
+
+         for( UnitBlock::Index g = 0;
+              g < hydro_unit_block->get_number_reservoirs(); ++g ) {
+
+          auto InitialVolumetric = hydro_unit_block->get_initial_volumetric()[g];
+
+          for( UnitBlock::Index time = 0; time < uc_block->get_time_horizon(); ++time ) {
+
+           if( !hydro_unit_block->get_inflows().empty()) {
+            v_Inflows[g] += hydro_unit_block->get_inflows()[g][time];
+           }
+           if( !hydro_unit_block->get_minimum_volumetric().empty()) {
+           }
+          }
+          v_MinVolumetric[g] = hydro_unit_block->get_minimum_volumetric()[g][uc_block->get_time_horizon() - 1];
+          v_Water[g] = ( v_Inflows[g] + InitialVolumetric ) - v_MinVolumetric[g];
+         }
+        }
+       }
+      }
+     }
+     continue;
+    }
+    auto hydrosystem_unitblock = dynamic_cast<HydroSystemUnitBlock *>(i);
+    if( hydrosystem_unitblock != nullptr ) {
+     for( UnitBlock::Index hIdx = 0;
+          hIdx < hydrosystem_unitblock->get_number_hydro_units(); ++hIdx ) {
+      auto sub_hydro_unitblock = hydrosystem_unitblock
+              ->get_hydro_unit_block( hIdx );
+      if( sub_hydro_unitblock != nullptr ) {
+       if( !sub_hydro_unitblock->get_maximum_flow().empty() &&
+           !sub_hydro_unitblock->get_maximum_flow().empty()) {
+        if( !sub_hydro_unitblock->get_maximum_power().empty()) {
+         for( Index g = 0; g < sub_hydro_unitblock->get_number_generators(); ++g ) {
+          if( sub_hydro_unitblock->get_maximum_flow()[t][g] > 0 &&
+              sub_hydro_unitblock->get_maximum_flow()[t][g] >= 0 ) { //TURBINE
+           sum_max_power += sub_hydro_unitblock->get_maximum_power()[t][g];
+          } else if( sub_hydro_unitblock->get_maximum_flow()[t][g] <= 0 &&
+                     sub_hydro_unitblock->get_maximum_flow()[t][g] < 0 ) {//PUMP
+           // TODO TODO
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+   if( sum_max_power < Active_power_demand ) {
+    std::cout << "----- ActivePowerDemand " << n_network_blocks++ << std::endl;
+
+    throw ( std::logic_error
+            ( "::UCBlock_Data_Check: Available Power does not exceed the "
+              "Load " ));
+   }
+  }
+ }
+}*/
 /// Prints the content of a solved UCBlock
 void print_ucblock_solver_results( Block * block ) {
 
