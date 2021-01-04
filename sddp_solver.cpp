@@ -72,18 +72,32 @@ long scenario_id = 0;
 bool simulation_mode = false;
 const bool continuous_relaxation = true;
 
+std::string exe{};         ///< Name of the executable file
+std::string docopt_desc{}; ///< Tool description
+
+/*--------------------------------------------------------------------------*/
+
+// Gets the name of the executable from its full path
+std::string get_filename( const std::string & fullpath ) {
+ std::size_t found = fullpath.find_last_of( "/\\" );
+ return fullpath.substr( found + 1 );
+}
+
 /*--------------------------------------------------------------------------*/
 
 void print_help() {
  // http://docopt.org
- std::cout
-  << "Usage: sddp_solver [options] <nc4-file>\n\n"
-  << "Options:\n"
-  << "  -s, --simulation                Simulation mode.\n"
-  << "  -i <index>, --scenario <index>  The index of the scenario.\n"
-  << "  -B <file>,  --blockcfg <file>   Block configuration.\n"
-  << "  -S <file>,  --solvercfg <file>  Solver configuration.\n"
-  << "  -h, --help                      Print this help." << std::endl;
+ std::cout << docopt_desc << std::endl;
+ std::cout << "Usage:\n"
+           << "  " << exe << " [options] <file>\n"
+           << "  " << exe << " -h | --help\n"
+           << std::endl
+           << "Options:\n"
+           << "  -s, --simulation        Simulation mode.\n"
+           << "  -i, --scenario <index>  The index of the scenario.\n"
+           << "  -B, --blockcfg <file>   Block configuration.\n"
+           << "  -S, --solvercfg <file>  Solver configuration.\n"
+           << "  -h, --help              Print this help." << std::endl;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -91,7 +105,8 @@ void print_help() {
 void process_args( int argc , char ** argv ) {
 
  if( argc < 2 ) {
-  print_help();
+  std::cout << exe << ": no input file\n"
+            << "Try " << exe << "' --help' for more information.\n";
   exit( 1 );
  }
 
@@ -143,7 +158,7 @@ void process_args( int argc , char ** argv ) {
     exit( 0 );
    case '?': // Unrecognized option
    default:
-    print_help();
+    std::cout << "Try " << exe << "' --help' for more information.\n";
     exit( 1 );
   }
  }
@@ -153,7 +168,8 @@ void process_args( int argc , char ** argv ) {
   filename = std::string( argv[ optind ] );
  }
  else {
-  print_help();
+  std::cout << exe << ": no input file\n"
+            << "Try " << exe << "' --help' for more information.\n";
   exit( 1 );
  }
 }
@@ -607,6 +623,8 @@ void process_block_file( const netCDF::NcFile & file ) {
 
 int main( int argc , char ** argv ) {
 
+ docopt_desc = "SMS++ SDDP solver.\n";
+ exe = get_filename( argv[ 0 ] );
  process_args( argc , argv );
 
  netCDF::NcFile file;
