@@ -62,20 +62,6 @@ BlockConfig * default_configure_ucblock( Block * uc_block ) {
    }
   }
 
-  // If binary variables of ThermalUnitBlock are relaxed
-  auto tu_block = dynamic_cast<ThermalUnitBlock *>( sb );
-  if( tu_block != nullptr ) {
-   sbc->f_static_variables_Configuration =
-           new SimpleConfiguration< int >( 1 );
-  }
-
-  // If binary variables of BatteryUnitBlock are relaxed
-  auto bu_block = dynamic_cast<BatteryUnitBlock *>( sb );
-  if( bu_block != nullptr ) {
-   sbc->f_static_variables_Configuration =
-           new SimpleConfiguration< int >( 1 );
-  }
-
   int idx = uc_block->get_nested_Block_index( sb );
   b_config->add_sub_BlockConfig( sbc, idx );
  }
@@ -273,29 +259,6 @@ void print_ucblock_solver_results( Block * block ) {
    auto thermal_unit_block = dynamic_cast<ThermalUnitBlock *>(unit_block);
    if( thermal_unit_block != nullptr ) {
 
-/*
-    auto ramp_up = thermal_unit_block->get_delta_ramp_up();
-    auto ramp_down = thermal_unit_block->get_delta_ramp_down();
-    auto init_up_down = thermal_unit_block->get_init_up_down_time();
-    auto initial_power = thermal_unit_block->get_initial_power();
-    auto min_power = thermal_unit_block->get_min_power();
-    auto max_power = thermal_unit_block->get_max_power();
-
-    if( !ramp_up.empty() && !ramp_down.empty() ) {
-
-     if( init_up_down > 0 ) {
-      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-       if( initial_power + ramp_up[ 0 ] < min_power[ 0 ] ||
-           initial_power - ramp_down[ 0 ] > max_power[ 0 ] ) {
-        std::cout << "----- ThermalUnitBlock " << n_unit_blocks++ << std::endl;
-        throw ( std::logic_error
-         ( "::Ramp Constraints: when f_InitUpDownTime > 0, it must be "
-           "that f_initial_power + v_DeltaRampUp[ 0 ] >= v_MinPower[ 0 ]"
-           "f_initial_power - v_DeltaRampDown[ 0 ] <= v_MaxPower[ 0 ]" ) );
-       }
-      }
-     }
-    }*/
     auto commitment = thermal_unit_block->get_commitment( 0 );
     std::cout << "Commitment     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
