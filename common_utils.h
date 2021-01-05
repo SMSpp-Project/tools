@@ -12,7 +12,8 @@
 #ifndef __COMMON_UTILS
 #define __COMMON_UTILS
 
-#include <getopt.h>
+#include <getopt.h> // For getting command line parameters
+#include <chrono>   // For measuring compute time
 
 #include <Block.h>
 #include <RBlockConfig.h>
@@ -192,9 +193,17 @@ void print_status( int status ) {
 
 /// Solves the problem with all available solvers
 void solve_all( Block * block ) {
+ std::chrono::time_point<std::chrono::system_clock> start, end;
+
  for( auto solver : block->get_registered_solvers() ) {
   std::cout << "Solver: " << solver->classname() << std::endl;
+
+  start = std::chrono::system_clock::now();
   auto status = solver->compute();
+  end = std::chrono::system_clock::now();
+  std::chrono::duration<double> compute_time = end - start;
+  std::cout << "Elapsed time: " << compute_time.count() << " s" << std::endl;
+
   auto ub = solver->get_ub();
   auto lb = solver->get_lb();
   print_status( status );
