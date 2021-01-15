@@ -129,7 +129,7 @@
  *
  * \version 0.1
  *
- * \date 09 - 12 - 2020
+ * \date 15 - 01 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -344,8 +344,14 @@ public:
 
   auto get_power_flow_limit_dual =
    []( NetworkBlock * block , Index line ) -> double {
-    if( auto dc = dynamic_cast<DCNetworkBlock *>( block ) )
-     return dc->get_power_flow_limit_constraints()[ line ].get_dual();
+    if( auto dc = dynamic_cast<DCNetworkBlock *>( block ) ) {
+     if( auto network_data = dc->get_NetworkData() ) {
+      if( network_data->get_lines_type() == NetworkBlock::kHVDC )
+       return dc->get_power_flow_limit_HVDC_bounds()[ line ].get_dual();
+      else
+       return dc->get_power_flow_limit_constraints()[ line ].get_dual();
+     }
+    }
     return 0;
    };
 

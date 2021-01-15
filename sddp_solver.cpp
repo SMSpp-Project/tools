@@ -405,11 +405,14 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
 BlockSolverConfig * build_BlockSolverConfig() {
  auto block_solver_config = new BlockSolverConfig;
- if( simulation_mode )
-  block_solver_config->add_ComputeConfig( "SDDPGreedySolver" );
+ if( simulation_mode ) {
+  auto config = new ComputeConfig;
+  config->set_par( "intLogVerb" , 1 );
+  block_solver_config->add_ComputeConfig( "SDDPGreedySolver" , config );
+ }
  else {
   auto config = new ComputeConfig;
-  config->set_par( "intLogVerbosity" , 100 );
+  config->set_par( "intLogVerb" , 100 );
   //config->set_par( "dblAccuracy" , 1.0e-3 );
   //config->set_par( "intNbSimulBackward" , 100 );
   //config->set_par( "intNbSimulForward" , 5 );
@@ -580,8 +583,12 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Solve
 
-  if( simulation_mode )
+  if( simulation_mode ) {
+   auto solver = sddp_block->get_registered_solvers().front();
+   if( solver->get_int_par( solver->int_par_str2idx( "intLogVerb" ) ) )
+    solver->set_log( & std::cout );
    simulate( sddp_block );
+  }
   else
    solve( sddp_block );
 
@@ -645,5 +652,6 @@ int main( int argc , char ** argv ) {
    exit( 1 );
  }
 
+ file.close();
  return 0;
 }
