@@ -88,6 +88,9 @@ if (SDDPBlock_FOUND AND MILPSolver_FOUND)
                           SMS++::SDDPBlock
                           SMS++::StochasticBlock
                           SMS++::MILPSolver)
+
+    install(TARGETS sddp_solver
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif ()
 
 # ----- ucblock/thermalunit_solver ------------------------------------------ #

@@ -76,6 +76,8 @@ int main( int argc, char ** argv ) {
  auto block = dynamic_cast<UCBlock *>(Block::new_Block( "UCBlock" ));
  block->deserialize( bg );
 
+ //check_UCBlock_data(block);
+
  // Configure block
  BlockConfig * b_config;
  if( !bconf_file.empty() ) {
