@@ -380,7 +380,17 @@ public:
 
   auto get_demand =
    []( UCBlock * block , Index time , Index node ) {
-    return block->get_network_blocks()[ time ]->get_active_demand()[ node ]; };
+    const auto & network_blocks = block->get_network_blocks();
+    if( ! network_blocks.empty() ) {
+     assert( network_blocks.size() > time );
+     auto network_block = block->get_network_blocks()[ time ];
+     return network_block->get_active_demand()[ node ];
+    }
+    else {
+     //return block->get_active_power_demand()[ node ][ time ];
+     return block->get_node_injection_constraints()[ time ][ node ].get_rhs();
+    }
+   };
 
   print_data( output , block , get_demand , get_number_nodes( block ) );
 
@@ -514,6 +524,7 @@ public:
   print_storage( get_unit_blocks_with_storage( uc_block ) );
   print_flow( uc_block->get_network_blocks() );
   print_duals( uc_block );
+  print_demand( uc_block );
  }
 
 /*--------------------------------------------------------------------------*/
