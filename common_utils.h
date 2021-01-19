@@ -18,6 +18,11 @@
 #include <Block.h>
 #include <RBlockConfig.h>
 
+#ifndef NDEBUG
+#include <queue>    // For scanning the subblocks
+#include <FRealObjective.h>
+#endif
+
 using namespace SMSpp_di_unipi_it;
 
 /**
@@ -209,6 +214,35 @@ void solve_all( Block * block ) {
   print_status( status );
   std::cout << "Upper bound = " << ub << std::endl;
   std::cout << "Lower bound = " << lb << std::endl;
+
+#ifndef NDEBUG
+  /*
+   * We get the OF value from the block,
+   * with the summation of all subblocks' OFs.
+   */
+  solver->get_var_solution();
+  double of_value = 0;
+
+  std::queue< Block * > Q;
+  Q.push( block );
+
+  while( !Q.empty() ) {
+   Block * q_Block = Q.front();
+   Q.pop();
+
+   for( auto * i : q_Block->get_nested_Blocks() ) {
+    Q.push( i );
+   }
+
+   auto of = dynamic_cast<FRealObjective *>(q_Block->get_objective());
+   if (of) {
+    of->compute();
+    of_value += of->value();
+   }
+  }
+
+  std::cout << "O.F. value  = " << of_value << std::endl;
+#endif
  }
 }
 
