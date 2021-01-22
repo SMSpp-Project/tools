@@ -69,12 +69,13 @@ See the [`examples`](examples) directory for sample input files and configuratio
 Usage: sddp_solver [options] <nc4-file>
 
 Options:
-  -s, --simulation               Simulation mode.
-  -r, --relax                    Relax integer variables.
-  -i <index>, --scenario <index> The index of the scenario.
   -B <file>, --blockcfg <file>   Block configuration.
-  -S <file>, --solvercfg <file>  Solver configuration.
   -h, --help                     Print this help.
+  -i <index>, --scenario <index> The index of the scenario.
+  -p <path>, --prefix <path>     The prefix for all Block filenames.
+  -r, --relax                    Relax integer variables.
+  -s, --simulation               Simulation mode.
+  -S <file>, --solvercfg <file>  Solver configuration.
 ```
 
 The input netCDF file can be a problem file or a block file:
@@ -83,6 +84,9 @@ The input netCDF file can be a problem file or a block file:
   will be ignored;
 - for a block file, if a Block configuration or a Solver configuration is not
   provided, a default configuration will be used.
+
+The `-p` option specifies the prefix to the paths to all files specified by
+the attribute `filename` in the input netCDF file.
 
 The `-s` option indicates whether a simulation should be performed. If this
 option is used, then the SDDPBlock is solved using the

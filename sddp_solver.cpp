@@ -96,12 +96,14 @@ void print_help() {
            << "  " << exe << " -h | --help\n"
            << std::endl
            << "Options:\n"
-           << "  -s, --simulation        Simulation mode.\n"
-           << "  -r, --relax             Relax integer variables.\n"
-           << "  -i, --scenario <index>  The index of the scenario.\n"
            << "  -B, --blockcfg <file>   Block configuration.\n"
-           << "  -S, --solvercfg <file>  Solver configuration.\n"
-           << "  -h, --help              Print this help." << std::endl;
+           << "  -h, --help              Print this help.\n"
+           << "  -i, --scenario <index>  The index of the scenario.\n"
+           << "  -p, --prefix            The prefix for all Block filenames.\n"
+           << "  -r, --relax             Relax integer variables.\n"
+           << "  -s, --simulation        Simulation mode.\n"
+           << "  -S, --solvercfg <file>  Solver configuration."
+           << std::endl;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -114,14 +116,15 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:S:i:srh";
+ const char * const short_opts = "B:hi:p:rsS:";
  const option long_opts[] = {
   { "blockcfg" ,   required_argument , nullptr , 'B' } ,
-  { "solvercfg" ,  required_argument , nullptr , 'S' } ,
-  { "scenario" ,   required_argument , nullptr , 'i' } ,
-  { "simulation" , no_argument ,       nullptr , 's' } ,
-  { "relax" ,      no_argument ,       nullptr , 'r' } ,
   { "help" ,       no_argument ,       nullptr , 'h' } ,
+  { "scenario" ,   required_argument , nullptr , 'i' } ,
+  { "prefix" ,     required_argument , nullptr , 'p' } ,
+  { "relax" ,      no_argument ,       nullptr , 'r' } ,
+  { "simulation" , no_argument ,       nullptr , 's' } ,
+  { "solvercfg" ,  required_argument , nullptr , 'S' } ,
   { nullptr ,      no_argument ,       nullptr , 0 }
  };
 
@@ -155,6 +158,9 @@ void process_args( int argc , char ** argv ) {
     }
     break;
    }
+   case 'p':
+    Block::set_filename_prefix( std::string( optarg ) );
+    break;
    case 's':
     simulation_mode = true;
     break;
