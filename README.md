@@ -70,6 +70,7 @@ Usage: sddp_solver [options] <nc4-file>
 
 Options:
   -s, --simulation               Simulation mode.
+  -r, --relax                    Relax integer variables.
   -i <index>, --scenario <index> The index of the scenario.
   -B <file>, --blockcfg <file>   Block configuration.
   -S <file>, --solvercfg <file>  Solver configuration.
@@ -87,11 +88,12 @@ The `-s` option indicates whether a simulation should be performed. If this
 option is used, then the SDDPBlock is solved using the
 SDDPGreedySolver. Otherwise, the SDDPBlock is solved by the SDDPSolver.
 
-In simulation mode (i.e., when the `-s` option is used), the `-i` option specifies
-the index of the scenario for which the problem must be solved. The index must
-be a number between 0 and n-1, where n is the number of scenarios in the
-SDDPBlock. If this index is not provided, then the problem is solved for the
-first scenario.
+In simulation mode (i.e., when the `-s` option is used), the `-i` option
+specifies the index of the scenario for which the problem must be solved. The
+index must be a number between 0 and n-1, where n is the number of scenarios
+in the SDDPBlock. If this index is not provided, then the problem is solved
+for the first scenario. Also in simulation mode, the `-r` option indicates
+that the integrality constraints over the variables must be relaxed.
 
 ### Thermal Unit solver / Unit Commitment solver
 

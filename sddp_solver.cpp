@@ -25,7 +25,9 @@
  * specifies the index of the scenario for which the problem must be
  * solved. The index must be a number between 0 and n-1, where n is the number
  * of scenarios in the SDDPBlock. If this index is not provided, then the
- * problem is solved for the first scenario.
+ * problem is solved for the first scenario. Also in simulation mode, the -r
+ * option indicates that the integrality constraints over the variables must
+ * be relaxed.
  *
  * The -B and -S options are only considered if the given netCDF file is a
  * BlockFile. The -B option specifies a BlockConfig file to be applied to
@@ -70,6 +72,7 @@ std::string block_config_filename{};
 std::string solver_config_filename{};
 long scenario_id = 0;
 bool simulation_mode = false;
+bool relax_integrality = false;
 const bool continuous_relaxation = true;
 
 std::string exe{};         ///< Name of the executable file
@@ -94,6 +97,7 @@ void print_help() {
            << std::endl
            << "Options:\n"
            << "  -s, --simulation        Simulation mode.\n"
+           << "  -r, --relax             Relax integer variables.\n"
            << "  -i, --scenario <index>  The index of the scenario.\n"
            << "  -B, --blockcfg <file>   Block configuration.\n"
            << "  -S, --solvercfg <file>  Solver configuration.\n"
@@ -110,12 +114,13 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:S:i:sh";
+ const char * const short_opts = "B:S:i:srh";
  const option long_opts[] = {
   { "blockcfg" ,   required_argument , nullptr , 'B' } ,
   { "solvercfg" ,  required_argument , nullptr , 'S' } ,
   { "scenario" ,   required_argument , nullptr , 'i' } ,
   { "simulation" , no_argument ,       nullptr , 's' } ,
+  { "relax" ,      no_argument ,       nullptr , 'r' } ,
   { "help" ,       no_argument ,       nullptr , 'h' } ,
   { nullptr ,      no_argument ,       nullptr , 0 }
  };
@@ -152,6 +157,9 @@ void process_args( int argc , char ** argv ) {
    }
    case 's':
     simulation_mode = true;
+    break;
+   case 'r':
+    relax_integrality = true;
     break;
    case 'h': // -h or --help
     print_help();
@@ -822,7 +830,7 @@ void process_block_file( const netCDF::NcFile & file ) {
   if( given_block_config )
    given_block_config->apply( sddp_block );
   else {
-   configure_Blocks( sddp_block , true );
+   configure_Blocks( sddp_block , ( ! simulation_mode ) || relax_integrality );
    block_config = build_BlockConfig( sddp_block );
    block_config->apply( sddp_block );
    block_config->clear();
