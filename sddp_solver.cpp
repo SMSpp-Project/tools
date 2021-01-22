@@ -35,7 +35,7 @@
  *
  * \version 0.1
  *
- * \date 16 - 12 - 2020
+ * \date 22 - 01 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -224,6 +224,229 @@ void show_simulation_status( Index status , Index fault_stage ) {
 
 /*--------------------------------------------------------------------------*/
 
+Block * get_uc_block( const SDDPBlock * sddp_block , const Index stage ) {
+
+ auto benders_block = static_cast< BendersBlock * >
+  ( sddp_block->get_sub_Block( stage )->get_inner_block() );
+
+ auto objective = static_cast< FRealObjective * >
+  ( benders_block->get_objective() );
+
+ auto benders_function = static_cast< BendersBFunction * >
+  ( objective->get_function() );
+
+ return benders_function->get_inner_block();
+}
+
+/*--------------------------------------------------------------------------*/
+
+bool update_hydro_unit( Block * previous_block , Block * block ,
+                        const Index stage ) {
+ auto unit = dynamic_cast< HydroUnitBlock * >( block );
+ auto previous_unit = dynamic_cast< HydroUnitBlock * >( previous_block );
+
+ if( ! unit && ! previous_unit )
+  return false;
+
+ if( ! unit || ! previous_unit )
+  throw( std::logic_error
+         ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
+           " and " + std::to_string( stage ) +
+           " do not have the same structure." ) );
+
+ auto number_generators = previous_unit->get_number_generators();
+
+ if( number_generators != unit->get_number_generators() )
+  throw( std::logic_error
+         ( "sddp_solver: HydroUnitBlock at stage " +
+           std::to_string( stage - 1 ) + " has " +
+           std::to_string( number_generators ) +
+           ", but corresponding HydroUnitBlock at stage " +
+           std::to_string( stage ) + " has " +
+           std::to_string( unit->get_number_generators() ) ) );
+
+ std::vector< double > flow_rate( number_generators );
+
+ for( Index g = 0 ; g < number_generators ; ++g )
+  flow_rate[ g ] = previous_unit->get_flow_rate( g )->get_value();
+
+ unit->set_initial_flow_rate( flow_rate.cbegin() );
+
+ return true;
+}
+
+/*--------------------------------------------------------------------------*/
+
+bool update_battery_unit( Block * previous_block , Block * block ,
+                          const Index stage ) {
+ auto unit = dynamic_cast< BatteryUnitBlock * >( block );
+ auto previous_unit = dynamic_cast< BatteryUnitBlock * >( previous_block );
+
+ if( ! unit && ! previous_unit )
+  return false;
+
+ if( ! unit || ! previous_unit )
+  throw( std::logic_error
+         ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
+           " and " + std::to_string( stage ) +
+           " do not have the same structure." ) );
+
+ const auto time_horizon = unit->get_time_horizon();
+
+ std::vector< double > initial_power_data =
+  { ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
+
+ unit->set_initial_power( initial_power_data.cbegin() );
+
+ std::vector< double > initial_storage_data =
+  { previous_unit->get_storage_level()[ time_horizon - 1 ].get_value() };
+
+ unit->set_initial_storage( initial_storage_data.cbegin() );
+
+ return true;
+}
+
+/*--------------------------------------------------------------------------*/
+
+int compute_init_up_down_time( const SDDPBlock * sddp_block ,
+                               ThermalUnitBlock * previous_unit ,
+                               ThermalUnitBlock * unit , const Index stage ) {
+
+ auto time_horizon = previous_unit->get_time_horizon();
+ auto commitment = previous_unit->get_commitment( 0 ) + time_horizon - 1;
+
+ auto shutdown = previous_unit->get_shut_down();
+ if( ! shutdown.empty() && shutdown.back().get_value() >= 0.5 ) {
+  return 0;
+ }
+
+ int init_up_down_time = 0;
+ const bool on = commitment->get_value() >= 0.5;
+ if( on )
+  init_up_down_time = 1;
+ else
+  init_up_down_time = -1;
+
+ AbstractPath path;
+
+ for( Index outer_t = 0 ; outer_t < stage ; ++outer_t ) {
+
+  for( Index t = 1 ; t < time_horizon ; ++t , --commitment ) {
+   if( std::abs( commitment->get_value() -
+                 ( commitment - 1 )->get_value() ) > 0.5 )
+    return init_up_down_time;
+   if( on ) ++init_up_down_time;
+   else --init_up_down_time;
+  }
+
+  if( outer_t == stage - 1 )
+   break;
+
+  if( path.empty() ) {
+   auto uc_block = get_uc_block( sddp_block , stage );
+   path.build( unit , uc_block );
+  }
+
+  auto previous_uc_block = get_uc_block( sddp_block , stage - outer_t - 2 );
+  previous_unit = dynamic_cast< ThermalUnitBlock * >
+   ( path.get_element< Block >( previous_uc_block ) );
+
+  if( ! previous_unit )
+   throw( std::logic_error
+          ( "sddp_solver::update_thermal_block: ThermalUnitBlock not found "
+            "at stage " + std::to_string( stage - outer_t - 2 ) ) );
+
+  commitment = previous_unit->get_commitment( 0 ) + time_horizon - 1;
+
+  if( on ) {
+   if( commitment->get_value() >= 0.5 ) ++init_up_down_time;
+   else break;
+  }
+  else {
+   if( commitment->get_value() < 0.5 ) --init_up_down_time;
+   else break;
+  }
+ }
+
+ return init_up_down_time;
+}
+
+/*--------------------------------------------------------------------------*/
+
+bool update_thermal_unit( const SDDPBlock * sddp_block ,
+                          Block * previous_block , Block * block ,
+                          const Index stage ) {
+
+ auto previous_unit = dynamic_cast< ThermalUnitBlock * >( previous_block );
+ auto unit = dynamic_cast< ThermalUnitBlock * >( block );
+
+ if( ! unit && ! previous_unit )
+  return false;
+
+ if( ! unit || ! previous_unit )
+  throw( std::logic_error
+         ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
+           " and " + std::to_string( stage ) +
+           " do not have the same structure." ) );
+
+ auto init_up_down_time = compute_init_up_down_time
+  ( sddp_block , previous_unit , unit , stage );
+
+ std::vector< int > init_up_down_time_data = { init_up_down_time };
+ unit->set_init_updown_time( init_up_down_time_data.cbegin() );
+
+ std::vector< double > active_power_data =
+  { previous_unit->get_active_power( 0 )->get_value() };
+ unit->set_initial_power( active_power_data.cbegin() );
+
+ return true;
+}
+
+/*--------------------------------------------------------------------------*/
+
+void callback( SDDPBlock * sddp_block , Block::Index stage ) {
+
+ if( stage == 0 )
+  return;
+
+ auto previous_uc_block = get_uc_block( sddp_block , stage - 1 );
+ auto uc_block = get_uc_block( sddp_block , stage );
+
+ std::queue< Block *> blocks;
+ blocks.push( uc_block );
+
+ std::queue< Block *> previous_blocks;
+ previous_blocks.push( previous_uc_block );
+
+ while( ! blocks.empty() ) {
+  auto block = blocks.front();
+  blocks.pop();
+
+  auto previous_block = previous_blocks.front();
+  previous_blocks.pop();
+
+  auto n = block->get_number_nested_Blocks();
+
+  if( n != previous_block->get_number_nested_Blocks() ) {
+   throw( std::logic_error
+          ("sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
+           " and " + std::to_string( stage ) +
+           " do not have the same structure." ) );
+  }
+
+  for( decltype( n ) i = 0 ; i < n ; ++i ) {
+   blocks.push( block->get_nested_Block( i ) );
+   previous_blocks.push( previous_block->get_nested_Block( i ) );
+  }
+
+  update_hydro_unit( previous_block , block , stage )
+   || update_thermal_unit( sddp_block , previous_block , block , stage )
+   || update_battery_unit( previous_block , block , stage );
+ }
+}
+
+/*--------------------------------------------------------------------------*/
+
 void simulate( SDDPBlock * sddp_block ) {
 
  auto solver = dynamic_cast< SDDPGreedySolver * >
@@ -232,6 +455,10 @@ void simulate( SDDPBlock * sddp_block ) {
  if( ! solver )
   throw( std::logic_error( "The Solver for the SDDPBlock must be a "
                            "SDDPGreedySolver." ) );
+
+ solver->set_callback( [sddp_block]( Index stage ) {
+  callback( sddp_block , stage );
+ });
 
  solver->set_scenario_id( scenario_id );
 
@@ -305,7 +532,7 @@ void solve( SDDPBlock * sddp_block ) {
 
 /*--------------------------------------------------------------------------*/
 
-void configure_Blocks( SDDPBlock * sddp_block ) {
+void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ) {
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
   auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
@@ -328,7 +555,8 @@ void configure_Blocks( SDDPBlock * sddp_block ) {
     blocks.push( block->get_nested_Block( i ) );
    }
 
-   int var_type = 1;  // relax binary constraints
+   int var_type = 0;
+   if( relax_binary_variables ) var_type = 1;
    int cons_type = 1; // generate OneVarConstraints
 
    // Configure PolyhedralFunctionBlock
@@ -340,22 +568,28 @@ void configure_Blocks( SDDPBlock * sddp_block ) {
 
    else if( auto unit = dynamic_cast< SlackUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration = new SimpleConfiguration<int>( var_type );
-    config->f_static_constraints_Configuration = new SimpleConfiguration<int>( cons_type );
+    config->f_static_variables_Configuration =
+     new SimpleConfiguration<int>( var_type );
+    config->f_static_constraints_Configuration =
+     new SimpleConfiguration<int>( cons_type );
     unit->set_BlockConfig( config );
    }
 
    else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration = new SimpleConfiguration<int>( var_type );
-    config->f_static_constraints_Configuration = new SimpleConfiguration<int>( cons_type );
+    config->f_static_variables_Configuration =
+     new SimpleConfiguration<int>( var_type );
+    config->f_static_constraints_Configuration =
+     new SimpleConfiguration<int>( cons_type );
     unit->set_BlockConfig( config );
    }
 
    else if( auto unit = dynamic_cast< ThermalUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration = new SimpleConfiguration<int>( var_type );
-    config->f_static_constraints_Configuration = new SimpleConfiguration<int>( cons_type );
+    config->f_static_variables_Configuration =
+     new SimpleConfiguration<int>( var_type );
+    config->f_static_constraints_Configuration =
+     new SimpleConfiguration<int>( cons_type );
     unit->set_BlockConfig( config );
    }
 
@@ -433,6 +667,7 @@ BlockSolverConfig * build_BlockSolverConfig() {
   //config->set_par( "intNbSimulBackward" , 100 );
   //config->set_par( "intNbSimulForward" , 5 );
   //config->set_par( "intNStepConv" , 5 );
+
   block_solver_config->add_ComputeConfig( "SDDPSolver" , config );
  }
 
@@ -587,7 +822,7 @@ void process_block_file( const netCDF::NcFile & file ) {
   if( given_block_config )
    given_block_config->apply( sddp_block );
   else {
-   configure_Blocks( sddp_block );
+   configure_Blocks( sddp_block , true );
    block_config = build_BlockConfig( sddp_block );
    block_config->apply( sddp_block );
    block_config->clear();

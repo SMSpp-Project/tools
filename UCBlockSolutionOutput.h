@@ -387,7 +387,6 @@ public:
      return network_block->get_active_demand()[ node ];
     }
     else {
-     //return block->get_active_power_demand()[ node ][ time ];
      return block->get_node_injection_constraints()[ time ][ node ].get_rhs();
     }
    };
@@ -525,6 +524,7 @@ public:
   print_flow( uc_block->get_network_blocks() );
   print_duals( uc_block );
   print_demand( uc_block );
+  print_max_power( unit_blocks );
  }
 
 /*--------------------------------------------------------------------------*/
