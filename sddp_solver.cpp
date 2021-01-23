@@ -530,11 +530,11 @@ void solve( SDDPBlock * sddp_block ) {
  auto solver = dynamic_cast< SDDPSolver * >
   ( sddp_block->get_registered_solvers().front() );
 
- solver->set_log( &std::cout );
-
  if( ! solver )
   throw( std::logic_error( "The Solver for the SDDPBlock must be a "
                            "SDDPSolver." ) );
+
+ solver->set_log( &std::cout );
 
  auto status = solver->compute();
 
