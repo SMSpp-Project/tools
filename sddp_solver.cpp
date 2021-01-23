@@ -813,9 +813,12 @@ void process_block_file( const netCDF::NcFile & file ) {
  }
 
  // BlockSolverConfig
+ bool block_solver_config_provided = true;
  auto solver_config = load_BlockSolverConfig();
- if( ! solver_config )
+ if( ! solver_config ) {
+  block_solver_config_provided = false;
   solver_config = build_BlockSolverConfig();
+ }
 
  auto cleared_solver_config = solver_config->clone();
  cleared_solver_config->clear();
@@ -837,9 +840,12 @@ void process_block_file( const netCDF::NcFile & file ) {
    given_block_config->apply( sddp_block );
   else {
    configure_Blocks( sddp_block , ( ! simulation_mode ) || relax_integrality );
-   block_config = build_BlockConfig( sddp_block );
-   block_config->apply( sddp_block );
-   block_config->clear();
+
+   if( ! block_solver_config_provided ) {
+    block_config = build_BlockConfig( sddp_block );
+    block_config->apply( sddp_block );
+    block_config->clear();
+   }
   }
 
   // Configure the Solver
@@ -859,7 +865,8 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Destroy the SDDPBlock and the Configurations
 
-  block_config->apply( sddp_block );
+  if( block_config )
+   block_config->apply( sddp_block );
   if( ! given_block_config ) {
    delete block_config;
    block_config = nullptr;
