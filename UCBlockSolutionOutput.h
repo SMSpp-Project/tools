@@ -152,7 +152,6 @@
 
 #include "BatteryUnitBlock.h"
 #include "BusNetworkBlock.h"
-#include "CDASolver.h"
 #include "DCNetworkBlock.h"
 #include "HydroSystemUnitBlock.h"
 #include "IntermittentUnitBlock.h"

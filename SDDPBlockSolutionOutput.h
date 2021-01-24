@@ -105,13 +105,13 @@ public:
    auto uc_block = static_cast< UCBlock * >
     ( benders_function->get_inner_block() );
 
-   auto solver = benders_function->get_solver<CDASolver>();
-
-   assert( solver->has_var_solution() );
-   if( solver->has_var_solution() )
-    solver->get_var_solution();
-   if( solver->has_dual_solution() )
-    solver->get_dual_solution();
+   if( auto solver = benders_function->get_solver() ) {
+    if( solver->has_var_solution() )
+     solver->get_var_solution();
+    if( auto cda_solver = dynamic_cast< CDASolver * >( solver ) )
+     if( cda_solver->has_dual_solution() )
+      cda_solver->get_dual_solution();
+   }
 
    solution_output.print( uc_block );
 
