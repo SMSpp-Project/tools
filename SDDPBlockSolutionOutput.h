@@ -5,7 +5,7 @@
  *
  * \version 0.1
  *
- * \date 08 - 10 - 2020
+ * \date 28 - 01 - 2020
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -61,7 +61,19 @@ public:
 
  void print_cuts( SDDPBlock * block ) const {
 
+  if( block->get_polyhedral_functions().empty() )
+   return;
+
   std::ofstream output( "BellmanValuesOUT.csv" , std::ios::out );
+
+  const auto num_var =
+   block->get_polyhedral_functions().front()->get_num_active_var();
+
+  output << "Timestep";
+  for( Index i = 0 ; i < num_var ; ++i ) {
+   output << separator_character << "a_" << std::to_string( i );
+  }
+  output << separator_character << "b" << std::endl;
 
   for( Index stage = 0 ; stage < block->get_time_horizon() ; ++stage ) {
 
