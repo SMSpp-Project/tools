@@ -7,7 +7,7 @@
  * SDDPSolver or the SDDPGreedySolver. The description of the SDDPBlock must
  * be given in a netCDF file. This tool can be executed as follows:
  *
- *     ./sddp_solver [-s] [-i INDEX] [-B FILE] [-S FILE] <nc4-file>
+ *   ./sddp_solver [-s] [-i INDEX] [-r] [-B FILE] [-S FILE] [-p PATH] [-c PATH] <nc4-file>
  *
  * The only mandatory argument is the netCDF containing the description of the
  * SDDPBlock. This netCDF can be either a BlockFile or a ProbFile. The
@@ -16,6 +16,10 @@
  * any number of child groups, each one having the description of an SDDPBlock
  * alongside the description of a BlockConfig and a BlockSolverConfig for the
  * SDDPBlock. Also in this case, every SDDPBlock is solved.
+ *
+ * The -c option specifies the prefix to the paths to all configuration
+ * files. The -p option specifies the prefix to the paths to all files
+ * specified by the attribute "filename" in the input netCDF file.
  *
  * The -s option indicates whether a simulation should be performed. If this
  * option is used, then the SDDPBlock is solved using the
@@ -97,9 +101,10 @@ void print_help() {
            << std::endl
            << "Options:\n"
            << "  -B, --blockcfg <file>   Block configuration.\n"
+           << "  -c, --configdir <path>  The prefix for all config filenames.\n"
            << "  -h, --help              Print this help.\n"
            << "  -i, --scenario <index>  The index of the scenario.\n"
-           << "  -p, --prefix            The prefix for all Block filenames.\n"
+           << "  -p, --prefix <path>     The prefix for all Block filenames.\n"
            << "  -r, --relax             Relax integer variables.\n"
            << "  -s, --simulation        Simulation mode.\n"
            << "  -S, --solvercfg <file>  Solver configuration."
@@ -116,9 +121,10 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:hi:p:rsS:";
+ const char * const short_opts = "B:c:hi:p:rsS:";
  const option long_opts[] = {
   { "blockcfg" ,   required_argument , nullptr , 'B' } ,
+  { "configdir" ,  required_argument , nullptr , 'c' } ,
   { "help" ,       no_argument ,       nullptr , 'h' } ,
   { "scenario" ,   required_argument , nullptr , 'i' } ,
   { "prefix" ,     required_argument , nullptr , 'p' } ,
@@ -140,6 +146,9 @@ void process_args( int argc , char ** argv ) {
   switch( opt ) {
    case 'B':
     block_config_filename = std::string( optarg );
+    break;
+   case 'c':
+    Configuration::set_filename_prefix( std::string( optarg ) );
     break;
    case 'S':
     solver_config_filename = std::string( optarg );
@@ -489,8 +498,8 @@ void simulate( SDDPBlock * sddp_block ) {
  auto lb = solver->get_lb();
  auto ub = solver->get_ub();
 
- std::cout << "Lower bound: " << lb << std::endl;
- std::cout << "Upper bound: " << ub << std::endl;
+ std::cout << "Lower bound: " << std::setprecision( 20 ) << lb << std::endl;
+ std::cout << "Upper bound: " << std::setprecision( 20 ) << ub << std::endl;
 }
 
 /*--------------------------------------------------------------------------*/
