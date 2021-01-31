@@ -59,12 +59,12 @@ public:
 /*--------------------- PUBLIC METHODS OF THE CLASS ------------------------*/
 /*--------------------------------------------------------------------------*/
 
- void print_cuts( SDDPBlock * block ) const {
+ void print_cuts( SDDPBlock * block , const std::string & filename ) const {
 
   if( block->get_polyhedral_functions().empty() )
    return;
 
-  std::ofstream output( "BellmanValuesOUT.csv" , std::ios::out );
+  std::ofstream output( filename , std::ios::out );
 
   const auto num_var =
    block->get_polyhedral_functions().front()->get_num_active_var();
@@ -85,8 +85,9 @@ public:
    for( Index i = 0 ; i < b.size() ; ++i ) {
     output << stage;
     for( Index j = 0 ; j < A[ i ].size() ; ++j )
-     output << separator_character << A[ i ][ j ];
-    output << separator_character << b[ i ] << std::endl;
+     output << separator_character << std::setprecision( 20 ) << A[ i ][ j ];
+    output << separator_character << std::setprecision( 20 ) << b[ i ]
+           << std::endl;
    }
   }
 

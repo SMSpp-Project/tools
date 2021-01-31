@@ -80,7 +80,7 @@ install(TARGETS block_solver
 
 # ----- sddp_solver --------------------------------------------------------- #
 if (SDDPBlock_FOUND AND MILPSolver_FOUND)
-    add_executable(sddp_solver sddp_solver.cpp)
+    add_executable(sddp_solver sddp_solver.cpp CutProcessing.cpp)
     target_compile_features(sddp_solver PUBLIC cxx_std_17)
 
     target_link_libraries(sddp_solver PRIVATE

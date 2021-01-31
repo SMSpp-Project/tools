@@ -65,6 +65,7 @@
 #include <SDDPGreedySolver.h>
 #include <SDDPSolver.h>
 
+#include "CutProcessing.h"
 #include "SDDPBlockSolutionOutput.h"
 
 using namespace SMSpp_di_unipi_it;
@@ -550,7 +551,11 @@ void solve( SDDPBlock * sddp_block ) {
  show_status( status );
 
  SDDPBlockSolutionOutput o;
- o.print_cuts( sddp_block );
+ o.print_cuts( sddp_block , "BellmanValuesAllOUT.csv" );
+
+ CutProcessing().remove_redundant_cuts
+  ( static_cast< SDDPBlock * >( sddp_block ) );
+ o.print_cuts( sddp_block , "BellmanValuesOUT.csv" );
 }
 
 /*--------------------------------------------------------------------------*/

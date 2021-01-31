@@ -70,6 +70,7 @@ Usage: sddp_solver [options] <nc4-file>
 
 Options:
   -B <file>, --blockcfg <file>   Block configuration.
+  -c <path>, --configdir <path>  The prefix for all config filenames.
   -h, --help                     Print this help.
   -i <index>, --scenario <index> The index of the scenario.
   -p <path>, --prefix <path>     The prefix for all Block filenames.
@@ -85,8 +86,9 @@ The input netCDF file can be a problem file or a block file:
 - for a block file, if a Block configuration or a Solver configuration is not
   provided, a default configuration will be used.
 
-The `-p` option specifies the prefix to the paths to all files specified by
-the attribute `filename` in the input netCDF file.
+The `-c` option specifies the prefix to the paths to all configuration
+files. The `-p` option specifies the prefix to the paths to all files
+specified by the attribute `filename` in the input netCDF file.
 
 The `-s` option indicates whether a simulation should be performed. If this
 option is used, then the SDDPBlock is solved using the
