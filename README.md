@@ -109,18 +109,18 @@ or Solver configurations, default configurations will be used.
 ## Authors
 
 - **Antonio Frangioni**  
-  *Operations Research Group*  
-  Dipartimento di Informatica  
+  *Operations Research Group*
+  Dipartimento di Informatica
   Università di Pisa
 
 - **Ali Ghezelsoflu**  
-  *Operations Research Group*  
-  Dipartimento di Informatica  
+  *Operations Research Group*
+  Dipartimento di Informatica
   Università di Pisa
 
 - **Niccolò Iardella**  
-  *Operations Research Group*  
-  Dipartimento di Informatica  
+  *Operations Research Group*
+  Dipartimento di Informatica
   Università di Pisa
 
 - **Rafael Durbano Lobato**  
@@ -136,7 +136,7 @@ see the [LICENSE](LICENSE) file for details.
 
 ## Disclaimer
 
-The code is currently provided free of charge for academic purposes only.
+The code is currently provided free of charge under an open-source license.
 As such, it is provided "*as is*", without any explicit or implicit warranty
 that it will properly behave or it will suit your needs. The Authors of
 the code cannot be considered liable, either directly or indirectly, for
