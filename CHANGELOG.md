@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- sddp_solver tool.
+
 ### Changed
 
 - block/ucblock/thermalunit solvers have now the same interface.
+- Major review of project tree.
 
 ## [0.3.1] - 2020-09-28
 

@@ -41,93 +41,11 @@ if (NOT BUILD_SHARED_LIBS)
     endif ()
 endif ()
 
-# ----- Requirements -------------------------------------------------------- #
-find_package(UCBlock)
-find_package(MILPSolver)
-find_package(SDDPBlock)
-
-# ----- block_solver -------------------------------------------------------- #
-add_executable(block_solver block_solver.cpp)
-target_compile_features(block_solver PUBLIC cxx_std_17)
-
-if (BUILD_SHARED_LIBS AND tools_USE_DL)
-    # If shared libraries have been built and the option is ON,
-    # block_solver will be using dynamic loading.
-    # It only needs SMS++ core library.
-    find_package(SMSpp)
-    if (SMSpp_FOUND)
-
-        # Runtime path with the build tree directories
-        # containing the libraries.
-        set(CMAKE_BUILD_RPATH ${SMSPP_BUILD_RPATH})
-
-        # Enable DL in the code.
-        target_compile_definitions(block_solver PRIVATE USE_DL)
-
-        target_link_libraries(block_solver PRIVATE SMS++::SMSpp dl)
-    endif ()
-else ()
-    # Otherwise, link all the supported libraries.
-    if (UCBlock_FOUND AND MILPSolver_FOUND)
-        target_link_libraries(block_solver PRIVATE
-                              SMS++::MILPSolver
-                              SMS++::UCBlock)
-    endif ()
-endif ()
-
-install(TARGETS block_solver
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-
-# ----- sddp_solver --------------------------------------------------------- #
-if (SDDPBlock_FOUND AND MILPSolver_FOUND)
-    add_executable(sddp_solver sddp_solver.cpp CutProcessing.cpp)
-    target_compile_features(sddp_solver PUBLIC cxx_std_17)
-
-    target_link_libraries(sddp_solver PRIVATE
-                          SMS++::UCBlock
-                          SMS++::SDDPBlock
-                          SMS++::StochasticBlock
-                          SMS++::MILPSolver)
-
-    install(TARGETS sddp_solver
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-endif ()
-
-# ----- ucblock/thermalunit_solver ------------------------------------------ #
-if (UCBlock_FOUND AND MILPSolver_FOUND)
-
-    add_executable(thermalunit_solver thermalunit_solver.cpp)
-    target_link_libraries(thermalunit_solver PRIVATE
-                          SMS++::UCBlock
-                          SMS++::MILPSolver)
-
-    find_package(DPSolver)
-    if (DPSolver_FOUND)
-        target_link_libraries(thermalunit_solver PRIVATE SMS++::DPSolver)
-    endif ()
-
-    add_executable(ucblock_solver ucblock_solver.cpp)
-    target_link_libraries(ucblock_solver PRIVATE
-                          SMS++::UCBlock
-                          SMS++::MILPSolver)
-
-    install(TARGETS thermalunit_solver ucblock_solver
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-endif ()
-
-# ----- Generate and install shell completion scripts ----------------------- #
-get_directory_property(toolNames BUILDSYSTEM_TARGETS)
-foreach (toolName ${toolNames})
-    configure_file(scripts/completion.bash.in ${toolName}-completion.bash)
-    configure_file(scripts/completion.zsh.in ${toolName}-completion.zsh)
-
-    install(FILES ${PROJECT_BINARY_DIR}/${toolName}-completion.bash
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
-            RENAME ${toolName})
-    install(FILES ${PROJECT_BINARY_DIR}/${toolName}-completion.zsh
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
-            RENAME "_${toolName}")
-endforeach ()
+# ----- Tools --------------------------------------------------------------- #
+add_subdirectory(block_solver)
+add_subdirectory(sddp_solver)
+add_subdirectory(thermalunit_solver)
+add_subdirectory(ucblock_solver)
 
 # --------------------------------------------------------------------------- #
 # Just consuming these to avoid warnings

@@ -1,6 +1,6 @@
 BlockSolverConfig  # The name of the configuration
 
-0                  # The configuration is not "differential"
+1                  # The configuration is "differential"
 1                  # Number of solvers
 
 # Names of the solvers

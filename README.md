@@ -109,18 +109,18 @@ or Solver configurations, default configurations will be used.
 ## Authors
 
 - **Antonio Frangioni**  
-  *Operations Research Group*
-  Dipartimento di Informatica
+  *Operations Research Group*  
+  Dipartimento di Informatica  
   Università di Pisa
 
 - **Ali Ghezelsoflu**  
-  *Operations Research Group*
-  Dipartimento di Informatica
+  *Operations Research Group*  
+  Dipartimento di Informatica  
   Università di Pisa
 
 - **Niccolò Iardella**  
-  *Operations Research Group*
-  Dipartimento di Informatica
+  *Operations Research Group*  
+  Dipartimento di Informatica  
   Università di Pisa
 
 - **Rafael Durbano Lobato**  
