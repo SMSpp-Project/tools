@@ -6,6 +6,7 @@ At the moment we provide:
 - a generic Block Solver with some example input files
 - a single Thermal Unit solver
 - a UCBlock solver
+- an SDDPBlock solver
 
 ## Getting started
 
@@ -13,11 +14,12 @@ These instructions will let you build SMS++ Tools on your system.
 
 ### Requirements
 
-- SMS++
-- UCBlock
-- MILPSolver
+- [SMS++ core library](https://gitlab.com/smspp/smspp)
+- [MILPSolver](https://gitlab.com/smspp/milpsolver)
+- [SDDPBlock](https://gitlab.com/smspp/sddpblock)
+- [UCBlock](https://gitlab.com/smspp/ucblock)
 
-### Build and install
+### Build and install with CMake
 
 Configure and build with:
 
@@ -36,57 +38,83 @@ make install
 
 ## Usage
 
-### Block solver
+The Block solver (`block_solver`),
+the Thermal Unit solver (`thermalunit_solver`) and 
+the Unit Commitment solver (`ucblock_solver`) share the same interface:
 
 ```sh
-Usage: block_solver [options] <nc4-file>
+Usage: <solver-name> [options] <nc4-file>
 
-Options:
-  -b <file>, --blockcfg <file>   Block configuration.
-  -s <file>, --solvercfg <file>  Solver configuration.
-  -h, --help                     Print this help.
+  -B <file>, --blockcfg <file>    Block configuration.
+  -S <file>, --solvercfg <file>   Solver configuration.
+  -n <file>, --nc4problem <file>  Write nc4 problem on file.
+  -v, --verbose                   Make the solver verbose.
+  -h, --help                      Print this help.
 ```
+
+See the [`examples`](thermalunit_solver/examples) directory for sample input files and configurations.
+
+### Block solver
 
 The input netCDF file can be a problem file or a block file:
 - a problem file already contains a Block configuration and a Solver configuration,
   so if you provide them by command line they will be ignored;
 - a block file needs a Block configuration and a Solver configuration to be solved.
 
-See the [`examples`](examples) directory for sample input files.
+See the [`examples`](thermalunit_solver/examples) directory for sample input files and configurations.
 
-### Thermal Unit solver
-
-```sh
-Usage: thermalunit_solver [options] <nc4-file>
-
-Options:
-  -s <solver>, --solver <solver>  Choose solver.
-                                  Available solvers are: cplex, dp.
-  -w <file>, --writelp <file>     Write LP problem on file.
-  -n <file>, --nc4problem <file>  Write nc4 problem on file.
-  -h, --help                      Print this help.
-```
-
-The input netCDF file must be a block file.
-At the moment, DP solver support is limited.
-
-### Unit Commitment Block solver
+### SDDPBlock Solver
 
 ```sh
-Usage: ucblock_solver [options] <nc4-file>
+Usage: sddp_solver [options] <nc4-file>
 
 Options:
-  -B <file>, --blockcfg <file>    Block configuration.
-  -S <file>, --solvercfg <file>   Solver configuration.
-  -s <solver>, --solver <solver>  Choose solver.
-                                  Available solvers are: cplex, dp.
-  -w <file>, --writelp <file>     Write LP problem on file.
-  -v, --verbose                   Make the solver verbose.
-  -h, --help                      Print this help.
+  -B <file>, --blockcfg <file>   Block configuration.
+  -c <path>, --configdir <path>  The prefix for all config filenames.
+  -h, --help                     Print this help.
+  -i <index>, --scenario <index> The index of the scenario.
+  -p <path>, --prefix <path>     The prefix for all Block filenames.
+  -r, --relax                    Relax integer variables.
+  -s, --simulation               Simulation mode.
+  -S <file>, --solvercfg <file>  Solver configuration.
 ```
 
-The input netCDF file must be a block file.
-At the moment, DP solver support is limited.
+The input netCDF file can be a problem file or a block file:
+- a problem file already contains a Block configuration and a Solver
+  configuration; any Block or Solver configuration provided by command line
+  will be ignored;
+- for a block file, if a Block configuration or a Solver configuration is not
+  provided, a default configuration will be used.
+
+The `-c` option specifies the prefix to the paths to all configuration
+files. The `-p` option specifies the prefix to the paths to all files
+specified by the attribute `filename` in the input netCDF file.
+
+The `-s` option indicates whether a simulation should be performed. If this
+option is used, then the SDDPBlock is solved using the
+SDDPGreedySolver. Otherwise, the SDDPBlock is solved by the SDDPSolver.
+
+In simulation mode (i.e., when the `-s` option is used), the `-i` option
+specifies the index of the scenario for which the problem must be solved. The
+index must be a number between 0 and n-1, where n is the number of scenarios
+in the SDDPBlock. If this index is not provided, then the problem is solved
+for the first scenario. Also in simulation mode, the `-r` option indicates
+that the integrality constraints over the variables must be relaxed.
+
+### Thermal Unit solver / Unit Commitment solver
+
+The input netCDF file must be a block file. If you don't provide Block
+or Solver configurations, default configurations will be used.
+
+## Getting help
+
+If you need support, you want to submit bugs or propose a new feature, you can
+[open a new issue](https://gitlab.com/smspp/tools/-/issues/new).
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of
+conduct, and the process for submitting merge requests to us.
 
 ## Authors
 
@@ -105,13 +133,20 @@ At the moment, DP solver support is limited.
   Dipartimento di Informatica  
   Università di Pisa
 
+- **Rafael Durbano Lobato**  
+  *Operations Research Group*  
+  Dipartimento di Informatica  
+  Università di Pisa
+
 ## License
 
-See SMS++ library for details.
+This code is provided free of charge under the [GNU Lesser General Public
+License version 3.0](https://opensource.org/licenses/lgpl-3.0.html) -
+see the [LICENSE](LICENSE) file for details.
 
 ## Disclaimer
 
-The code is currently provided free of charge for academic purposes only.
+The code is currently provided free of charge under an open-source license.
 As such, it is provided "*as is*", without any explicit or implicit warranty
 that it will properly behave or it will suit your needs. The Authors of
 the code cannot be considered liable, either directly or indirectly, for

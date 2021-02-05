@@ -1,0 +1,23 @@
+#compdef @toolName@
+# ------------------------------------------------------------------------------
+# Copyright (c) 2020 SMS++ Team - https://smspp.gitlab.io/
+# Distributed under the GNU General Public License, version 3.0.
+# ------------------------------------------------------------------------------
+# Description
+# -----------
+#
+#  Zsh completion script for @toolName@.
+#
+# ------------------------------------------------------------------------------
+# Authors
+# -------
+#
+#  * Niccolò Iardella
+#
+# ------------------------------------------------------------------------------
+
+# This works because the tool supports '--help' and
+# prints a GNU generic tool-compliant help.
+_@toolName@() {
+    _gnu_generic
+}
