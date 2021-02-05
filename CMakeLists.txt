@@ -17,7 +17,7 @@
 # --------------------------------------------------------------------------- #
 cmake_minimum_required(VERSION 3.11)
 project(SMS++_tools
-        VERSION 0.3.1
+        VERSION 0.4.0
         DESCRIPTION "SMS++ tools"
         HOMEPAGE_URL https://gitlab.com/smspp/tools
         LANGUAGES C CXX)
