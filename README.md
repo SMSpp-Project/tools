@@ -52,7 +52,7 @@ Usage: <solver-name> [options] <nc4-file>
   -h, --help                      Print this help.
 ```
 
-See the [`examples`](examples) directory for sample input files and configurations.
+See the [`examples`](thermalunit_solver/examples) directory for sample input files and configurations.
 
 ### Block solver
 
@@ -61,7 +61,7 @@ The input netCDF file can be a problem file or a block file:
   so if you provide them by command line they will be ignored;
 - a block file needs a Block configuration and a Solver configuration to be solved.
 
-See the [`examples`](examples) directory for sample input files and configurations.
+See the [`examples`](thermalunit_solver/examples) directory for sample input files and configurations.
 
 ### SDDPBlock Solver
 
@@ -105,6 +105,16 @@ that the integrality constraints over the variables must be relaxed.
 
 The input netCDF file must be a block file. If you don't provide Block
 or Solver configurations, default configurations will be used.
+
+## Getting help
+
+If you need support, you want to submit bugs or propose a new feature, you can
+[open a new issue](https://gitlab.com/smspp/tools/-/issues/new).
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of
+conduct, and the process for submitting merge requests to us.
 
 ## Authors
 
