@@ -571,6 +571,14 @@ void print_ucblock_solver_results( Block * block ) {
      std::cout << std::setw( 20 ) << n.get_value();
     }
     std::cout << " ]" << std::endl;
+
+    auto auxiliary_variable = dc_network_block->get_auxiliary_variable();
+    std::cout << "auxiliary_variable     = [";
+    for( auto & n : auxiliary_variable ) {
+     std::cout << std::setw( 20 ) << n.get_value();
+    }
+    std::cout << " ]" << std::endl;
+
    }
   }
  }
