@@ -41,7 +41,7 @@
  *
  * \version 0.1
  *
- * \date 22 - 01 - 2021
+ * \date 12 - 02 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -742,73 +742,89 @@ BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block ) {
 /*--------------------------------------------------------------------------*/
 
 BlockConfig * load_BlockConfig() {
- BlockConfig * block_config = nullptr;
+
+ if( block_config_filename.empty() ) {
+  std::cout << "Block configuration was not provided. "
+   "Using default configuration." << std::endl;
+  return nullptr;
+ }
+
  std::ifstream block_config_file;
  block_config_file.open( block_config_filename , std::ifstream::in );
 
- if( block_config_file.is_open() ) {
-  std::cout << "Using Block configuration in " << block_config_filename
-            << "." << std::endl;
-
-  std::string config_name;
-  block_config_file >> eatcomments >> config_name;
-  block_config = dynamic_cast<BlockConfig *>
-   ( Configuration::new_Configuration( config_name ) );
-
-  if( ! block_config ) {
-   std::cerr << "Block configuration is not valid: "
-             << config_name << std::endl;
-   exit( 1 );
-  }
-
-  try {
-   block_config_file >> *block_config;
-  }
-  catch( const std::exception& e ) {
-   std::cerr << "Block configuration is not valid: " << e.what() << std::endl;
-   exit( 1 );
-  }
+ if( ! block_config_file.is_open() ) {
+  std::cerr << "Block configuration " + block_config_filename +
+   " was not found." << std::endl;
+  exit( 1 );
  }
- else {
-  std::cout << "Block configuration was not provided. "
-   "Using default configuration." << std::endl;
+
+ std::cout << "Using Block configuration in " << block_config_filename
+           << "." << std::endl;
+
+ std::string config_name;
+ block_config_file >> eatcomments >> config_name;
+ auto block_config = dynamic_cast< BlockConfig * >
+  ( Configuration::new_Configuration( config_name ) );
+
+ if( ! block_config ) {
+  std::cerr << "Block configuration is not valid: "
+            << config_name << std::endl;
+  exit( 1 );
  }
+
+ try {
+  block_config_file >> *block_config;
+ }
+ catch( const std::exception& e ) {
+  std::cerr << "Block configuration is not valid: " << e.what() << std::endl;
+  exit( 1 );
+ }
+
+ block_config_file.close();
  return block_config;
 }
 
 /*--------------------------------------------------------------------------*/
 
 BlockSolverConfig * load_BlockSolverConfig() {
- BlockSolverConfig * solver_config = nullptr;
+
+ if( solver_config_filename.empty() ) {
+  std::cout << "Solver configuration was not provided. "
+   "Using default configuration." << std::endl;
+  return nullptr;
+ }
+
  std::ifstream solver_config_file;
  solver_config_file.open( solver_config_filename , std::ifstream::in );
 
- if( solver_config_file.is_open() ) {
-  std::cout << "Using Solver configuration in " << solver_config_filename
-            << "." << std::endl;
-
-  std::string config_name;
-  solver_config_file >> eatcomments >> config_name;
-  solver_config = dynamic_cast<BlockSolverConfig *>
-   ( Configuration::new_Configuration( config_name ) );
-
-  if( ! solver_config ) {
-   std::cerr << "Solver configuration is not valid: " << config_name << std::endl;
-   exit( 1 );
-  }
-
-  try {
-   solver_config_file >> *solver_config;
-  }
-  catch( ... ) {
-   std::cout << "Solver configuration is not valid." << std::endl;
-   exit( 1 );
-  }
+ if( ! solver_config_file.is_open() ) {
+  std::cerr << "Solver configuration " + solver_config_filename +
+   " was not found." << std::endl;
+  exit( 1 );
  }
- else {
-  std::cout << "Solver configuration was not provided. "
-   "Using default configuration." << std::endl;
+
+ std::cout << "Using Solver configuration in " << solver_config_filename
+           << "." << std::endl;
+
+ std::string config_name;
+ solver_config_file >> eatcomments >> config_name;
+ auto solver_config = dynamic_cast< BlockSolverConfig * >
+  ( Configuration::new_Configuration( config_name ) );
+
+ if( ! solver_config ) {
+  std::cerr << "Solver configuration is not valid: " << config_name << std::endl;
+  exit( 1 );
  }
+
+ try {
+  solver_config_file >> *solver_config;
+ }
+ catch( ... ) {
+  std::cout << "Solver configuration is not valid." << std::endl;
+  exit( 1 );
+ }
+
+ solver_config_file.close();
  return solver_config;
 }
 
