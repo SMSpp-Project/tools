@@ -227,7 +227,7 @@ void show_simulation_status( Index status , Index fault_stage ) {
   case( SDDPGreedySolver::kStopIter ):
    std::cout << "A feasible solution has been found. The solution process "
              << "of subproblem at stage " << fault_stage
-             << " terminated due an iteration limit." << std::endl;
+             << " terminated due to an iteration limit." << std::endl;
    break;
 
   case( SDDPGreedySolver::kLowPrecision ):
@@ -490,11 +490,11 @@ void simulate( SDDPBlock * sddp_block ) {
 
  show_simulation_status( status , solver->get_fault_stage() );
 
- if( solver->has_var_solution() ) {
+ if( solver->has_var_solution() )
   solver->get_var_solution();
-  SDDPBlockSolutionOutput output;
-  output.print( sddp_block );
- }
+
+ SDDPBlockSolutionOutput output;
+ output.print( sddp_block , solver->get_fault_stage() );
 
  auto lb = solver->get_lb();
  auto ub = solver->get_ub();
@@ -527,7 +527,7 @@ void show_status( Index status ) {
    break;
 
   case( SDDPSolver::kStopIter ):
-   std::cout << "The solution process terminated due an iteration limit."
+   std::cout << "The solution process terminated due to an iteration limit."
              << std::endl;
    break;
  }

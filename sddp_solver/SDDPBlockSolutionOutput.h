@@ -77,8 +77,8 @@ public:
 
   for( Index stage = 0 ; stage < block->get_time_horizon() ; ++stage ) {
 
-   const auto & b = block->get_polyhedral_functions()[ stage ]->get_b();
-   const auto & A = block->get_polyhedral_functions()[ stage ]->get_A();
+   const auto & b = block->get_polyhedral_function( stage )->get_b();
+   const auto & A = block->get_polyhedral_function( stage )->get_A();
 
    assert( b.size() == A.size() );
 
@@ -96,14 +96,15 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- void print( SDDPBlock * block ) const {
+ void print( SDDPBlock * block , Index fault_stage ) const {
 
   UCBlockSolutionOutput solution_output;
   solution_output.set_separator_character( separator_character );
 
   Index initial_time = 0;
 
-  for( Index stage = 0 ; stage < block->get_time_horizon() ; ++stage ) {
+  for( Index stage = 0 ;
+       stage < std::min( block->get_time_horizon() , fault_stage ) ; ++stage ) {
 
    auto benders_block = static_cast< BendersBlock * >
     ( static_cast< StochasticBlock * >( block->get_nested_Blocks()[ stage ] )->
