@@ -35,14 +35,14 @@
  * option indicates that the integrality constraints over the variables must
  * be relaxed.
  *
+ * The -n option specifies the number of sub-Blocks of SDDPBlock that must be
+ * constructed for each stage.
+ *
  * The -B and -S options are only considered if the given netCDF file is a
  * BlockFile. The -B option specifies a BlockConfig file to be applied to
  * every SDDPBlock; while the -S option specifies a BlockSolverConfig file for
  * every SDDPBlock. If each of these options is not provided when the given
  * netCDF file is a BlockFile, then default configurations are considered.
- *
- * The -n option specifies the number of sub-Blocks of SDDPBlock that must be
- * constructed for each stage.
  *
  * \version 0.1
  *
