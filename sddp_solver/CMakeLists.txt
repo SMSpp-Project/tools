@@ -1,8 +1,13 @@
+# ----- Options ------------------------------------------------------------- #
+
+option(USE_MPI "Use MPI" OFF)
+
 # ----- Requirements -------------------------------------------------------- #
 find_package(UCBlock)
 find_package(SDDPBlock)
 find_package(StochasticBlock)
 find_package(MILPSolver)
+#find_package(Boost COMPONENTS mpi)
 
 # ----- sddp_solver --------------------------------------------------------- #
 if (UCBlock_FOUND AND
@@ -19,6 +24,10 @@ if (UCBlock_FOUND AND
                           SMS++::SDDPBlock
                           SMS++::StochasticBlock
                           SMS++::MILPSolver)
+
+    if (USE_MPI)
+        add_compile_definitions(USE_MPI)
+    endif ()
 
     # Install
     install(TARGETS sddp_solver

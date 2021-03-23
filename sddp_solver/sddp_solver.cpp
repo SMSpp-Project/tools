@@ -68,6 +68,11 @@
 #include "CutProcessing.h"
 #include "SDDPBlockSolutionOutput.h"
 
+#ifdef USE_MPI
+#include <boost/mpi/environment.hpp>
+#include <boost/mpi/communicator.hpp>
+#endif
+
 using namespace SMSpp_di_unipi_it;
 
 /*--------------------------------------------------------------------------*/
@@ -488,6 +493,11 @@ void simulate( SDDPBlock * sddp_block ) {
 
  auto status = solver->compute();
 
+#ifdef USE_MPI
+ boost::mpi::communicator world;
+ if( world.rank() == 0 ) {
+#endif
+
  show_simulation_status( status , solver->get_fault_stage() );
 
  if( solver->has_var_solution() )
@@ -501,6 +511,10 @@ void simulate( SDDPBlock * sddp_block ) {
 
  std::cout << "Lower bound: " << std::setprecision( 20 ) << lb << std::endl;
  std::cout << "Upper bound: " << std::setprecision( 20 ) << ub << std::endl;
+
+#ifdef USE_MPI
+ }
+#endif
 }
 
 /*--------------------------------------------------------------------------*/
@@ -915,6 +929,10 @@ void process_block_file( const netCDF::NcFile & file ) {
 /*--------------------------------------------------------------------------*/
 
 int main( int argc , char ** argv ) {
+
+#ifdef USE_MPI
+ boost::mpi::environment env(argc, argv);
+#endif
 
  docopt_desc = "SMS++ SDDP solver.\n";
  exe = get_filename( argv[ 0 ] );
