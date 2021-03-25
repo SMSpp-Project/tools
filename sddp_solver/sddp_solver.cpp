@@ -729,12 +729,7 @@ BlockSolverConfig * build_BlockSolverConfig() {
  }
  else {
   auto config = new ComputeConfig;
-  config->set_par( "intLogVerb" , 100 );
-  //config->set_par( "dblAccuracy" , 1.0e-3 );
-  //config->set_par( "intNbSimulBackward" , 100 );
-  //config->set_par( "intNbSimulForward" , 5 );
-  //config->set_par( "intNStepConv" , 5 );
-
+  config->set_par( "intLogVerb" , 1 );
   block_solver_config->add_ComputeConfig( "SDDPSolver" , config );
  }
 
