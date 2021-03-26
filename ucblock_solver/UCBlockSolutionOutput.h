@@ -129,7 +129,7 @@
  *
  * \version 0.1
  *
- * \date 15 - 01 - 2021
+ * \date 26 - 03 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -214,6 +214,8 @@ public:
 
   filenames[ demand ] = { "Demand" , extension };
   filenames[ max_power ] = { "MaxPower" , extension };
+  filenames[ inflow ] = { "Inflows" , extension };
+
  }
 
 /*--------------------------------------------------------------------------*/
@@ -224,8 +226,11 @@ public:
 
   auto get_power_flow =
    []( NetworkBlock * block , Index line ) -> double {
-    if( auto dc = dynamic_cast<DCNetworkBlock *>( block ) )
-     return dc->get_power_flow()[ line ].get_value();
+    if( auto dc = dynamic_cast<DCNetworkBlock *>( block ) ) {
+     const auto & power_flow = dc->get_power_flow();
+     if( power_flow.size() > line )
+      return power_flow[ line ].get_value();
+    }
     return 0;
    };
 
@@ -405,7 +410,13 @@ public:
    []( UnitBlock * block , Index g , Index t ) {
     return ( block->get_active_power( g ) + t )->get_value(); };
 
-  print_generator_data( output , blocks , get_active_power );
+  std::vector< UnitBlock * > unit_blocks;
+  unit_blocks.reserve( blocks.size() );
+  for( const auto unit_block : blocks )
+   if( unit_block->get_active_power( 0 ) != nullptr )
+    unit_blocks.push_back( unit_block );
+
+  print_generator_data( output , unit_blocks , get_active_power );
 
   output.close();
  }
@@ -453,7 +464,13 @@ public:
    []( UnitBlock * block , Index g , Index t ) {
     return ( block->get_primary_spinning_reserve( g ) + t )->get_value(); };
 
-  print_generator_data( output , blocks , get_primary_spinning_reserve );
+  std::vector< UnitBlock * > unit_blocks;
+  unit_blocks.reserve( blocks.size() );
+  for( const auto unit_block : blocks )
+   if( unit_block->get_primary_spinning_reserve( 0 ) != nullptr )
+    unit_blocks.push_back( unit_block );
+
+  print_generator_data( output , unit_blocks , get_primary_spinning_reserve );
 
   output.close();
  }
@@ -470,7 +487,13 @@ public:
    []( UnitBlock * block , Index g , Index t ) {
     return ( block->get_secondary_spinning_reserve( g ) + t )->get_value(); };
 
-  print_generator_data( output , blocks , get_secondary_spinning_reserve );
+  std::vector< UnitBlock * > unit_blocks;
+  unit_blocks.reserve( blocks.size() );
+  for( const auto unit_block : blocks )
+   if( unit_block->get_secondary_spinning_reserve( 0 ) != nullptr )
+    unit_blocks.push_back( unit_block );
+
+  print_generator_data( output , unit_blocks , get_secondary_spinning_reserve );
 
   output.close();
  }
@@ -486,6 +509,21 @@ public:
     return block->get_volume( r , t )->get_value(); };
 
   print_reservoir_data( output , blocks , get_volume );
+
+  output.close();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void print_inflows( const std::vector< HydroUnitBlock * > & blocks ) const {
+
+  std::ofstream output( filenames[ inflow ].name() , open_mode() );
+
+  auto get_inflow =
+   []( HydroUnitBlock * block , Index r , Index t ) {
+    return block->get_inflows()[ r ][ t ]; };
+
+  print_reservoir_data( output , blocks , get_inflow );
 
   output.close();
  }
@@ -920,6 +958,7 @@ private:
   marginal_pollutant ,
   demand ,
   max_power ,
+  inflow ,
   number_of_files
  };
 
