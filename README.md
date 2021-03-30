@@ -69,14 +69,15 @@ See the [`examples`](thermalunit_solver/examples) directory for sample input fil
 Usage: sddp_solver [options] <nc4-file>
 
 Options:
-  -B <file>, --blockcfg <file>   Block configuration.
-  -c <path>, --configdir <path>  The prefix for all config filenames.
-  -h, --help                     Print this help.
-  -i <index>, --scenario <index> The index of the scenario.
-  -p <path>, --prefix <path>     The prefix for all Block filenames.
-  -r, --relax                    Relax integer variables.
-  -s, --simulation               Simulation mode.
-  -S <file>, --solvercfg <file>  Solver configuration.
+  -B <file>, --blockcfg <file>       Block configuration.
+  -c <path>, --configdir <path>      The prefix for all config filenames.
+  -h, --help                         Print this help.
+  -i <index>, --scenario <index>     The index of the scenario.
+  -n <number>, --num-blocks <number> Number of sub-Blocks per stage.
+  -p <path>, --prefix <path>         The prefix for all Block filenames.
+  -r, --relax                        Relax integer variables.
+  -s, --simulation                   Simulation mode.
+  -S <file>, --solvercfg <file>      Solver configuration.
 ```
 
 The input netCDF file can be a problem file or a block file:
@@ -93,6 +94,9 @@ specified by the attribute `filename` in the input netCDF file.
 The `-s` option indicates whether a simulation should be performed. If this
 option is used, then the SDDPBlock is solved using the
 SDDPGreedySolver. Otherwise, the SDDPBlock is solved by the SDDPSolver.
+
+The `-n` option specifies the number of sub-Blocks of SDDPBlock that must be
+constructed for each stage.
 
 In simulation mode (i.e., when the `-s` option is used), the `-i` option
 specifies the index of the scenario for which the problem must be solved. The
