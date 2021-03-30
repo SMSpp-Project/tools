@@ -7,7 +7,7 @@ find_package(UCBlock)
 find_package(SDDPBlock)
 find_package(StochasticBlock)
 find_package(MILPSolver)
-#find_package(Boost COMPONENTS mpi)
+find_package(Boost COMPONENTS mpi)
 
 # ----- sddp_solver --------------------------------------------------------- #
 if (UCBlock_FOUND AND
@@ -25,7 +25,7 @@ if (UCBlock_FOUND AND
                           SMS++::StochasticBlock
                           SMS++::MILPSolver)
 
-    if (USE_MPI)
+    if (Boost_MPI_FOUND AND USE_MPI)
         add_compile_definitions(USE_MPI)
     endif ()
 
