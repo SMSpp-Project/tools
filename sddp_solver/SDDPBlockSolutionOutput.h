@@ -107,7 +107,7 @@ public:
        stage < std::min( block->get_time_horizon() , fault_stage ) ; ++stage ) {
 
    auto benders_block = static_cast< BendersBlock * >
-    ( static_cast< StochasticBlock * >( block->get_nested_Blocks()[ stage ] )->
+    ( static_cast< StochasticBlock * >( block->get_sub_Block( stage ) )->
       get_nested_Blocks().front() );
 
    auto objective = static_cast< FRealObjective * >
@@ -137,7 +137,6 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
-
  void print( SDDPBlock * block , Index scenario , bool append ) const {
 
   UCBlockSolutionOutput solution_output;
@@ -148,7 +147,7 @@ public:
   for( Index stage = 0 ; stage < block->get_time_horizon() ; ++stage ) {
 
    auto benders_block = static_cast< BendersBlock * >
-    ( static_cast< StochasticBlock * >( block->get_nested_Blocks()[ stage ] )->
+    ( static_cast< StochasticBlock * >( block->get_sub_Block( stage ) )->
       get_nested_Blocks().front() );
 
    auto objective = static_cast< FRealObjective * >
@@ -199,7 +198,6 @@ private:
 /*--------------------------------------------------------------------------*/
 
  char separator_character = ',';
- bool append = false;
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/

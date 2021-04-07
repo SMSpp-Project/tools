@@ -7,15 +7,17 @@
  * SDDPSolver or the SDDPGreedySolver. The description of the SDDPBlock must
  * be given in a netCDF file. This tool can be executed as follows:
  *
- *   ./sddp_solver [-s] [-i INDEX] [-r] [-B FILE] [-S FILE] [-p PATH] [-c PATH] <nc4-file>
+ *   ./sddp_solver [-s] [-i INDEX] [-n NUMBER] [-r] [-B FILE]
+ *                 [-S FILE] [-p PATH] [-c PATH] <nc4-file>
  *
- * The only mandatory argument is the netCDF containing the description of the
- * SDDPBlock. This netCDF can be either a BlockFile or a ProbFile. The
- * BlockFile can contain any number of child groups, each one describing an
- * SDDPBlock. Every SDDPBlock is then solved. The ProbFile can also contain
- * any number of child groups, each one having the description of an SDDPBlock
- * alongside the description of a BlockConfig and a BlockSolverConfig for the
- * SDDPBlock. Also in this case, every SDDPBlock is solved.
+ * The only mandatory argument is the netCDF file containing the description
+ * of the SDDPBlock. This netCDF file can be either a BlockFile or a
+ * ProbFile. The BlockFile can contain any number of child groups, each one
+ * describing an SDDPBlock. Every SDDPBlock is then solved. The ProbFile can
+ * also contain any number of child groups, each one having the description of
+ * an SDDPBlock alongside the description of a BlockConfig and a
+ * BlockSolverConfig for the SDDPBlock. Also in this case, every SDDPBlock is
+ * solved.
  *
  * The -c option specifies the prefix to the paths to all configuration
  * files. The -p option specifies the prefix to the paths to all files
@@ -33,6 +35,9 @@
  * option indicates that the integrality constraints over the variables must
  * be relaxed.
  *
+ * The -n option specifies the number of sub-Blocks of SDDPBlock that must be
+ * constructed for each stage.
+ *
  * The -B and -S options are only considered if the given netCDF file is a
  * BlockFile. The -B option specifies a BlockConfig file to be applied to
  * every SDDPBlock; while the -S option specifies a BlockSolverConfig file for
@@ -41,7 +46,7 @@
  *
  * \version 0.1
  *
- * \date 12 - 02 - 2021
+ * \date 23 - 03 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -68,6 +73,11 @@
 #include "CutProcessing.h"
 #include "SDDPBlockSolutionOutput.h"
 
+#ifdef USE_MPI
+#include <boost/mpi/environment.hpp>
+#include <boost/mpi/communicator.hpp>
+#endif
+
 using namespace SMSpp_di_unipi_it;
 
 /*--------------------------------------------------------------------------*/
@@ -76,6 +86,7 @@ std::string filename{};
 std::string block_config_filename{};
 std::string solver_config_filename{};
 long scenario_id = 0;
+long num_sub_blocks_per_stage = 1;
 bool simulation_mode = false;
 bool relax_integrality = false;
 const bool continuous_relaxation = true;
@@ -101,15 +112,29 @@ void print_help() {
            << "  " << exe << " -h | --help\n"
            << std::endl
            << "Options:\n"
-           << "  -B, --blockcfg <file>   Block configuration.\n"
-           << "  -c, --configdir <path>  The prefix for all config filenames.\n"
-           << "  -h, --help              Print this help.\n"
-           << "  -i, --scenario <index>  The index of the scenario.\n"
-           << "  -p, --prefix <path>     The prefix for all Block filenames.\n"
-           << "  -r, --relax             Relax integer variables.\n"
-           << "  -s, --simulation        Simulation mode.\n"
-           << "  -S, --solvercfg <file>  Solver configuration."
+           << "  -B, --blockcfg <file>     Block configuration.\n"
+           << "  -c, --configdir <path>    The prefix for all config filenames.\n"
+           << "  -h, --help                Print this help.\n"
+           << "  -i, --scenario <index>    The index of the scenario.\n"
+           << "  -n, --num-blocks <number> Number of sub-Blocks per stage.\n"
+           << "  -p, --prefix <path>       The prefix for all Block filenames.\n"
+           << "  -r, --relax               Relax integer variables.\n"
+           << "  -s, --simulation          Simulation mode.\n"
+           << "  -S, --solvercfg <file>    Solver configuration."
            << std::endl;
+}
+
+/*--------------------------------------------------------------------------*/
+
+long get_long_option() {
+ char * end = nullptr;
+ errno = 0;
+ long option = std::strtol( optarg , &end , 10 );
+ if( ( ! optarg ) || ( ( option = std::strtol( optarg , &end , 10 ) ) ,
+                       ( errno || ( end && *end ) ) ) ) {
+  option = -1;
+ }
+ return option;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -122,12 +147,13 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:c:hi:p:rsS:";
+ const char * const short_opts = "B:c:hi:n:p:rsS:";
  const option long_opts[] = {
   { "blockcfg" ,   required_argument , nullptr , 'B' } ,
   { "configdir" ,  required_argument , nullptr , 'c' } ,
   { "help" ,       no_argument ,       nullptr , 'h' } ,
   { "scenario" ,   required_argument , nullptr , 'i' } ,
+  { "num-blocks" , required_argument , nullptr , 'n' } ,
   { "prefix" ,     required_argument , nullptr , 'p' } ,
   { "relax" ,      no_argument ,       nullptr , 'r' } ,
   { "simulation" , no_argument ,       nullptr , 's' } ,
@@ -155,15 +181,19 @@ void process_args( int argc , char ** argv ) {
     solver_config_filename = std::string( optarg );
     break;
    case 'i': {
-    char * end = nullptr;
-    errno = 0;
-    scenario_id = std::strtol( optarg , &end , 10 );
-
-    if( ( ! optarg ) || ( ( scenario_id = std::strtol( optarg , &end , 10 ) ) ,
-                          ( errno || ( end && *end ) ) ) ||
-        ( scenario_id < 0 ) ) {
+    scenario_id = get_long_option();
+    if( scenario_id < 0 ) {
      std::cout << "The index of the scenario must be a nonnegative integer."
                << std::endl;
+     exit( 1 );
+    }
+    break;
+   }
+   case 'n': {
+    num_sub_blocks_per_stage = get_long_option();
+    if( num_sub_blocks_per_stage <= 0 ) {
+     std::cout << "The number of sub-Blocks per stage must be a "
+               << "positive integer." << std::endl;
      exit( 1 );
     }
     break;
@@ -488,6 +518,11 @@ void simulate( SDDPBlock * sddp_block ) {
 
  auto status = solver->compute();
 
+#ifdef USE_MPI
+ boost::mpi::communicator world;
+ if( world.rank() == 0 ) {
+#endif
+
  show_simulation_status( status , solver->get_fault_stage() );
 
  if( solver->has_var_solution() )
@@ -501,6 +536,10 @@ void simulate( SDDPBlock * sddp_block ) {
 
  std::cout << "Lower bound: " << std::setprecision( 20 ) << lb << std::endl;
  std::cout << "Upper bound: " << std::setprecision( 20 ) << ub << std::endl;
+
+#ifdef USE_MPI
+ }
+#endif
 }
 
 /*--------------------------------------------------------------------------*/
@@ -636,9 +675,9 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Deserialize block
   auto block_group = problem_group.getGroup( "Block" );
-  auto sddp_block = dynamic_cast<SDDPBlock *>( Block::new_Block( block_group ) );
-  if( ! sddp_block )
-   throw( std::logic_error( "Error while deserializing the SDDPBlock." ) );
+  auto sddp_block = new SDDPBlock;
+  sddp_block->set_num_sub_blocks_per_stage( num_sub_blocks_per_stage );
+  sddp_block->deserialize( block_group );
 
   // Configure block
   auto block_config_group = problem_group.getGroup( "BlockConfig" );
@@ -690,12 +729,7 @@ BlockSolverConfig * build_BlockSolverConfig() {
  }
  else {
   auto config = new ComputeConfig;
-  config->set_par( "intLogVerb" , 100 );
-  //config->set_par( "dblAccuracy" , 1.0e-3 );
-  //config->set_par( "intNbSimulBackward" , 100 );
-  //config->set_par( "intNbSimulForward" , 5 );
-  //config->set_par( "intNStepConv" , 5 );
-
+  config->set_par( "intLogVerb" , 1 );
   block_solver_config->add_ComputeConfig( "SDDPSolver" , config );
  }
 
@@ -858,11 +892,9 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Deserialize the SDDPBlock
 
-  auto sddp_block = dynamic_cast<SDDPBlock *>
-   ( Block::new_Block( block_description.second ) );
-
-  if( ! sddp_block )
-   throw( std::logic_error( "Error while deserializing the SDDPBlock." ) );
+  auto sddp_block = new SDDPBlock;
+  sddp_block->set_num_sub_blocks_per_stage( num_sub_blocks_per_stage );
+  sddp_block->deserialize( block_description.second );
 
   // Configure the SDDPBlock
 
@@ -915,6 +947,10 @@ void process_block_file( const netCDF::NcFile & file ) {
 /*--------------------------------------------------------------------------*/
 
 int main( int argc , char ** argv ) {
+
+#ifdef USE_MPI
+ boost::mpi::environment env(argc, argv);
+#endif
 
  docopt_desc = "SMS++ SDDP solver.\n";
  exe = get_filename( argv[ 0 ] );
