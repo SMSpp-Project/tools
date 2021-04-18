@@ -275,8 +275,9 @@ void print_ucblock_solver_results( Block * block ) {
 
     auto startup = thermal_unit_block->get_start_up();
     std::cout << "Start up     = [";
-    for( auto & t : startup ) {
-     std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value());
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+     std::cout << std::setw( 2 )
+               << ( unsigned int ) round( startup[t].get_value());
     }
     std::cout << " ]" << std::endl;
 
