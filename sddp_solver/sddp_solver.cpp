@@ -8,7 +8,7 @@
  * be given in a netCDF file. This tool can be executed as follows:
  *
  *   ./sddp_solver [-s] [-i INDEX] [-n NUMBER] [-r] [-B FILE]
- *                 [-S FILE] [-p PATH] [-c PATH] <nc4-file>
+ *                 [-S FILE] [-p PATH] [-c PATH] [-l FILE] [-e] <nc4-file>
  *
  * The only mandatory argument is the netCDF file containing the description
  * of the SDDPBlock. This netCDF file can be either a BlockFile or a
@@ -44,9 +44,24 @@
  * every SDDPBlock. If each of these options is not provided when the given
  * netCDF file is a BlockFile, then default configurations are considered.
  *
+ * Initial cuts can be provided by using the -l option. This option must be
+ * followed by the path to the file containing the initial cuts. This file
+ * must have the following format. The first line contains a header and its
+ * content is ignored. Each of the following lines represent a cut and has the
+ * following format:
+ *
+ * t, a_0, a_1, ..., a_k, b
+ *
+ * where t is a stage (an integer between 0 and time horizon - 1), a_0, ...,
+ * a_k are the coefficients of the cut, and b is the constant term of the cut.
+ *
+ * As a preprocessing, given redundant cuts can be removed by using the -e
+ * option. Notice that all cuts will be subject to being removed, whether they
+ * are provided in a netCDF file or by the -l option.
+ *
  * \version 0.1
  *
- * \date 23 - 03 - 2021
+ * \date 19 - 04 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -85,10 +100,12 @@ using namespace SMSpp_di_unipi_it;
 std::string filename{};
 std::string block_config_filename{};
 std::string solver_config_filename{};
+std::string cuts_filename{};
 long scenario_id = 0;
 long num_sub_blocks_per_stage = 1;
 bool simulation_mode = false;
 bool relax_integrality = false;
+bool eliminate_reduntant_cuts = false;
 const bool continuous_relaxation = true;
 
 std::string exe{};         ///< Name of the executable file
@@ -112,15 +129,17 @@ void print_help() {
            << "  " << exe << " -h | --help\n"
            << std::endl
            << "Options:\n"
-           << "  -B, --blockcfg <file>     Block configuration.\n"
-           << "  -c, --configdir <path>    The prefix for all config filenames.\n"
-           << "  -h, --help                Print this help.\n"
-           << "  -i, --scenario <index>    The index of the scenario.\n"
-           << "  -n, --num-blocks <number> Number of sub-Blocks per stage.\n"
-           << "  -p, --prefix <path>       The prefix for all Block filenames.\n"
-           << "  -r, --relax               Relax integer variables.\n"
-           << "  -s, --simulation          Simulation mode.\n"
-           << "  -S, --solvercfg <file>    Solver configuration."
+           << "  -B, --blockcfg <file>           Block configuration.\n"
+           << "  -c, --configdir <path>          The prefix for all config filenames.\n"
+           << "  -e, --eliminate-redundant-cuts  Eliminate given redundant cuts.\n"
+           << "  -h, --help                      Print this help.\n"
+           << "  -i, --scenario <index>          The index of the scenario.\n"
+           << "  -l, --load-cuts <file>          Load cuts from a file.\n"
+           << "  -n, --num-blocks <number>       Number of sub-Blocks per stage.\n"
+           << "  -p, --prefix <path>             The prefix for all Block filenames.\n"
+           << "  -r, --relax                     Relax integer variables.\n"
+           << "  -s, --simulation                Simulation mode.\n"
+           << "  -S, --solvercfg <file>          Solver configuration."
            << std::endl;
 }
 
@@ -147,18 +166,20 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:c:hi:n:p:rsS:";
+ const char * const short_opts = "B:c:hei:l:n:p:rsS:";
  const option long_opts[] = {
-  { "blockcfg" ,   required_argument , nullptr , 'B' } ,
-  { "configdir" ,  required_argument , nullptr , 'c' } ,
-  { "help" ,       no_argument ,       nullptr , 'h' } ,
-  { "scenario" ,   required_argument , nullptr , 'i' } ,
-  { "num-blocks" , required_argument , nullptr , 'n' } ,
-  { "prefix" ,     required_argument , nullptr , 'p' } ,
-  { "relax" ,      no_argument ,       nullptr , 'r' } ,
-  { "simulation" , no_argument ,       nullptr , 's' } ,
-  { "solvercfg" ,  required_argument , nullptr , 'S' } ,
-  { nullptr ,      no_argument ,       nullptr , 0 }
+  { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
+  { "configdir" ,                required_argument , nullptr , 'c' } ,
+  { "help" ,                     no_argument ,       nullptr , 'h' } ,
+  { "eliminate-redundant-cuts" , no_argument ,       nullptr , 'e' } ,
+  { "scenario" ,                 required_argument , nullptr , 'i' } ,
+  { "load-cuts" ,                required_argument , nullptr , 'l' } ,
+  { "num-blocks" ,               required_argument , nullptr , 'n' } ,
+  { "prefix" ,                   required_argument , nullptr , 'p' } ,
+  { "relax" ,                    no_argument ,       nullptr , 'r' } ,
+  { "simulation" ,               no_argument ,       nullptr , 's' } ,
+  { "solvercfg" ,                required_argument , nullptr , 'S' } ,
+  { nullptr ,                    no_argument ,       nullptr , 0 }
  };
 
  // Options
@@ -180,6 +201,9 @@ void process_args( int argc , char ** argv ) {
    case 'S':
     solver_config_filename = std::string( optarg );
     break;
+   case 'e':
+    eliminate_reduntant_cuts = true;
+    break;
    case 'i': {
     scenario_id = get_long_option();
     if( scenario_id < 0 ) {
@@ -189,6 +213,9 @@ void process_args( int argc , char ** argv ) {
     }
     break;
    }
+   case 'l':
+    cuts_filename = std::string( optarg );
+    break;
    case 'n': {
     num_sub_blocks_per_stage = get_long_option();
     if( num_sub_blocks_per_stage <= 0 ) {
@@ -599,6 +626,122 @@ void solve( SDDPBlock * sddp_block ) {
 
 /*--------------------------------------------------------------------------*/
 
+void load_cuts( SDDPBlock * sddp_block ) {
+ if( cuts_filename.empty() )
+  return;
+
+ std::ifstream cuts_file( cuts_filename );
+
+ // Make sure the file is open
+ if( ! cuts_file.is_open() )
+  throw( std::runtime_error( "It was not possible to open the file \"" +
+                             cuts_filename + "\"." ) );
+
+ const auto time_horizon = sddp_block->get_time_horizon();
+
+ std::vector< PolyhedralFunction::MultiVector > A
+  ( time_horizon , PolyhedralFunction::MultiVector{} );
+ std::vector< PolyhedralFunction::RealVector > b
+  ( time_horizon , PolyhedralFunction::RealVector{} );
+
+ std::string line;
+
+ if( cuts_file.good() )
+  // Skip the first line containing the header
+  std::getline( cuts_file , line );
+
+ int line_number = 0;
+
+ // Read the cuts
+
+ while( std::getline( cuts_file , line ) ) {
+  ++line_number;
+
+  std::stringstream line_stream( line );
+
+  // Try to read the stage
+  int stage;
+  if( ! ( line_stream >> stage ) )
+   break;
+
+  if( stage >= time_horizon )
+   throw( std::logic_error( "File \"" + cuts_filename + "\" contains an invalid"
+                            " stage: " + std::to_string( stage ) + "." ) );
+
+  if( line_stream.peek() != ',' )
+   throw( std::logic_error( "File \"" + cuts_filename +
+                            "\" has an invalid format." ) );
+  line_stream.ignore();
+
+  // Read the cut
+
+  const auto polyhedral_function = sddp_block->get_polyhedral_function( stage );
+  const auto num_active_var = polyhedral_function->get_num_active_var();
+  PolyhedralFunction::RealVector a( num_active_var );
+
+  std::cout << "num_active_var = " << num_active_var << std::endl;
+
+  int i = 0;
+  double value;
+  while( line_stream >> value ) {
+   if( i > num_active_var )
+    throw( std::logic_error
+           ( "File \"" + cuts_filename + "\" contains an invalid"
+             " cut at line " + std::to_string( line_number ) + "." ) );
+
+   if( i < num_active_var ) {
+    std::cout<<  "Reading a = " << value << std::endl;
+    a[ i ] = value;
+   }
+   else {
+    std::cout<<  "Reading b = " << value << std::endl;
+    b[ stage ].push_back( value );
+   }
+
+   ++i;
+
+   if( line_stream.peek() == ',' )
+    line_stream.ignore();
+  }
+
+  if( i < num_active_var )
+   throw( std::logic_error
+          ( "File \"" + cuts_filename + "\" contains an invalid"
+            " cut at line " + std::to_string( line_number ) + "." ) );
+
+  A[ stage ].push_back( a );
+ }
+
+ cuts_file.close();
+
+ // Now, add the cuts to all PolyhedralFunctions
+
+ const auto num_sub_blocks_per_stage =
+  sddp_block->get_num_sub_blocks_per_stage();
+
+ for( Index stage = 0 ; stage < time_horizon ; ++stage ) {
+  for( Index sub_block_index = 0 ; sub_block_index < num_sub_blocks_per_stage ;
+       ++sub_block_index ) {
+
+   if( b[ stage ].empty() )
+    continue; // no cut for this stage
+
+   // We assume there is only one PolyhedralFunction per stage
+
+   auto polyhedral_function =
+    sddp_block->get_polyhedral_function( stage , 0 , sub_block_index );
+
+   std::cout << "Adding at stage " << stage << std::endl;
+   std::cout << "b = " << b[ stage ] << std::endl;
+   std::cout << "A = " << A[ stage ] << std::endl;
+
+   polyhedral_function->add_rows( std::move( A[ stage ] ) , b[ stage ] );
+  }
+ }
+}
+
+/*--------------------------------------------------------------------------*/
+
 void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ) {
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
@@ -696,6 +839,15 @@ void process_prob_file( const netCDF::NcFile & file ) {
    throw( std::logic_error("BlockSolver group was not properly provided.") );
   block_solver_config->apply( sddp_block );
   block_solver_config->clear();
+
+  // Load possibly given cuts
+
+  load_cuts( sddp_block );
+
+  // Eliminate redundant cuts if it is desired
+
+  if( eliminate_reduntant_cuts )
+   CutProcessing().remove_redundant_cuts( sddp_block );
 
   std::cout << "Problem: " << problem.first << std::endl;
 
@@ -913,6 +1065,15 @@ void process_block_file( const netCDF::NcFile & file ) {
   // Configure the Solver
 
   solver_config->apply( sddp_block );
+
+  // Load possibly given cuts
+
+  load_cuts( sddp_block );
+
+  // Eliminate redundant cuts if it is desired
+
+  if( eliminate_reduntant_cuts )
+   CutProcessing().remove_redundant_cuts( sddp_block );
 
   // Solve
 

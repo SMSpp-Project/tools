@@ -71,8 +71,10 @@ Usage: sddp_solver [options] <nc4-file>
 Options:
   -B <file>, --blockcfg <file>       Block configuration.
   -c <path>, --configdir <path>      The prefix for all config filenames.
+  -e, --eliminate-redundant-cuts     Eliminate given redundant cuts.
   -h, --help                         Print this help.
   -i <index>, --scenario <index>     The index of the scenario.
+  -l <file>, --load-cuts <file>      Load cuts from a file.
   -n <number>, --num-blocks <number> Number of sub-Blocks per stage.
   -p <path>, --prefix <path>         The prefix for all Block filenames.
   -r, --relax                        Relax integer variables.
@@ -104,6 +106,21 @@ index must be a number between 0 and n-1, where n is the number of scenarios
 in the SDDPBlock. If this index is not provided, then the problem is solved
 for the first scenario. Also in simulation mode, the `-r` option indicates
 that the integrality constraints over the variables must be relaxed.
+
+Initial cuts can be provided by using the `-l` option. This option must be
+followed by the path to the file containing the initial cuts. This file must
+have the following format. The first line contains a header and its content is
+ignored. Each of the following lines represent a cut and has the following
+format:
+
+t, a_0, a_1, ..., a_k, b
+
+where t is a stage (an integer between 0 and time horizon - 1), a_0, ...,
+a_k are the coefficients of the cut, and b is the constant term of the cut.
+
+As a preprocessing, given redundant cuts can be removed by using the `-e`
+option. Notice that all cuts will be subject to being removed, whether they
+are provided in a netCDF file or by the `-l` option.
 
 ### Thermal Unit solver / Unit Commitment solver
 
