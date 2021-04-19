@@ -679,8 +679,6 @@ void load_cuts( SDDPBlock * sddp_block ) {
   const auto num_active_var = polyhedral_function->get_num_active_var();
   PolyhedralFunction::RealVector a( num_active_var );
 
-  std::cout << "num_active_var = " << num_active_var << std::endl;
-
   int i = 0;
   double value;
   while( line_stream >> value ) {
@@ -689,14 +687,10 @@ void load_cuts( SDDPBlock * sddp_block ) {
            ( "File \"" + cuts_filename + "\" contains an invalid"
              " cut at line " + std::to_string( line_number ) + "." ) );
 
-   if( i < num_active_var ) {
-    std::cout<<  "Reading a = " << value << std::endl;
+   if( i < num_active_var )
     a[ i ] = value;
-   }
-   else {
-    std::cout<<  "Reading b = " << value << std::endl;
+   else
     b[ stage ].push_back( value );
-   }
 
    ++i;
 
@@ -730,10 +724,6 @@ void load_cuts( SDDPBlock * sddp_block ) {
 
    auto polyhedral_function =
     sddp_block->get_polyhedral_function( stage , 0 , sub_block_index );
-
-   std::cout << "Adding at stage " << stage << std::endl;
-   std::cout << "b = " << b[ stage ] << std::endl;
-   std::cout << "A = " << A[ stage ] << std::endl;
 
    polyhedral_function->add_rows( std::move( A[ stage ] ) , b[ stage ] );
   }
