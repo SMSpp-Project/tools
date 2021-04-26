@@ -22,6 +22,9 @@ project(SMS++_tools
         HOMEPAGE_URL https://gitlab.com/smspp/tools
         LANGUAGES C CXX)
 
+# Find out if it's being called by the umbrella.
+get_directory_property(hasParent PARENT_DIRECTORY)
+
 # ----- Settings ------------------------------------------------------------ #
 # An option is an ON/OFF user-settable cache variable.
 option(tools_USE_DL "Use dynamic loading" ON)

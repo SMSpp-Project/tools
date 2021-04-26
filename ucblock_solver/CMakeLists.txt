@@ -1,16 +1,20 @@
 # ----- Requirements -------------------------------------------------------- #
-find_package(UCBlock)
-find_package(MILPSolver)
+# If it's not being called by the umbrella, we need to
+# look for the system-installed libraries.
+if (NOT hasParent)
+    find_package(UCBlock)
+    find_package(MILPSolver)
+endif()
 
 # ----- ucblock_solver ------------------------------------------------------ #
-if (UCBlock_FOUND AND MILPSolver_FOUND)
-
+if (TARGET UCBlock)
     add_executable(ucblock_solver ucblock_solver.cpp)
-    target_include_directories(ucblock_solver PRIVATE
-                               ../block_solver)
-    target_link_libraries(ucblock_solver PRIVATE
-                          SMS++::UCBlock
-                          SMS++::MILPSolver)
+    target_include_directories(ucblock_solver PRIVATE ../block_solver)
+    target_link_libraries(ucblock_solver PRIVATE SMS++::UCBlock)
+
+    if (TARGET MILPSolver)
+        target_link_libraries(ucblock_solver PRIVATE SMS++::MILPSolver)
+    endif ()
 
     # Install
     install(TARGETS ucblock_solver

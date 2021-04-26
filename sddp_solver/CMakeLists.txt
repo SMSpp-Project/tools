@@ -3,18 +3,20 @@
 option(USE_MPI "Use MPI" OFF)
 
 # ----- Requirements -------------------------------------------------------- #
-find_package(UCBlock)
-find_package(SDDPBlock)
-find_package(StochasticBlock)
-find_package(MILPSolver)
-find_package(Boost COMPONENTS mpi)
-find_package(MPI)
+# If it's not being called by the umbrella, we need to
+# look for the system-installed libraries.
+if (NOT hasParent)
+    find_package(UCBlock)
+    find_package(SDDPBlock)
+    find_package(StochasticBlock)
+    find_package(MILPSolver)
+endif ()
 
 # ----- sddp_solver --------------------------------------------------------- #
-if (UCBlock_FOUND AND
-    SDDPBlock_FOUND AND
-    StochasticBlock_FOUND AND
-    MILPSolver_FOUND)
+if (TARGET UCBlock AND
+    TARGET SDDPBlock AND
+    TARGET StochasticBlock AND
+    TARGET MILPSolver)
 
     add_executable(sddp_solver sddp_solver.cpp CutProcessing.cpp)
     target_compile_features(sddp_solver PUBLIC cxx_std_17)
@@ -40,7 +42,6 @@ if (UCBlock_FOUND AND
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
     # Generate and install shell completion scripts
-
     configure_file(../cmake/completion.bash.in sddp_solver-completion.bash)
     configure_file(../cmake/completion.zsh.in sddp_solver-completion.zsh)
 
