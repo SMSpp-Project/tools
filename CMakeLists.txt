@@ -37,11 +37,11 @@ include(GNUInstallDirs)
 # may wrongly appear unused, and by default the linker does not include them,
 # so we have to force the linking.
 if (BUILD_SHARED_LIBS)
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         add_link_options("-Wl,--no-as-needed")
     endif ()
 else ()
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
         add_link_options("-Wl,-all_load")
     else ()
         add_link_options("-Wl,--whole-archive,--allow-multiple-definition")
