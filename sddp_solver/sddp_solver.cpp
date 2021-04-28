@@ -61,7 +61,7 @@
  *
  * \version 0.1
  *
- * \date 19 - 04 - 2021
+ * \date 24 - 04 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -552,11 +552,14 @@ void simulate( SDDPBlock * sddp_block ) {
 
  show_simulation_status( status , solver->get_fault_stage() );
 
- if( solver->has_var_solution() )
-  solver->get_var_solution();
-
  SDDPBlockSolutionOutput output;
- output.print( sddp_block , solver->get_fault_stage() );
+
+ if( solver->has_var_solution() ) {
+  solver->get_var_solution();
+  output.print( sddp_block );
+ }
+ else
+  output.print( sddp_block , solver->get_fault_stage() );
 
  auto lb = solver->get_lb();
  auto ub = solver->get_ub();
