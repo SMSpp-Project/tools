@@ -3,7 +3,6 @@
 # look for the system-installed libraries.
 if (NOT hasParent)
     find_package(UCBlock)
-    find_package(DPSolver)
     find_package(MILPSolver)
 endif ()
 
@@ -13,9 +12,6 @@ if (TARGET UCBlock)
     target_include_directories(thermalunit_solver PRIVATE ../block_solver)
     target_link_libraries(thermalunit_solver PRIVATE SMS++::UCBlock)
 
-    if (TARGET DPSolver)
-        target_link_libraries(thermalunit_solver PRIVATE SMS++::DPSolver)
-    endif ()
     if (TARGET MILPSolver)
         target_link_libraries(thermalunit_solver PRIVATE SMS++::MILPSolver)
     endif ()
