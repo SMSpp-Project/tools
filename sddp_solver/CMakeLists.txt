@@ -12,6 +12,9 @@ if (NOT hasParent)
     find_package(MILPSolver)
 endif ()
 
+find_package(Boost COMPONENTS mpi)
+find_package(MPI)
+
 # ----- sddp_solver --------------------------------------------------------- #
 if (TARGET UCBlock AND
     TARGET SDDPBlock AND
