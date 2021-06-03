@@ -6,10 +6,12 @@ option(USE_MPI "Use MPI" OFF)
 # If it's not being called by the umbrella, we need to
 # look for the system-installed libraries.
 if (NOT hasParent)
-    find_package(UCBlock)
+    find_package(BundleSolver)
+    find_package(LagrangianDualSolver)
+    find_package(MILPSolver)
     find_package(SDDPBlock)
     find_package(StochasticBlock)
-    find_package(MILPSolver)
+    find_package(UCBlock)
 endif ()
 
 find_package(Boost COMPONENTS mpi)
@@ -18,8 +20,7 @@ find_package(MPI)
 # ----- sddp_solver --------------------------------------------------------- #
 if (TARGET UCBlock AND
     TARGET SDDPBlock AND
-    TARGET StochasticBlock AND
-    TARGET MILPSolver)
+    TARGET StochasticBlock)
 
     add_executable(sddp_solver sddp_solver.cpp CutProcessing.cpp)
     target_compile_features(sddp_solver PUBLIC cxx_std_17)
@@ -28,8 +29,22 @@ if (TARGET UCBlock AND
     target_link_libraries(sddp_solver PRIVATE
                           SMS++::UCBlock
                           SMS++::SDDPBlock
-                          SMS++::StochasticBlock
-                          SMS++::MILPSolver)
+                          SMS++::StochasticBlock)
+
+    if (TARGET MILPSolver)
+        target_link_libraries(sddp_solver PRIVATE
+                              SMS++::MILPSolver)
+    endif ()
+
+    if (TARGET LagrangianDualSolver)
+        target_link_libraries(sddp_solver PRIVATE
+                              SMS++::LagrangianDualSolver)
+    endif ()
+
+    if (TARGET BundleSolver)
+        target_link_libraries(sddp_solver PRIVATE
+                              SMS++::BundleSolver)
+    endif ()
 
     if (MPI_CXX_FOUND AND Boost_MPI_FOUND AND USE_MPI)
         add_compile_definitions(USE_MPI)
