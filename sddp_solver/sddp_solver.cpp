@@ -71,6 +71,7 @@
  * \copyright &copy; by Rafael Durbano Lobato
  */
 
+#include <filesystem>
 #include <getopt.h>
 #include <iostream>
 #include <queue>
