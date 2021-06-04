@@ -805,6 +805,25 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ) {
 
 /*--------------------------------------------------------------------------*/
 
+void set_log( SDDPBlock * sddp_block , std::ostream * output_stream ) {
+
+ for( auto sub_block : sddp_block->get_nested_Blocks() ) {
+
+  auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
+  auto benders_block = static_cast<BendersBlock *>
+   ( stochastic_block-> get_nested_Blocks().front() );
+  auto objective = static_cast<FRealObjective *>
+   ( benders_block->get_objective() );
+  auto benders_function = static_cast<BendersBFunction *>
+   ( objective->get_function() );
+  auto inner_block = benders_function->get_inner_block();
+  auto solver = inner_block->get_registered_solvers().front();
+  solver->set_log( output_stream );
+ }
+}
+
+/*--------------------------------------------------------------------------*/
+
 void process_prob_file( const netCDF::NcFile & file ) {
  std::multimap< std::string , netCDF::NcGroup > problems = file.getGroups();
  // for each problem descriptor:
@@ -835,6 +854,10 @@ void process_prob_file( const netCDF::NcFile & file ) {
    throw( std::logic_error("BlockSolver group was not properly provided.") );
   block_solver_config->apply( sddp_block );
   block_solver_config->clear();
+
+  // Set the output stream for the log of the inner Solvers
+
+  set_log( sddp_block , &std::cout );
 
   // Load possibly given cuts
 
@@ -1264,8 +1287,6 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
                       return pair.first == "vintNoEasy"; } ) ,
      lagrangian_dual_compute_config->vint_pars.end() );
 
-  std::cout << "Adding vintNoEasy = " << vintNoEasy << std::endl;
-
   // Add the vintNoEasy parameter
   lagrangian_dual_compute_config->vint_pars.push_back
    ( std::make_pair( "vintNoEasy" , std::move( vintNoEasy ) ) );
@@ -1345,6 +1366,10 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   config_Lagrangian_dual( solver_config , sddp_block );
   solver_config->apply( sddp_block );
+
+  // Set the output stream for the log of the inner Solvers
+
+  set_log( sddp_block , &std::cout );
 
   // Load possibly given cuts
 
