@@ -806,9 +806,7 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ) {
 /*--------------------------------------------------------------------------*/
 
 void set_log( SDDPBlock * sddp_block , std::ostream * output_stream ) {
-
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
-
   auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
   auto benders_block = static_cast<BendersBlock *>
    ( stochastic_block-> get_nested_Blocks().front() );
@@ -817,8 +815,9 @@ void set_log( SDDPBlock * sddp_block , std::ostream * output_stream ) {
   auto benders_function = static_cast<BendersBFunction *>
    ( objective->get_function() );
   auto inner_block = benders_function->get_inner_block();
-  auto solver = inner_block->get_registered_solvers().front();
-  solver->set_log( output_stream );
+  for( auto solver : inner_block->get_registered_solvers() )
+   if( solver )
+    solver->set_log( output_stream );
  }
 }
 
