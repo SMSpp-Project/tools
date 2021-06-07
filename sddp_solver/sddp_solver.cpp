@@ -1261,6 +1261,22 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
     if( first_stage )
      vintNoEasy.push_back( inner_sub_block_index );
    }
+   else if( auto intermittent =
+            dynamic_cast< IntermittentUnitBlock * >( inner_sub_block ) ) {
+
+    if( ! other_unit_config ) {
+     delete thermal_config;
+     delete hydro_config;
+     delete other_unit_config;
+     delete inner_solver_config;
+     throw std::logic_error( "File " + other_unit_config_filename + " was not "
+                             "found or does not contain a BlockSolverConfig" );
+    }
+
+    other_unit_bsc->apply( intermittent );
+    if( first_stage )
+     vintNoEasy.push_back( inner_sub_block_index );
+   }
    else if( ! do_easy_components ) {
     if( auto unit = dynamic_cast< UnitBlock * >( inner_sub_block ) ) {
      if( other_unit_bsc ) {
