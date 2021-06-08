@@ -61,7 +61,7 @@
  *
  * \version 0.1
  *
- * \date 03 - 06 - 2021
+ * \date 08 - 06 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -1060,6 +1060,10 @@ int get_int_par( ComputeConfig * compute_config , std::string par_name ) {
 void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
                              SDDPBlock * sddp_block ) {
 
+ if( sddp_block->get_number_nested_Blocks() == 0 )
+  // The SDDPBlock has no sub-Block. There is nothing to be configured.
+  return;
+
  BlockSolverConfig * inner_solver_config = nullptr;
  ComputeConfig * lagrangian_dual_compute_config = nullptr;
  ComputeConfig * compute_config = nullptr;
@@ -1166,43 +1170,10 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   // Since there is no BundleSolver, there is no need to configure any Block
   return;
 
- const std::string thermal_config_filename =
-  config_filename_prefix + "TUBSCfg.txt";
- const std::string hydro_config_filename =
-  config_filename_prefix + "HSUBSCfg.txt";
- const std::string other_unit_config_filename =
-  config_filename_prefix + "OUBSCfg.txt";
-
- // load the BlockSolverConfig for ThermalUnitBlock
- Configuration * thermal_config = nullptr;
- if( std::filesystem::exists( thermal_config_filename ) )
-  thermal_config = Configuration::deserialize( thermal_config_filename );
- auto thermal_bsc = dynamic_cast< BlockSolverConfig * >( thermal_config );
- if( ! thermal_bsc ) {
-  delete thermal_config;
-  thermal_config = nullptr;
-  thermal_bsc = nullptr;
- }
-
- Configuration * hydro_config = nullptr;
- if( std::filesystem::exists( hydro_config_filename ) )
-  hydro_config = Configuration::deserialize( hydro_config_filename );
- auto hydro_bsc = dynamic_cast< BlockSolverConfig * >( hydro_config );
- if( ( ! hydro_bsc ) || ( ! hydro_bsc->num_ComputeConfig() ) ) {
-  delete hydro_config;
-  hydro_config = nullptr;
-  hydro_bsc = nullptr;
- }
-
- Configuration * other_unit_config = nullptr;
- if( std::filesystem::exists( other_unit_config_filename ) )
-  other_unit_config = Configuration::deserialize( other_unit_config_filename );
- auto other_unit_bsc = dynamic_cast< BlockSolverConfig * >( other_unit_config );
- if( ( ! other_unit_bsc ) || ( ! other_unit_bsc->num_ComputeConfig() ) ) {
-  delete other_unit_config;
-  other_unit_config = nullptr;
-  other_unit_bsc = nullptr;
- }
+ const std::string thermal_config_filename = "TUBSCfg.txt";
+ const std::string hydro_config_filename = "HSUBSCfg.txt";
+ const std::string other_unit_config_filename = "OUBSCfg.txt";
+ const std::string default_config_filename = "LPBSCfg.txt";
 
  // The Configuration to be passed to get_var_solution() of the inner
  // Solver. We assume that only the HydroSystemBlock contains the necessary
@@ -1210,87 +1181,66 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
  // that the index of the HydroSystemBlock is the same at every stage.
  Configuration * get_var_solution_config = nullptr;
 
- bool first_stage = true;
+ std::vector< std::string > vstr_LDSl_BSCfg;
+ vstr_LDSl_BSCfg.reserve( sddp_block->get_number_nested_Blocks() );
 
- for( auto sub_block : sddp_block->get_nested_Blocks() ) {
+ // We assume all sub-Blocks of SDDPBlock have the same structure.
 
-  auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
-  auto benders_block = static_cast<BendersBlock *>
-   ( stochastic_block-> get_nested_Blocks().front() );
-  auto objective = static_cast<FRealObjective *>
-   ( benders_block->get_objective() );
-  auto benders_function = static_cast<BendersBFunction *>
-   ( objective->get_function() );
-  auto inner_block = benders_function->get_inner_block();
+ const auto sub_block = sddp_block->get_nested_Block( 0 );
 
-  int inner_sub_block_index = 0;
-  for( auto inner_sub_block : inner_block->get_nested_Blocks() ) {
+ auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
+ auto benders_block = static_cast<BendersBlock *>
+  ( stochastic_block-> get_nested_Blocks().front() );
+ auto objective = static_cast<FRealObjective *>
+  ( benders_block->get_objective() );
+ auto benders_function = static_cast<BendersBFunction *>
+  ( objective->get_function() );
+ auto inner_block = benders_function->get_inner_block();
 
-   if( auto thermal = dynamic_cast< ThermalUnitBlock * >( inner_sub_block ) ) {
-    if( ! thermal_bsc ) {
-     delete thermal_config;
-     delete hydro_config;
-     delete other_unit_config;
-     delete inner_solver_config;
-     throw std::logic_error( "File " + thermal_config_filename + " was not "
-                             "found or does not contain a BlockSolverConfig" );
-    }
+ int inner_sub_block_index = 0;
+ for( auto inner_sub_block : inner_block->get_nested_Blocks() ) {
 
-    thermal_bsc->apply( thermal );
-    if( first_stage )
-     vintNoEasy.push_back( inner_sub_block_index );
-   }
-   else if( auto hydro =
-            dynamic_cast< HydroSystemUnitBlock * >( inner_sub_block ) ) {
-
-    if( ! get_var_solution_config )
-     // Configuration for get_var_solution of the inner Solver
-     get_var_solution_config = new SimpleConfiguration< std::vector< int > >
-      ( { inner_sub_block_index } );
-
-    if( ! hydro_bsc ) {
-     delete thermal_config;
-     delete hydro_config;
-     delete other_unit_config;
-     delete inner_solver_config;
-     throw std::logic_error( "File " + hydro_config_filename + " was not "
-                             "found or does not contain a BlockSolverConfig" );
-    }
-
-    hydro_bsc->apply( hydro );
-    if( first_stage )
-     vintNoEasy.push_back( inner_sub_block_index );
-   }
-   else if( auto intermittent =
-            dynamic_cast< IntermittentUnitBlock * >( inner_sub_block ) ) {
-
-    if( ! other_unit_config ) {
-     delete thermal_config;
-     delete hydro_config;
-     delete other_unit_config;
-     delete inner_solver_config;
-     throw std::logic_error( "File " + other_unit_config_filename + " was not "
-                             "found or does not contain a BlockSolverConfig" );
-    }
-
-    other_unit_bsc->apply( intermittent );
-    if( first_stage )
-     vintNoEasy.push_back( inner_sub_block_index );
-   }
-   else if( ! do_easy_components ) {
-    if( auto unit = dynamic_cast< UnitBlock * >( inner_sub_block ) ) {
-     if( other_unit_bsc ) {
-      other_unit_bsc->apply( unit );
-      if( first_stage )
-       vintNoEasy.push_back( inner_sub_block_index );
-     }
-    }
-   }
-
-   ++inner_sub_block_index;
+  if( dynamic_cast< ThermalUnitBlock * >( inner_sub_block ) ) {
+   // IntermittentUnitBlock is a non-easy component since there is a
+   // specialized solver for it.
+   vstr_LDSl_BSCfg.push_back( thermal_config_filename );
+   vintNoEasy.push_back( inner_sub_block_index );
   }
+  else if( dynamic_cast< HydroSystemUnitBlock * >( inner_sub_block ) ) {
+   // HydroSystemUnitBlock is a non-easy component because we need to
+   // retrieve its solution during the solution process.
 
-  first_stage = false;
+   vstr_LDSl_BSCfg.push_back( hydro_config_filename );
+
+   if( ! get_var_solution_config )
+    // Configuration for get_var_solution of the inner Solver.
+    get_var_solution_config = new SimpleConfiguration< std::vector< int > >
+     ( { inner_sub_block_index } );
+
+   vintNoEasy.push_back( inner_sub_block_index );
+  }
+  else if( dynamic_cast< IntermittentUnitBlock * >( inner_sub_block ) ) {
+   // IntermittentUnitBlock is a non-easy component since it depends on
+   // scenarios.
+   vstr_LDSl_BSCfg.push_back( other_unit_config_filename );
+   vintNoEasy.push_back( inner_sub_block_index );
+  }
+  else if( dynamic_cast< NetworkBlock * >( inner_sub_block ) ) {
+   // NetworkBlock is a non-easy component since it depends on scenarios.
+   vstr_LDSl_BSCfg.push_back( default_config_filename );
+   vintNoEasy.push_back( inner_sub_block_index );
+  }
+  else if( ! do_easy_components ) {
+   vintNoEasy.push_back( inner_sub_block_index );
+   if( dynamic_cast< UnitBlock * >( inner_sub_block ) )
+    vstr_LDSl_BSCfg.push_back( other_unit_config_filename );
+   else
+    vstr_LDSl_BSCfg.push_back( default_config_filename );
+  }
+  else
+   vstr_LDSl_BSCfg.push_back( default_config_filename );
+
+  ++inner_sub_block_index;
  }
 
  if( ! vintNoEasy.empty() ) {
@@ -1307,9 +1257,8 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    ( std::make_pair( "vintNoEasy" , std::move( vintNoEasy ) ) );
  }
 
- delete thermal_config;
- delete hydro_config;
- delete other_unit_config;
+ lagrangian_dual_compute_config->vstr_pars.push_back
+  ( std::make_pair( "vstr_LDSl_BSCfg" , std::move( vstr_LDSl_BSCfg ) ) );
 
  compute_config->str_pars.erase
   ( std::remove_if( compute_config->str_pars.begin() ,
