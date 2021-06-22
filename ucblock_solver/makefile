@@ -55,15 +55,13 @@ clean::
 # *H   is the list of all include files
 # *INC is the -I<include directories>
 
-# not necessary, BundleSolver does that already
-# MILPSolver
-MILPSSDR = ../../MILPSolver/
-include $(MILPSSDR)makefile-c
+# BundleSolver
+BNDSLVSDR = ../../BundleSolver/
+include $(BNDSLVSDR)makefile-c
 
-# not necessary, BundleSolver does that already
-# define input macros for SMS++ complete makefile, then include it
-SMS++SDR = ../../SMS++/
-include $(SMS++SDR)lib/makefile-inc
+# LagrangianDualSolver
+LgDSLVSDR = ../../LagrangianDualSolver/
+include $(LgDSLVSDR)makefile
 
 # define input macros for UCBlock makefile, then include it
 # note that this is not the "complete" makefile: UCBlock only requires
@@ -74,10 +72,10 @@ include $(UCBckDIR)lib/makefile
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(MILPSOBJ) $(UCBckOBJ)
+MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ)
 
 # libreries
-MLIB =  $(MILPSLIB) $(UCBckLIB)
+MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 
 $(NAME): $(MOBJ) $(DIR)ucblock_solver.o
 	$(CC) -o $(DIR)$(NAME) $^ $(MLIB) $(SW)
@@ -85,10 +83,10 @@ $(NAME): $(MOBJ) $(DIR)ucblock_solver.o
 # dependencies: every .o from its .C + every recursively included .h- - - - -
 
 # include directives
-MINC =  $(MILPSINC) $(UCBckINC) -I../block_solver/
+MINC =  $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) -I../block_solver/
 
 # includes
-MH =    $(MILPSH) $(UCBckLIB)
+MH =    $(BNDSLVH) $(LgDSLVH) $(UCBckH)
 
 # compile command
 
