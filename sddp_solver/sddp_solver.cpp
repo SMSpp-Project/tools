@@ -59,9 +59,9 @@
  * option. Notice that all cuts will be subject to being removed, whether they
  * are provided in a netCDF file or by the -l option.
  *
- * \version 0.1
+ * \version 0.11
  *
- * \date 08 - 06 - 2021
+ * \date 01 - 07 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -581,6 +581,10 @@ void show_status( Index status ) {
 
  switch( status ) {
 
+  case( SDDPSolver::kOK ):
+   std::cout << "Optimal solution found." << std::endl;
+   break;
+
   case( SDDPSolver::kError ):
    std::cout << "Error" << std::endl;
    break;
@@ -927,9 +931,9 @@ BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block ) {
 
   auto benders_function_config = new ComputeConfig;
   benders_function_config->f_extra_Configuration =
-   new SimpleConfiguration< std::pair< Configuration * , Configuration * > >
-   ( std::make_pair< Configuration * , Configuration * >
-     ( nullptr , inner_benders_function_solver ) );
+   new SimpleConfiguration< std::map< std::string , Configuration * > >
+   ( { { "BlockConfig" , nullptr } ,
+       { "BlockSolverConfig" , inner_benders_function_solver } } );
 
   auto stochastic_block_config = new RBlockConfig;
   sddp_config->add_sub_BlockConfig( stochastic_block_config , index );
@@ -1073,6 +1077,9 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
  bool do_easy_components = true;
  std::vector< int > vintNoEasy;
 
+ // Index of the HydroSystemUnitBlock
+ int hydro_system_index = -1;
+
  for( Index i = 0 ; i < sddp_solver_config->num_ComputeConfig() ; ++i ) {
 
   if( sddp_solver_config->get_SolverName( i ) != "SDDPSolver" &&
@@ -1201,14 +1208,16 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
  for( auto inner_sub_block : inner_block->get_nested_Blocks() ) {
 
   if( dynamic_cast< ThermalUnitBlock * >( inner_sub_block ) ) {
-   // IntermittentUnitBlock is a non-easy component since there is a
-   // specialized solver for it.
+   // ThermalUnitBlock is a non-easy component since there is a specialized
+   // solver for it.
    vstr_LDSl_BSCfg.push_back( thermal_config_filename );
    vintNoEasy.push_back( inner_sub_block_index );
   }
   else if( dynamic_cast< HydroSystemUnitBlock * >( inner_sub_block ) ) {
    // HydroSystemUnitBlock is a non-easy component because we need to
    // retrieve its solution during the solution process.
+
+   hydro_system_index = inner_sub_block_index;
 
    vstr_LDSl_BSCfg.push_back( hydro_config_filename );
 
@@ -1268,14 +1277,51 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
     compute_config->str_pars.end() );
 
  // The extra Configuration of the SDDPSolver is a pair in which the first
- // element is the BlockSolverConfig for the inner Block and the second one is
- // a BlockConfig (which is currently nullptr) for the inner Block.
+ // element is a BlockConfig (which is currently nullptr) for the inner Block,
+ // the second one is the BlockSolverConfig for the inner Block, and the third
+ // one is the Configuration to be passed to get_var_solution() when
+ // retrieving the Solutions to the inner Blocks of the BendersBFunctions.
 
  auto extra_config = new SimpleConfiguration< std::vector< Configuration * > >
   ( { nullptr , inner_solver_config , get_var_solution_config } );
 
  compute_config->f_extra_Configuration = extra_config;
 
+
+ if( hydro_system_index >= 0 ) {
+  // Configure all BendersBFunction to retrieve the right portion of the dual
+  // variables.
+
+  // Only the dual variables of the component defined by the HydroSystemUnit
+  // is needed, as all constraints handled by the BendersBFunction belong to
+  // it.
+  auto get_dual_config =
+   new SimpleConfiguration< std::vector< std::pair< int , Configuration * > > >
+   ( { std::make_pair( hydro_system_index , nullptr ) } );
+
+  auto benders_function_config = new ComputeConfig;
+
+  // Differential mode to keep the previous configuration.
+  benders_function_config->f_diff = true;
+
+  benders_function_config->f_extra_Configuration =
+   new SimpleConfiguration< std::map< std::string , Configuration * > >
+   ( { { "get_dual" , get_dual_config  } ,
+       { "get_dual_partial" , get_dual_config->clone() } } );
+
+  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
+   auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
+   auto benders_block = static_cast<BendersBlock *>
+    ( stochastic_block-> get_nested_Blocks().front() );
+   auto objective = static_cast<FRealObjective *>
+    ( benders_block->get_objective() );
+   auto benders_function = static_cast<BendersBFunction *>
+    ( objective->get_function() );
+   benders_function->set_ComputeConfig( benders_function_config );
+  }
+
+  delete benders_function_config;
+ }
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1317,7 +1363,7 @@ void process_block_file( const netCDF::NcFile & file ) {
   if( given_block_config )
    given_block_config->apply( sddp_block );
   else {
-   configure_Blocks( sddp_block , ( ! simulation_mode ) || relax_integrality );
+   configure_Blocks( sddp_block , relax_integrality );
 
    if( ! block_solver_config_provided ) {
     block_config = build_BlockConfig( sddp_block );
