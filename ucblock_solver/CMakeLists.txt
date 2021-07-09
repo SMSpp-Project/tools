@@ -4,6 +4,7 @@
 if (NOT hasParent)
     find_package(UCBlock)
     find_package(MILPSolver)
+    find_package(BundleSolver)
 endif()
 
 # ----- ucblock_solver ------------------------------------------------------ #
@@ -14,6 +15,10 @@ if (TARGET UCBlock)
 
     if (TARGET MILPSolver)
         target_link_libraries(ucblock_solver PRIVATE SMS++::MILPSolver)
+    endif ()
+
+    if (TARGET SMS++::BundleSolver)
+        target_link_libraries(ucblock_solver PRIVATE SMS++::BundleSolver)
     endif ()
 
     # Install
