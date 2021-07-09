@@ -5,6 +5,7 @@ if (NOT hasParent)
     find_package(UCBlock)
     find_package(MILPSolver)
     find_package(BundleSolver)
+    find_package(LagrangianDualSolver)
 endif()
 
 # ----- ucblock_solver ------------------------------------------------------ #
@@ -19,6 +20,10 @@ if (TARGET UCBlock)
 
     if (TARGET SMS++::BundleSolver)
         target_link_libraries(ucblock_solver PRIVATE SMS++::BundleSolver)
+    endif ()
+
+    if (TARGET SMS++::BundleSolver)
+        target_link_libraries(ucblock_solver PRIVATE SMS++::LagrangianDualSolver)
     endif ()
 
     # Install
