@@ -61,7 +61,7 @@
  *
  * \version 0.11
  *
- * \date 01 - 07 - 2021
+ * \date 28 - 07 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -108,6 +108,7 @@ long num_sub_blocks_per_stage = 1;
 bool simulation_mode = false;
 bool relax_integrality = false;
 bool eliminate_reduntant_cuts = false;
+const bool force_hard_components = false;
 const bool continuous_relaxation = true;
 
 std::string exe{};         ///< Name of the executable file
@@ -1228,14 +1229,13 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
    vintNoEasy.push_back( inner_sub_block_index );
   }
-  else if( dynamic_cast< IntermittentUnitBlock * >( inner_sub_block ) ) {
-   // IntermittentUnitBlock is a non-easy component since it depends on
-   // scenarios.
+  else if( force_hard_components &&
+           dynamic_cast< IntermittentUnitBlock * >( inner_sub_block ) ) {
    vstr_LDSl_BSCfg.push_back( other_unit_config_filename );
    vintNoEasy.push_back( inner_sub_block_index );
   }
-  else if( dynamic_cast< NetworkBlock * >( inner_sub_block ) ) {
-   // NetworkBlock is a non-easy component since it depends on scenarios.
+  else if( force_hard_components &&
+           dynamic_cast< NetworkBlock * >( inner_sub_block ) ) {
    vstr_LDSl_BSCfg.push_back( default_config_filename );
    vintNoEasy.push_back( inner_sub_block_index );
   }
@@ -1321,6 +1321,12 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   }
 
   delete benders_function_config;
+ }
+
+ if( ! force_hard_components ) {
+  for( Index t = 0 ; t < sddp_block->get_time_horizon() ; ++t )
+   for( Index i = 0 ; i < sddp_block->get_num_sub_blocks_per_stage() ; ++i )
+    sddp_block->set_scenario( 0 , t , i );
  }
 }
 
