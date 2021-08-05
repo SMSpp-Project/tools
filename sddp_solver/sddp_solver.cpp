@@ -61,7 +61,7 @@
  *
  * \version 0.11
  *
- * \date 28 - 07 - 2021
+ * \date 05 - 08 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -1178,19 +1178,24 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   // Since there is no BundleSolver, there is no need to configure any Block
   return;
 
- const std::string thermal_config_filename = "TUBSCfg.txt";
- const std::string hydro_config_filename = "HSUBSCfg.txt";
- const std::string other_unit_config_filename = "OUBSCfg.txt";
- const std::string default_config_filename = "LPBSCfg.txt";
-
  // The Configuration to be passed to get_var_solution() of the inner
  // Solver. We assume that only the HydroSystemBlock contains the necessary
  // part of the Solution (and that there is only one HydroSystemBlock) and
  // that the index of the HydroSystemBlock is the same at every stage.
  Configuration * get_var_solution_config = nullptr;
 
- std::vector< std::string > vstr_LDSl_BSCfg;
- vstr_LDSl_BSCfg.reserve( sddp_block->get_number_nested_Blocks() );
+ const std::string thermal_config_filename = "TUBSCfg.txt";
+ const std::string hydro_config_filename = "HSUBSCfg.txt";
+ const std::string other_unit_config_filename = "OUBSCfg.txt";
+ const std::string default_config_filename = "LPBSCfg.txt";
+
+ enum ConfigIndex { thermal = 0 , hydro , other_unit , default_config };
+
+ // Vector with unique names of Configuration files ordered according to the
+ // ConfigIndex enum.
+ const std::vector< std::string > vstr_LDSl_Cfg = { thermal_config_filename ,
+  hydro_config_filename , other_unit_config_filename ,
+  default_config_filename };
 
  // We assume all sub-Blocks of SDDPBlock have the same structure.
 
@@ -1205,13 +1210,16 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   ( objective->get_function() );
  auto inner_block = benders_function->get_inner_block();
 
+ std::vector< int > vint_LDSl_WBSCfg;
+ vint_LDSl_WBSCfg.reserve( inner_block->get_number_nested_Blocks() );
+
  int inner_sub_block_index = 0;
  for( auto inner_sub_block : inner_block->get_nested_Blocks() ) {
 
   if( dynamic_cast< ThermalUnitBlock * >( inner_sub_block ) ) {
    // ThermalUnitBlock is a non-easy component since there is a specialized
    // solver for it.
-   vstr_LDSl_BSCfg.push_back( thermal_config_filename );
+   vint_LDSl_WBSCfg.push_back( ConfigIndex::thermal );
    vintNoEasy.push_back( inner_sub_block_index );
   }
   else if( dynamic_cast< HydroSystemUnitBlock * >( inner_sub_block ) ) {
@@ -1220,7 +1228,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
    hydro_system_index = inner_sub_block_index;
 
-   vstr_LDSl_BSCfg.push_back( hydro_config_filename );
+   vint_LDSl_WBSCfg.push_back( ConfigIndex::hydro );
 
    if( ! get_var_solution_config )
     // Configuration for get_var_solution of the inner Solver.
@@ -1231,23 +1239,23 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   }
   else if( force_hard_components &&
            dynamic_cast< IntermittentUnitBlock * >( inner_sub_block ) ) {
-   vstr_LDSl_BSCfg.push_back( other_unit_config_filename );
+   vint_LDSl_WBSCfg.push_back( ConfigIndex::other_unit );
    vintNoEasy.push_back( inner_sub_block_index );
   }
   else if( force_hard_components &&
            dynamic_cast< NetworkBlock * >( inner_sub_block ) ) {
-   vstr_LDSl_BSCfg.push_back( default_config_filename );
+   vint_LDSl_WBSCfg.push_back( ConfigIndex::default_config );
    vintNoEasy.push_back( inner_sub_block_index );
   }
   else if( ! do_easy_components ) {
    vintNoEasy.push_back( inner_sub_block_index );
    if( dynamic_cast< UnitBlock * >( inner_sub_block ) )
-    vstr_LDSl_BSCfg.push_back( other_unit_config_filename );
+    vint_LDSl_WBSCfg.push_back( ConfigIndex::other_unit );
    else
-    vstr_LDSl_BSCfg.push_back( default_config_filename );
+    vint_LDSl_WBSCfg.push_back( ConfigIndex::default_config );
   }
   else
-   vstr_LDSl_BSCfg.push_back( default_config_filename );
+   vint_LDSl_WBSCfg.push_back( ConfigIndex::default_config );
 
   ++inner_sub_block_index;
  }
@@ -1266,8 +1274,13 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    ( std::make_pair( "vintNoEasy" , std::move( vintNoEasy ) ) );
  }
 
- lagrangian_dual_compute_config->vstr_pars.push_back
-  ( std::make_pair( "vstr_LDSl_BSCfg" , std::move( vstr_LDSl_BSCfg ) ) );
+ lagrangian_dual_compute_config->vint_pars.push_back
+  ( std::make_pair( "vint_LDSl_WBSCfg" , std::move( vint_LDSl_WBSCfg ) ) );
+
+ // Configuration for the sub-Blocks may need to be cloned since the same
+ // Configuration is used to configure multiple Blocks.
+ lagrangian_dual_compute_config->int_pars.push_back
+  ( std::make_pair( "int_LDSlv_CloneCfg" , 1 ) );
 
  compute_config->str_pars.erase
   ( std::remove_if( compute_config->str_pars.begin() ,
