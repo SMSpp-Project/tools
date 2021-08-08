@@ -61,7 +61,7 @@
  *
  * \version 0.11
  *
- * \date 05 - 08 - 2021
+ * \date 08 - 08 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -1084,6 +1084,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
  for( Index i = 0 ; i < sddp_solver_config->num_ComputeConfig() ; ++i ) {
 
   if( sddp_solver_config->get_SolverName( i ) != "SDDPSolver" &&
+      sddp_solver_config->get_SolverName( i ) != "ParallelSDDPSolver" &&
       sddp_solver_config->get_SolverName( i ) != "SDDPGreedySolver" )
    continue;
 
