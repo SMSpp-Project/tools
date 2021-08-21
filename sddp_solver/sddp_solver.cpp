@@ -61,7 +61,7 @@
  *
  * \version 0.11
  *
- * \date 08 - 08 - 2021
+ * \date 21 - 08 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -1277,6 +1277,9 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
  lagrangian_dual_compute_config->vint_pars.push_back
   ( std::make_pair( "vint_LDSl_WBSCfg" , std::move( vint_LDSl_WBSCfg ) ) );
+
+ lagrangian_dual_compute_config->vstr_pars.push_back
+  ( std::make_pair( "vstr_LDSl_Cfg" , std::move( vstr_LDSl_Cfg ) ) );
 
  // Configuration for the sub-Blocks may need to be cloned since the same
  // Configuration is used to configure multiple Blocks.
