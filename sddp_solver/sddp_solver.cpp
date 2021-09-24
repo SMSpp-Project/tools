@@ -61,7 +61,7 @@
  *
  * \version 0.11
  *
- * \date 21 - 08 - 2021
+ * \date 24 - 09 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -350,10 +350,13 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
            std::to_string( stage ) + " has " +
            std::to_string( unit->get_number_generators() ) ) );
 
+ const auto time_horizon = unit->get_time_horizon();
+
  std::vector< double > flow_rate( number_generators );
 
  for( Index g = 0 ; g < number_generators ; ++g )
-  flow_rate[ g ] = previous_unit->get_flow_rate( g )->get_value();
+  flow_rate[ g ] =
+   previous_unit->get_flow_rate( g , time_horizon - 1 )->get_value();
 
  unit->set_initial_flow_rate( flow_rate.cbegin() );
 
@@ -480,8 +483,10 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
  std::vector< int > init_up_down_time_data = { init_up_down_time };
  unit->set_init_updown_time( init_up_down_time_data.cbegin() );
 
+ const auto time_horizon = sddp_block->get_time_horizon();
+
  std::vector< double > active_power_data =
-  { previous_unit->get_active_power( 0 )->get_value() };
+  { ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
  unit->set_initial_power( active_power_data.cbegin() );
 
  return true;
@@ -1340,11 +1345,17 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   delete benders_function_config;
  }
 
- if( ! force_hard_components ) {
-  for( Index t = 0 ; t < sddp_block->get_time_horizon() ; ++t )
-   for( Index i = 0 ; i < sddp_block->get_num_sub_blocks_per_stage() ; ++i )
-    sddp_block->set_scenario( 0 , t , i );
- }
+ // OSIMPSolver is currently not able to deal with some changes in a Block
+ // (for instance, when some bound structure changes). In order to try to
+ // avoid this case, we set a scenario, so that when OSIMPSolver is attached
+ // to a Block, the data in that Block is a relevant one and, hopefully, will
+ // not later be responsible for any other change in the bound structure. If
+ // OSIMPSolver still complains, then other actions may be required (for
+ // instance, replacing zeros by very small numbers in the scenarios).
+
+ for( Index t = 0 ; t < sddp_block->get_time_horizon() ; ++t )
+  for( Index i = 0 ; i < sddp_block->get_num_sub_blocks_per_stage() ; ++i )
+   sddp_block->set_scenario( 0 , t , i );
 }
 
 /*--------------------------------------------------------------------------*/
