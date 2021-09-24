@@ -61,7 +61,7 @@
  *
  * \version 0.1
  *
- * \date 24 - 04 - 2021
+ * \date 24 - 09 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -346,10 +346,13 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
            std::to_string( stage ) + " has " +
            std::to_string( unit->get_number_generators() ) ) );
 
+ const auto time_horizon = unit->get_time_horizon();
+
  std::vector< double > flow_rate( number_generators );
 
  for( Index g = 0 ; g < number_generators ; ++g )
-  flow_rate[ g ] = previous_unit->get_flow_rate( g )->get_value();
+  flow_rate[ g ] =
+   previous_unit->get_flow_rate( g , time_horizon - 1 )->get_value();
 
  unit->set_initial_flow_rate( flow_rate.cbegin() );
 
@@ -476,8 +479,10 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
  std::vector< int > init_up_down_time_data = { init_up_down_time };
  unit->set_init_updown_time( init_up_down_time_data.cbegin() );
 
+ const auto time_horizon = sddp_block->get_time_horizon();
+
  std::vector< double > active_power_data =
-  { previous_unit->get_active_power( 0 )->get_value() };
+  { ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
  unit->set_initial_power( active_power_data.cbegin() );
 
  return true;
