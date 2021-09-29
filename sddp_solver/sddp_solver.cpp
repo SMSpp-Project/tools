@@ -61,7 +61,7 @@
  *
  * \version 0.11
  *
- * \date 24 - 09 - 2021
+ * \date 29 - 09 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -748,7 +748,8 @@ void load_cuts( SDDPBlock * sddp_block ) {
 
 /*--------------------------------------------------------------------------*/
 
-void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ) {
+void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
+                       bool add_reserve_variables_to_objective ) {
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
   auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
@@ -806,6 +807,10 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ) {
      new SimpleConfiguration<int>( var_type );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration<int>( cons_type );
+
+    if( add_reserve_variables_to_objective )
+     config->f_objective_Configuration = new SimpleConfiguration<int>( 3 );
+
     unit->set_BlockConfig( config );
    }
 
@@ -1063,6 +1068,79 @@ int get_int_par( ComputeConfig * compute_config , std::string par_name ) {
    return pair.second;
  }
  return Inf<int>();
+}
+
+/*--------------------------------------------------------------------------*/
+
+bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
+
+ BlockSolverConfig * inner_solver_config = nullptr;
+ ComputeConfig * lagrangian_dual_compute_config = nullptr;
+ ComputeConfig * compute_config = nullptr;
+
+ // It indicates whether some Solver is a [Parallel]BundleSolver
+ bool bundle_solver = false;
+ bool do_easy_components = true;
+ std::vector< int > vintNoEasy;
+
+ // Index of the HydroSystemUnitBlock
+ int hydro_system_index = -1;
+
+ for( Index i = 0 ; i < sddp_solver_config->num_ComputeConfig() ; ++i ) {
+
+  if( sddp_solver_config->get_SolverName( i ) != "SDDPSolver" &&
+      sddp_solver_config->get_SolverName( i ) != "ParallelSDDPSolver" &&
+      sddp_solver_config->get_SolverName( i ) != "SDDPGreedySolver" )
+   continue;
+
+  compute_config = sddp_solver_config->get_SolverConfig( i );
+
+  // Check if strInnerBSC is present
+
+  auto strInnerBSC = get_str_par( compute_config , "strInnerBSC" );
+
+  if( strInnerBSC.empty() )
+   continue;
+
+  // If it is, check if it is a config for a LagrangianDualSolver
+
+  std::ifstream inner_solver_config_file
+   ( config_filename_prefix + strInnerBSC , std::ifstream::in );
+
+  if( ! inner_solver_config_file.is_open() )
+   continue;
+
+  std::string inner_config_name;
+  inner_solver_config_file >> eatcomments >> inner_config_name;
+  auto inner_config = Configuration::new_Configuration( inner_config_name );
+  inner_solver_config = dynamic_cast< BlockSolverConfig * >( inner_config );
+
+  if( ! inner_solver_config ) {
+   inner_solver_config_file.close();
+   delete inner_config;
+   continue;
+  }
+
+  try {
+   inner_solver_config_file >> *inner_solver_config;
+  }
+  catch( ... ) {
+   inner_solver_config_file.close();
+   delete inner_config;
+   continue;
+  }
+
+  inner_solver_config_file.close();
+
+  for( Index j = 0 ; j < inner_solver_config->num_ComputeConfig() ; ++j ) {
+   if( inner_solver_config->get_SolverName( j ) == "LagrangianDualSolver" ) {
+    delete inner_config;
+    return true;
+   }
+  }
+  delete inner_config;
+ }
+ return false;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1394,10 +1472,16 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Configure the SDDPBlock
 
+  bool is_using_lagrangian_dual_solver = false;
+
   if( given_block_config )
    given_block_config->apply( sddp_block );
   else {
-   configure_Blocks( sddp_block , relax_integrality );
+   is_using_lagrangian_dual_solver =
+    using_lagrangian_dual_solver( solver_config );
+
+   configure_Blocks( sddp_block , relax_integrality ,
+                     is_using_lagrangian_dual_solver );
 
    if( ! block_solver_config_provided ) {
     block_config = build_BlockConfig( sddp_block );
@@ -1408,7 +1492,9 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Configure the Solver
 
-  config_Lagrangian_dual( solver_config , sddp_block );
+  if( is_using_lagrangian_dual_solver )
+   config_Lagrangian_dual( solver_config , sddp_block );
+
   solver_config->apply( sddp_block );
 
   // Set the output stream for the log of the inner Solvers
