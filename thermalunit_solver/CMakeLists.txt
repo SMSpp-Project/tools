@@ -7,12 +7,12 @@ if (NOT hasParent)
 endif ()
 
 # ----- thermalunit_solver -------------------------------------------------- #
-if (TARGET UCBlock)
+if (TARGET SMS++::UCBlock)
     add_executable(thermalunit_solver thermalunit_solver.cpp)
     target_include_directories(thermalunit_solver PRIVATE ../block_solver)
     target_link_libraries(thermalunit_solver PRIVATE SMS++::UCBlock)
 
-    if (TARGET MILPSolver)
+    if (TARGET SMS++::MILPSolver)
         target_link_libraries(thermalunit_solver PRIVATE SMS++::MILPSolver)
     endif ()
 

@@ -9,12 +9,12 @@ if (NOT hasParent)
 endif()
 
 # ----- ucblock_solver ------------------------------------------------------ #
-if (TARGET UCBlock)
+if (TARGET SMS++::UCBlock)
     add_executable(ucblock_solver ucblock_solver.cpp)
     target_include_directories(ucblock_solver PRIVATE ../block_solver)
     target_link_libraries(ucblock_solver PRIVATE SMS++::UCBlock)
 
-    if (TARGET MILPSolver)
+    if (TARGET SMS++::MILPSolver)
         target_link_libraries(ucblock_solver PRIVATE SMS++::MILPSolver)
     endif ()
 
