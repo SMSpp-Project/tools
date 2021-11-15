@@ -15,7 +15,8 @@
 #                         Dipartimento di Informatica                         #
 #                             Universita' di Pisa                             #
 # --------------------------------------------------------------------------- #
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.12)
+cmake_policy(VERSION 3.12)
 project(SMS++_tools
         VERSION 0.4.0
         DESCRIPTION "SMS++ tools"
@@ -57,9 +58,6 @@ add_subdirectory(ucblock_solver)
 # --------------------------------------------------------------------------- #
 # Just consuming these to avoid warnings
 if (BUILD_TESTING)
-endif ()
-
-if (CMAKE_EXPORT_PACKAGE_REGISTRY)
 endif ()
 
 # --------------------------------------------------------------------------- #

@@ -6,10 +6,10 @@ option(tools_USE_DL "Use dynamic loading" ON)
 # If it's not being called by the umbrella, we need to
 # look for the system-installed libraries.
 if (NOT hasParent)
-    find_package(SMSpp)
+    find_package(SMS++)
     find_package(UCBlock)
     find_package(MILPSolver)
-endif()
+endif ()
 
 # ----- block_solver -------------------------------------------------------- #
 add_executable(block_solver block_solver.cpp)
@@ -19,23 +19,23 @@ if (BUILD_SHARED_LIBS AND tools_USE_DL)
     # If shared libraries have been built and the option is ON,
     # block_solver will be using dynamic loading.
     # It only needs SMS++ core library.
-    if (TARGET SMSpp)
+    if (TARGET SMS++::SMS++)
         # Runtime path with the build tree directories
         # containing the libraries.
         set(CMAKE_BUILD_RPATH ${SMSPP_BUILD_RPATH})
 
         # Enable DL in the code.
         target_compile_definitions(block_solver PRIVATE USE_DL)
-        target_link_libraries(block_solver PRIVATE SMS++::SMSpp dl)
+        target_link_libraries(block_solver PRIVATE SMS++::SMS++ dl)
     endif ()
 
 else ()
     # Otherwise, link all the supported libraries.
-    if (TARGET UCBlock)
+    if (TARGET SMS++::UCBlock)
         target_link_libraries(block_solver PRIVATE
                               SMS++::UCBlock)
     endif ()
-    if (TARGET MILPSolver)
+    if (TARGET SMS++::MILPSolver)
         target_link_libraries(block_solver PRIVATE
                               SMS++::MILPSolver)
     endif ()
