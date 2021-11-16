@@ -2,9 +2,9 @@
 # If it's not being called by the umbrella, we need to
 # look for the system-installed libraries.
 if (NOT hasParent)
-    find_package(UCBlock)
-    find_package(SDDPBlock)
     find_package(MILPSolver)
+    find_package(SDDPBlock)
+    find_package(UCBlock)
 endif ()
 
 # ----- sddp_solver --------------------------------------------------------- #
@@ -19,6 +19,14 @@ if (TARGET SMS++::UCBlock AND
                           SMS++::UCBlock
                           SMS++::SDDPBlock
                           SMS++::MILPSolver)
+
+    find_package(Boost COMPONENTS mpi)
+    find_package(MPI)
+    if (MPI_CXX_FOUND AND Boost_MPI_FOUND)
+        message(STATUS "sddp_solver: MPI and Boost::mpi found. Using MPI.")
+        target_compile_definitions(sddp_solver PRIVATE USE_MPI)
+        target_link_libraries(sddp_solver PRIVATE Boost::mpi MPI::MPI_CXX)
+    endif ()
 
     # Install
     install(TARGETS sddp_solver
