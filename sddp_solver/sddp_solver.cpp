@@ -61,7 +61,7 @@
  *
  * \version 0.11
  *
- * \date 29 - 09 - 2021
+ * \date 20 - 11 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -1075,16 +1075,7 @@ int get_int_par( ComputeConfig * compute_config , std::string par_name ) {
 bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
 
  BlockSolverConfig * inner_solver_config = nullptr;
- ComputeConfig * lagrangian_dual_compute_config = nullptr;
  ComputeConfig * compute_config = nullptr;
-
- // It indicates whether some Solver is a [Parallel]BundleSolver
- bool bundle_solver = false;
- bool do_easy_components = true;
- std::vector< int > vintNoEasy;
-
- // Index of the HydroSystemUnitBlock
- int hydro_system_index = -1;
 
  for( Index i = 0 ; i < sddp_solver_config->num_ComputeConfig() ; ++i ) {
 
