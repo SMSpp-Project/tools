@@ -2,6 +2,8 @@
 # If it's not being called by the umbrella, we need to
 # look for the system-installed libraries.
 if (NOT hasParent)
+    find_package(BundleSolver)
+    find_package(LagrangianDualSolver)
     find_package(MILPSolver)
     find_package(SDDPBlock)
     find_package(UCBlock)
@@ -19,6 +21,14 @@ if (TARGET SMS++::UCBlock AND
                           SMS++::UCBlock
                           SMS++::SDDPBlock
                           SMS++::MILPSolver)
+
+    if (TARGET SMS++::BundleSolver)
+        target_link_libraries(sddp_solver PRIVATE SMS++::BundleSolver)
+    endif ()
+
+    if (TARGET SMS++::LagrangianDualSolver)
+        target_link_libraries(sddp_solver PRIVATE SMS++::LagrangianDualSolver)
+    endif ()
 
     find_package(Boost COMPONENTS mpi)
     find_package(MPI)
