@@ -61,7 +61,7 @@
  *
  * \version 0.11
  *
- * \date 20 - 11 - 2021
+ * \date 07 - 12 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -403,8 +403,8 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
  auto time_horizon = previous_unit->get_time_horizon();
  auto commitment = previous_unit->get_commitment( 0 ) + time_horizon - 1;
 
- auto shutdown = previous_unit->get_shut_down();
- if( ! shutdown.empty() && shutdown.back().get_value() >= 0.5 ) {
+ auto shutdown = previous_unit->get_shut_down( time_horizon - 1 );
+ if( shutdown && shutdown->get_value() >= 0.5 ) {
   return 0;
  }
 

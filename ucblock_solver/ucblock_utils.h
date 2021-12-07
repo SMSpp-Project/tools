@@ -296,9 +296,9 @@ void print_ucblock_solver_results( Block * block ) {
 
     auto shutdown = thermal_unit_block->get_shut_down();
     std::cout << "Shut down    = [";
-    for( auto & t : shutdown ) {
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon() - init_t; ++t ) {
      std::cout << std::setw( 2 )
-               << ( unsigned int ) round( t.get_value());
+               << ( unsigned int ) round( shutdown[t].get_value());
     }
     std::cout << " ]" << std::endl;
 
