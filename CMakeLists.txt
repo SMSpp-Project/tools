@@ -15,12 +15,16 @@
 #                         Dipartimento di Informatica                         #
 #                             Universita' di Pisa                             #
 # --------------------------------------------------------------------------- #
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.12)
+cmake_policy(VERSION 3.12)
 project(SMS++_tools
-        VERSION 0.4.0
+        VERSION 0.5.0
         DESCRIPTION "SMS++ tools"
         HOMEPAGE_URL https://gitlab.com/smspp/tools
         LANGUAGES C CXX)
+
+# Find out if it's being called by the umbrella.
+get_directory_property(hasParent PARENT_DIRECTORY)
 
 # ----- Settings ------------------------------------------------------------ #
 # An option is an ON/OFF user-settable cache variable.
@@ -30,11 +34,15 @@ option(tools_USE_DL "Use dynamic loading" ON)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 include(GNUInstallDirs)
 
-# Since we are using the block factory, objects from statically linked libraries
+# Since we are using the block factory, objects from linked libraries
 # may wrongly appear unused, and by default the linker does not include them,
 # so we have to force the linking.
-if (NOT BUILD_SHARED_LIBS)
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+if (BUILD_SHARED_LIBS)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        add_link_options("-Wl,--no-as-needed")
+    endif ()
+else ()
+    if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
         add_link_options("-Wl,-all_load")
     else ()
         add_link_options("-Wl,--whole-archive,--allow-multiple-definition")
@@ -50,9 +58,6 @@ add_subdirectory(ucblock_solver)
 # --------------------------------------------------------------------------- #
 # Just consuming these to avoid warnings
 if (BUILD_TESTING)
-endif ()
-
-if (CMAKE_EXPORT_PACKAGE_REGISTRY)
 endif ()
 
 # --------------------------------------------------------------------------- #

@@ -1,20 +1,19 @@
 # ----- Requirements -------------------------------------------------------- #
-find_package(UCBlock)
-find_package(MILPSolver)
+# If it's not being called by the umbrella, we need to
+# look for the system-installed libraries.
+if (NOT hasParent)
+    find_package(UCBlock)
+    find_package(MILPSolver)
+endif ()
 
 # ----- thermalunit_solver -------------------------------------------------- #
-if (UCBlock_FOUND AND MILPSolver_FOUND)
-
+if (TARGET SMS++::UCBlock)
     add_executable(thermalunit_solver thermalunit_solver.cpp)
-    target_include_directories(thermalunit_solver PRIVATE
-                               ../block_solver)
-    target_link_libraries(thermalunit_solver PRIVATE
-                          SMS++::UCBlock
-                          SMS++::MILPSolver)
+    target_include_directories(thermalunit_solver PRIVATE ../block_solver)
+    target_link_libraries(thermalunit_solver PRIVATE SMS++::UCBlock)
 
-    find_package(DPSolver)
-    if (DPSolver_FOUND)
-        target_link_libraries(thermalunit_solver PRIVATE SMS++::DPSolver)
+    if (TARGET SMS++::MILPSolver)
+        target_link_libraries(thermalunit_solver PRIVATE SMS++::MILPSolver)
     endif ()
 
     # Install

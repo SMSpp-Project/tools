@@ -245,6 +245,12 @@ void print_ucblock_solver_results( Block * block ) {
 
  for( auto i: block->get_nested_Blocks() ) {
 
+  auto uc_block = dynamic_cast<UCBlock *>(block);
+
+  Index number_primary_zones = uc_block->get_number_primary_zones();
+  Index number_secondary_zones = uc_block->get_number_secondary_zones();
+  Index number_inertia_zones = uc_block->get_number_inertia_zones();
+
   auto unit_block = dynamic_cast<UnitBlock *>(i);
   if( unit_block != nullptr ) {
    std::cout << "----- UnitBlock " << n_unit_blocks++ << std::endl;
@@ -263,49 +269,66 @@ void print_ucblock_solver_results( Block * block ) {
     std::cout << "Commitment     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
      std::cout << std::setw( 2 )
-               << ( unsigned int ) round( commitment[ t ].get_value() );
+               << ( unsigned int ) round( commitment[t].get_value());
     }
     std::cout << " ]" << std::endl;
 
+    // Generate init_t
+    int init_t;
+    auto init_up_down_time = thermal_unit_block->get_init_up_down_time();
+    auto min_up_time = thermal_unit_block->get_min_up_time();
+    auto min_down_time = thermal_unit_block->get_min_down_time();
+    if( init_up_down_time > 0 ) {
+     init_t = init_up_down_time >= min_up_time ?
+              0 : ( int ) min_up_time - init_up_down_time;
+    } else {
+     init_t = -init_up_down_time >= min_down_time ?
+              0 : ( int ) min_down_time + init_up_down_time;
+    }
+
     auto startup = thermal_unit_block->get_start_up();
     std::cout << "Start up     = [";
-    for( auto & t : startup ) {
-     std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value() );
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon() - init_t; ++t ) {
+     std::cout << std::setw( 2 )
+               << ( unsigned int ) round( startup[t].get_value());
     }
     std::cout << " ]" << std::endl;
 
     auto shutdown = thermal_unit_block->get_shut_down();
     std::cout << "Shut down    = [";
-    for( auto & t : shutdown ) {
+    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon() - init_t; ++t ) {
      std::cout << std::setw( 2 )
-               << ( unsigned int ) round( t.get_value() );
+               << ( unsigned int ) round( shutdown[t].get_value());
     }
     std::cout << " ]" << std::endl;
 
     auto active_power = thermal_unit_block->get_active_power( 0 );
     std::cout << "active_power     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) << active_power[ t ].get_value();
+     std::cout << std::setw( 20 ) << active_power[t].get_value();
     }
     std::cout << " ]" << std::endl;
 
-    auto primary_reserve = thermal_unit_block
-     ->get_primary_spinning_reserve( 0 );
-    std::cout << "primary_reserve     = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) << primary_reserve[ t ].get_value();
+    if( number_primary_zones > 0 ) {
+     auto primary_reserve = thermal_unit_block
+             ->get_primary_spinning_reserve( 0 );
+     std::cout << "primary_reserve     = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 20 ) << primary_reserve[t].get_value();
+     }
+     std::cout << " ]" << std::endl;
     }
-    std::cout << " ]" << std::endl;
 
-    auto secondary_reserve = thermal_unit_block
-     ->get_secondary_spinning_reserve( 0 );
-    std::cout << "secondary_reserve     = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) << secondary_reserve[ t ].get_value();
+    if( number_secondary_zones > 0 ) {
+     auto secondary_reserve = thermal_unit_block
+             ->get_secondary_spinning_reserve( 0 );
+     std::cout << "secondary_reserve     = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 20 ) << secondary_reserve[t].get_value();
+     }
+     std::cout << " ]" << std::endl;
     }
-    std::cout << " ]" << std::endl;
    }
-
    auto battery_unit_block = dynamic_cast<BatteryUnitBlock *>(unit_block);
    if( battery_unit_block != nullptr ) {
 
@@ -316,20 +339,22 @@ void print_ucblock_solver_results( Block * block ) {
     }
     std::cout << " ]" << std::endl;
 
-    auto PrimarySR = battery_unit_block->get_primary_spinning_reserve( 0 );
-    std::cout << "primary_reserve     = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) << PrimarySR[ t ].get_value();
+    if ( number_primary_zones > 0 ) {
+     auto PrimarySR = battery_unit_block->get_primary_spinning_reserve( 0 );
+     std::cout << "primary_reserve     = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 20 ) << PrimarySR[t].get_value();
+     }
+     std::cout << " ]" << std::endl;
     }
-    std::cout << " ]" << std::endl;
-
-    auto SecondarySR = battery_unit_block->get_secondary_spinning_reserve( 0 );
-    std::cout << "secondary_reserve     = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) << SecondarySR[ t ].get_value();
+    if ( number_secondary_zones > 0 ) {
+     auto SecondarySR = battery_unit_block->get_secondary_spinning_reserve( 0 );
+     std::cout << "secondary_reserve     = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 20 ) << SecondarySR[t].get_value();
+     }
+     std::cout << " ]" << std::endl;
     }
-    std::cout << " ]" << std::endl;
-
     auto Intake_level = battery_unit_block->get_intake_level();
     std::cout << "IntakeLevel[:Storage]  = [";
     for( auto & t : Intake_level ) {
@@ -371,27 +396,29 @@ void print_ucblock_solver_results( Block * block ) {
      std::cout << " ]" << std::endl;
     }
 
-    for( UnitBlock::Index g = 0;
-         g < unit_block->get_number_generators(); ++g ) {
-     auto primary_reserve = hydro_unitblock->get_primary_spinning_reserve( g );
-     std::cout << "primary_reserve [" + std::to_string( g ) + "]" " = [";
-     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-      std::cout << std::setw( 20 ) << primary_reserve[ t ].get_value();
+    if ( number_primary_zones > 0 ) {
+     for( UnitBlock::Index g = 0;
+          g < unit_block->get_number_generators(); ++g ) {
+      auto primary_reserve = hydro_unitblock->get_primary_spinning_reserve( g );
+      std::cout << "primary_reserve [" + std::to_string( g ) + "]" " = [";
+      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+       std::cout << std::setw( 20 ) << primary_reserve[t].get_value();
+      }
+      std::cout << " ]" << std::endl;
      }
-     std::cout << " ]" << std::endl;
     }
-
-    for( UnitBlock::Index g = 0;
-         g < unit_block->get_number_generators(); ++g ) {
-     auto secondary_reserve = hydro_unitblock
-      ->get_secondary_spinning_reserve( g );
-     std::cout << "secondary_reserve [" + std::to_string( g ) + "]" " = [";
-     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-      std::cout << std::setw( 20 ) << secondary_reserve[ t ].get_value();
+    if ( number_secondary_zones > 0 ) {
+     for( UnitBlock::Index g = 0;
+          g < unit_block->get_number_generators(); ++g ) {
+      auto secondary_reserve = hydro_unitblock
+              ->get_secondary_spinning_reserve( g );
+      std::cout << "secondary_reserve [" + std::to_string( g ) + "]" " = [";
+      for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+       std::cout << std::setw( 20 ) << secondary_reserve[t].get_value();
+      }
+      std::cout << " ]" << std::endl;
      }
-     std::cout << " ]" << std::endl;
     }
-
     for( UnitBlock::Index l = 0;
          l < hydro_unitblock->get_number_generators(); ++l ) {
      auto flow_rate = hydro_unitblock->get_flow_rate( l );
@@ -436,28 +463,31 @@ void print_ucblock_solver_results( Block * block ) {
        std::cout << " ]" << std::endl;
       }
 
-
-      for( UnitBlock::Index g = 0;
-           g < sub_hydro_unitblock->get_number_generators(); ++g ) {
-       auto primary_reserve = sub_hydro_unitblock
-        ->get_primary_spinning_reserve( g );
-       std::cout << "primary_reserve [" + std::to_string( g ) + "]" " = [";
-       for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-        std::cout << std::setw( 20 ) << primary_reserve[ t ].get_value();
+      if ( number_primary_zones > 0 ) {
+       for( UnitBlock::Index g = 0;
+            g < sub_hydro_unitblock->get_number_generators(); ++g ) {
+        auto primary_reserve = sub_hydro_unitblock
+                ->get_primary_spinning_reserve( g );
+        std::cout << "primary_reserve [" + std::to_string( g ) + "]" " = [";
+        for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+         std::cout << std::setw( 20 ) << primary_reserve[t].get_value();
+        }
+        std::cout << " ]" << std::endl;
        }
-       std::cout << " ]" << std::endl;
+      }
+      if ( number_secondary_zones > 0 ) {
+       for( UnitBlock::Index g = 0;
+            g < sub_hydro_unitblock->get_number_generators(); ++g ) {
+        auto secondary_reserve = sub_hydro_unitblock
+                ->get_secondary_spinning_reserve( g );
+        std::cout << "secondary_reserve [" + std::to_string( g ) + "]" " = [";
+        for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+         std::cout << std::setw( 20 ) << secondary_reserve[t].get_value();
+        }
+        std::cout << " ]" << std::endl;
+       }
       }
 
-      for( UnitBlock::Index g = 0;
-           g < sub_hydro_unitblock->get_number_generators(); ++g ) {
-       auto secondary_reserve = sub_hydro_unitblock
-        ->get_secondary_spinning_reserve( g );
-       std::cout << "secondary_reserve [" + std::to_string( g ) + "]" " = [";
-       for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-        std::cout << std::setw( 20 ) << secondary_reserve[ t ].get_value();
-       }
-       std::cout << " ]" << std::endl;
-      }
       for( UnitBlock::Index l = 0;
            l < sub_hydro_unitblock->get_number_generators(); ++l ) {
        auto flow_rate = sub_hydro_unitblock->get_flow_rate( l );
@@ -490,29 +520,32 @@ void print_ucblock_solver_results( Block * block ) {
     auto active_power = intermittent_unit_block->get_active_power( 0 );
     std::cout << "active_power     = [";
     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) << active_power[ t ].get_value();
+     std::cout << std::setw( 20 ) << active_power[t].get_value();
     }
     std::cout << " ]" << std::endl;
 
-    auto primary_spinning_reserve = intermittent_unit_block
-     ->get_primary_spinning_reserve( 0 );
-    std::cout << "primary_reserve     = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) << primary_spinning_reserve[ t ].get_value();
+    if( number_primary_zones > 0 ) {
+     auto primary_spinning_reserve = intermittent_unit_block
+             ->get_primary_spinning_reserve( 0 );
+     std::cout << "primary_reserve     = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 20 ) << primary_spinning_reserve[t].get_value();
+     }
+     std::cout << " ]" << std::endl;
     }
-    std::cout << " ]" << std::endl;
 
-    auto secondary_spinning_reserve = intermittent_unit_block
-     ->get_secondary_spinning_reserve( 0 );
-    std::cout << "secondary_reserve     = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 )
-               << secondary_spinning_reserve[ t ].get_value();
+    if( number_secondary_zones > 0 ) {
+     auto secondary_spinning_reserve = intermittent_unit_block
+             ->get_secondary_spinning_reserve( 0 );
+     std::cout << "secondary_reserve     = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 20 )
+                << secondary_spinning_reserve[t].get_value();
+     }
+     std::cout << " ]" << std::endl;
+
     }
-    std::cout << " ]" << std::endl;
-
    }
-
    auto slack_unit_block = dynamic_cast<SlackUnitBlock *>(unit_block);
    if( slack_unit_block != nullptr ) {
 
@@ -523,31 +556,36 @@ void print_ucblock_solver_results( Block * block ) {
     }
     std::cout << " ]" << std::endl;
 
-    auto commitment = slack_unit_block->get_commitment( 0 );
-    std::cout << "Commitment     = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 2 )
-               << ( unsigned int ) round( commitment[ t ].get_value() );
+    if ( number_inertia_zones > 0 ) {
+     auto commitment = slack_unit_block->get_commitment( 0 );
+     std::cout << "Commitment     = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 2 )
+                << ( unsigned int ) round( commitment[t].get_value());
+     }
+     std::cout << " ]" << std::endl;
     }
-    std::cout << " ]" << std::endl;
 
-    auto primary_spinning_reserve = slack_unit_block
-     ->get_primary_spinning_reserve( 0 );
-    std::cout << "primary_reserve     = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 ) << primary_spinning_reserve[ t ].get_value();
+    if ( number_primary_zones > 0 ) {
+     auto primary_spinning_reserve = slack_unit_block
+             ->get_primary_spinning_reserve( 0 );
+     std::cout << "primary_reserve     = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 20 ) << primary_spinning_reserve[t].get_value();
+     }
+     std::cout << " ]" << std::endl;
     }
-    std::cout << " ]" << std::endl;
 
-    auto secondary_spinning_reserve = slack_unit_block
-     ->get_secondary_spinning_reserve( 0 );
-    std::cout << "secondary_reserve     = [";
-    for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
-     std::cout << std::setw( 20 )
-               << secondary_spinning_reserve[ t ].get_value();
+    if ( number_secondary_zones > 0 ) {
+     auto secondary_spinning_reserve = slack_unit_block
+             ->get_secondary_spinning_reserve( 0 );
+     std::cout << "secondary_reserve     = [";
+     for( UnitBlock::Index t = 0; t < unit_block->get_time_horizon(); ++t ) {
+      std::cout << std::setw( 20 )
+                << secondary_spinning_reserve[t].get_value();
+     }
+     std::cout << " ]" << std::endl;
     }
-    std::cout << " ]" << std::endl;
-
    }
   }
 
@@ -571,6 +609,14 @@ void print_ucblock_solver_results( Block * block ) {
      std::cout << std::setw( 20 ) << n.get_value();
     }
     std::cout << " ]" << std::endl;
+
+    auto auxiliary_variable = dc_network_block->get_auxiliary_variable();
+    std::cout << "auxiliary_variable     = [";
+    for( auto & n : auxiliary_variable ) {
+     std::cout << std::setw( 20 ) << n.get_value();
+    }
+    std::cout << " ]" << std::endl;
+
    }
   }
  }

@@ -10,7 +10,7 @@ CPXMILPSolver
 
 # ------ ComputeConfig 0 ------
 ComputeConfig      # Type of the object
-0                  # Not differential
+1                  # Not differential
 
 1                  # Number of integer parameters
 intLogVerb 1
