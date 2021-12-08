@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2021-12-08
+
 ### Added
 
 - Multiple parameters to sddp_solver.
@@ -57,7 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First test release.
 
-[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.4.0...develop
+[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.5.0...develop
+[0.5.0]: https://gitlab.com/smspp/tools/-/compare/0.4.0...0.5.0
 [0.4.0]: https://gitlab.com/smspp/tools/-/compare/0.3.1...0.4.0
 [0.3.1]: https://gitlab.com/smspp/tools/-/compare/0.3.0...0.3.1
 [0.3.0]: https://gitlab.com/smspp/tools/-/compare/0.2.0...0.3.0
