@@ -61,7 +61,7 @@
  *
  * \version 0.11
  *
- * \date 07 - 12 - 2021
+ * \date 29 - 12 - 2021
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -550,6 +550,16 @@ void simulate( SDDPBlock * sddp_block ) {
   callback( sddp_block , stage );
  });
 
+ // Load possibly given cuts
+
+ if( ! cuts_filename.empty() )
+  solver->set_par( SDDPGreedySolver::strLoadCuts , cuts_filename );
+
+ // Eliminate redundant cuts if it is desired
+
+ if( eliminate_reduntant_cuts )
+  CutProcessing().remove_redundant_cuts( sddp_block );
+
  solver->set_scenario_id( scenario_id );
 
  auto status = solver->compute();
@@ -736,7 +746,7 @@ void load_cuts( SDDPBlock * sddp_block ) {
    if( b[ stage ].empty() )
     continue; // no cut for this stage
 
-   // We assume there is only one PolyhedralFunction per stage
+   // We assume that there is only one PolyhedralFunction per stage
 
    auto polyhedral_function =
     sddp_block->get_polyhedral_function( stage , 0 , sub_block_index );
@@ -875,7 +885,9 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Load possibly given cuts
 
-  load_cuts( sddp_block );
+  if( ! simulation_mode ) {
+   load_cuts( sddp_block );
+  }
 
   // Eliminate redundant cuts if it is desired
 
@@ -1259,6 +1271,9 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
  // that the index of the HydroSystemBlock is the same at every stage.
  Configuration * get_var_solution_config = nullptr;
 
+ // The Configuration to be passed to get_dual_solution() of the inner Solver.
+ Configuration * get_dual_solution_config = nullptr;
+
  const std::string thermal_config_filename = "TUBSCfg.txt";
  const std::string hydro_config_filename = "HSUBSCfg.txt";
  const std::string other_unit_config_filename = "OUBSCfg.txt";
@@ -1272,7 +1287,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   hydro_config_filename , other_unit_config_filename ,
   default_config_filename };
 
- // We assume all sub-Blocks of SDDPBlock have the same structure.
+ // We assume that all sub-Blocks of SDDPBlock have the same structure.
 
  const auto sub_block = sddp_block->get_nested_Block( 0 );
 
@@ -1306,7 +1321,9 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    vint_LDSl_WBSCfg.push_back( ConfigIndex::hydro );
 
    if( ! get_var_solution_config )
-    // Configuration for get_var_solution of the inner Solver.
+    // Configuration for get_var_solution of the inner Solver. For the
+    // SDDPSolver, only the Solution to the HydroSystemUnitBlock is retrieved
+    // (because only the storage levels at the last time instant are needed).
     get_var_solution_config = new SimpleConfiguration< std::vector< int > >
      ( { inner_sub_block_index } );
 
@@ -1367,25 +1384,50 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
                      return pair.first == "strInnerBSC"; } ) ,
     compute_config->str_pars.end() );
 
- // The extra Configuration of the SDDPSolver is a pair in which the first
- // element is a BlockConfig (which is currently nullptr) for the inner Block,
- // the second one is the BlockSolverConfig for the inner Block, and the third
- // one is the Configuration to be passed to get_var_solution() when
- // retrieving the Solutions to the inner Blocks of the BendersBFunctions.
+ /* The extra Configuration of the SDDPSolver and the SDDPGreedySolver is a
+  * vector with pointers to the following elements (in that order):
+  *
+  * - a BlockConfig (which is currently nullptr) for the inner Block;
+  *
+  * - a BlockSolverConfig for the inner Block;
+  *
+  * - the Configuration to be passed to get_var_solution() when retrieving
+  *   the Solutions to the inner Blocks of the BendersBFunctions.
+  *
+  * The extra Configuration of the SDDPGreedySolver has an additional (fourth)
+  * element, which is
+  *
+  * - the Configuration to be passed to get_dual_solution() when retrieving
+  *   the dual Solutions to the inner Blocks of the BendersBFunctions. */
 
- auto extra_config = new SimpleConfiguration< std::vector< Configuration * > >
-  ( { nullptr , inner_solver_config , get_var_solution_config } );
+ Configuration * extra_config = nullptr;
+
+ if( simulation_mode ) {
+  /* In simulation mode, the only part of the dual Solution that is required
+   * is that associated with the linking constraints (the set of Constraint
+   * defined in the UCBlock). Therefore, we create a Configuration for the
+   * get_dual_solution() method that ignores the dual solutions of the
+   * sub-Blocks of the UCBlock. */
+
+  get_dual_solution_config = new SimpleConfiguration< std::vector< int > >;
+
+  extra_config = new SimpleConfiguration< std::vector< Configuration * > >
+   ( { nullptr , inner_solver_config , nullptr , get_dual_solution_config } );
+ }
+ else
+  extra_config = new SimpleConfiguration< std::vector< Configuration * > >
+   ( { nullptr , inner_solver_config , get_var_solution_config } );
 
  compute_config->f_extra_Configuration = extra_config;
 
 
- if( hydro_system_index >= 0 ) {
+ if( ( ! simulation_mode ) && ( hydro_system_index >= 0 ) ) {
   // Configure all BendersBFunction to retrieve the right portion of the dual
   // variables.
 
-  // Only the dual variables of the component defined by the HydroSystemUnit
-  // is needed, as all constraints handled by the BendersBFunction belong to
-  // it.
+  // In SDDP, only the dual variables of the component defined by the
+  // HydroSystemUnit is needed, as all constraints handled by the
+  // BendersBFunction belong to it.
   auto get_dual_config =
    new SimpleConfiguration< std::vector< std::pair< int , Configuration * > > >
    ( { std::make_pair( hydro_system_index , nullptr ) } );
@@ -1494,7 +1536,9 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Load possibly given cuts
 
-  load_cuts( sddp_block );
+  if( ! simulation_mode ) {
+   load_cuts( sddp_block );
+  }
 
   // Eliminate redundant cuts if it is desired
 
