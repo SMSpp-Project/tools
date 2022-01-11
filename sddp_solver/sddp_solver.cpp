@@ -61,7 +61,7 @@
  *
  * \version 0.11
  *
- * \date 29 - 12 - 2021
+ * \date 11 - 01 - 2022
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -686,7 +686,7 @@ void load_cuts( SDDPBlock * sddp_block ) {
   std::stringstream line_stream( line );
 
   // Try to read the stage
-  int stage;
+  Index stage;
   if( ! ( line_stream >> stage ) )
    break;
 
@@ -705,7 +705,7 @@ void load_cuts( SDDPBlock * sddp_block ) {
   const auto num_active_var = polyhedral_function->get_num_active_var();
   PolyhedralFunction::RealVector a( num_active_var );
 
-  int i = 0;
+  Index i = 0;
   double value;
   while( line_stream >> value ) {
    if( i > num_active_var )
@@ -1303,30 +1303,80 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
  std::vector< int > vint_LDSl_WBSCfg;
  vint_LDSl_WBSCfg.reserve( inner_block->get_number_nested_Blocks() );
 
+ /* The vector "required_primal_solution" will store the indices of Blocks
+  * whose primal solutions are required (during the solution process). In
+  * SDDP, only the primal solution of the HydroSystemUnitBlock is necessary
+  * (as only the final volumes of the reservoirs are required during the
+  * solution process). In simulation mode, the primal solutions that are
+  * required are those of the Blocks that link two consecutive stages, which
+  * are HydroSystemUnitBlock, BatteryUnitBlock, and ThermalUnitBlock.
+  *
+  * Notice that, in simulation mode, not all Blocks have their primal
+  * solutions retrieved, which impacts the part of the solution that is output
+  * (see UCBlockSolutionOutput). If the solutions of other Blocks are required
+  * to be output when using LagrangianDualSolver+BundleSolver, then the
+  * indices of these Blocks must be added to the vector
+  * "required_primal_solution".
+  *
+  * This is currently not done due to a limitation of BundleSolver.
+  * BundleSolver does not currently provide primal solutions for easy
+  * components. Therefore, in order to have the primal solution of Blocks
+  * other than HydroSystemUnitBlock, BatteryUnitBlock, and ThermalUnitBlock,
+  * these Blocks must be treated as hard components (and they are currently
+  * treated as easy components). Once BundleSolver is capable of providing
+  * primal solutions of easy components, these Blocks can remain as easy
+  * components and their indices can simply be added to the vector
+  * "required_primal_solution". */
+
+ std::vector< int > required_primal_solution;
+
  int inner_sub_block_index = 0;
  for( auto inner_sub_block : inner_block->get_nested_Blocks() ) {
 
+  if( simulation_mode &&
+      dynamic_cast< BatteryUnitBlock * >( inner_sub_block ) ) {
+
+   required_primal_solution.push_back( inner_sub_block_index );
+
+   // The primal solution of the BatteryUnitBlock is required as the storage
+   // levels link two consecutive stages. Since BundleSolver currently does
+   // not provide primal solutions for easy components, the BatteryUnitBlock
+   // must be treated as a hard component. Once this feature is implemented by
+   // BundleSolver, the BatteryUnitBlock can become an easy component.
+   vint_LDSl_WBSCfg.push_back( ConfigIndex::other_unit );
+   vintNoEasy.push_back( inner_sub_block_index );
+  }
   if( dynamic_cast< ThermalUnitBlock * >( inner_sub_block ) ) {
+
+   if( simulation_mode )
+    required_primal_solution.push_back( inner_sub_block_index );
+
    // ThermalUnitBlock is a non-easy component since there is a specialized
    // solver for it.
    vint_LDSl_WBSCfg.push_back( ConfigIndex::thermal );
    vintNoEasy.push_back( inner_sub_block_index );
   }
   else if( dynamic_cast< HydroSystemUnitBlock * >( inner_sub_block ) ) {
-   // HydroSystemUnitBlock is a non-easy component because we need to
-   // retrieve its solution during the solution process.
-
+   required_primal_solution.push_back( inner_sub_block_index );
    hydro_system_index = inner_sub_block_index;
 
-   vint_LDSl_WBSCfg.push_back( ConfigIndex::hydro );
-
-   if( ! get_var_solution_config )
+   if( ! get_var_solution_config ) {
     // Configuration for get_var_solution of the inner Solver. For the
     // SDDPSolver, only the Solution to the HydroSystemUnitBlock is retrieved
     // (because only the storage levels at the last time instant are needed).
     get_var_solution_config = new SimpleConfiguration< std::vector< int > >
      ( { inner_sub_block_index } );
+   }
 
+   // The HydroSystemUnitBlock could be treated as an easy component. However,
+   // due to a current limitation of BundleSolver, the HydroSystemUnitBlock is
+   // considered a hard component. This is because its primal solution (the
+   // volume of the reservoirs) is required both in SDDP and in simulation
+   // mode, but BundleSolver cannot currently provide primal solutions for
+   // easy components. Once this feature is implemented by BundleSolver, the
+   // HydroSystemUnitBlock can become an easy component.
+
+   vint_LDSl_WBSCfg.push_back( ConfigIndex::hydro );
    vintNoEasy.push_back( inner_sub_block_index );
   }
   else if( force_hard_components &&
@@ -1361,7 +1411,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
                       return pair.first == "vintNoEasy"; } ) ,
      lagrangian_dual_compute_config->vint_pars.end() );
 
-  // Add the vintNoEasy parameter
+  // Add the vintNoEasy parameter that was constructed here
   lagrangian_dual_compute_config->vint_pars.push_back
    ( std::make_pair( "vintNoEasy" , std::move( vintNoEasy ) ) );
  }
@@ -1402,6 +1452,18 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
  Configuration * extra_config = nullptr;
 
+ /* Here we create a Configuration for
+  * LagrangianDualSolver::get_var_solution() that requires the primal
+  * solutions only of certain Blocks. In SDDP, only the primal solution of the
+  * HydroSystemUnitBlock is necessary (as only the final volumes of the
+  * reservoirs are required during the solution process). In simulation mode,
+  * the solutions that are required are those of the Blocks that link two
+  * consecutive stages, which are HydroSystemUnitBlock, BatteryUnitBlock, and
+  * ThermalUnitBlock. */
+
+ get_var_solution_config = new SimpleConfiguration< std::vector< int > >
+  ( required_primal_solution );
+
  if( simulation_mode ) {
   /* In simulation mode, the only part of the dual Solution that is required
    * is that associated with the linking constraints (the set of Constraint
@@ -1411,12 +1473,17 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
   get_dual_solution_config = new SimpleConfiguration< std::vector< int > >;
 
+  // Create the extra Configuration for SDDPGreedySolver.
+
   extra_config = new SimpleConfiguration< std::vector< Configuration * > >
-   ( { nullptr , inner_solver_config , nullptr , get_dual_solution_config } );
+   ( { nullptr , inner_solver_config , get_var_solution_config ,
+      get_dual_solution_config } );
  }
- else
+ else {
+  // Create the extra Configuration for SDDPSolver.
   extra_config = new SimpleConfiguration< std::vector< Configuration * > >
    ( { nullptr , inner_solver_config , get_var_solution_config } );
+ }
 
  compute_config->f_extra_Configuration = extra_config;
 
@@ -1426,7 +1493,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   // variables.
 
   // In SDDP, only the dual variables of the component defined by the
-  // HydroSystemUnit is needed, as all constraints handled by the
+  // HydroSystemUnitBlock are needed, as all constraints handled by the
   // BendersBFunction belong to it.
   auto get_dual_config =
    new SimpleConfiguration< std::vector< std::pair< int , Configuration * > > >
