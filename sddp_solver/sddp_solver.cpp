@@ -1817,7 +1817,7 @@ void multiple_simulations( const netCDF::NcFile & file ) {
     solver->set_log( & std::cout );
 
    auto subgradients_filename_prefix =
-    solver->get_str_par( SDDPGreedySolver::strSubgradientsFile );
+    solver->get_str_par( SDDPGreedySolver::strSimulationData );
 
    solver->set_callback( [sddp_block]( Index stage ) {
     callback( sddp_block , stage );
@@ -1848,7 +1848,7 @@ void multiple_simulations( const netCDF::NcFile & file ) {
    // Set the name of the file that will output the subgradients
 
    if( ! subgradients_filename_prefix.empty()  )
-    solver->set_par( SDDPGreedySolver::strSubgradientsFile ,
+    solver->set_par( SDDPGreedySolver::strSimulationData ,
                      subgradients_filename_prefix + "." + std::to_string( i ) );
 
    // Try to solve the SDDPBlock
