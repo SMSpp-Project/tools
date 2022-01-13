@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Multiple parameters to sddp_solver.
+- Consecutive simulations to sddp_solver.
 - MPI support to sddp_solver.
 - Configuration of LagrangianDualSolver in sddp_solver.
 
