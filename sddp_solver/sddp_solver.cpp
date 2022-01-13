@@ -1856,7 +1856,7 @@ void multiple_simulations( const netCDF::NcFile & file ) {
    while( true ) {
 
     // Simulate
-    solver->compute();
+    const auto status = solver->compute();
 
     if( solver->has_var_solution() ) {
      // A feasible solution has been found
@@ -1869,6 +1869,13 @@ void multiple_simulations( const netCDF::NcFile & file ) {
 
      // Save the random number engine
      random_number_engine = solver->get_random_number_engine();
+
+     // Output simulation status
+     show_simulation_status( status , solver->get_fault_stage() );
+     const auto lb = solver->get_lb();
+     const auto ub = solver->get_ub();
+     std::cout << "Lower bound: " << std::setprecision( 20 ) << lb << std::endl;
+     std::cout << "Upper bound: " << std::setprecision( 20 ) << ub << std::endl;
 
      break;
     }
