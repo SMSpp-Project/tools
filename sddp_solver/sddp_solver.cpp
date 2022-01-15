@@ -7,8 +7,9 @@
  * SDDPSolver or the SDDPGreedySolver. The description of the SDDPBlock must
  * be given in a netCDF file. This tool can be executed as follows:
  *
- *   ./sddp_solver [-s] [-i INDEX] [-n NUMBER] [-r] [-B FILE]
- *                 [-S FILE] [-p PATH] [-c PATH] [-l FILE] [-e] <nc4-file>
+ *   ./sddp_solver [-s] [-i INDEX] [-m NUMBER] [-t STAGE] [-n NUMBER] [-r]
+ *                 [-B FILE] [-S FILE] [-p PATH] [-c PATH] [-l FILE] [-e]
+ *                 <nc4-file>
  *
  * The only mandatory argument is the netCDF file containing the description
  * of the SDDPBlock. This netCDF file can be either a BlockFile or a
@@ -52,16 +53,34 @@
  *
  * t, a_0, a_1, ..., a_k, b
  *
- * where t is a stage (an integer between 0 and time horizon - 1), a_0, ...,
- * a_k are the coefficients of the cut, and b is the constant term of the cut.
+ * where t is a stage (an integer between 0 and time horizon minus 1), a_0,
+ * ..., a_k are the coefficients of the cut, and b is the constant term of the
+ * cut.
  *
  * As a preprocessing, given redundant cuts can be removed by using the -e
  * option. Notice that all cuts will be subject to being removed, whether they
  * are provided in a netCDF file or by the -l option.
  *
+ * There are a few ways to specify the initial state for the first stage
+ * subproblem. This can be done by setting the initial state variable of
+ * SDDPBlock or by setting the initial state parameter of SDDPSolver or
+ * SDDPGreedySolver. When running multiple simulations (when both the -s and
+ * -m options are used), there is an additional way to specify the initial
+ * state. The (final) state of some stage from a simulation can be used as the
+ * initial state for the first stage of the next simulation. The stage at
+ * which the state can be taken to serve as the initial state for the next
+ * simulation can be specified by the -t option. This option must be followed
+ * by an integer number STAGE. If STAGE is between 0 and T-1, where T is the
+ * time horizon of the problem, then the solution (final state) of the
+ * subproblem associated with stage STAGE of a simulation will serve as the
+ * initial state for the first stage subproblem of the next simulation. If
+ * STAGE does not belong to that interval (that is, if it is negative or
+ * greater than or equal to T) or if the -t option is not used, then no
+ * changes are made to the way the initial state is specified.
+ *
  * \version 0.11
  *
- * \date 29 - 12 - 2021
+ * \date 13 - 01 - 2022
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -105,6 +124,8 @@ std::string config_filename_prefix{};
 std::string cuts_filename{};
 long scenario_id = 0;
 long num_sub_blocks_per_stage = 1;
+long number_simulations = 1;
+long initial_solution_stage = -1;
 bool simulation_mode = false;
 bool relax_integrality = false;
 bool eliminate_reduntant_cuts = false;
@@ -138,11 +159,13 @@ void print_help() {
            << "  -h, --help                      Print this help.\n"
            << "  -i, --scenario <index>          The index of the scenario.\n"
            << "  -l, --load-cuts <file>          Load cuts from a file.\n"
+           << "  -m, --num-simulations <number>  Number of simulations to be performed.\n"
            << "  -n, --num-blocks <number>       Number of sub-Blocks per stage.\n"
            << "  -p, --prefix <path>             The prefix for all Block filenames.\n"
            << "  -r, --relax                     Relax integer variables.\n"
            << "  -s, --simulation                Simulation mode.\n"
-           << "  -S, --solvercfg <file>          Solver configuration."
+           << "  -S, --solvercfg <file>          Solver configuration.\n"
+           << "  -t, --stage <stage>             Stage from which initial state is taken."
            << std::endl;
 }
 
@@ -169,7 +192,7 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:c:hei:l:n:p:rsS:";
+ const char * const short_opts = "B:c:hei:l:m:n:p:rsS:t:";
  const option long_opts[] = {
   { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
   { "configdir" ,                required_argument , nullptr , 'c' } ,
@@ -177,11 +200,13 @@ void process_args( int argc , char ** argv ) {
   { "eliminate-redundant-cuts" , no_argument ,       nullptr , 'e' } ,
   { "scenario" ,                 required_argument , nullptr , 'i' } ,
   { "load-cuts" ,                required_argument , nullptr , 'l' } ,
+  { "num-simulations" ,          required_argument , nullptr , 'm' } ,
   { "num-blocks" ,               required_argument , nullptr , 'n' } ,
   { "prefix" ,                   required_argument , nullptr , 'p' } ,
   { "relax" ,                    no_argument ,       nullptr , 'r' } ,
   { "simulation" ,               no_argument ,       nullptr , 's' } ,
   { "solvercfg" ,                required_argument , nullptr , 'S' } ,
+  { "stage" ,                    required_argument , nullptr , 't' } ,
   { nullptr ,                    no_argument ,       nullptr , 0 }
  };
 
@@ -202,9 +227,6 @@ void process_args( int argc , char ** argv ) {
     config_filename_prefix = std::string( optarg );
     Configuration::set_filename_prefix( std::string( optarg ) );
     break;
-   case 'S':
-    solver_config_filename = std::string( optarg );
-    break;
    case 'e':
     eliminate_reduntant_cuts = true;
     break;
@@ -220,6 +242,14 @@ void process_args( int argc , char ** argv ) {
    case 'l':
     cuts_filename = std::string( optarg );
     break;
+   case 'm': {
+    number_simulations = get_long_option();
+    if( number_simulations < 1 ) {
+     std::cout << "The number of simulations must be at least 1." << std::endl;
+     exit( 1 );
+    }
+    break;
+   }
    case 'n': {
     num_sub_blocks_per_stage = get_long_option();
     if( num_sub_blocks_per_stage <= 0 ) {
@@ -232,11 +262,17 @@ void process_args( int argc , char ** argv ) {
    case 'p':
     Block::set_filename_prefix( std::string( optarg ) );
     break;
+   case 'r':
+    relax_integrality = true;
+    break;
    case 's':
     simulation_mode = true;
     break;
-   case 'r':
-    relax_integrality = true;
+   case 'S':
+    solver_config_filename = std::string( optarg );
+    break;
+   case 't':
+    initial_solution_stage = get_long_option();
     break;
    case 'h': // -h or --help
     print_help();
@@ -544,7 +580,7 @@ void simulate( SDDPBlock * sddp_block ) {
 
  if( ! solver )
   throw( std::logic_error( "The Solver for the SDDPBlock must be a "
-                           "SDDPGreedySolver." ) );
+                           "SDDPGreedySolver in simulation mode." ) );
 
  solver->set_callback( [sddp_block]( Index stage ) {
   callback( sddp_block , stage );
@@ -634,7 +670,7 @@ void solve( SDDPBlock * sddp_block ) {
 
  if( ! solver )
   throw( std::logic_error( "The Solver for the SDDPBlock must be a "
-                           "SDDPSolver." ) );
+                           "SDDPSolver in optimization mode." ) );
 
  solver->set_log( &std::cout );
 
@@ -686,7 +722,7 @@ void load_cuts( SDDPBlock * sddp_block ) {
   std::stringstream line_stream( line );
 
   // Try to read the stage
-  int stage;
+  Index stage;
   if( ! ( line_stream >> stage ) )
    break;
 
@@ -705,7 +741,7 @@ void load_cuts( SDDPBlock * sddp_block ) {
   const auto num_active_var = polyhedral_function->get_num_active_var();
   PolyhedralFunction::RealVector a( num_active_var );
 
-  int i = 0;
+  Index i = 0;
   double value;
   while( line_stream >> value ) {
    if( i > num_active_var )
@@ -1303,30 +1339,80 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
  std::vector< int > vint_LDSl_WBSCfg;
  vint_LDSl_WBSCfg.reserve( inner_block->get_number_nested_Blocks() );
 
+ /* The vector "required_primal_solution" will store the indices of Blocks
+  * whose primal solutions are required (during the solution process). In
+  * SDDP, only the primal solution of the HydroSystemUnitBlock is necessary
+  * (as only the final volumes of the reservoirs are required during the
+  * solution process). In simulation mode, the primal solutions that are
+  * required are those of the Blocks that link two consecutive stages, which
+  * are HydroSystemUnitBlock, BatteryUnitBlock, and ThermalUnitBlock.
+  *
+  * Notice that, in simulation mode, not all Blocks have their primal
+  * solutions retrieved, which impacts the part of the solution that is output
+  * (see UCBlockSolutionOutput). If the solutions of other Blocks are required
+  * to be output when using LagrangianDualSolver+BundleSolver, then the
+  * indices of these Blocks must be added to the vector
+  * "required_primal_solution".
+  *
+  * This is currently not done due to a limitation of BundleSolver.
+  * BundleSolver does not currently provide primal solutions for easy
+  * components. Therefore, in order to have the primal solution of Blocks
+  * other than HydroSystemUnitBlock, BatteryUnitBlock, and ThermalUnitBlock,
+  * these Blocks must be treated as hard components (and they are currently
+  * treated as easy components). Once BundleSolver is capable of providing
+  * primal solutions of easy components, these Blocks can remain as easy
+  * components and their indices can simply be added to the vector
+  * "required_primal_solution". */
+
+ std::vector< int > required_primal_solution;
+
  int inner_sub_block_index = 0;
  for( auto inner_sub_block : inner_block->get_nested_Blocks() ) {
 
+  if( simulation_mode &&
+      dynamic_cast< BatteryUnitBlock * >( inner_sub_block ) ) {
+
+   required_primal_solution.push_back( inner_sub_block_index );
+
+   // The primal solution of the BatteryUnitBlock is required as the storage
+   // levels link two consecutive stages. Since BundleSolver currently does
+   // not provide primal solutions for easy components, the BatteryUnitBlock
+   // must be treated as a hard component. Once this feature is implemented by
+   // BundleSolver, the BatteryUnitBlock can become an easy component.
+   vint_LDSl_WBSCfg.push_back( ConfigIndex::other_unit );
+   vintNoEasy.push_back( inner_sub_block_index );
+  }
   if( dynamic_cast< ThermalUnitBlock * >( inner_sub_block ) ) {
+
+   if( simulation_mode )
+    required_primal_solution.push_back( inner_sub_block_index );
+
    // ThermalUnitBlock is a non-easy component since there is a specialized
    // solver for it.
    vint_LDSl_WBSCfg.push_back( ConfigIndex::thermal );
    vintNoEasy.push_back( inner_sub_block_index );
   }
   else if( dynamic_cast< HydroSystemUnitBlock * >( inner_sub_block ) ) {
-   // HydroSystemUnitBlock is a non-easy component because we need to
-   // retrieve its solution during the solution process.
-
+   required_primal_solution.push_back( inner_sub_block_index );
    hydro_system_index = inner_sub_block_index;
 
-   vint_LDSl_WBSCfg.push_back( ConfigIndex::hydro );
-
-   if( ! get_var_solution_config )
+   if( ! get_var_solution_config ) {
     // Configuration for get_var_solution of the inner Solver. For the
     // SDDPSolver, only the Solution to the HydroSystemUnitBlock is retrieved
     // (because only the storage levels at the last time instant are needed).
     get_var_solution_config = new SimpleConfiguration< std::vector< int > >
      ( { inner_sub_block_index } );
+   }
 
+   // The HydroSystemUnitBlock could be treated as an easy component. However,
+   // due to a current limitation of BundleSolver, the HydroSystemUnitBlock is
+   // considered a hard component. This is because its primal solution (the
+   // volume of the reservoirs) is required both in SDDP and in simulation
+   // mode, but BundleSolver cannot currently provide primal solutions for
+   // easy components. Once this feature is implemented by BundleSolver, the
+   // HydroSystemUnitBlock can become an easy component.
+
+   vint_LDSl_WBSCfg.push_back( ConfigIndex::hydro );
    vintNoEasy.push_back( inner_sub_block_index );
   }
   else if( force_hard_components &&
@@ -1361,7 +1447,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
                       return pair.first == "vintNoEasy"; } ) ,
      lagrangian_dual_compute_config->vint_pars.end() );
 
-  // Add the vintNoEasy parameter
+  // Add the vintNoEasy parameter that was constructed here
   lagrangian_dual_compute_config->vint_pars.push_back
    ( std::make_pair( "vintNoEasy" , std::move( vintNoEasy ) ) );
  }
@@ -1402,6 +1488,18 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
  Configuration * extra_config = nullptr;
 
+ /* Here we create a Configuration for
+  * LagrangianDualSolver::get_var_solution() that requires the primal
+  * solutions only of certain Blocks. In SDDP, only the primal solution of the
+  * HydroSystemUnitBlock is necessary (as only the final volumes of the
+  * reservoirs are required during the solution process). In simulation mode,
+  * the solutions that are required are those of the Blocks that link two
+  * consecutive stages, which are HydroSystemUnitBlock, BatteryUnitBlock, and
+  * ThermalUnitBlock. */
+
+ get_var_solution_config = new SimpleConfiguration< std::vector< int > >
+  ( required_primal_solution );
+
  if( simulation_mode ) {
   /* In simulation mode, the only part of the dual Solution that is required
    * is that associated with the linking constraints (the set of Constraint
@@ -1411,12 +1509,17 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
   get_dual_solution_config = new SimpleConfiguration< std::vector< int > >;
 
+  // Create the extra Configuration for SDDPGreedySolver.
+
   extra_config = new SimpleConfiguration< std::vector< Configuration * > >
-   ( { nullptr , inner_solver_config , nullptr , get_dual_solution_config } );
+   ( { nullptr , inner_solver_config , get_var_solution_config ,
+      get_dual_solution_config } );
  }
- else
+ else {
+  // Create the extra Configuration for SDDPSolver.
   extra_config = new SimpleConfiguration< std::vector< Configuration * > >
    ( { nullptr , inner_solver_config , get_var_solution_config } );
+ }
 
  compute_config->f_extra_Configuration = extra_config;
 
@@ -1426,7 +1529,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   // variables.
 
   // In SDDP, only the dual variables of the component defined by the
-  // HydroSystemUnit is needed, as all constraints handled by the
+  // HydroSystemUnitBlock are needed, as all constraints handled by the
   // BendersBFunction belong to it.
   auto get_dual_config =
    new SimpleConfiguration< std::vector< std::pair< int , Configuration * > > >
@@ -1577,6 +1680,230 @@ void process_block_file( const netCDF::NcFile & file ) {
 
 /*--------------------------------------------------------------------------*/
 
+/// returns the final state (solution) of the system at the given \p stage
+std::vector<double> get_final_state( SDDPBlock * block , Index stage ) {
+
+ Index state_size = 0;
+ for( Index i = 0 ; i < block->get_num_polyhedral_function_per_sub_block() ;
+      ++i ) {
+  state_size +=
+   block->get_polyhedral_function( stage , i )->get_num_active_var();
+ }
+
+ std::vector<double> state;
+ state.reserve( state_size );
+
+ for( Index i = 0 ; i < block->get_num_polyhedral_function_per_sub_block() ;
+      ++i ) {
+  const auto polyhedral_function = block->get_polyhedral_function( stage , i );
+  for( const auto & variable : * polyhedral_function ) {
+   state.push_back
+    ( static_cast< const ColVariable & >( variable ).get_value() );
+  }
+ }
+ return state;
+}
+
+/*--------------------------------------------------------------------------*/
+
+void multiple_simulations( const netCDF::NcFile & file ) {
+ std::multimap< std::string , netCDF::NcGroup > blocks = file.getGroups();
+
+ // BlockConfig
+ auto given_block_config = load_BlockConfig();
+
+ BlockConfig * block_config = nullptr;
+ if( given_block_config ) {
+  block_config = given_block_config->clone();
+  block_config->clear();
+ }
+
+ // BlockSolverConfig
+ bool block_solver_config_provided = true;
+ auto solver_config = load_BlockSolverConfig();
+ if( ! solver_config ) {
+  block_solver_config_provided = false;
+  solver_config = build_BlockSolverConfig();
+ }
+
+ auto cleared_solver_config = solver_config->clone();
+ cleared_solver_config->clear();
+
+ // For each Block descriptor
+ for( auto block_description : blocks ) {
+
+  // Simulate
+
+  std::mt19937 random_number_engine;
+  std::vector< double > initial_state;
+
+  for( long i = 0 ; i < number_simulations ; ++i ) {
+
+   /* In the simulation, Blocks of two consecutive stages are linked in such a
+    * way that the final state of the system at one stage affects the system
+    * at the next stage. For example, the initial volumes of the reservoirs
+    * at the first time step of a stage must be equal to those at the last
+    * time step of the previous stage.
+    *
+    * Once the UCBlock associated with some stage has been solved, the final
+    * state of the system is retrieved and used to change the data of the
+    * Blocks associated with the next stage (see the callback() function).
+    *
+    * Part of the data of some Blocks, however, cannot be changed after their
+    * abstract representations have been generated. That is why, in simulation
+    * (SDDPGreedySolver), the UCBlock is Solver-configured after the data
+    * linking two consecutive stages is set, which occurs just before the
+    * UCBlock is solved.
+    *
+    * An example of this data is the time a thermal unit has been on or off
+    * (ThermalUnitBlock::set_init_updown_time), which is not allowed to be
+    * changed after the abstract representation of the ThermalUnitBlock has
+    * been generated.
+    *
+    * This prevents us from reusing the same Blocks in different simulations
+    * and, thus, the Blocks are created at the beginning of each
+    * simulation. */
+
+   // Deserialize the SDDPBlock
+
+   auto sddp_block = new SDDPBlock;
+   sddp_block->set_num_sub_blocks_per_stage( num_sub_blocks_per_stage );
+   sddp_block->deserialize( block_description.second );
+
+   const bool set_initial_state = ( initial_solution_stage >= 0 ) &&
+    ( initial_solution_stage < sddp_block->get_time_horizon() );
+
+   // Configure the SDDPBlock
+
+   bool is_using_lagrangian_dual_solver = false;
+
+   if( given_block_config )
+    given_block_config->apply( sddp_block );
+   else {
+    is_using_lagrangian_dual_solver =
+     using_lagrangian_dual_solver( solver_config );
+
+    configure_Blocks( sddp_block , relax_integrality ,
+                      is_using_lagrangian_dual_solver );
+
+    if( ! block_solver_config_provided ) {
+     block_config = build_BlockConfig( sddp_block );
+     block_config->apply( sddp_block );
+     block_config->clear();
+    }
+   }
+
+   // Configure the Solver
+
+   if( is_using_lagrangian_dual_solver )
+    config_Lagrangian_dual( solver_config , sddp_block );
+
+   solver_config->apply( sddp_block );
+
+   // Set the output stream for the log of the inner Solvers
+
+   set_log( sddp_block , &std::cout );
+
+   // Set some parameters of SDDPGreedySolver
+
+   auto solver = dynamic_cast< SDDPGreedySolver * >
+    ( sddp_block->get_registered_solvers().front() );
+
+   if( ! solver )
+    throw( std::logic_error( "The Solver for the SDDPBlock must be a "
+                             "SDDPGreedySolver in simulation mode." ) );
+
+   if( solver->get_int_par( solver->int_par_str2idx( "intLogVerb" ) ) )
+    solver->set_log( & std::cout );
+
+   auto subgradients_filename_prefix =
+    solver->get_str_par( SDDPGreedySolver::strSimulationData );
+
+   solver->set_callback( [sddp_block]( Index stage ) {
+    callback( sddp_block , stage );
+   });
+
+   if( i > 0 ) {
+    // Set the random number engine
+    solver->set_random_number_engine( random_number_engine );
+
+    if( set_initial_state ) {
+     // If required, set the initial state parameter of SDDPGreedySolver as
+     // the final solution of the last iteration.
+     solver->set_par( SDDPGreedySolver::vdblInitialState ,
+                      std::move( initial_state ) );
+    }
+   }
+
+   // Load possibly given cuts
+
+   if( ! cuts_filename.empty() )
+    solver->set_par( SDDPGreedySolver::strLoadCuts , cuts_filename );
+
+   // Eliminate redundant cuts if it is desired
+
+   if( eliminate_reduntant_cuts )
+    CutProcessing().remove_redundant_cuts( sddp_block );
+
+   // Set the name of the file that will output the subgradients
+
+   if( ! subgradients_filename_prefix.empty()  )
+    solver->set_par( SDDPGreedySolver::strSimulationData ,
+                     subgradients_filename_prefix + "." + std::to_string( i ) );
+
+   // Try to solve the SDDPBlock
+
+   while( true ) {
+
+    // Simulate
+    const auto status = solver->compute();
+
+    if( solver->has_var_solution() ) {
+     // A feasible solution has been found
+
+     if( set_initial_state ) {
+      // Retrieve the solution
+      solver->get_var_solution();
+      initial_state = get_final_state( sddp_block , initial_solution_stage );
+     }
+
+     // Save the random number engine
+     random_number_engine = solver->get_random_number_engine();
+
+     // Output simulation status
+     show_simulation_status( status , solver->get_fault_stage() );
+     const auto lb = solver->get_lb();
+     const auto ub = solver->get_ub();
+     std::cout << "Lower bound: " << std::setprecision( 20 ) << lb << std::endl;
+     std::cout << "Upper bound: " << std::setprecision( 20 ) << ub << std::endl;
+
+     break;
+    }
+   }
+
+   // Destroy the SDDPBlock and the Configurations
+
+   if( block_config )
+    block_config->apply( sddp_block );
+   if( ! given_block_config ) {
+    delete block_config;
+    block_config = nullptr;
+   }
+
+   cleared_solver_config->apply( sddp_block );
+   delete sddp_block;
+
+  }
+ }
+
+ delete block_config;
+ delete given_block_config;
+ delete solver_config;
+ delete cleared_solver_config;
+}
+
+/*--------------------------------------------------------------------------*/
+
 int main( int argc , char ** argv ) {
 
 #ifdef USE_MPI
@@ -1614,7 +1941,12 @@ int main( int argc , char ** argv ) {
 
   case eBlockFile: {
    std::cout << filename << " is a block file." << std::endl;
-   process_block_file( file );
+
+   if( simulation_mode && ( number_simulations > 1 ) )
+    multiple_simulations( file );
+   else
+    process_block_file( file );
+
    break;
   }
 
