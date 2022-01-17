@@ -153,19 +153,19 @@ void print_help() {
            << "  " << exe << " -h | --help\n"
            << std::endl
            << "Options:\n"
-           << "  -B, --blockcfg <file>           Block configuration.\n"
-           << "  -c, --configdir <path>          The prefix for all config filenames.\n"
-           << "  -e, --eliminate-redundant-cuts  Eliminate given redundant cuts.\n"
-           << "  -h, --help                      Print this help.\n"
-           << "  -i, --scenario <index>          The index of the scenario.\n"
-           << "  -l, --load-cuts <file>          Load cuts from a file.\n"
-           << "  -m, --num-simulations <number>  Number of simulations to be performed.\n"
-           << "  -n, --num-blocks <number>       Number of sub-Blocks per stage.\n"
-           << "  -p, --prefix <path>             The prefix for all Block filenames.\n"
-           << "  -r, --relax                     Relax integer variables.\n"
-           << "  -s, --simulation                Simulation mode.\n"
-           << "  -S, --solvercfg <file>          Solver configuration.\n"
-           << "  -t, --stage <stage>             Stage from which initial state is taken."
+           << "  -B, --blockcfg <file>                    Block configuration.\n"
+           << "  -c, --configdir <path>                   The prefix for all config filenames.\n"
+           << "  -e, --eliminate-redundant-cuts           Eliminate given redundant cuts.\n"
+           << "  -h, --help                               Print this help.\n"
+           << "  -i, --scenario <index>                   The index of the scenario.\n"
+           << "  -l, --load-cuts <file>                   Load cuts from a file.\n"
+           << "  -m <number>, --num-simulations <number>  Number of simulations to be performed.\n"
+           << "  -n, --num-blocks <number>                Number of sub-Blocks per stage.\n"
+           << "  -p, --prefix <path>                      The prefix for all Block filenames.\n"
+           << "  -r, --relax                              Relax integer variables.\n"
+           << "  -s, --simulation                         Simulation mode.\n"
+           << "  -S, --solvercfg <file>                   Solver configuration.\n"
+           << "  -t <stage>, --stage <stage>              Stage from which initial state is taken."
            << std::endl;
 }
 
@@ -1505,9 +1505,12 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    * is that associated with the linking constraints (the set of Constraint
    * defined in the UCBlock). Therefore, we create a Configuration for the
    * get_dual_solution() method that ignores the dual solutions of the
-   * sub-Blocks of the UCBlock. */
+   * sub-Blocks of the UCBlock and requires the dual solutions of the linking
+   * constraints. */
 
-  get_dual_solution_config = new SimpleConfiguration< std::vector< int > >;
+  get_dual_solution_config = new SimpleConfiguration
+   < std::vector< std::pair< int , int > > >
+   ( { std::make_pair< int , int >( -1 , -1 ) } );
 
   // Create the extra Configuration for SDDPGreedySolver.
 
