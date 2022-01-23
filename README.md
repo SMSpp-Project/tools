@@ -10,6 +10,7 @@ At the moment we provide:
 - a small utility to change some parameters in a configuration
   file while leaving all the rest unchanged
 
+
 ## Getting started
 
 These instructions will let you build SMS++ Tools on your system.
@@ -41,7 +42,7 @@ make install
 ### Build and install with makefile
 
 Some (but not all) the modules have a hand-made makefile that can be
-manually edited and the used with just
+manually edited and then used with just
 
 ```sh
 make
@@ -50,9 +51,9 @@ make
 
 ## Usage
 
-The Block solver (`block_solver`),
-the Thermal Unit solver (`thermalunit_solver`) and 
-the Unit Commitment solver (`ucblock_solver`) share the same interface:
+The Block solver (`block_solver`), the Thermal Unit solver
+(`thermalunit_solver`) and the Unit Commitment solver (`ucblock_solver`)
+share the same interface:
 
 ```sh
 Usage: <solver-name> [options] <nc4-file>
@@ -64,16 +65,21 @@ Usage: <solver-name> [options] <nc4-file>
   -h, --help                      Print this help.
 ```
 
-See the [`examples`](thermalunit_solver/examples) directory for sample input files and configurations.
+See the [`examples`](thermalunit_solver/examples) directory for sample
+input files and configurations.
 
 ### Block solver
 
-The input netCDF file can be a problem file or a block file:
-- a problem file already contains a Block configuration and a Solver configuration,
-  so if you provide them by command line they will be ignored;
-- a block file needs a Block configuration and a Solver configuration to be solved.
+The input netCDF file can be a problem file or a Block file:
 
-See the [`examples`](thermalunit_solver/examples) directory for sample input files and configurations.
+- a problem file already contains a Block configuration and a Solver
+  configuration, so if you provide them by command line they will be ignored;
+
+- a Block file needs a Block configuration and a Solver configuration to be
+  solved.
+
+See the [`examples`](thermalunit_solver/examples) directory for sample input
+files and configurations.
 
 ### SDDPBlock Solver
 
@@ -94,11 +100,13 @@ Options:
   -S <file>, --solvercfg <file>      Solver configuration.
 ```
 
-The input netCDF file can be a problem file or a block file:
+The input netCDF file can be a problem file or a Block file:
+
 - a problem file already contains a Block configuration and a Solver
   configuration; any Block or Solver configuration provided by command line
   will be ignored;
-- for a block file, if a Block configuration or a Solver configuration is not
+
+- for a Block file, if a Block configuration or a Solver configuration is not
   provided, a default configuration will be used.
 
 The `-c` option specifies the prefix to the paths to all configuration
@@ -106,8 +114,8 @@ files. The `-p` option specifies the prefix to the paths to all files
 specified by the attribute `filename` in the input netCDF file.
 
 The `-s` option indicates whether a simulation should be performed. If this
-option is used, then the SDDPBlock is solved using the
-SDDPGreedySolver. Otherwise, the SDDPBlock is solved by the SDDPSolver.
+option is used, then the SDDPBlock is solved using the SDDPGreedySolver.
+Otherwise, the SDDPBlock is solved by the SDDPSolver.
 
 The `-n` option specifies the number of sub-Blocks of SDDPBlock that must be
 constructed for each stage.
@@ -136,7 +144,7 @@ are provided in a netCDF file or by the `-l` option.
 
 ### Thermal Unit solver / Unit Commitment solver
 
-The input netCDF file must be a block file. If you don't provide Block
+The input netCDF file must be a Block file. If you don't provide Block
 or Solver configurations, default configurations will be used.
 
 ### The `chgcfg` utility
@@ -159,13 +167,19 @@ Usage: chgcfg in-cfg out-cfg [ par1 val1 [ par2 val2 [ ... ] ] ]
 Then, an aritrary number of `par-i val-i` pairs is allowed: each `par-i`
 is checked against the existing parameters in `in-cfg`, and if it is found
 the value `val-i` is put in `out-cfg` following `par-i`, replacing whatever
-is there in `in-file`. Note that each `par-i` *is only replaced once*. That
-*is, the first time (scanning the file from the beginning to the end) that
-the parameter is found it is put in the output file with the replaced value,
-but from then on that parameter is ignored. This allows to replace
-parameters that occur multiple times in the file by specifying them
-multiple times in the command line: the first command-line copy modifies
-the first occurrence in the file and so on.
+is there in `in-file`. Anything that does not contain any of the `par-i` is
+copied over unchanged (save possibly for the comments, see below). Note that
+each `par-i` *is only replaced once*. That is, the first time (scanning the
+file from the beginning to the end) that the parameter is found it is put in
+the output file with the replaced value, but from then on that `par-i` is
+ignored. This allows to replace parameters that occur multiple times in the
+original file by specifying them multiple times in the command line: the
+first command-line copy modifies the first occurrence in the file and so on.
+
+The module has a compile-time option, commanded by the macro BAREBONES in
+`chgcfg.cpp`; if activatwd, the produced configuration file will be
+stripped by all non-necessary comments and comment lines.
+
 
 
 ## Getting help
@@ -173,38 +187,38 @@ the first occurrence in the file and so on.
 If you need support, you want to submit bugs or propose a new feature, you can
 [open a new issue](https://gitlab.com/smspp/tools/-/issues/new).
 
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of
 conduct, and the process for submitting merge requests to us.
 
+
 ## Authors
 
 - **Antonio Frangioni**  
-  *Operations Research Group*  
   Dipartimento di Informatica  
-  Università di Pisa
+  Universita' di Pisa
 
 - **Ali Ghezelsoflu**  
-  *Operations Research Group*  
   Dipartimento di Informatica  
-  Università di Pisa
+  Universita' di Pisa
 
-- **Niccolò Iardella**  
-  *Operations Research Group*  
+- **Niccolo' Iardella**  
   Dipartimento di Informatica  
-  Università di Pisa
+  Universita� di Pisa
 
 - **Rafael Durbano Lobato**  
-  *Operations Research Group*  
   Dipartimento di Informatica  
-  Università di Pisa
+  Universita' di Pisa
+
 
 ## License
 
 This code is provided free of charge under the [GNU Lesser General Public
 License version 3.0](https://opensource.org/licenses/lgpl-3.0.html) -
 see the [LICENSE](LICENSE) file for details.
+
 
 ## Disclaimer
 
