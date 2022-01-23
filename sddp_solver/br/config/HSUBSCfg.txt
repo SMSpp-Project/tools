@@ -1,0 +1,59 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - LPBSCfg.txt - - - - - - - - - - - - - - - -
+#
+# A txt description of a BlockSolverConfig for the HydroSystemUnitBlock
+#
+# Note: this is allowed empty, i.e., to be a BlockSolverConfig with
+#       0 Solver, in which case HydroSystemUnitBlock will be treated as
+#       "easy components" (this is a problem if the HydroSystemUnitBlock is
+#       modified by adding rows, but not for "one-shot" solutions)
+# 
+#   version 1.0 , 13/02/2021
+#
+#   Antonio Frangioni
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+1  # number of (the names of) Solver in this BlockSolverConfig
+# now all the names of the Solver
+CPXMILPSolver
+#SCIPMILPSolver
+
+1  # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig
+#*LPCCfg.txt
+
+# Now all the ComputeConfigs
+# 1st --------------------------------------
+ComputeConfig  # Type of the object
+1  # Differential
+
+1  # Number of integer parameters
+intLogVerb 0
+
+2  # Number of double parameters
+dblAAccSol 1e-04
+dblMaxTime 20000
+
+0  # Number of string parameters
+#strOutputFile hsu.lp
+
+0 # number of vector-of-int parameters
+0 # number of vector-of-double parameters
+0 # number of vector-of-string parameters
+
+# Pointer to the "extra" Configuration
+* # [none]
+# 1st END ----------------------------------
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#- - - - - - - - - - - - - - - - END LPBSCfg.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

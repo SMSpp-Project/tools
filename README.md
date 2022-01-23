@@ -7,6 +7,8 @@ At the moment we provide:
 - a single Thermal Unit solver
 - a UCBlock solver
 - an SDDPBlock solver
+- a small utility to change some parameters in a configuration
+  file while leaving all the rest unchanged
 
 ## Getting started
 
@@ -35,6 +37,16 @@ Optionally, install with:
 ```sh
 make install
 ```
+
+### Build and install with makefile
+
+Some (but not all) the modules have a hand-made makefile that can be
+manually edited and the used with just
+
+```sh
+make
+```
+
 
 ## Usage
 
@@ -126,6 +138,35 @@ are provided in a netCDF file or by the `-l` option.
 
 The input netCDF file must be a block file. If you don't provide Block
 or Solver configurations, default configurations will be used.
+
+### The `chgcfg` utility
+
+```sh
+Usage: chgcfg in-cfg out-cfg [ par1 val1 [ par2 val2 [ ... ] ] ]
+```
+
+`in-cfg` is the input configuration file. The assumptions are:
+
+- `#` is the comment character, and everything from it to the end of the
+  line is comment
+
+- each pair < parameter , value > in the file is at the beginning of a
+  separate line, possibly with trailing whitespaces and followed by comment
+
+`out-cfg` is the output configuration file; it must be different from
+`in_cfg`, and any existing content in the file is deleted.
+
+Then, an aritrary number of `par-i val-i` pairs is allowed: each `par-i`
+is checked against the existing parameters in `in-cfg`, and if it is found
+the value `val-i` is put in `out-cfg` following `par-i`, replacing whatever
+is there in `in-file`. Note that each `par-i` *is only replaced once*. That
+*is, the first time (scanning the file from the beginning to the end) that
+the parameter is found it is put in the output file with the replaced value,
+but from then on that parameter is ignored. This allows to replace
+parameters that occur multiple times in the file by specifying them
+multiple times in the command line: the first command-line copy modifies
+the first occurrence in the file and so on.
+
 
 ## Getting help
 
