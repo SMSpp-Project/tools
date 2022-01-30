@@ -80,7 +80,7 @@
  *
  * \version 0.11
  *
- * \date 13 - 01 - 2022
+ * \date 30 - 01 - 2022
  *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
@@ -1420,8 +1420,13 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    vint_LDSl_WBSCfg.push_back( ConfigIndex::other_unit );
    vintNoEasy.push_back( inner_sub_block_index );
   }
-  else if( force_hard_components &&
+  else if( ( simulation_mode || force_hard_components ) &&
            dynamic_cast< NetworkBlock * >( inner_sub_block ) ) {
+   // The dual solution of the NetworkBlock is part of the required output of
+   // the simulation. Since BundleSolver currently does not provide solutions
+   // for easy components, the NetworkBlock must be treated as a hard
+   // component. Once this feature is implemented by BundleSolver, the
+   // NetworkBlock can become an easy component.
    vint_LDSl_WBSCfg.push_back( ConfigIndex::default_config );
    vintNoEasy.push_back( inner_sub_block_index );
   }
