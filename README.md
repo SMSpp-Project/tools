@@ -87,26 +87,28 @@ files and configurations.
 Usage: sddp_solver [options] <nc4-file>
 
 Options:
-  -B <file>, --blockcfg <file>       Block configuration.
-  -c <path>, --configdir <path>      The prefix for all config filenames.
-  -e, --eliminate-redundant-cuts     Eliminate given redundant cuts.
-  -h, --help                         Print this help.
-  -i <index>, --scenario <index>     The index of the scenario.
-  -l <file>, --load-cuts <file>      Load cuts from a file.
-  -n <number>, --num-blocks <number> Number of sub-Blocks per stage.
-  -p <path>, --prefix <path>         The prefix for all Block filenames.
-  -r, --relax                        Relax integer variables.
-  -s, --simulation                   Simulation mode.
-  -S <file>, --solvercfg <file>      Solver configuration.
+  -B <file>, --blockcfg <file>             Block configuration.
+  -c <path>, --configdir <path>            The prefix for all config filenames.
+  -e, --eliminate-redundant-cuts           Eliminate given redundant cuts.
+  -h, --help                               Print this help.
+  -i <index>, --scenario <index>           The index of the scenario.
+  -l <file>, --load-cuts <file>            Load cuts from a file.
+  -m <number>, --num-simulations <number>  Number of simulations to be performed.
+  -n <number>, --num-blocks <number>       Number of sub-Blocks per stage.
+  -p <path>, --prefix <path>               The prefix for all Block filenames.
+  -r, --relax                              Relax integer variables.
+  -s, --simulation                         Simulation mode.
+  -S <file>, --solvercfg <file>            Solver configuration.
+  -t <stage>, --stage <stage>              Stage from which initial state is taken.
 ```
 
-The input netCDF file can be a problem file or a Block file:
+The input netCDF file can be a problem file or a block file:
 
 - a problem file already contains a Block configuration and a Solver
   configuration; any Block or Solver configuration provided by command line
   will be ignored;
 
-- for a Block file, if a Block configuration or a Solver configuration is not
+- for a block file, if a Block configuration or a Solver configuration is not
   provided, a default configuration will be used.
 
 The `-c` option specifies the prefix to the paths to all configuration
@@ -114,8 +116,8 @@ files. The `-p` option specifies the prefix to the paths to all files
 specified by the attribute `filename` in the input netCDF file.
 
 The `-s` option indicates whether a simulation should be performed. If this
-option is used, then the SDDPBlock is solved using the SDDPGreedySolver.
-Otherwise, the SDDPBlock is solved by the SDDPSolver.
+option is used, then the SDDPBlock is solved using the
+SDDPGreedySolver. Otherwise, the SDDPBlock is solved by the SDDPSolver.
 
 The `-n` option specifies the number of sub-Blocks of SDDPBlock that must be
 constructed for each stage.
@@ -141,6 +143,23 @@ a_k are the coefficients of the cut, and b is the constant term of the cut.
 As a preprocessing, given redundant cuts can be removed by using the `-e`
 option. Notice that all cuts will be subject to being removed, whether they
 are provided in a netCDF file or by the `-l` option.
+
+There are a few ways to specify the initial state for the first stage
+subproblem. This can be done by setting the initial state variable of
+SDDPBlock or by setting the initial state parameter of SDDPSolver or
+SDDPGreedySolver. When running multiple simulations (when both the `-s` and
+`-m` options are used), there is an additional way to specify the initial
+state. The (final) state of some stage from a simulation can be used as the
+initial state for the first stage of the next simulation. The stage at which
+the state can be taken to serve as the initial state for the next simulation
+can be specified by the `-t` option. This option must be followed by an
+integer number STAGE. If STAGE is between 0 and T-1, where T is the time
+horizon of the problem, then the solution (final state) of the subproblem
+associated with stage STAGE of a simulation will serve as the initial state
+for the first stage subproblem of the next simulation. If STAGE does not
+belong to that interval (that is, if it is negative or greater than or equal
+to T) or if the `-t` option is not used, then no changes are made to the way
+the initial state is specified.
 
 ### Thermal Unit solver / Unit Commitment solver
 
