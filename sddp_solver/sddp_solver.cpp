@@ -78,12 +78,7 @@
  * greater than or equal to T) or if the -t option is not used, then no
  * changes are made to the way the initial state is specified.
  *
- * \version 0.11
- *
- * \date 30 - 01 - 2022
- *
  * \author Rafael Durbano Lobato \n
- *         Operations Research Group \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
@@ -1396,14 +1391,6 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    required_primal_solution.push_back( inner_sub_block_index );
    hydro_system_index = inner_sub_block_index;
 
-   if( ! get_var_solution_config ) {
-    // Configuration for get_var_solution of the inner Solver. For the
-    // SDDPSolver, only the Solution to the HydroSystemUnitBlock is retrieved
-    // (because only the storage levels at the last time instant are needed).
-    get_var_solution_config = new SimpleConfiguration< std::vector< int > >
-     ( { inner_sub_block_index } );
-   }
-
    // The HydroSystemUnitBlock could be treated as an easy component. However,
    // due to a current limitation of BundleSolver, the HydroSystemUnitBlock is
    // considered a hard component. This is because its primal solution (the
@@ -1415,8 +1402,12 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    vint_LDSl_WBSCfg.push_back( ConfigIndex::hydro );
    vintNoEasy.push_back( inner_sub_block_index );
   }
-  else if( force_hard_components &&
+  else if( ( simulation_mode || force_hard_components ) &&
            dynamic_cast< IntermittentUnitBlock * >( inner_sub_block ) ) {
+
+   if( simulation_mode )
+    required_primal_solution.push_back( inner_sub_block_index );
+
    vint_LDSl_WBSCfg.push_back( ConfigIndex::other_unit );
    vintNoEasy.push_back( inner_sub_block_index );
   }
@@ -1429,8 +1420,14 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    // NetworkBlock can become an easy component.
    vint_LDSl_WBSCfg.push_back( ConfigIndex::default_config );
    vintNoEasy.push_back( inner_sub_block_index );
+
+   if( simulation_mode )
+    required_primal_solution.push_back( inner_sub_block_index );
   }
   else if( ! do_easy_components ) {
+   if( simulation_mode )
+    required_primal_solution.push_back( inner_sub_block_index );
+
    vintNoEasy.push_back( inner_sub_block_index );
    if( dynamic_cast< UnitBlock * >( inner_sub_block ) )
     vint_LDSl_WBSCfg.push_back( ConfigIndex::other_unit );
