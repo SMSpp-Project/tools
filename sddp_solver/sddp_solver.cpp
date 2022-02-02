@@ -381,7 +381,7 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
            std::to_string( stage ) + " has " +
            std::to_string( unit->get_number_generators() ) ) );
 
- const auto time_horizon = unit->get_time_horizon();
+ const auto time_horizon = previous_unit->get_time_horizon();
 
  std::vector< double > flow_rate( number_generators );
 
@@ -410,7 +410,7 @@ bool update_battery_unit( Block * previous_block , Block * block ,
            " and " + std::to_string( stage ) +
            " do not have the same structure." ) );
 
- const auto time_horizon = unit->get_time_horizon();
+ const auto time_horizon = previous_unit->get_time_horizon();
 
  std::vector< double > initial_power_data =
   { ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
@@ -470,6 +470,8 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
   previous_unit = dynamic_cast< ThermalUnitBlock * >
    ( path.get_element< Block >( previous_uc_block ) );
 
+  time_horizon = previous_unit->get_time_horizon();
+
   if( ! previous_unit )
    throw( std::logic_error
           ( "sddp_solver::update_thermal_block: ThermalUnitBlock not found "
@@ -514,7 +516,7 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
  std::vector< int > init_up_down_time_data = { init_up_down_time };
  unit->set_init_updown_time( init_up_down_time_data.cbegin() );
 
- const auto time_horizon = sddp_block->get_time_horizon();
+ const auto time_horizon = previous_unit->get_time_horizon();
 
  std::vector< double > active_power_data =
   { ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
