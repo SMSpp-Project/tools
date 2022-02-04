@@ -780,11 +780,13 @@ void load_cuts( SDDPBlock * sddp_block ) {
     continue; // no cut for this stage
 
    // We assume that there is only one PolyhedralFunction per stage
-
    auto polyhedral_function =
     sddp_block->get_polyhedral_function( stage , 0 , sub_block_index );
 
-   polyhedral_function->add_rows( std::move( A[ stage ] ) , b[ stage ] );
+   // Copy the A matrix for this stage so that it can be moved
+   auto A_stage = A[ stage ];
+
+   polyhedral_function->add_rows( std::move( A_stage ) , b[ stage ] );
   }
  }
 }
@@ -1745,6 +1747,8 @@ void multiple_simulations( const netCDF::NcFile & file ) {
   std::vector< double > initial_state;
 
   for( long i = 0 ; i < number_simulations ; ++i ) {
+
+   std::cout << "Simulation " << i << "." << std::endl;
 
    /* In the simulation, Blocks of two consecutive stages are linked in such a
     * way that the final state of the system at one stage affects the system
