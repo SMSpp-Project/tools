@@ -1052,13 +1052,13 @@ double InvestmentFunction::compute_kappa_linearization
 
   if( obj_sign * dual_value >= 0 ) {
    // The dual value is associated with the lower bound constraint
-   lambda_min = dual_value;
+   lambda_min = std::abs( dual_value );
    lambda_max = 0;
   }
   else {
    // The dual value is associated with the upper bound constraint
    lambda_min = 0;
-   lambda_max = dual_value;
+   lambda_max = std::abs( dual_value );
   }
 
   // Minimum and maximum total power constraints
@@ -1148,23 +1148,63 @@ void InvestmentFunction::update_linearization_network_blocks( Index stage ) {
   if( const auto dc_network =
       dynamic_cast< const DCNetworkBlock * >( network_block ) ) {
 
+   const auto & constraints = dc_network->get_power_flow_limit_HVDC_bounds();
+
+   if( constraints.empty() )
+    continue;
+
+   // HVDC lines
+
+   /* For each line l, the flow limit constraints on that line are:
+    *
+    *     kappa_l * Pmin_l <= power_flow_l <= kappa_l * Pmax_l
+    *
+    * where power_flow_l is the power flow on the line l and Pmin_l and Pmax_l
+    * are the minimum and maximum power flow on the line l, respectively. */
+
+   /* The dual value of the flow limit constraint on the power flow is
+    * associated with either the lower bound or the upper bound
+    * constraint. This will help determine to which bound the dual is
+    * associated with. */
+   const auto obj_sign =
+    ( dc_network->get_objective_sense() == Objective::eMin ) ? - 1 : 1;
+
    for( Index i = 0 ; i < v_line_indices.size() ; ++i ) {
 
     const auto var_index = v_block_indices.size() + i;
+    const auto line = v_line_indices[ i ];
 
-    // TODO
+    const auto dual = constraints[ line ].get_dual();
+    const auto min_flow = dc_network->get_min_power_flow( line );
+    const auto max_flow = dc_network->get_max_power_flow( line );
 
-    // Finally, update the linearization
+    // Dual value associated with the lower bound constraint.
+    double lambda_min;
 
-    // v_linearization[ var_index ] +=
+    // Dual value associated with the upper bound constraint.
+    double lambda_max;
 
+    if( obj_sign * dual >= 0 ) {
+     // The dual value is associated with the lower bound constraint.
+     lambda_min = std::abs( dual );
+     lambda_max = 0;
+    }
+    else {
+     // The dual value is associated with the upper bound constraint.
+     lambda_min = 0;
+     lambda_max = std::abs( dual );
+    }
+
+    // Finally, update the linearization.
+    v_linearization[ var_index ] +=
+     lambda_min * min_flow - lambda_max * max_flow;
 
    } // end( for each line )
   }
   else {
    // Unrecognized NetworkBlock
-   auto error_message = "InvestmentFunction::update_linearization: "
-    "unrecognized NetworkBlock: " + network_block->classname() + ".";
+   auto error_message = "InvestmentFunction::update_linearization_network_"
+    "blocks: unrecognized NetworkBlock: " + network_block->classname() + ".";
    throw( std::logic_error( error_message ) );
   }
  } // end( for each time instant )
