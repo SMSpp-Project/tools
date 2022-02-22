@@ -496,21 +496,32 @@ int InvestmentFunction::compute( bool changedvars ) {
   throw( std::logic_error
          ( "InvestmentFunction::compute: no Solver attached to sub-Block" ) );
 
+ // For the InvestmentFunction to be correctly computed, the inner Block
+ // cannot be modified by other entities. Therefore, the inner Block must be
+ // locked.
+
+ // Try to lock the inner Block.
+ auto owned = v_Block.front()->is_owned_by( f_id );
+ if( ( ! owned ) && ( ! v_Block.front()->lock( f_id ) ) )
+  return( kError ); // If this does not work, this is clearly an error.
+
  if( generator_node_map.empty() )
   build_generator_node_map();
 
  if( changedvars || ( ! f_blocks_are_updated ) ) {
-  // update the Blocks
+  // Update the Blocks.
 
-  // try to lock the inner Block: if this does not work
-  auto owned = v_Block.front()->is_owned_by( f_id );
-  if( ( ! owned ) && ( ! v_Block.front()->lock( f_id ) ) )
-   return( kError );     // that's clearly an error
-
-  update_blocks();
-
-  if( ! owned )
-   v_Block.front()->unlock( f_id );  // unlock the inner Block
+  try {
+   update_blocks();
+  }
+  catch( const std::exception & e ) {
+   // An error occurred whule updating the Blocks.
+   if( ! owned )
+    v_Block.front()->unlock( f_id );  // unlock the inner Block
+   std::cout << "InvestmentFunction::compute(): an error occurred while "
+    "updating the Blocks: '" << e.what() << "'" << std::endl;
+   return( kError );
+  }
  }
 
  const auto sddp_block = static_cast< SDDPBlock * >( v_Block.front() );
@@ -525,11 +536,19 @@ int InvestmentFunction::compute( bool changedvars ) {
   if( ! solver->has_var_solution() )
    return( f_solver_status );
 
-  solver->get_var_solution();
-
   f_value += solver->get_var_value();
 
-  update_linearization();
+  try {
+   update_linearization();
+  }
+  catch( const std::exception & e ) {
+   // An error occurred while updating the linearization.
+   if( ! owned )
+    v_Block.front()->unlock( f_id );  // unlock the inner Block
+   std::cout << "InvestmentFunction::compute(): an error occurred while "
+    "updating the linearization: '" << e.what() << "'" << std::endl;
+   return( kError );
+  }
  }
 
  // Compute the expectation of the subgradients
@@ -548,6 +567,10 @@ int InvestmentFunction::compute( bool changedvars ) {
   // Update the linearization
   v_linearization[ i ] += v_linear_coefficients[ i ];
  }
+
+ // Unlock the inner Block if it is necessary
+ if( ! owned )
+  v_Block.front()->unlock( f_id );
 
  return( f_solver_status );
 
@@ -579,7 +602,7 @@ Function::FunctionValue InvestmentFunction::get_constant_term( void ) const {
 bool InvestmentFunction::is_convex( void ) const {
  if( v_Block.empty() )
   return false;
- return( get_objective_sense() == Objective::eMin );
+ return( get_inner_block_objective_sense() == Objective::eMin );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -587,7 +610,7 @@ bool InvestmentFunction::is_convex( void ) const {
 bool InvestmentFunction::is_concave( void ) const {
  if( v_Block.empty() )
   return false;
- return( get_objective_sense() == Objective::eMax );
+ return( get_inner_block_objective_sense() == Objective::eMax );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -615,14 +638,14 @@ Function::FunctionValue InvestmentFunction::get_value( void ) const {
  auto solver = get_solver();
  if( solver->has_var_solution() )
   return f_value;
- if( get_objective_sense() == Objective::eMin )
+ if( get_inner_block_objective_sense() == Objective::eMin )
   return Inf< double >();
  return -Inf< double >();
 } // end ( InvestmentFunction::get_value )
 
 /*--------------------------------------------------------------------------*/
 
-int InvestmentFunction::get_objective_sense() const {
+int InvestmentFunction::get_inner_block_objective_sense() const {
  auto inner_block = get_ucblock( 0 );
  assert( inner_block );
  return inner_block->get_objective_sense();
@@ -1200,7 +1223,7 @@ void InvestmentFunction::update_linearization_network_blocks( Index stage ) {
      lambda_min * min_flow - lambda_max * max_flow;
 
    } // end( for each line )
-  }
+  } // end( dynamic_cast< const DCNetworkBlock * > )
   else {
    // Unrecognized NetworkBlock
    auto error_message = "InvestmentFunction::update_linearization_network_"
@@ -1223,8 +1246,8 @@ void InvestmentFunction::update_linearization() {
   if( ucblock_solver->has_var_solution() )
    ucblock_solver->get_var_solution();
   else
-   throw( std::logic_error( "InvestmentFunction::update_linearization: primal "
-                            "solution not available." ) );
+   throw( std::logic_error( "InvestmentFunction::update_linearization: "
+                            "primal solution not available." ) );
  };
 
  auto retrieve_dual_solution = [ this ]( Index stage ) {
@@ -1232,14 +1255,17 @@ void InvestmentFunction::update_linearization() {
   if( ucblock_solver->has_dual_solution() )
    ucblock_solver->get_dual_solution();
   else
-   throw( std::logic_error( "InvestmentFunction::update_linearization: dual "
-                            "solution not available." ) );
+   throw( std::logic_error( "InvestmentFunction::update_linearization: "
+                            "dual solution not available." ) );
  };
 
  for( Index stage = 0 ; stage < num_stages ; ++stage ) {
 
   retrieve_dual_solution( stage );
+
   if( ! v_block_indices.empty() )
+   // The primal solution may only be necessary if there are UnitBlocks
+   // subject to investment.
    retrieve_var_solution( stage );
 
   update_linearization_unit_blocks( stage );

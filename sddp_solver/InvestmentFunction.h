@@ -923,7 +923,7 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
- int get_objective_sense() const;
+ int get_inner_block_objective_sense() const;
 
 /*--------------------------------------------------------------------------*/
 
