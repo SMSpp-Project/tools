@@ -430,6 +430,118 @@ class InvestmentFunction : public C05Function , public Block {
   send_nuclear_modification();
  }
 
+/*--------------------------------------------------------------------------*/
+ /// set a given integer (int) numerical parameter
+ /** Set a given integer (int) numerical parameter. InvestmentFunctiontakes
+  * care of the following parameters:
+  *
+  * - intGPMaxSz: This parameter specifies the maximum number of
+  *               linearizations that can be stored in the global pool. The
+  *               default value for this parameter is defined by the
+  *               C05Function.
+  *
+  * Any other parameter is handled by the C05Function.
+  *
+  * @param par The parameter to be set.
+  *
+  * @return The value of the parameter. */
+
+ void set_par( idx_type par , int value ) override;
+
+/*--------------------------------------------------------------------------*/
+ /// set a given float (double) numerical parameter
+ /** Set a given float (double) numerical parameter. InvestmentFunction takes
+  * care of the following parameters. Any other parameter is handled by the
+  * C05Function.
+  *
+  * - dblAAccMlt
+  *
+  * @param par The parameter to be set.
+  *
+  * @return The value of the parameter. */
+
+ void set_par( idx_type par , double value ) override {
+
+  switch( par ) {
+   case( dblAAccMlt ):
+    AAccMlt = value;
+    break;
+   default: C05Function::set_par( par , value );
+  }
+ }
+
+/** @} ---------------------------------------------------------------------*/
+/*------------------- METHODS FOR HANDLING THE PARAMETERS ------------------*/
+/*--------------------------------------------------------------------------*/
+/** @name Handling the parameters of the InvestmentFunction
+ *  @{ */
+
+ [[nodiscard]] idx_type get_num_int_par() const override {
+  return C05Function::get_num_int_par();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ /// get a specific integer (int) numerical parameter
+ /** Get a specific integer (int) numerical parameter. InvestmentFunction
+  * takes care of the following parameters:
+  *
+  * - intGPMaxSz
+  *
+  * Any other parameter is handled by the C05Function.
+  *
+  * @param par The parameter whose value is desired.
+  *
+  * @return The value of the required parameter. */
+
+ [[nodiscard]] int get_int_par( idx_type par ) const override {
+  switch( par ) {
+   case( intGPMaxSz ): return( global_pool.size() );
+  }
+  return( C05Function::get_int_par( par ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+ /// get a specific float (double) numerical parameter
+ /** Get a specific float (double) numerical parameter. InvestmentFunction
+  * takes care of the following parameters:
+  *
+  * - dblAAccMlt
+  *
+  * Any other parameter is handled by the C05Function.
+  *
+  * @param par The parameter whose value is desired.
+  *
+  * @return The value of the required parameter. */
+
+ [[nodiscard]] double get_dbl_par( idx_type par ) const override {
+  switch( par ) {
+   case( dblAAccMlt ): return( AAccMlt );
+  }
+
+  return( C05Function::get_dbl_par( par ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ [[nodiscard]] int get_dflt_int_par( idx_type par ) const override {
+  return( C05Function::get_dflt_int_par( par ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ [[nodiscard]] idx_type int_par_str2idx( const std::string & name )
+  const override {
+  return( C05Function::int_par_str2idx( name ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ [[nodiscard]] const std::string & int_par_idx2str( idx_type idx )
+  const override {
+  return( C05Function::int_par_idx2str( idx ) );
+ }
+
 /**@} ----------------------------------------------------------------------*/
 /*----------------- METHODS FOR MANAGING THE "IDENTITY" --------------------*/
 /*--------------------------------------------------------------------------*/
@@ -715,12 +827,88 @@ class InvestmentFunction : public C05Function , public Block {
  bool has_linearization( bool diagonal = true ) override final;
 
 /*--------------------------------------------------------------------------*/
+ /// store a linearization in the global pool
+
+ void store_linearization( Index name , ModParam issueMod = eModBlck )
+  override final;
+
+/*--------------------------------------------------------------------------*/
+
+ bool is_linearization_there( Index name ) const override final {
+  return global_pool.is_linearization_there( name );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ bool is_linearization_vertical( Index name ) const override final {
+  return global_pool.is_linearization_vertical( name );
+ }
+
+/*--------------------------------------------------------------------------*/
+ /// stores a combination of the given linearizations
+ /** This method creates a combination of the given set of linearizations,
+  * with the given coefficients, and stores it into the global pool of
+  * linearizations with the given name.
+  *
+  * InvestmentFunction can produce two types of linearizations: diagonal and
+  * vertical ones. For a combination of linearizations to be valid, it must
+  * satisfy one of the following two conditions:
+  *
+  * -# It is a combination involving only vertical linearizations, and each
+  *    coefficient (multiplier) must be nonnegative (actually, greater than or
+  *    equal to - #dblAAccMlt).
+  *
+  * -# It is a combination involving at least one diagonal linearization, each
+  *    coefficient (multiplier) must be nonnegative (actually, greater than or
+  *    equal to - #dblAAccMlt), and the sum of the coefficients of the
+  *    diagonal linearizations must be approximately equal to 1:
+  *
+  *    abs( 1 - sum coefficients of diagonal linearizations ) <= K * #dblAAccMlt
+  *
+  *    where K is the number of linearizations being combined.
+  *
+  * In the first case, the resulting linearization is a vertical one, while in
+  * the second case it is a diagonal linearization. If none of the above two
+  * conditions are met, an exception is thrown. */
+
+ void store_combination_of_linearizations
+ ( c_LinearCombination & coefficients , Index name ,
+   ModParam issueMod = eModBlck ) override final;
+
+/*--------------------------------------------------------------------------*/
+ /// specify which linearization is "the important one"
+
+ void set_important_linearization( LinearCombination && coefficients )
+  override final {
+  global_pool.set_important_linearization( std::move( coefficients ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+ /// return the combination used to form "the important linearization"
+
+ c_LinearCombination & get_important_linearization_coefficients()
+  const override final {
+  return( global_pool.get_important_linearization_coefficients() );
+ }
+
+/*--------------------------------------------------------------------------*/
+ /// delete the given linearization from the global pool of linearizations
+
+ void delete_linearization( Index name ,
+                            ModParam issueMod = eModBlck ) override final;
+
+/*--------------------------------------------------------------------------*/
+
+ void delete_linearizations( Subset && which , bool ordered = true ,
+                             ModParam issueMod = eModBlck ) override final;
+
+/*--------------------------------------------------------------------------*/
 
  void get_linearization_coefficients
  ( FunctionValue * g , Range range = std::make_pair( 0 , Inf<Index>() ) ,
    Index name = Inf<Index>() ) override;
 
-/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+/*--------------------------------------------------------------------------*/
 
  void get_linearization_coefficients
  ( SparseVector & g , Range range = std::make_pair( 0 , Inf<Index>() ) ,
@@ -732,7 +920,7 @@ class InvestmentFunction : public C05Function , public Block {
  ( FunctionValue * g , c_Subset & subset  , bool ordered = false ,
    Index name = Inf<Index>() ) override;
 
-/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+/*--------------------------------------------------------------------------*/
 
  void get_linearization_coefficients
  ( SparseVector & g , c_Subset & subset , bool ordered = false ,
@@ -803,6 +991,14 @@ class InvestmentFunction : public C05Function , public Block {
   return v_line_indices;
  }
 
+/** @} ---------------------------------------------------------------------*/
+/*-------------------- Methods for handling Modification -------------------*/
+/*--------------------------------------------------------------------------*/
+/** @name Methods for handling Modification
+ *  @{ */
+
+ void add_Modification( sp_Mod mod , Observer::ChnlName chnl = 0 ) override;
+
 /**@} ----------------------------------------------------------------------*/
 /*-------------------- PROTECTED PART OF THE CLASS -------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -845,6 +1041,9 @@ class InvestmentFunction : public C05Function , public Block {
  bool f_diagonal_linearization_required = false;
  ///< indicates whether a diagonal linearization is required
 
+ FunctionValue AAccMlt;
+ ///< maximum absolute error in the multipliers of a linear combination
+
  bool f_ignore_modifications = false; ///< ignore any Modification
 
  void * f_id; ///< the "identity" of the InvestmentFunction
@@ -878,6 +1077,201 @@ class InvestmentFunction : public C05Function , public Block {
 /*--------------------------------------------------------------------------*/
 
  private:
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- PRIVATE CLASSES -------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+ /// A convenience class for representing the global pool of linearizations
+ class GlobalPool {
+
+ public:
+
+  static constexpr auto NaN = std::numeric_limits<FunctionValue>::quiet_NaN();
+
+/*--------------------------------------------------------------------------*/
+
+  GlobalPool() = default;
+
+/*--------------------------------------------------------------------------*/
+
+  virtual ~GlobalPool() {}
+
+/*--------------------------------------------------------------------------*/
+  // resizes the global pool
+  /** Resize the global pool to have the given \p size. It is important to
+   * notice that
+   *
+   *         IF THE SIZE OF THE POOL IS BEING DECREASED, ANY LINEARIZATION
+   *         WHOSE name IS GREATER THAN OR EQUAL TO THE GIVEN NEW size IS
+   *         DESTROYED.
+   *
+   * @param size The size of the global pool.
+   */
+
+  void resize( Index size );
+
+/*--------------------------------------------------------------------------*/
+  /// returns the size of the global pool
+
+  Index size() const { return( linearization_constants.size() ); }
+
+/*--------------------------------------------------------------------------*/
+  /// stores the given linearization constant and solution in the global pool
+  /** This function stores the given linearization constant and solution into
+   * the global pool under the given \p name. If the given \p name is invalid,
+   * an exception is thrown. If a Solution is currently stored under the given
+   * \p name, this Solution is destroyed.
+   *
+   * @param constant the value of the linearization constant.
+   *
+   * @param coefficients the coefficients of the linearization.
+   *
+   * @param name the name under which the linearization will be stored.
+   *
+   * @param diagonal indicates whether the linearization is a diagonal one. */
+
+  void store( FunctionValue constant ,
+              std::vector< FunctionValue > coefficients ,
+              Index name , bool diagonal );
+
+/*--------------------------------------------------------------------------*/
+  /// tells if there is a linearization in this GlobalPool with the given name
+  /** This method returns true if \p name is the index (name) of a
+   * linearization currently in this GlobalPool. */
+
+  bool is_linearization_there( Index name ) const;
+
+/*--------------------------------------------------------------------------*/
+ /// tells if the linearization in this GlobalPool with that name is vertical
+ /** This method returns true if \p name is the index (name) of a vertical
+  * linearization currently in this GlobalPool. */
+
+  bool is_linearization_vertical( Index name ) const;
+
+/*--------------------------------------------------------------------------*/
+  /// returns the linearization constant stored under the given name
+  /** This function returns the value of the linearization constant that is
+   * stored under the given \p name. If the given \p name is invalid, an
+   * exception is thrown.
+   *
+   * @param name the name of the desired constant.
+   *
+   * @return the value of the linearization constant that is stored under the
+   *         given \p name. */
+
+  FunctionValue get_linearization_constant( Index name ) const {
+   if( name < size() )
+    return linearization_constants[ name ];
+   throw( std::invalid_argument
+          ( "InvestmentFunction::GlobalPool::get_linearization_constant: "
+            "linearization with name " + std::to_string( name ) +
+            " does not exist." ) );
+  }
+
+/*--------------------------------------------------------------------------*/
+  /// sets the linearization constant under the given name
+  /** This function sets the value of the linearization constant under the
+   * given \p name. If the given \p name is invalid, an exception is thrown.
+   *
+   * @param constant the value of the linearization constant to be stored.
+   *
+   * @param name the name under which the constant will be stored. */
+
+  void set_linearization_constant( FunctionValue constant , Index name ) {
+   if( name >= size() )
+    throw( std::invalid_argument
+           ( "InvestmentFunction::GlobalPool::set_linearization_constant: "
+             "linearization with name " + std::to_string( name ) +
+             " does not exist." ) );
+
+   linearization_constants[ name ] = constant;
+  }
+
+/*--------------------------------------------------------------------------*/
+  /// invalidates all linearizations
+  /** This function invalidates all linearizations, by setting NaN to each
+   * linearization constant currently stored. This means that any
+   * linearization previously computed may no longer be valid. The
+   * linearizations, however, remain stored in this global pool. If they
+   * should be destroyed, explicit calls to delete_linearization() must be
+   * made. */
+
+  void invalidate() {
+   linearization_constants.assign( linearization_constants.size() , NaN );
+  }
+
+/*--------------------------------------------------------------------------*/
+
+  void set_important_linearization( LinearCombination && coefficients ) {
+   important_linearization_lin_comb = std::move( coefficients );
+  }
+
+/*--------------------------------------------------------------------------*/
+  /// return the combination used to form "the important linearization"
+
+  c_LinearCombination & get_important_linearization_coefficients() const {
+   return important_linearization_lin_comb;
+  }
+
+/*--------------------------------------------------------------------------*/
+  /// stores a combination of the linearizations that are already stored
+  /** This method creates a linear combination of a given set of
+   * linearizations (specified by \p linear_combination) and stores it into
+   * the global pool of linearizations with the given \p name (which must be
+   * an integer between 0 and size() - 1). If \p linear_combination is empty,
+   * an exception is thrown. If any of the names in the given \p
+   * linear_combination is invalid, an exception is thrown. If the given \p
+   * name is invalid, an exception is thrown.
+   *
+   * @param linear_combination the LinearCombination containing the names of
+   *        the linearizations and their respective coefficients in the
+   *        combination.
+   *
+   * @param name the name under which the combination of linearizations will
+   *        be stored.
+   *
+   * @param AAccMlt the maximum absolute error in the multipliers. */
+
+  void store_combination_of_linearizations
+  ( c_LinearCombination & linear_combination , Index name ,
+    FunctionValue AAccMlt );
+
+/*--------------------------------------------------------------------------*/
+  /// deletes the linearization with the given name
+  /** This function deletes the linearization with the given \p name. If the
+   * given \p name is invalid, an exception is thrown.
+   *
+   * @param name the name of the linearization to be deleted. */
+
+  void delete_linearization( Index name );
+
+/*--------------------------------------------------------------------------*/
+  /// deletes the linearizations with the given names
+  /** This function deletes the linearizations with the given names given in
+   * \p which. If any given name is invalid, an exception is thrown.
+   *
+   * @param which the names of the linearizations that must be deleted.
+   */
+  void delete_linearizations( Subset & which , bool ordered );
+
+/*--------------------------------------------------------------------------*/
+
+ private:
+
+  std::vector< FunctionValue > linearization_constants;
+  ///< linearization constants
+
+  std::vector< std::vector< FunctionValue > > linearization_coefficients;
+  ///< linearization coefficients
+
+  LinearCombination important_linearization_lin_comb;
+  ///< the linear combination of the important linearization
+
+  std::vector< bool > is_diagonal;
+  ///< indicates whether a linearization is diagonal
+
+ }; // end( class( GlobalPool ) )
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- PRIVATE METHODS -------------------------------*/
@@ -994,6 +1388,9 @@ class InvestmentFunction : public C05Function , public Block {
 /*--------------------------------------------------------------------------*/
 /*---------------------------- PRIVATE FIELDS  -----------------------------*/
 /*--------------------------------------------------------------------------*/
+
+ /// global pool of linearizations
+ GlobalPool global_pool;
 
  /// Name of the netCDF sub-group containing the description of the inner Block
  inline static const std::string BLOCK_NAME = "SDDPBlock";

@@ -79,6 +79,10 @@ InvestmentFunction::InvestmentFunction
  v_block_indices = std::move( block_indices );
  v_line_indices  = std::move( line_indices );
  v_linear_coefficients  = std::move( linear_coefficients );
+
+ // default parameter values
+ AAccMlt = get_dflt_dbl_par( dblAAccMlt );
+ set_par( intGPMaxSz , C05Function::get_dflt_int_par( intGPMaxSz ) );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -168,6 +172,36 @@ void InvestmentFunction::set_variables( VarVector && x ) {
  v_x = std::move( x );
  f_blocks_are_updated = false;
 }  // end( InvestmentFunction::set_variables )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::set_par( const idx_type par , const int value ) {
+ switch( par ) {
+  case( intGPMaxSz ): {
+   if( value < 0 )
+    throw( std::invalid_argument( "InvestmentFunction::set_par: intGPMaxSz "
+                                  "must be non-negative" ) );
+
+   auto old_size = global_pool.size();
+
+   global_pool.resize( value );
+
+   if( f_Observer && ( decltype( old_size )( value ) < old_size ) ) {
+    // The size of the global pool is being reduced. We store in "which" the
+    // indices of the deleted linearizations.
+    Subset which( global_pool.size() - value );
+    std::iota( which.begin() , which.end() , value );
+    f_Observer->add_Modification
+     ( std::make_shared<C05FunctionMod>
+       ( this , C05FunctionMod::GlobalPoolRemoved , std::move( which ) , 0 ) );
+   }
+
+   break;
+  }
+
+  default: C05Function::set_par( par , value );
+ }
+}  // end( InvestmentFunction::set_par )
 
 /*--------------------------------------------------------------------------*/
 /*---- METHODS FOR HANDLING "ACTIVE" Variable IN THE InvestmentFunction ----*/
@@ -634,6 +668,157 @@ bool InvestmentFunction::has_linearization( const bool diagonal ) {
 
 /*--------------------------------------------------------------------------*/
 
+void InvestmentFunction::store_linearization( Index name , ModParam issueMod ) {
+ if( name >= global_pool.size() )
+  throw( std::invalid_argument( "InvestmentFunction::store_linearization: "
+                                "invalid global pool name: " +
+                                std::to_string( name ) ) );
+
+ global_pool.store( get_linearization_constant() , v_linearization , name ,
+                    f_diagonal_linearization_required );
+
+ if( ( ! f_Observer ) || ( ! f_Observer->issue_mod( issueMod ) ) )
+  return;
+
+ f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+                               ( this , C05FunctionMod::GlobalPoolAdded ,
+                                 Subset( { name } ) , 0 ,
+                                 Observer::par2concern( issueMod ) ) ,
+			       Observer::par2chnl( issueMod ) );
+
+} // end InvestmentFunction::store_linearization( Index )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::store_combination_of_linearizations
+( c_LinearCombination & coefficients , Index name , ModParam issueMod ) {
+
+ global_pool.store_combination_of_linearizations( coefficients , name ,
+                                                  AAccMlt );
+
+ if( ( ! f_Observer ) || ( ! f_Observer->issue_mod( issueMod ) ) )
+  return;
+
+ f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+                               ( this , C05FunctionMod::GlobalPoolAdded ,
+                                 Subset( { name } ) , 0 ,
+                                 Observer::par2concern( issueMod ) ) ,
+			       Observer::par2chnl( issueMod ) );
+
+}  // end( InvestmentFunction::store_combination_of_linearizations )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::delete_linearization( const Index name ,
+                                               ModParam issueMod ) {
+ global_pool.delete_linearization( name );
+
+ if( ( ! f_Observer ) || ( ! f_Observer->issue_mod( issueMod ) ) )
+  return;
+
+ f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+                               ( this , C05FunctionMod::GlobalPoolRemoved ,
+                                 Subset( { name } ) , 0 ,
+                                 Observer::par2concern( issueMod ) ) ,
+			       Observer::par2chnl( issueMod ) );
+}  // end( InvestmentFunction::delete_linearization )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::delete_linearizations( Subset && which , bool ordered ,
+                                                ModParam issueMod ) {
+ global_pool.delete_linearizations( which , ordered );
+
+ if( ( ! f_Observer ) || ( ! f_Observer->issue_mod( issueMod ) ) )
+  return;
+
+ f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+                               ( this , C05FunctionMod::GlobalPoolRemoved ,
+                                 std::move( which ) , 0 ,
+                                 Observer::par2concern( issueMod ) ) ,
+			       Observer::par2chnl( issueMod ) );
+}
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::get_linearization_coefficients
+( FunctionValue * g , Range range , Index name ) {
+
+ range.second = std::min( range.second , Index( v_x.size() ) );
+ if( range.second <= range.first )
+  return;
+
+ for( Index i = range.first ; i < range.second ; ++i ) {
+  g[ i - range.first ] = v_linearization[ i ];
+ }
+}  // end( InvestmentFunction::get_linearization_coefficients( * , range ) )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::get_linearization_coefficients
+( SparseVector & g , Range range , Index name ) {
+
+ range.second = std::min( range.second , Index( v_x.size() ) );
+ if( range.second <= range.first )
+  return;
+
+ for( Index i = range.first ; i < range.second ; ++i ) {
+  g.coeffRef( i ) = v_linearization[ i ];
+ }
+}  // end( InvestmentFunction::get_linearization_coefficients( sv , range ) )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::get_linearization_coefficients
+( FunctionValue * g , c_Subset & subset , const bool ordered , Index name ) {
+
+ Index k = 0;
+ for( auto i : subset ) {
+  g[ k++ ] = v_linearization[ i ];
+ }
+}  // end( InvestmentFunction::get_linearization_coefficients( * , subset ) )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::get_linearization_coefficients
+( SparseVector & g , c_Subset & subset , const bool ordered , Index name ) {
+
+ for( auto i : subset ) {
+  g.coeffRef( i ) = v_linearization[ i ];
+ }
+}  // end( InvestmentFunction::get_linearization_coefficients( sv, subset ) )
+
+/*--------------------------------------------------------------------------*/
+
+Function::FunctionValue
+InvestmentFunction::get_linearization_constant( Index name ) {
+
+ // TODO
+
+ if( name == Inf<Index>() ) {
+  // Linearization just computed and not in the global pool yet.
+
+  if( f_diagonal_linearization_required ) {
+   auto alpha = f_value;
+   for( Index i = 0 ; i < v_linear_coefficients.size() ; ++i )
+    alpha -= v_linear_coefficients[ i ] * v_x[ i ]->get_value();
+   return alpha;
+  }
+  else {
+   // "vertical" linearization
+   // TODO
+   //solver->get_dual_direction();
+   return 0;
+  }
+ }
+ else {
+ }
+
+ return 0;
+}  // end( InvestmentFunction::get_linearization_constant )
+
+/*--------------------------------------------------------------------------*/
+
 Function::FunctionValue InvestmentFunction::get_value( void ) const {
  auto solver = get_solver();
  if( solver->has_var_solution() )
@@ -643,6 +828,20 @@ Function::FunctionValue InvestmentFunction::get_value( void ) const {
  return -Inf< double >();
 } // end ( InvestmentFunction::get_value )
 
+/*--------------------------------------------------------------------------*/
+/*-------------------- Methods for handling Modification -------------------*/
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::add_Modification( sp_Mod mod ,
+                                         Observer::ChnlName chnl ) {
+ if( f_ignore_modifications )
+  return;
+ send_nuclear_modification( chnl );
+
+}  // end( InvestmentFunction::add_Modification )
+
+/*--------------------------------------------------------------------------*/
+/*---------------- PRIVATE METHODS OF THE InvestmentFunction ---------------*/
 /*--------------------------------------------------------------------------*/
 
 int InvestmentFunction::get_inner_block_objective_sense() const {
@@ -1276,81 +1475,6 @@ void InvestmentFunction::update_linearization() {
 
 /*--------------------------------------------------------------------------*/
 
-void InvestmentFunction::get_linearization_coefficients
-( FunctionValue * g , Range range , Index name ) {
-
- range.second = std::min( range.second , Index( v_x.size() ) );
- if( range.second <= range.first )
-  return;
-
- for( Index i = range.first ; i < range.second ; ++i ) {
-  g[ i - range.first ] = v_linearization[ i ];
- }
-}  // end( InvestmentFunction::get_linearization_coefficients( * , range ) )
-
-/*--------------------------------------------------------------------------*/
-
-void InvestmentFunction::get_linearization_coefficients
-( SparseVector & g , Range range , Index name ) {
-
- range.second = std::min( range.second , Index( v_x.size() ) );
- if( range.second <= range.first )
-  return;
-
- for( Index i = range.first ; i < range.second ; ++i ) {
-  g.coeffRef( i ) = v_linearization[ i ];
- }
-}  // end( InvestmentFunction::get_linearization_coefficients( sv , range ) )
-
-/*--------------------------------------------------------------------------*/
-
-void InvestmentFunction::get_linearization_coefficients
-( FunctionValue * g , c_Subset & subset , const bool ordered , Index name ) {
-
- Index k = 0;
- for( auto i : subset ) {
-  g[ k++ ] = v_linearization[ i ];
- }
-}  // end( InvestmentFunction::get_linearization_coefficients( * , subset ) )
-
-/*--------------------------------------------------------------------------*/
-
-void InvestmentFunction::get_linearization_coefficients
-( SparseVector & g , c_Subset & subset , const bool ordered , Index name ) {
-
- for( auto i : subset ) {
-  g.coeffRef( i ) = v_linearization[ i ];
- }
-}  // end( InvestmentFunction::get_linearization_coefficients( sv, subset ) )
-
-/*--------------------------------------------------------------------------*/
-
-Function::FunctionValue
-InvestmentFunction::get_linearization_constant( Index name ) {
-
- // TODO
-
- if( name == Inf<Index>() ) {
-  // Linearization just computed and not in the global pool yet.
-
-  if( f_diagonal_linearization_required ) {
-   auto alpha = f_value;
-   for( Index i = 0 ; i < v_linear_coefficients.size() ; ++i )
-    alpha -= v_linear_coefficients[ i ] * v_x[ i ]->get_value();
-   return alpha;
-  }
-  else {
-   // "vertical" linearization
-   // TODO
-   //solver->get_dual_direction();
-   return 0;
-  }
- }
- else {
- }
-
- return 0;
-}  // end( InvestmentFunction::get_linearization_constant )
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- PRIVATE METHODS -------------------------------*/
@@ -1441,11 +1565,161 @@ void InvestmentFunction::update_blocks() {
 void InvestmentFunction::send_nuclear_modification
 ( const Observer::ChnlName chnl ) {
  // "nuclear modification" for Function: everything changed
+ global_pool.invalidate();
  f_blocks_are_updated = false;
  if( f_Observer )
   f_Observer->add_Modification
    ( std::make_shared<FunctionMod>( this , FunctionMod::NaNshift ) , chnl );
 }  // end( InvestmentFunction::send_nuclear_modification )
+
+
+/*--------------------------------------------------------------------------*/
+/*----------------------------- GlobalPool ---------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::resize( Index size ) {
+ linearization_coefficients.resize( size , {} );
+ linearization_constants.resize( size , NaN );
+ is_diagonal.resize( size );
+}  // end( InvestmentFunction::GlobalPool::resize )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::store
+( FunctionValue constant , std::vector< FunctionValue > coefficients ,
+  Index name , bool diagonal_linearization ) {
+ if( name >= size() )
+  throw( std::invalid_argument( "InvestmentFunction::GlobalPool::store: "
+                                "invalid linearization name." ) );
+ linearization_coefficients[ name ] = coefficients;
+ linearization_constants[ name ] = constant;
+ is_diagonal[ name ] = diagonal_linearization;
+}  // end( InvestmentFunction::GlobalPool::store )
+
+/*--------------------------------------------------------------------------*/
+
+bool InvestmentFunction::GlobalPool::is_linearization_there( Index name )
+ const {
+
+ if( name >= size() || std::isnan( linearization_constants[ name ] ) )
+  return false;
+ return true;
+}  // end( InvestmentFunction::GlobalPool::is_linearization_there )
+
+/*--------------------------------------------------------------------------*/
+
+bool InvestmentFunction::GlobalPool::is_linearization_vertical( Index name )
+ const {
+
+ if( name >= size() || std::isnan( linearization_constants[ name ] ) )
+  return false;
+ return( ! is_diagonal[ name ] );
+}  // end( InvestmentFunction::GlobalPool::is_linearization_vertical )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::store_combination_of_linearizations
+( c_LinearCombination & linear_combination , Index name ,
+  FunctionValue AAccMlt ) {
+
+ if( name >= size() )
+  throw( std::invalid_argument
+         ( "InvestmentFunction::GlobalPool::store_combination_of_"
+           "linearizations: invalid global pool name." ) );
+
+ if( linear_combination.empty() )
+  throw( std::invalid_argument
+         ( "InvestmentFunction::GlobalPool::store_combination_of_"
+           "linearizations: linear combination is empty." ) );
+
+ const auto combine = []( std::vector< FunctionValue > & x ,
+                          const std::vector< FunctionValue > & y ,
+                          const FunctionValue multiplier ) {
+  assert( x.size() == y.size() );
+  for( Index i = 0 ; i < x.size() ; ++i )
+   x[ i ] += multiplier * y[ i ];
+ };
+
+ bool diagonal_linearization = false;
+ std::vector< FunctionValue > coefficients;
+ FunctionValue constant = 0;
+ FunctionValue coeff_sum_diagonal = 0;
+
+ for( const auto name_coeff : linear_combination ) {
+  const auto linearization_name = name_coeff.first;
+  const auto coeff = name_coeff.second;
+
+  if( coeff < - AAccMlt ) {
+   throw( std::invalid_argument
+          ( "InvestmentFunction::GlobalPool::store_combination_of_"
+            "linearizations: invalid coefficient for linearization with name " +
+            std::to_string( linearization_name ) + ": " +
+            std::to_string( coeff ) ) );
+  }
+
+  if( coefficients.empty() )
+   coefficients.resize
+    ( linearization_coefficients[ linearization_name ].size() , 0 );
+  else
+   combine( coefficients , linearization_coefficients[ linearization_name ] ,
+            coeff );
+
+  constant += coeff * linearization_constants[ linearization_name ];
+
+  if( is_diagonal[ linearization_name ] ) {
+   coeff_sum_diagonal += coeff;
+   diagonal_linearization = true;
+  }
+ }
+
+ if( diagonal_linearization &&
+     std::abs( FunctionValue( 1 ) - coeff_sum_diagonal ) >
+     AAccMlt * linear_combination.size() ) {
+
+  throw( std::invalid_argument
+         ( "InvestmentFunction::GlobalPool::store_combination_of_"
+           "linearizations: a non-convex combination of diagonal "
+           "linearizations has been provided." ) );
+ }
+
+ this->store( constant , coefficients , name , diagonal_linearization );
+
+} // end( InvestmentFunction::GlobalPool::store_combination_of_linearizations )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::delete_linearization( const Index name ) {
+ if( name >= size() )
+  throw( std::invalid_argument( "GlobalPool::delete_linearization: invalid "
+                                "linearization name: " +
+                                std::to_string( name ) ) );
+
+ linearization_constants[ name ] = NaN;
+ linearization_coefficients[ name ] = {};
+}  // end( InvestmentFunction::GlobalPool::delete_linearization )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::delete_linearizations( Subset & which ,
+                                                            bool ordered ) {
+ if( which.empty() ) {  // delete them all
+  for( Index i = 0 ; i < size() ; ++i )
+   if( is_linearization_there( i ) )
+    delete_linearization( i );
+ }
+ else {                 // delete the given subset
+  if( ! ordered )
+   std::sort( which.begin() , which.end() );
+
+  if( which.back() >= size() )
+   throw( std::invalid_argument( "InvestmentFunction::GlobalPool::delete_linea"
+                                 "rizations: invalid linearization name." ) );
+
+  for( auto i : which )
+   if( is_linearization_there( i ) )
+    delete_linearization( i );
+ }
+}
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- End File InvestmentFunction.cpp ---------------------*/
