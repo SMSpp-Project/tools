@@ -338,7 +338,7 @@ class InvestmentFunction : public C05Function , public Block {
   * using it to "implement itself" should. By not having any Variable, the
   * Observer can no longer do that. */
 
- void clear( void ) override { v_x.clear(); }
+ void clear() override { v_x.clear(); }
 
 /**@} ----------------------------------------------------------------------*/
 /*-------------------------- OTHER INITIALIZATIONS -------------------------*/
@@ -470,7 +470,7 @@ class InvestmentFunction : public C05Function , public Block {
  * the vector v_x of pointers.
  * @{ */
 
- Index get_num_active_var( void ) const override final {
+ Index get_num_active_var() const override final {
   return( v_x.size() );
  }
 
@@ -498,25 +498,25 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
- v_iterator * v_begin( void ) override final {
+ v_iterator * v_begin() override final {
   return( new InvestmentFunction::v_iterator( v_x.begin() ) );
  }
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 
- v_const_iterator * v_begin( void ) const override final {
+ v_const_iterator * v_begin() const override final {
   return( new InvestmentFunction::v_const_iterator( v_x.begin() ) );
  }
 
 /*--------------------------------------------------------------------------*/
 
- v_iterator * v_end( void ) override final {
+ v_iterator * v_end() override final {
   return( new InvestmentFunction::v_iterator( v_x.end() ) );
  }
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 
- v_const_iterator * v_end( void ) const override final {
+ v_const_iterator * v_end() const override final {
   return( new InvestmentFunction::v_const_iterator( v_x.end() ) );
  }
 
@@ -659,13 +659,13 @@ class InvestmentFunction : public C05Function , public Block {
   * not have a sub-Block or its sub-Block does not have a Solver attached to
   * it, then an exception is thrown. */
 
- FunctionValue get_value( void ) const override;
+ FunctionValue get_value() const override;
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
  /// returns a lower estimate of the InvestmentFunction
  /** This method simply returns get_value().  */
 
- FunctionValue get_lower_estimate( void ) const override {
+ FunctionValue get_lower_estimate() const override {
   return( get_value() );
  }
 
@@ -673,14 +673,14 @@ class InvestmentFunction : public C05Function , public Block {
  /// returns an upper estimate of the InvestmentFunction
  /** This method simply returns get_value().  */
 
- FunctionValue get_upper_estimate( void ) const override {
+ FunctionValue get_upper_estimate() const override {
   return( get_value() );
  }
 
 /*--------------------------------------------------------------------------*/
  /// returns the "constant term" of the InvestmentFunction
 
- FunctionValue get_constant_term( void ) const override;
+ FunctionValue get_constant_term() const override;
 
 /*--------------------------------------------------------------------------*/
  /// returns true only if this InvestmentFunction is convex
@@ -689,7 +689,7 @@ class InvestmentFunction : public C05Function , public Block {
   * its sub-Block is maximization, then this method returns false. Otherwise,
   * it returns true. */
 
- bool is_convex( void ) const override;
+ bool is_convex() const override;
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
  /// returns true only if this InvestmentFunction is concave
@@ -698,7 +698,7 @@ class InvestmentFunction : public C05Function , public Block {
   * its sub-Block is minimization, then this method returns false. Otherwise,
   * it returns true. */
 
- bool is_concave( void ) const override;
+ bool is_concave() const override;
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
  /// returns true only if this InvestmentFunction is linear
@@ -707,7 +707,7 @@ class InvestmentFunction : public C05Function , public Block {
   * linear. We do not attempt to find this out and this method simply returns
   * \c false. */
 
- bool is_linear( void ) const override { return( false ); }
+ bool is_linear() const override { return( false ); }
 
 /*--------------------------------------------------------------------------*/
  /// tells whether a linearization is available
@@ -751,7 +751,7 @@ class InvestmentFunction : public C05Function , public Block {
   * definition of this InvestmentFunction). If this InvestmentFunction has no
   * sub-Block, a \c nullptr is returned. */
 
- Block * get_inner_block( void ) const {
+ Block * get_inner_block() const {
   if( v_Block.empty() )
    return( nullptr );
   return( v_Block.front() );
@@ -783,6 +783,24 @@ class InvestmentFunction : public C05Function , public Block {
 
   return dynamic_cast< T * >
    ( v_Block.front()->get_registered_solvers().front() );
+ }
+
+/**@} ----------------------------------------------------------------------*/
+/*-------- METHODS FOR READING THE DATA OF THE InvestmentFunction ----------*/
+/*--------------------------------------------------------------------------*/
+/** @name Reading the data of the InvestmentFunction
+ * @{ */
+
+ /// returns the indices of the UnitBlocks that are subject to investment
+ const std::vector< Index > & get_block_indices() const {
+  return v_block_indices;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ /// returns the indices of the lines that are subject to investment
+ const std::vector< Index > & get_line_indices() const {
+  return v_line_indices;
  }
 
 /**@} ----------------------------------------------------------------------*/
