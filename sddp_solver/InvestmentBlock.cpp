@@ -142,13 +142,21 @@ void InvestmentBlock::generate_abstract_constraints( Configuration * stcc ) {
  for( Index i = 0 ; i < v_constraints.size() ; ++i ) {
   v_constraints[ i ].set_lhs( - Inf< double > () );
   v_constraints[ i ].set_rhs( Inf< double > () );
+  v_constraints[ i ].set_variable( & v_variables[ i ] );
  }
 
  // Lower bound constraints
  if( ! v_lower_bound.empty() ) {
   assert( v_lower_bound.size() == v_constraints.size() );
   for( Index i = 0 ; i < v_constraints.size() ; ++i ) {
-   v_constraints[ i ].set_lhs( v_lower_bound[ i ] );
+
+   if( ( v_lower_bound[ i ] > -Inf< double >() ) &&
+       ( v_lower_bound[ i ] != 0.0 ) ) {
+    assert( v_lower_bound[ i ] != Inf< double >() );
+    v_constraints[ i ].set_lhs( 0.0 );
+   }
+   else
+    v_constraints[ i ].set_lhs( v_lower_bound[ i ] );
   }
  }
 
@@ -156,7 +164,11 @@ void InvestmentBlock::generate_abstract_constraints( Configuration * stcc ) {
  if( ! v_upper_bound.empty() ) {
   assert( v_upper_bound.size() == v_constraints.size() );
   for( Index i = 0 ; i < v_constraints.size() ; ++i ) {
-   v_constraints[ i ].set_rhs( v_upper_bound[ i ] );
+
+   if( v_lower_bound[ i ] > -Inf< double >() )
+    v_constraints[ i ].set_rhs( v_upper_bound[ i ] - v_lower_bound[ i ] );
+   else
+    v_constraints[ i ].set_rhs( v_upper_bound[ i ] );
   }
  }
 

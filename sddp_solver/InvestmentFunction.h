@@ -346,6 +346,50 @@ class InvestmentFunction : public C05Function , public Block {
 /** @name Other initializations
  *  @{ */
 
+ /// set the whole set of parameters of this InvestmentFunction
+ /** The extra Configuration of the given ComputeConfig (see
+  * ComputeConfig::f_extra_Configuration), if not nullptr, is assumed to be of
+  * type SimpleConfiguration< std::map< std::string , Configuration * > >. If
+  * it is not of this type, an exception is thrown. The map in that
+  * SimpleConfiguration is meant to provide pointers to a number of
+  * Configuration, that should be used in different situations. The following
+  * keys, and their corresponding Configuration, are considered:
+  *
+  * - "BlockConfig": a pointer to a BlockConfig to be applied to the inner
+  *    Block of this BendersBFunction.
+  *
+  * - "BlockSolverConfig": a pointer to a BlockSolverConfig to be applied to
+  *    the inner Block of this BendersBFunction.
+  *
+  * If a key that is not any of the above is provided, an exception is
+  * thrown. No pointer is kept by the InvestmentFunction, so the caller can
+  * (and is responsible to) delete any pointer provided.
+  *
+  * If the given pointer to the ComputeConfig is nullptr, then the
+  * Configuration of the InvestmentFunction is reset to its default. This
+  * means that
+  *
+  *  (1) all parameters of the InvestmentFunction are reset to their default
+  *      values;
+  *
+  *  (2) the inner Block (if any) is configured to its default configuration;
+  *
+  *  (3) the Solver of the inner Block (and their sub-Block, recursively) are
+  *      unregistered and deleted.
+  *
+  * If the given pointer to the ComputeConfig is not nullptr but its extra
+  * Configuration is nullptr, then (2) and (3) above are performed. If the
+  * pointer to the BlockConfig (if provided) in the extra Configuration is
+  * nullptr, then (2) above is performed. If the pointer to the
+  * BlockSolverConfig (if provided) in the extra Configuration is nullptr,
+  * then (3) above is performed.
+  *
+  * @param scfg a pointer to a ComputeConfig. */
+
+ void set_ComputeConfig( ComputeConfig *scfg = nullptr ) override;
+
+/*--------------------------------------------------------------------------*/
+
  /// sets the set of active Variable of the InvestmentFunction
  /** Sets the set of active Variable of the InvestmentFunction. This method is
   * basically provided to work in tandem with the methods which only load the
@@ -1072,6 +1116,9 @@ class InvestmentFunction : public C05Function , public Block {
   * belongs (and index between 0 and v_block_indices.size() - 1) and
   * generator_index is the index of the generator within its UnitBlock. */
 
+ std::vector< double > v_lower_bound;
+ ///< lower bound on the value of the active variables
+
 /*--------------------------------------------------------------------------*/
 /*--------------------- PRIVATE PART OF THE CLASS --------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -1380,6 +1427,15 @@ class InvestmentFunction : public C05Function , public Block {
 
  /// returns a pointer to the BendersBFunction associated with the given stage
  BendersBFunction * get_benders_function( Index stage ) const;
+
+/*--------------------------------------------------------------------------*/
+
+ double get_var_value( Index i , bool actual = true ) const {
+  if( ( ! actual ) && ( i < v_lower_bound.size() ) &&
+      ( v_lower_bound[ i ] > -Inf< double >() ) )
+   return v_x[ i ]->get_value() + v_lower_bound[ i ];
+  return v_x[ i ]->get_value();
+ }
 
 /*--------------------------------------------------------------------------*/
 

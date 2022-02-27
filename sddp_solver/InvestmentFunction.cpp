@@ -126,6 +126,14 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
                            "(" + std::to_string( v_x.size() ) + ")." );
  }
 
+ // Deserialize the lower bound on the active variables
+
+ ::deserialize( group , "LowerBound" , { num_var } , v_lower_bound ,
+                true , true );
+
+ if( v_lower_bound.size() == 1 )
+  v_lower_bound.resize( num_var , v_lower_bound.front() );
+
  // Deserialize the linear coeffients of the objective function
 
  if( ::deserialize( group , "LinearCoefficients" , num_var ,
@@ -159,6 +167,107 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- OTHER INITIALIZATIONS -------------------------*/
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::set_default_inner_Block_BlockConfig() {
+ if( auto inner_block = get_inner_block() ) {
+  auto config = new OCRBlockConfig( inner_block );
+  config->clear();
+  config->apply( inner_block );
+  delete config;
+ }
+}
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::set_default_inner_Block_BlockSolverConfig() {
+ if( auto inner_block = get_inner_block() ) {
+  auto solver_config = new RBlockSolverConfig( inner_block );
+  solver_config->clear();
+  solver_config->apply( inner_block );
+  delete solver_config;
+ }
+}
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::set_ComputeConfig( ComputeConfig * scfg ) {
+
+ auto inner_block = get_inner_block();
+ if( ! inner_block )
+  throw( std::logic_error( "InvestmentFunction::set_ComputeConfig: the inner "
+                           "Block is not present." ) );
+
+ if( ! scfg ) {
+  // scfg is nullptr
+  ThinComputeInterface::set_ComputeConfig();
+  set_default_inner_Block_configuration();
+  return;
+ }
+
+ if( ! scfg->f_extra_Configuration ) {
+  // scfg->f_extra_Configuration is nullptr
+  ThinComputeInterface::set_ComputeConfig( scfg );
+  if( ! scfg->f_diff )
+   set_default_inner_Block_configuration();
+  return;
+ }
+
+ auto config_map = dynamic_cast
+  < SimpleConfiguration< std::map< std::string , Configuration * > > * >
+  ( scfg->f_extra_Configuration );
+
+ if( ! config_map )
+  // An invalid extra Configuration has not been provided.
+  throw( std::invalid_argument( "InvestmentFunction::set_ComputeConfig: "
+                                "invalid extra_Configuration." ) );
+
+ ThinComputeInterface::set_ComputeConfig( scfg );
+
+ for( const auto & [ key , config ] : config_map->f_value ) {
+
+  if( key == "BlockConfig" ) {
+   if( ! config ) {
+    if( ! scfg->f_diff )
+     // A BlockConfig for the inner Block was not provided. The inner Block is
+     // configured to its default configuration.
+     set_default_inner_Block_BlockConfig();
+   }
+   else if( auto block_config = dynamic_cast< BlockConfig * >( config ) )
+    // A BlockConfig for the inner Block has been provided. Apply it.
+    block_config->apply( inner_block );
+   else
+    // An invalid Configuration has been provided.
+    throw( std::invalid_argument
+           ( "InvestmentFunction::set_ComputeConfig: the Configuration "
+             "associated with key \"BlockConfig\" is not a BlockConfig." ) );
+  }
+  else if( key == "BlockSolverConfig" ) {
+   if( ! config ) {
+    if( ! scfg->f_diff )
+     // A BlockSolverConfig for the inner Block was not provided. The Solver
+     // of the inner Block (and their sub-Block, recursively) are unregistered
+     // and deleted.
+     set_default_inner_Block_BlockSolverConfig();
+   }
+   else if( auto bsc = dynamic_cast< BlockSolverConfig * >( config ) )
+    // A BlockSolverConfig for the inner Block has been provided. Apply it.
+    bsc->apply( inner_block );
+   else
+    // An invalid Configuration has been provided.
+    throw( std::invalid_argument
+           ( "InvestmentFunction::set_ComputeConfig: the Configuration "
+             "associated with key \"BlockSolverConfig\" is not a "
+             "BlockSolverConfig." ) );
+  }
+  else {
+   // An invalid key has been provided.
+   throw( std::invalid_argument( "InvestmentFunction::set_ComputeConfig: "
+                                 "invalid key: " + key ) );
+  }
+ }
+}
+
 /*--------------------------------------------------------------------------*/
 
 void InvestmentFunction::set_variables( VarVector && x ) {
@@ -539,6 +648,11 @@ int InvestmentFunction::compute( bool changedvars ) {
  if( ( ! owned ) && ( ! v_Block.front()->lock( f_id ) ) )
   return( kError ); // If this does not work, this is clearly an error.
 
+ // Since the inner Solver may need to lock the inner Block, the
+ // InvestmentFunction lends its identity to the inner Solver.
+
+ solver->set_id( f_id );
+
  if( generator_node_map.empty() )
   build_generator_node_map();
 
@@ -596,7 +710,7 @@ int InvestmentFunction::compute( bool changedvars ) {
  for( Index i = 0 ; i < v_linear_coefficients.size() ; ++i ) {
 
   // Update the objective value
-  f_value += v_linear_coefficients[ i ] * v_x[ i ]->get_value();
+  f_value += v_linear_coefficients[ i ] * get_var_value( i );
 
   // Update the linearization
   v_linearization[ i ] += v_linear_coefficients[ i ];
@@ -801,7 +915,7 @@ InvestmentFunction::get_linearization_constant( Index name ) {
   if( f_diagonal_linearization_required ) {
    auto alpha = f_value;
    for( Index i = 0 ; i < v_linear_coefficients.size() ; ++i )
-    alpha -= v_linear_coefficients[ i ] * v_x[ i ]->get_value();
+    alpha -= v_linear_coefficients[ i ] * get_var_value( i );
    return alpha;
   }
   else {
@@ -1504,11 +1618,11 @@ void InvestmentFunction::update_blocks() {
 
    if( dynamic_cast< const ThermalUnitBlock * >( block ) ||
        dynamic_cast< const BatteryUnitBlock * >( block ) ) {
-    block->scale( v_x[ var_index ]->get_value() );
+    block->scale( get_var_value( var_index , false ) );
    }
    else if( auto intermittent_unit =
             dynamic_cast< IntermittentUnitBlock * >( block ) ) {
-    std::vector< double > kappa_vector = { v_x[ var_index ]->get_value() };
+    std::vector< double > kappa_vector = { get_var_value( var_index , false ) };
     intermittent_unit->set_kappa( kappa_vector.cbegin() );
    }
    else {
@@ -1531,7 +1645,7 @@ void InvestmentFunction::update_blocks() {
    std::vector< double > kappa( v_line_indices.size() );
    for( Index i = 0 ; i < v_line_indices.size() ; ++i ) {
     const auto var_index = v_block_indices.size() + i;
-    kappa[ i ] = v_x[ var_index ]->get_value();
+    kappa[ i ] = get_var_value( var_index , false );
    }
 
    // Now update the NetworkBlock for each time instant
