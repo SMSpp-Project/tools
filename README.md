@@ -87,19 +87,19 @@ files and configurations.
 Usage: sddp_solver [options] <nc4-file>
 
 Options:
-  -B <file>, --blockcfg <file>             Block configuration.
-  -c <path>, --configdir <path>            The prefix for all config filenames.
-  -e, --eliminate-redundant-cuts           Eliminate given redundant cuts.
-  -h, --help                               Print this help.
-  -i <index>, --scenario <index>           The index of the scenario.
-  -l <file>, --load-cuts <file>            Load cuts from a file.
-  -m <number>, --num-simulations <number>  Number of simulations to be performed.
-  -n <number>, --num-blocks <number>       Number of sub-Blocks per stage.
-  -p <path>, --prefix <path>               The prefix for all Block filenames.
-  -r, --relax                              Relax integer variables.
-  -s, --simulation                         Simulation mode.
-  -S <file>, --solvercfg <file>            Solver configuration.
-  -t <stage>, --stage <stage>              Stage from which initial state is taken.
+  -B, --blockcfg <file>           Block configuration.
+  -c, --configdir <path>          The prefix for all config filenames.
+  -e, --eliminate-redundant-cuts  Eliminate given redundant cuts.
+  -h, --help                      Print this help.
+  -i, --scenario <index>          The index of the scenario.
+  -l, --load-cuts <file>          Load cuts from a file.
+  -m, --mode <mode>               The mode under which it should run.
+  -n, --num-blocks <number>       Number of sub-Blocks per stage.
+  -p, --prefix <path>             The prefix for all Block filenames.
+  -r, --relax                     Relax integer variables.
+  -S, --solvercfg <file>          Solver configuration.
+  -s, --num-simulations <number>  Number of simulations to be performed.
+  -t, --stage <stage>             Stage from which initial state is taken.
 ```
 
 The input netCDF file can be a problem file or a block file:
@@ -113,21 +113,40 @@ The input netCDF file can be a problem file or a block file:
 
 The `-c` option specifies the prefix to the paths to all configuration
 files. The `-p` option specifies the prefix to the paths to all files
-specified by the attribute `filename` in the input netCDF file.
+specified by the attribute "filename" in the input netCDF file.
 
-The `-s` option indicates whether a simulation should be performed. If this
-option is used, then the SDDPBlock is solved using the
-SDDPGreedySolver. Otherwise, the SDDPBlock is solved by the SDDPSolver.
+The `-m` option indicates the mode under which this solver must operate. The
+possible values for this parameter are 'optimization', 'simulation', and
+'investment'. If the optimization mode is selected, then the given SDDPBlock
+is solved by the SDDPSolver. If the simulation mode is selected, then the
+given SDDPBlock is solved using the SDDPGreedySolver. If the investment mode
+is selected, then the given InvestmentBlock is solved. By default, this solver
+operates in optimization mode.
+
+In simulation mode (i.e., when the `-m simulation` option is used), the `-i`
+option specifies the index of the scenario for which the problem must be
+solved. The index must be a number between 0 and n-1, where n is the number of
+scenarios in the SDDPBlock. If this index is not provided, then the problem is
+solved for the first scenario. Also in simulation mode, the `-s` option
+indicates that consecutive simulations must be performed. Consecutive
+simulations are simulations which are launched in sequence, one after the
+other, and which are linked by the storage levels. The final state of some
+stage of a simulation is used as the initial state for the next
+simulation. See the comments below for more details. If the value NUMBER
+provided by this option is greater than 1, then NUMBER consecutive simulations
+are performed.
+
+The `-r` option indicates that the integrality constraints over the variables
+must be relaxed.
 
 The `-n` option specifies the number of sub-Blocks of SDDPBlock that must be
 constructed for each stage.
 
-In simulation mode (i.e., when the `-s` option is used), the `-i` option
-specifies the index of the scenario for which the problem must be solved. The
-index must be a number between 0 and n-1, where n is the number of scenarios
-in the SDDPBlock. If this index is not provided, then the problem is solved
-for the first scenario. Also in simulation mode, the `-r` option indicates
-that the integrality constraints over the variables must be relaxed.
+The `-B` and `-S` options are only considered if the given netCDF file is a
+BlockFile. The `-B` option specifies a BlockConfig file to be applied to every
+SDDPBlock; while the `-S` option specifies a BlockSolverConfig file for every
+SDDPBlock. If each of these options is not provided when the given netCDF file
+is a BlockFile, then default configurations are considered.
 
 Initial cuts can be provided by using the `-l` option. This option must be
 followed by the path to the file containing the initial cuts. This file must
@@ -135,10 +154,13 @@ have the following format. The first line contains a header and its content is
 ignored. Each of the following lines represent a cut and has the following
 format:
 
+```
 t, a_0, a_1, ..., a_k, b
+```
 
-where t is a stage (an integer between 0 and time horizon - 1), a_0, ...,
-a_k are the coefficients of the cut, and b is the constant term of the cut.
+where `t` is a stage (an integer between 0 and time horizon minus 1), `a_0`,
+..., `a_k` are the coefficients of the cut, and `b` is the constant term of
+the cut.
 
 As a preprocessing, given redundant cuts can be removed by using the `-e`
 option. Notice that all cuts will be subject to being removed, whether they
@@ -147,19 +169,19 @@ are provided in a netCDF file or by the `-l` option.
 There are a few ways to specify the initial state for the first stage
 subproblem. This can be done by setting the initial state variable of
 SDDPBlock or by setting the initial state parameter of SDDPSolver or
-SDDPGreedySolver. When running multiple simulations (when both the `-s` and
-`-m` options are used), there is an additional way to specify the initial
-state. The (final) state of some stage from a simulation can be used as the
-initial state for the first stage of the next simulation. The stage at which
-the state can be taken to serve as the initial state for the next simulation
-can be specified by the `-t` option. This option must be followed by an
-integer number STAGE. If STAGE is between 0 and T-1, where T is the time
-horizon of the problem, then the solution (final state) of the subproblem
-associated with stage STAGE of a simulation will serve as the initial state
-for the first stage subproblem of the next simulation. If STAGE does not
-belong to that interval (that is, if it is negative or greater than or equal
-to T) or if the `-t` option is not used, then no changes are made to the way
-the initial state is specified.
+SDDPGreedySolver. When running multiple simulations (when the `-s` option is
+used in simulation mode, i.e., with `-m simulation`), there is an additional
+way to specify the initial state. The (final) state of some stage from a
+simulation can be used as the initial state for the first stage of the next
+simulation. The stage at which the state can be taken to serve as the initial
+state for the next simulation can be specified by the `-t` option. This option
+must be followed by an integer number STAGE. If STAGE is between 0 and T-1,
+where T is the time horizon of the problem, then the solution (final state) of
+the subproblem associated with stage STAGE of a simulation will serve as the
+initial state for the first stage subproblem of the next simulation. If STAGE
+does not belong to that interval (that is, if it is negative or greater than
+or equal to T) or if the `-t` option is not used, then no changes are made to
+the way the initial state is specified.
 
 ### Thermal Unit solver / Unit Commitment solver
 
