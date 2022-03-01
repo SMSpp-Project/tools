@@ -730,6 +730,35 @@ class InvestmentFunction : public C05Function , public Block {
  void remove_variables( Subset && indices , bool ordered = false ,
                         ModParam issueMod = eModBlck ) override final;
 
+/*--------------------------------------------------------------------------*/
+
+ /// it informs the InvestmentFunction whether the bounds were reformulated
+ /** This functions informs the InvestmentFunction whether the bounds on the
+  * active variables have been reformulated.
+  *
+  * The active variables of this InvestmentFunction may have "natural" lower
+  * and upper bounds in the model in which they are defined. That is, for each
+  * active variable x, there may be l and u such that x must satisfy
+  *
+  *     l <= x <= u.
+  *
+  * These natural bounds, however, may have been reformulated such that x
+  * becomes a nonnegative variable satisfying
+  *
+  *     0 <= x <= u - l
+  *
+  * if the lower bound l is finite. This function informs the
+  * InvestmentFunction whether the natural bounds on the active variables have
+  * been reformulated.
+  *
+  * @param reformulated If true, this means that the bounds on the active
+  *        variables have been reformulated. Otherwise, the bounds are the
+  *        "natural" ones. */
+
+ void reformulated_bounds( bool reformulated ) {
+  f_reformulated_bounds = reformulated;
+ }
+
 /** @} ---------------------------------------------------------------------*/
 /*----------- METHODS FOR Saving THE DATA OF THE InvestmentFunction --------*/
 /*--------------------------------------------------------------------------*/
@@ -1090,6 +1119,22 @@ class InvestmentFunction : public C05Function , public Block {
 
  bool f_ignore_modifications = false; ///< ignore any Modification
 
+ bool f_reformulated_bounds = false;
+ ///< indicates whether the bounds on the active variables were reformulated
+ /**< The active variables of this InvestmentFunction may have natural lower
+  * and upper bounds in the model in which they are defined. That is, for each
+  * active variable x, there may be l and u such that x must satisfy
+  *
+  *     l <= x <= u.
+  *
+  * These natural bounds, however, may have been reformulated such that x
+  * becomes a nonnegative variable satisfying
+  *
+  *     0 <= x <= u - l
+  *
+  * if the lower bound l is finite. This bool variable thus indicates whether
+  * the natural bounds on the active variables have been reformulated. */
+
  void * f_id; ///< the "identity" of the InvestmentFunction
 
  double f_value;
@@ -1103,6 +1148,9 @@ class InvestmentFunction : public C05Function , public Block {
 
  std::vector< double > v_linearization;
  ///< linearization associated with the most recent call to compute()
+
+ double f_linearization_constant;
+ ///< linearization constant associated with the most recent call to compute()
 
  std::vector< double > v_linear_coefficients;
  ///< linear coefficients of the active Variable
@@ -1395,8 +1443,22 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
+ /// returns the contribution to the linearization by the given Block
+ /** This function computes and returns the contribution to the linearization
+  * by the given IntermittentUnitBlock, considering the constraints that are
+  * affected by kappa.
+  *
+  * @param intermittent_unit A pointer to the IntermittentUnitBlock.
+  *
+  * @param var_index The index of the active Variable associated with the
+  *        IntermittentUnitBlock's kappa.
+  *
+  * @return the contribution to the linearization by the given
+  *         IntermittentUnitBlock, considering the constraints that are
+  *         affected by kappa. */
+
  double compute_kappa_linearization
- ( const IntermittentUnitBlock * intermittent_unit );
+ ( IntermittentUnitBlock * intermittent_unit , Index var_index );
 
 /*--------------------------------------------------------------------------*/
 
@@ -1430,11 +1492,51 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
+ /// returns the value of the i-th active variable
+ /** This function returns the value of the i-th active variable, possibly
+  * taking into account its lower bound. If \p atual is \c true, then this
+  * function returs the variable of the i-th active variable. Otherwise, if
+  * the lower bound for this variable is finite, then this function returns
+  * the value of this active variable plus its lower bound.
+  *
+  * This function is useful because the model to which this variable belongs
+  * may have been reformulated as follows. This active variable, let us call
+  * it x, may be subject to lower and upper bounds, so that it must satisfy
+  *
+  *     l <= x <= u
+  *
+  * in the model in which it is defined. However, this model may have been
+  * reformulated in such a way that, if the lower bound l is finite, this
+  * variable becomes a nonnegative variable which must then satisfy
+  *
+  *     0 <= x <= u - l.
+  *
+  * Thus, if the model have been reformulated in this way, l is finite
+  * (actually, not minus infinity), and \p actual is false, then this function
+  * returns x + l. Otherwise, it returns the value of x. */
+
  double get_var_value( Index i , bool actual = true ) const {
-  if( ( ! actual ) && ( i < v_lower_bound.size() ) &&
+  if( f_reformulated_bounds && ( ! actual ) && ( i < v_lower_bound.size() ) &&
       ( v_lower_bound[ i ] > -Inf< double >() ) )
    return v_x[ i ]->get_value() + v_lower_bound[ i ];
   return v_x[ i ]->get_value();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ /// returns the lower bound for the given active variable
+ /** This function returns the lower bound for the value of the i-th active
+  * variable of this InvestmentFunction.
+  *
+  * @para i The index of an active variable of this InvestmentFunction.
+  *
+  * @return the lower bound for the value of the i-th active variable of this
+  *         InvestmentFunction. */
+
+ double get_var_lower_bound( Index i ) const {
+  if( i < v_lower_bound.size() )
+   return v_lower_bound[ i ];
+  return -Inf< double >();
  }
 
 /*--------------------------------------------------------------------------*/

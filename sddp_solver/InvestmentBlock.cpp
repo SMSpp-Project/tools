@@ -137,6 +137,18 @@ void InvestmentBlock::generate_abstract_constraints( Configuration * stcc ) {
  if( v_lower_bound.empty() && v_upper_bound.empty() )
   return; // there is no bound constraint
 
+ f_reformulate_bounds = 0;
+ auto config = dynamic_cast<SimpleConfiguration< int > *>( stcc );
+ if( ( ! config ) && f_BlockConfig )
+  config = dynamic_cast< SimpleConfiguration< int > * >
+   ( f_BlockConfig->f_static_constraints_Configuration );
+ if( config )
+  f_reformulate_bounds = config->f_value;
+
+ if( auto function =
+     dynamic_cast< InvestmentFunction * >( objective.get_function() ) )
+  function->reformulated_bounds( f_reformulate_bounds );
+
  // Initialize the constraints
  v_constraints.resize( v_variables.size() );
  for( Index i = 0 ; i < v_constraints.size() ; ++i ) {
@@ -150,8 +162,7 @@ void InvestmentBlock::generate_abstract_constraints( Configuration * stcc ) {
   assert( v_lower_bound.size() == v_constraints.size() );
   for( Index i = 0 ; i < v_constraints.size() ; ++i ) {
 
-   if( ( v_lower_bound[ i ] > -Inf< double >() ) &&
-       ( v_lower_bound[ i ] != 0.0 ) ) {
+   if( f_reformulate_bounds && ( v_lower_bound[ i ] > -Inf< double >() ) ) {
     assert( v_lower_bound[ i ] != Inf< double >() );
     v_constraints[ i ].set_lhs( 0.0 );
    }
@@ -165,7 +176,8 @@ void InvestmentBlock::generate_abstract_constraints( Configuration * stcc ) {
   assert( v_upper_bound.size() == v_constraints.size() );
   for( Index i = 0 ; i < v_constraints.size() ; ++i ) {
 
-   if( v_lower_bound[ i ] > -Inf< double >() )
+   if( f_reformulate_bounds && ( i < v_lower_bound.size() ) &&
+       ( v_lower_bound[ i ] > -Inf< double >() ) )
     v_constraints[ i ].set_rhs( v_upper_bound[ i ] - v_lower_bound[ i ] );
    else
     v_constraints[ i ].set_rhs( v_upper_bound[ i ] );

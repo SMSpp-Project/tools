@@ -149,6 +149,7 @@ public:
  void set_function( InvestmentFunction * function ,
                     c_ModParam issueMod = eModBlck ,
                     bool deleteold = true ) {
+  function->reformulated_bounds( f_reformulate_bounds );
   objective.set_function( function , issueMod , deleteold );
  }
 
@@ -157,6 +158,37 @@ public:
  void generate_abstract_variables( Configuration *stvv = nullptr ) override;
 
 /*--------------------------------------------------------------------------*/
+
+ /// generate the static constraint of the InvestmentBlock
+ /** This function generates the abstract constraints of the InvestmentBlock,
+  * which consists in lower and upper bounds on the values of the variables.
+  *
+  * If no lower bound has been provided, then -inf is the lower bound for each
+  * variable. If no upper bound has been provided, then +inf is the upper
+  * bound for each variable.
+  *
+  * If lower and upper bounds have not been provided, then the variables are
+  * free and no constraint is generated. Otherwise, for each variable x[ i ],
+  * the following constraints are generated
+  *
+  *     lower_bound[ i ] <= x[ i ] <= upper_bound[ i ].
+  *
+  * The given Configuration \p stcc or the Configuration for the static
+  * constraints present in the BlockConfig of this InvestmentBlock can be used
+  * to indicate that the bound constraints must be reformulated as
+  * follows. For each i, if lower_bound[ i ] is finite, the above constraint
+  * can be replaced by
+  *
+  *     0 <= x[ i ] <= upper_bound[ i ] - lower_bound[ i ].
+  *
+  * If \p stcc is not nullptr and it is a SimpleConfiguration<int>, or if
+  * f_BlockConfig->f_static_constraints_Configuration is not nullptr and it is
+  * a SimpleConfiguration<int>, then the f_value (an int) indicates whether
+  * the bounds must be reformulated. If the f_value is nonzero, then the
+  * bounds are reformulated as above.
+  *
+  * @param stcc A pointer to a Configuration determining whether the bounds
+  *        must be reformulated. */
 
  void generate_abstract_constraints( Configuration *stcc = nullptr ) override;
 
@@ -395,6 +427,9 @@ protected:
 
  /// The sense of the Objective
  int f_objective_sense = Objective::eMin;
+
+ /// It indicates whether the bound constraints must be reformulated
+ int f_reformulate_bounds = 0;
 
  /// The Objective of this InvestmentBlock
  FRealObjective objective;
