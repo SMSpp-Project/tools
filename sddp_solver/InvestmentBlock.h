@@ -105,14 +105,14 @@ public:
   *   i-th element of this vector provides the lower bound on the i-th
   *   Variable of this InvestmentBlock. This variable is optional. If it is
   *   not provided, then we assume that LowerBound[i] = -inf for all i in {0,
-  *   ..., NumVar - 1}.  *
+  *   ..., NumVar - 1}.
   *
   * - The variable "UpperBound", of type netCDF::NcDouble(), which is either a
   *   scalar or indexed over "NumVar". If it is a scalar, then we assume that
   *   UpperBound[i] = UpperBound[0] for all i in {0, ..., NumVar - 1}. The
   *   i-th element of this vector provides the upper bound on the i-th
   *   Variable of this InvestmentBlock. This variable is optional. If it is
-  *   not provided, then we assume that UpperBound[i] = -inf for all i in {0,
+  *   not provided, then we assume that UpperBound[i] = +inf for all i in {0,
   *   ..., NumVar - 1}.
   *
   * - The dimension "ObjectiveSense", which indicates the sense of the
@@ -262,6 +262,13 @@ public:
   return objective.get_function();
  }
 
+/*--------------------------------------------------------------------------*/
+
+ /// returns the lower bound on each active Variable
+ const std::vector< double > & get_variable_lower_bound() const {
+  return v_lower_bound;
+ }
+
 /**@} ----------------------------------------------------------------------*/
 /*----------- METHODS DESCRIBING THE BEHAVIOR OF A InvestmentBlock ---------*/
 /*--------------------------------------------------------------------------*/
@@ -399,7 +406,7 @@ protected:
 /*---------------------------- PROTECTED METHODS ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
- void load( std::istream &input ) override {
+ void load( std::istream &input , char frmt = 0 ) override {
   throw( std::logic_error( "InvestmentBlock::load(): not implemented yet." ) );
  }
 

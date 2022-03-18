@@ -813,6 +813,14 @@ class InvestmentFunction : public C05Function , public Block {
   *   optional. If it is not provided then all coefficients are considered to
   *   be zero.
   *
+  * - The variable "LowerBound", of type netCDF::NcDouble(), which is either a
+  *   scalar or indexed over "NumVar". If it is a scalar, then we assume that
+  *   LowerBound[i] = LowerBound[0] for all i in {0, ..., NumVar - 1}. The
+  *   i-th element of this vector provides the lower bound on the i-th
+  *   Variable of this InvestmentBlock. This variable is optional. If it is
+  *   not provided, then we assume that LowerBound[i] = -inf for all i in {0,
+  *   ..., NumVar - 1}.
+  *
   * - The group "SDDPBlock", containing the description of the inner Block. */
 
  void serialize( netCDF::NcGroup & group ) const override;
@@ -1097,7 +1105,7 @@ class InvestmentFunction : public C05Function , public Block {
  /// load the InvestmentFunction out of an input stream
  /** This method loads the InvestmentFunction out of an input stream. */
 
- void load( std::istream &input ) override final;
+ void load( std::istream &input , char frmt = 0 ) override final;
 
 /**@} ----------------------------------------------------------------------*/
 /*--------------------------- PROTECTED FIELDS  ----------------------------*/

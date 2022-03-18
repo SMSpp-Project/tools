@@ -59,7 +59,7 @@ SMSpp_insert_in_factory_cpp_1( InvestmentFunction );
 /*---------------------------------TODO-------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-void InvestmentFunction::load( std::istream &input ) {
+void InvestmentFunction::load( std::istream &input , char frmt ) {
  throw( std::logic_error( "InvestmentFunction::load(): "
                           "not implemented yet." ) );
 }
@@ -724,10 +724,17 @@ int InvestmentFunction::compute( bool changedvars ) {
  for( Index i = 0 ; i < v_linear_coefficients.size() ; ++i ) {
 
   // Update the objective value
-  f_value += v_linear_coefficients[ i ] * get_var_value( i );
+  f_value += v_linear_coefficients[ i ] * get_var_value( i , false );
 
   // Update the linearization
   v_linearization[ i ] += v_linear_coefficients[ i ];
+ }
+
+ for( Index i = 0 ; i < v_linear_coefficients.size() ; ++i ) {
+  if( f_reformulated_bounds && ( i < v_lower_bound.size() ) &&
+      ( v_lower_bound[ i ] > -Inf< double >() ) ) {
+   f_linearization_constant += v_linear_coefficients[ i ] * v_lower_bound[ i ];
+  }
  }
 
  // Unlock the inner Block if it is necessary
@@ -944,12 +951,12 @@ InvestmentFunction::get_linearization_constant( Index name ) {
 
   if( f_diagonal_linearization_required ) {
    auto alpha = f_value;
-   for( Index i = 0 ; i < v_linear_coefficients.size() ; ++i ) {
-    alpha -= v_linear_coefficients[ i ] * get_var_value( i );
+   for( Index i = 0 ; i < v_linearization.size() ; ++i ) {
+    alpha -= v_linearization[ i ] * get_var_value( i );
    }
 
-   return f_linearization_constant;
-   //return alpha;
+   //return f_linearization_constant;
+   return alpha;
   }
   else {
    throw( std::logic_error( "InvestmentFunction::get_linearization_constant: "
@@ -1368,7 +1375,7 @@ double InvestmentFunction::compute_kappa_linearization
   *
   * - The minimum total amount of power produced by the unit:
   *
-  *   ( - p^{ac}_{t} + p^{pr}_{t} + p^{sc}_{t} ) <= - kappa * P^{mn}_{t}
+  *   kappa * P^{mn}_{t} <= p^{ac}_{t} - p^{pr}_{t} - p^{sc}_{t}
   *
   * - The maximum total amount of power produced by the unit:
   *
@@ -1431,26 +1438,32 @@ double InvestmentFunction::compute_kappa_linearization
   double lambda_min;
   double lambda_max;
 
-  if( obj_sign * bound_dual >= 0 ) {
+  if( active_power_bound_constraints[ t ].get_lhs() ==
+      active_power_bound_constraints[ t ].get_rhs() ) {
+   // Equality constraint
+   lambda_min = 0;
+   lambda_max = bound_dual;
+  }
+  else if( obj_sign * bound_dual >= 0 ) {
    // The dual value is associated with the lower bound constraint
-   lambda_min = bound_dual;
+   lambda_min = std::abs( bound_dual );
    lambda_max = 0;
   }
   else {
    // The dual value is associated with the upper bound constraint
    lambda_min = 0;
-   lambda_max = bound_dual;
+   lambda_max = std::abs( bound_dual );
   }
 
   // Minimum and maximum total power constraints
 
   double alpha_min = 0;
   if( ! min_power_constraints.empty() )
-   alpha_min = min_power_constraints[ t ].get_dual() * dual_sign;
+   alpha_min = std::abs( min_power_constraints[ t ].get_dual() );
 
   double alpha_max = 0;
   if( ! max_power_constraints.empty() )
-   alpha_max = max_power_constraints[ t ].get_dual() * dual_sign;
+   alpha_max = std::abs( max_power_constraints[ t ].get_dual() );
 
   // Finally, update the linearization
 
@@ -1602,18 +1615,39 @@ void InvestmentFunction::update_linearization_network_blocks( Index stage ) {
 
     if( obj_sign * dual >= 0 ) {
      // The dual value is associated with the lower bound constraint.
-     lambda_min = dual;
+     lambda_min = std::abs( dual );
      lambda_max = 0;
     }
     else {
      // The dual value is associated with the upper bound constraint.
      lambda_min = 0;
-     lambda_max = dual;
+     lambda_max = std::abs( dual );
     }
 
     // Finally, update the linearization.
+
+    // Update the linearization coefficient.
+
     v_linearization[ var_index ] +=
      lambda_min * min_flow - lambda_max * max_flow;
+
+    // Update the linearization constant.
+
+    const auto power_flow = dc_network->get_power_flow();
+    if( ! power_flow.empty() ) {
+     f_linearization_constant +=
+      ( lambda_max - lambda_min ) * power_flow[ line ].get_value();
+    }
+
+    // If the bounds on the variables have been reformulated, consider the
+    // contribution of the lower bound.
+
+    const auto var_lower_bound = get_var_lower_bound( var_index );
+
+    if( f_reformulated_bounds && ( var_lower_bound > -Inf< double >() ) ) {
+     f_linearization_constant +=
+      var_lower_bound * ( lambda_min * min_flow - lambda_max * max_flow );
+    }
 
    } // end( for each line )
   } // end( dynamic_cast< const DCNetworkBlock * > )

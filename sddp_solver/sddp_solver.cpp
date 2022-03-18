@@ -141,6 +141,11 @@ bool eliminate_reduntant_cuts = false;
 const bool force_hard_components = false;
 const bool continuous_relaxation = true;
 
+// Since BundleSolver cannot currently handle general bounds on the variables
+// of the form l <= x <= u, these constraints must be reformulated by
+// replacing them by 0 <= x <= u - l.
+const bool reformulate_variable_bounds = true;
+
 std::string exe{};         ///< Name of the executable file
 std::string docopt_desc{}; ///< Tool description
 
@@ -720,6 +725,21 @@ void invest( InvestmentBlock * investment_block ) {
 
   std::cout << "Lower bound: " << std::setprecision( 20 ) << lb << std::endl;
   std::cout << "Upper bound: " << std::setprecision( 20 ) << ub << std::endl;
+
+  if( investment_solver->has_var_solution() ) {
+   investment_solver->get_var_solution();
+   std::cout << "Solution: " << std::endl;
+   const auto & variables = investment_block->get_variables();
+   const auto & var_lower_bound = investment_block->get_variable_lower_bound();
+   const auto width = std::to_string( variables.size() ).size();
+   for( Index i = 0 ; i < variables.size() ; ++i ) {
+    auto value = variables[ i ].get_value();
+    if( reformulate_variable_bounds && ( i < var_lower_bound.size() ) &&
+        ( var_lower_bound[ i ] > -Inf< double >() ) )
+     value += var_lower_bound[ i ];
+    std::cout << std::setw( width ) << i << " " << value << std::endl;
+   }
+  }
 
 #ifdef USE_MPI
  }
@@ -1901,7 +1921,7 @@ void process_block_file( const netCDF::NcFile & file ) {
     block_config->clear();
    }
 
-   if( investment_block ) {
+   if( investment_block && reformulate_variable_bounds ) {
     // Since BundleSolver cannot currently handle general bounds on the
     // variables of the form l <= x <= u, we create a BlockConfig to instruct
     // the InvestmentBlock to reformulate the bound constraints by replacing
