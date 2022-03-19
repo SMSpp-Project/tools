@@ -104,50 +104,81 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
 
  // Deserialize the dimensions
 
- Index num_unit_blocks = 0;
- Index num_lines = 0;
+ Index num_assets;
 
- ::deserialize_dim( group , "NumUnitBlocks" , num_unit_blocks );
- ::deserialize_dim( group , "NumLines" , num_lines );
-
- // Deserialize the UnitBlock and line indices.
-
- if( num_unit_blocks )
-  ::deserialize( group , "BlockIndices" , num_unit_blocks ,
-                 v_block_indices , false );
-
- if( num_lines )
-  ::deserialize( group , "LineIndices" , num_lines , v_line_indices , false );
-
- const auto num_var = num_unit_blocks + num_lines;
+ if( ! ::deserialize_dim( group , "NumAssets" , num_assets ) )
+  num_assets = 0;
 
  if( ! v_x.empty() ) {
-  if( num_var != v_x.size() )
+  if( num_assets != v_x.size() )
    throw std::logic_error( "InvestmentFunction::deserialize: the number of "
-                           "assets to invest (" + std::to_string( num_var ) +
-                           ") is different from the number of active variables"
+                           "assets to invest (" + std::to_string( num_assets ) +
+                           ") is different from the number of active variables "
                            "(" + std::to_string( v_x.size() ) + ")." );
  }
 
- // Deserialize the lower bound on the active variables
+ if( num_assets ) {
 
- ::deserialize( group , "LowerBound" , { num_var } , v_lower_bound ,
-                true , true );
+  // Deserialize the asset indices.
 
- if( v_lower_bound.size() == 1 )
-  v_lower_bound.resize( num_var , v_lower_bound.front() );
+  ::deserialize( group , "Assets" , num_assets , v_asset_indices , false );
 
- // Deserialize the linear coeffients of the objective function
+  // Deserialize the types of assets.
 
- if( ::deserialize( group , "LinearCoefficients" , num_var ,
-                    v_linear_coefficients , true , true ) ) {
-  if( v_linear_coefficients.size() == 1 )
-   v_linear_coefficients.resize( num_var , v_linear_coefficients.front() );
- }
- else {
-  // All coefficients are zero.
-  v_linear_coefficients.resize( num_var , 0 );
- }
+  if( ! ::deserialize( group , "AssetType" , num_assets , v_asset_type ,
+                       true , true ) )
+   v_asset_type.resize( num_assets , eUnitBlock );
+
+  if( ! v_asset_type.empty() ) {
+   if( v_asset_type.size() == 1 )
+    v_asset_type.resize( num_assets , v_asset_type.front() );
+   else if( v_asset_type.size() != num_assets )
+    throw( std::logic_error( "InvestmentFunction::deserialize: the 'AssetType'"
+                             " netCDF variable, if provided, must have size 0,"
+                             " 1, or 'NumAssets'." ) );
+  }
+
+  // Construct UnitBlock and line indices
+
+  v_block_indices.reserve( num_assets );
+  v_line_indices.reserve( num_assets );
+  for( Index i = 0 ; i < num_assets ; ++i ) {
+   if( v_asset_type[ i ] == eUnitBlock )
+    v_block_indices.push_back( v_asset_indices[ i ] );
+   else if( v_asset_type[ i ] == eLine )
+    v_line_indices.push_back( v_asset_indices[ i ] );
+  }
+
+  // Deserialize the lower bound on the active variables
+
+  ::deserialize( group , "LowerBound" , { num_assets } , v_lower_bound ,
+                 true , true );
+
+  if( ! v_lower_bound.empty() ) {
+   if( v_lower_bound.size() == 1 )
+    v_lower_bound.resize( num_assets , v_lower_bound.front() );
+   else if( v_lower_bound.size() != num_assets )
+    throw( std::logic_error( "InvestmentFunction::deserialize: the 'LowerBound'"
+                             " netCDF variable, if provided, must have size 0,"
+                             " 1, or 'NumAssets'." ) );
+  }
+
+  // Deserialize the linear coeffients of the objective function
+
+  if( ::deserialize( group , "Cost" , num_assets ,
+                     v_linear_coefficients , true , true ) ) {
+   if( v_linear_coefficients.size() == 1 )
+    v_linear_coefficients.resize( num_assets , v_linear_coefficients.front() );
+   else if( v_linear_coefficients.size() != num_assets )
+    throw( std::logic_error( "InvestmentFunction::deserialize: the 'Cost'"
+                             " netCDF variable, if provided, must have size "
+                             "0, 1, or 'NumAssets'." ) );
+  }
+  else {
+   // All coefficients are zero.
+   v_linear_coefficients.resize( num_assets , 0 );
+  }
+ } // end( if( num_assets ) )
 
  // Deserialize the inner Block
 
@@ -599,19 +630,18 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
 
  Block::serialize( group );
 
- auto NumUnitBlocks = group.addDim( "NumUnitBlocks" , v_block_indices.size() );
- auto NumLines = group.addDim( "NumLines" , v_line_indices.size() );
+ auto NumAssets = group.addDim( "NumAssets" , v_asset_indices.size() );
 
- const auto num_var = NumUnitBlocks.getSize() + NumLines.getSize();
- auto NumVar = group.addDim( "NumVar" , num_var );
+ ::serialize( group , "Assets" , netCDF::NcUint() , NumAssets ,
+              v_asset_indices );
 
- ::serialize( group , "BlockIndices" , netCDF::NcUint() , NumUnitBlocks ,
-              v_block_indices );
+ ::serialize( group , "AssetType" , netCDF::NcUbyte() , NumAssets ,
+              v_asset_type );
 
- ::serialize( group , "LineIndices" , netCDF::NcUint() , NumLines ,
-              v_line_indices );
+ ::serialize( group , "LowerBound" , netCDF::NcDouble() , NumAssets ,
+              v_lower_bound );
 
- ::serialize( group , "LinearCoefficients" , netCDF::NcDouble() , NumVar ,
+ ::serialize( group , "Cost" , netCDF::NcDouble() , NumAssets ,
               v_linear_coefficients );
 
  if( auto inner_block = get_inner_block() ) {

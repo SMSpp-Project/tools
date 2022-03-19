@@ -52,21 +52,21 @@ InvestmentBlock::~InvestmentBlock() {
 
 /*--------------------------------------------------------------------------*/
 
- void InvestmentBlock::deserialize( const netCDF::NcGroup & group ) {
+void InvestmentBlock::deserialize( const netCDF::NcGroup & group ) {
 
- Index num_var = 0;
+ Index num_assets = 0;
 
- if( ! ::deserialize_dim( group , "NumVar" , num_var ) )
-  num_var = 0;
+ if( ! ::deserialize_dim( group , "NumAssets" , num_assets ) )
+  num_assets = 0;
 
- v_variables.resize( num_var );
+ v_variables.resize( num_assets );
  for( auto & variable : v_variables )
   variable.set_Block( this );
 
- ::deserialize( group , "LowerBound" , { num_var } , v_lower_bound ,
+ ::deserialize( group , "LowerBound" , { num_assets } , v_lower_bound ,
                 true , true );
 
- ::deserialize( group , "UpperBound" , { num_var } , v_upper_bound ,
+ ::deserialize( group , "UpperBound" , { num_assets } , v_upper_bound ,
                 true , true );
 
  f_objective_sense = Objective::eMin;
@@ -75,11 +75,23 @@ InvestmentBlock::~InvestmentBlock() {
   f_objective_sense = Objective::eMax;
  }
 
- if( v_lower_bound.size() == 1 )
-  v_lower_bound.resize( num_var , v_lower_bound.front() );
+ if( ! v_lower_bound.empty() ) {
+  if( v_lower_bound.size() == 1 )
+   v_lower_bound.resize( num_assets , v_lower_bound.front() );
+  else if( v_lower_bound.size() != num_assets )
+   throw( std::logic_error( "InvestmentBlock::deserialize: the 'LowerBound' "
+                            "netCDF variable, if provided, must have size 0,"
+                            " 1, or 'NumAssets'." ) );
+ }
 
- if( v_upper_bound.size() == 1 )
-  v_upper_bound.resize( num_var , v_upper_bound.front() );
+ if( ! v_upper_bound.empty() ) {
+  if( v_upper_bound.size() == 1 )
+   v_upper_bound.resize( num_assets , v_upper_bound.front() );
+  else if( v_upper_bound.size() != num_assets )
+   throw( std::logic_error( "InvestmentBlock::deserialize: the 'UpperBound' "
+                            "netCDF variable, if provided, must have size 0,"
+                            " 1, or 'NumAssets'." ) );
+ }
 
  auto investment_function = new InvestmentFunction();
 
@@ -199,15 +211,15 @@ void InvestmentBlock::serialize( netCDF::NcGroup & group ) const {
 
  group.putAtt( "type" , "InvestmentBlock" );
 
- auto NumVar = group.addDim( "NumVar" , v_variables.size() );
+ auto NumAssets = group.addDim( "NumAssets" , v_variables.size() );
 
  if( f_objective_sense == Objective::eMax )
   group.addDim( "ObjectiveSense" , 0 );
 
- ::serialize( group , "LowerBound" , netCDF::NcDouble() , NumVar ,
+ ::serialize( group , "LowerBound" , netCDF::NcDouble() , NumAssets ,
               v_lower_bound );
 
- ::serialize( group , "UpperBound" , netCDF::NcDouble() , NumVar ,
+ ::serialize( group , "UpperBound" , netCDF::NcDouble() , NumAssets ,
               v_upper_bound );
 
  auto function = objective.get_function();

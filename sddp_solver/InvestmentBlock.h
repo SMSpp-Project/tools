@@ -95,31 +95,38 @@ public:
   * information required to deserialize the InvestmentBlock. Besides the
   * 'type' attribute common to all :Block, it should contain:
   *
-  * - The dimension "NumVar" containing the number of ColVariable of this
-  *   InvestmentBlock. This dimension is optional. If it is not provided, then
-  *   it is assumed that NumVar = 0.
+  * - The dimension "NumAssets" containing the number of assets that are
+  *   subject to investment. This dimension is optional. If it is not
+  *   provided, then it is assumed that NumAssets = 0.
+  *
+  *   For each asset that is subject to investment, this InvestmentBlock
+  *   defines a ColVariable which determines the investment to be made in that
+  *   asset. The i-th ColVariable of this InvestmentBlock is associated with
+  *   the i-th asset.
   *
   * - The variable "LowerBound", of type netCDF::NcDouble(), which is either a
-  *   scalar or indexed over "NumVar". If it is a scalar, then we assume that
-  *   LowerBound[i] = LowerBound[0] for all i in {0, ..., NumVar - 1}. The
-  *   i-th element of this vector provides the lower bound on the i-th
-  *   Variable of this InvestmentBlock. This variable is optional. If it is
-  *   not provided, then we assume that LowerBound[i] = -inf for all i in {0,
-  *   ..., NumVar - 1}.
+  *   scalar or indexed over "NumAssets". If it is a scalar, then we assume
+  *   that LowerBound[i] = LowerBound[0] for all i in {0, ..., NumAssets -
+  *   1}. The i-th element of this vector provides the lower bound on the i-th
+  *   ColVariable of this InvestmentBlock. This variable is optional. If it is
+  *   not provided, then we assume that LowerBound[i] = 0 for all i in {0,
+  *   ..., NumAssets - 1}.
   *
   * - The variable "UpperBound", of type netCDF::NcDouble(), which is either a
-  *   scalar or indexed over "NumVar". If it is a scalar, then we assume that
-  *   UpperBound[i] = UpperBound[0] for all i in {0, ..., NumVar - 1}. The
-  *   i-th element of this vector provides the upper bound on the i-th
-  *   Variable of this InvestmentBlock. This variable is optional. If it is
+  *   scalar or indexed over "NumAssets". If it is a scalar, then we assume
+  *   that UpperBound[i] = UpperBound[0] for all i in {0, ..., NumAssets -
+  *   1}. The i-th element of this vector provides the upper bound on the i-th
+  *   ColVariable of this InvestmentBlock. This variable is optional. If it is
   *   not provided, then we assume that UpperBound[i] = +inf for all i in {0,
-  *   ..., NumVar - 1}.
+  *   ..., NumAssets - 1}.
   *
   * - The dimension "ObjectiveSense", which indicates the sense of the
   *   Objective of this InvestmentBlock. If it is zero, then the Objective is
   *   a "maximization" one. Otherwise, it is a "minimization" one. This
   *   variable is optional. If it is not provided, then we assume that the
-  *   Objective is a "minimization" one.
+  *   Objective is a "minimization" one. Recall that the Objective of this
+  *   InvestmentBlock is an FRealObjective whose Function is an
+  *   InvestmentFunction.
   *
   * - A description of the InvestmentFunction.
   *

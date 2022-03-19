@@ -1718,19 +1718,30 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   auto investment_function = static_cast< InvestmentFunction * >
    ( investment_block->get_function() );
 
-  // Indices of the UnitBlocks that are subject to investment.
-  const auto block_indices = investment_function->get_block_indices();
+  // Indices of the assets that are subject to investment.
+  const auto & asset_indices = investment_function->get_asset_indices();
 
-  // Number of lines that are subject to investment.
-  const auto num_lines = investment_function->get_line_indices().size();
+  // Types of assets that are subject to investment.
+  const auto & asset_type = investment_function->get_asset_type();
+
+  // Number of UnitBlocks and lines that are subject to investment.
+  Index num_blocks = 0;
+  Index num_lines = 0;
+  for( const auto & type : asset_type ) {
+   if( type == InvestmentFunction::eUnitBlock )
+    ++num_blocks;
+   else if( type == InvestmentFunction::eLine )
+    ++num_lines;
+  }
 
   // List containing the indices of the sub-Blocks of the UCBlock that are
   // subject to investment.
   std::vector< std::pair< int , int > > required_dual_solution;
-  required_dual_solution.reserve( block_indices.size() + time_horizon );
+  required_dual_solution.reserve( num_blocks + time_horizon );
 
-  for( const auto i : block_indices )
-   required_dual_solution.push_back( { i , -1 } );
+  for( Index i = 0 ; i < asset_type.size() ; ++i )
+   if( asset_type[ i ] == InvestmentFunction::eUnitBlock )
+    required_dual_solution.push_back( { asset_indices[ i ] , -1 } );
 
   if( num_lines > 0 ) {
    // Since there are lines which are subject to investment, we must require

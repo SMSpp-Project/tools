@@ -97,6 +97,11 @@ class InvestmentFunction : public C05Function , public Block {
  using VarVector = std::vector< ColVariable * >;
  ///< representing the x variables upon which the function depends
 
+ /// public enum representing the types of assets
+ /** Public enum representing the types of assets. */
+
+ enum AssetType { eUnitBlock = 0 , eLine = 1 };
+
 /*--------------------------------------------------------------------------*/
  /// virtualized concrete iterator
  /** A concrete class deriving from ThinVarDepInterface::v_iterator and
@@ -772,54 +777,44 @@ class InvestmentFunction : public C05Function , public Block {
   * managed by the serialize() method of the base Block class, plus the
   * InvestmentFunction-specific data with the following format:
   *
-  * - The dimension "NumUnitBlocks" containing the number of UnitBlock that
-  *   are subject to investment. This dimension is optional. If it is not
-  *   provided, then it is assumed that NumUnitBlocks = 0.
+  * - The dimension "NumAssets" containing the number of assets that are
+  *   subject to investment. This dimension is optional. If it is not
+  *   provided, then it is assumed that NumAssets = 0.
   *
-  * - The dimension "NumLines" containing the number of lines that are subject
-  *   to investment. This dimension is optional. If it is not provided, then
-  *   it is assumed that NumLines = 0.
+  * - The one-dimensional variable "Assets", of type netCDF::Uint() and
+  *   indexed over "NumAssets", containing the indices of the assets that are
+  *   subject to investment. An asset can be either a UnitBlock or a
+  *   transmission line. If it is a UnitBlock, then its index is simply the
+  *   index that this UnitBlock has within its UCBlock. If it is a
+  *   transmission line, then its index is the index that this transmission
+  *   line has within its NetworkBlock.
   *
-  * The sum of the dimensions "NumUnitBlocks" and "NumLines", let us call it
-  * "NumVar", provides the number of active Variable of this
-  * InvestmentFunction. For each i in {0, ..., NumUnitBlocks-1}, the i-th
-  * active Variable of this InvestmentFunction represents the investment to be
-  * made on the i-th UnitBlock (among the UnitBlock that are subject to
-  * investment). For each i in {0, ..., NumLines-1}, the (NumUnitBlocks +
-  * i)-th active Variable of this InvestmentFunction represents the investment
-  * to be made on the i-th line (among the lines that are subject to
-  * investment).
+  * - The one-dimensional variable "AssetType", of type netCDF::Ubyte(), which
+  *   is either a scalar or indexed over "NumAssets", indicating the type of
+  *   the i-th asset. For a UnitBlock, the type is 0, and for a transmission
+  *   line, the type is 1. If it is a scalar, then we assume that AssetType[i]
+  *   = AssetType[0] for all i in {0, ..., NumAssets - 1}. This variable is
+  *   optional. If it is not provided, then we assume that AssetType[i] = 0
+  *   for each i in {0, ..., NumAssets - 1}.
   *
-  * - The one-dimensional variable "BlockIndices", of type netCDF::Uint() and
-  *   indexed over "NumUnitBlocks", containing the indices of the UnitBlock of
-  *   the UCBlock that are subject to investment. The i-th active Variable of
-  *   this InvestmentFunction will represent the investment (e.g., scale
-  *   factor) to be made on the UnitBlock of the UCBlock whose index is
-  *   BlockIndices[ i ].
-  *
-  * - The one-dimensional variable "LineIndices", of type netCDF::Uint() and
-  *   indexed over "NumLines", containing the indices of the lines that are
-  *   subject to investment. The (NumUnitBlocks + i)-th active Variable of
-  *   this InvestmentFunction will represent the investment to be made on the
-  *   line whose index is LineIndices[ i ].
-  *
-  * - The one-dimensional variable "LinearCoefficients", of type
-  *   netCDF::NcDouble(), which is either a scalar or indexed over "NumVar",
-  *   containing the coefficients of the linear term of the function
-  *   represented by this InvestmentFunction. If it is a scalar, then we
-  *   assume that LinearCoefficients[i] = LinearCoefficients[0] for all i in
-  *   {0, ..., NumVar - 1}. The i-th element of this vector is the coefficient
-  *   of the i-th active Variable of this InvestmentFunction. This variable is
-  *   optional. If it is not provided then all coefficients are considered to
-  *   be zero.
+  * - The one-dimensional variable "Cost", of type netCDF::NcDouble(), which
+  *   is either a scalar or indexed over "NumAssets", containing the fixed
+  *   (linear) cost of investing in one unit of each asset. This variable thus
+  *   defines the coefficients of the linear term of the function represented
+  *   by this InvestmentFunction. If it is a scalar, then we assume that
+  *   Cost[i] = Cost[0] for all i in {0, ..., NumAssets - 1}. The i-th element
+  *   of this vector is associated with the i-th asset and, therefore, with
+  *   the i-th active ColVariable of this InvestmentFunction. This variable is
+  *   optional. If it is not provided then all costs are considered to be
+  *   zero.
   *
   * - The variable "LowerBound", of type netCDF::NcDouble(), which is either a
-  *   scalar or indexed over "NumVar". If it is a scalar, then we assume that
-  *   LowerBound[i] = LowerBound[0] for all i in {0, ..., NumVar - 1}. The
-  *   i-th element of this vector provides the lower bound on the i-th
-  *   Variable of this InvestmentBlock. This variable is optional. If it is
-  *   not provided, then we assume that LowerBound[i] = -inf for all i in {0,
-  *   ..., NumVar - 1}.
+  *   scalar or indexed over "NumAssets". If it is a scalar, then we assume
+  *   that LowerBound[i] = LowerBound[0] for all i in {0, ..., NumAssets -
+  *   1}. The i-th element of this vector provides the lower bound on the i-th
+  *   ColVariable of this InvestmentBlock. This variable is optional. If it is
+  *   not provided, then we assume that LowerBound[i] = 0 for all i in {0,
+  *   ..., NumAssets - 1}.
   *
   * - The group "SDDPBlock", containing the description of the inner Block. */
 
@@ -1060,16 +1055,16 @@ class InvestmentFunction : public C05Function , public Block {
 /** @name Reading the data of the InvestmentFunction
  * @{ */
 
- /// returns the indices of the UnitBlocks that are subject to investment
- const std::vector< Index > & get_block_indices() const {
-  return v_block_indices;
+ /// returns the indices of the assets that are subject to investment
+ const std::vector< Index > & get_asset_indices() const {
+  return v_asset_indices;
  }
 
 /*--------------------------------------------------------------------------*/
 
- /// returns the indices of the lines that are subject to investment
- const std::vector< Index > & get_line_indices() const {
-  return v_line_indices;
+ /// returns the types of the assets that are subject to investment
+ const std::vector< AssetType > & get_asset_type() const {
+  return v_asset_type;
  }
 
 /** @} ---------------------------------------------------------------------*/
@@ -1153,6 +1148,12 @@ class InvestmentFunction : public C05Function , public Block {
 
  std::vector< Index > v_line_indices;
  ///< indices of the lines that are subject to investment
+
+ std::vector< Index > v_asset_indices;
+ ///< indices of the assets that are subject to investment
+
+ std::vector< AssetType > v_asset_type;
+ ///< the type of each asset that is subject to investment
 
  std::vector< double > v_linearization;
  ///< linearization associated with the most recent call to compute()
