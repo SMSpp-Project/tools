@@ -69,8 +69,8 @@ void InvestmentFunction::load( std::istream &input , char frmt ) {
 /*--------------------------------------------------------------------------*/
 
 InvestmentFunction::InvestmentFunction
-( Block * inner_block , VarVector && x , IndexVector && block_indices ,
-  IndexVector && line_indices , RealVector && linear_coefficients ,
+( Block * inner_block , VarVector && x , IndexVector && asset_indices ,
+  AssetTypeVector && asset_type , RealVector && linear_coefficients ,
   Observer * const observer )
  : C05Function( observer ) , f_blocks_are_updated( false ) ,
    f_solver_status( kUnEval ) , f_diagonal_linearization_required( false ) ,
@@ -79,9 +79,20 @@ InvestmentFunction::InvestmentFunction
  set_inner_block( inner_block );
  set_variables( std::move( x ) );
 
- v_block_indices = std::move( block_indices );
- v_line_indices  = std::move( line_indices );
+ v_asset_indices = std::move( asset_indices );
+ v_asset_type = std::move( asset_type );
  v_linear_coefficients  = std::move( linear_coefficients );
+
+ const auto num_assets = v_asset_indices.size();
+
+ v_block_indices.reserve( num_assets );
+ v_line_indices.reserve( num_assets );
+ for( Index i = 0 ; i < num_assets ; ++i ) {
+  if( v_asset_type[ i ] == eUnitBlock )
+   v_block_indices.push_back( v_asset_indices[ i ] );
+  else if( v_asset_type[ i ] == eLine )
+   v_line_indices.push_back( v_asset_indices[ i ] );
+ }
 
  // default parameter values
  AAccMlt = get_dflt_dbl_par( dblAAccMlt );
@@ -1738,11 +1749,59 @@ void InvestmentFunction::update_linearization() {
 /*-------------------------- PRIVATE METHODS -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-void InvestmentFunction::update_blocks() {
+void InvestmentFunction::update_unit_block( UnitBlock * block ,
+                                            double investment ) {
+ if( dynamic_cast< const ThermalUnitBlock * >( block ) ||
+     dynamic_cast< const BatteryUnitBlock * >( block ) ) {
+  block->scale( investment );
+ }
+ else if( auto unit = dynamic_cast< IntermittentUnitBlock * >( block ) ) {
+  unit->set_kappa( investment );
+ }
+ else {
+  // Unrecognized UnitBlock
+  auto error_message = "InvestmentFunction::update_unit_block: "
+   "unrecognized UnitBlock: " + block->classname();
+  if( ! block->name().empty() )
+   error_message += " with name '" + block->name() + "'";
+  error_message += ".";
+  throw( std::logic_error( error_message ) );
+ }
+}
 
- const auto saved_f_ignore_modifications = f_ignore_modifications;
+/*--------------------------------------------------------------------------*/
 
- f_ignore_modifications = true;
+void InvestmentFunction::update_unit_blocks
+( const std::vector< Index > & block_indices ,
+  const std::vector< double > & investment ) {
+
+ assert( block_indices.size() == investment.size() );
+
+ if( block_indices.empty() )
+  return;
+
+ const auto sddp_block = static_cast< SDDPBlock * >( v_Block.front() );
+ const auto num_stages = sddp_block->get_time_horizon();
+
+ for( Index stage = 0 ; stage < num_stages ; ++stage ) {
+  auto ucblock = get_ucblock( stage );
+  for( Index i = 0 ; i < block_indices.size() ; ++i ) {
+   auto block = ucblock->get_unit_block( block_indices[ i ] );
+   update_unit_block( block , investment[ i ] );
+  } // end( for each UnitBlock )
+ } // end( for each stage )
+} // end( InvestmentFunction::update_unit_blocks )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::update_network_blocks
+( const std::vector< Index > & line_indices ,
+  const std::vector< double > & investment ) {
+
+ assert( line_indices.size() == investment.size() );
+
+ if( line_indices.empty() )
+  return;
 
  const auto sddp_block = static_cast< SDDPBlock * >( v_Block.front() );
  const auto num_stages = sddp_block->get_time_horizon();
@@ -1752,67 +1811,70 @@ void InvestmentFunction::update_blocks() {
   auto ucblock = get_ucblock( stage );
   const auto time_horizon = ucblock->get_time_horizon();
 
-  // Update the UnitBlocks
+  for( Index t = 0 ; t < time_horizon ; ++t ) {
 
-  for( Index i = 0 ; i < v_block_indices.size() ; ++i ) {
+   auto network_block = ucblock->get_network_block( t );
 
-   const auto var_index = i;
-
-   auto block = ucblock->get_unit_block( v_block_indices[ i ] );
-
-   if( dynamic_cast< const ThermalUnitBlock * >( block ) ||
-       dynamic_cast< const BatteryUnitBlock * >( block ) ) {
-    block->scale( get_var_value( var_index , false ) );
-   }
-   else if( auto intermittent_unit =
-            dynamic_cast< IntermittentUnitBlock * >( block ) ) {
-    std::vector< double > kappa_vector = { get_var_value( var_index , false ) };
-    intermittent_unit->set_kappa( kappa_vector.cbegin() );
+   if( auto dc_network = dynamic_cast< DCNetworkBlock * >( network_block ) ) {
+    auto subset = line_indices;
+    dc_network->set_kappa( investment.cbegin() , std::move( subset ) );
    }
    else {
-    // Unrecognized UnitBlock
-    auto error_message = "InvestmentFunction::update_blocks: "
-     "unrecognized UnitBlock: " + block->classname();
-    if( ! block->name().empty() )
-     error_message += " with name '" + block->name() + "'";
-    error_message += ".";
+    // Unrecognized NetworkBlock
+    auto error_message = "InvestmentFunction::update_network_blocks: "
+     "unrecognized NetworkBlock: " + network_block->classname() + ".";
     throw( std::logic_error( error_message ) );
    }
-  } // end( for each UnitBlock )
-
-  // Update the NetworkBlocks
-
-  if( ! v_line_indices.empty() ) {
-
-   // Collect the values of the kappa constants
-
-   std::vector< double > kappa( v_line_indices.size() );
-   for( Index i = 0 ; i < v_line_indices.size() ; ++i ) {
-    const auto var_index = v_block_indices.size() + i;
-    kappa[ i ] = get_var_value( var_index , false );
-   }
-
-   // Now update the NetworkBlock for each time instant
-
-   for( Index t = 0 ; t < time_horizon ; ++t ) {
-
-    auto network_block = ucblock->get_network_block( t );
-
-    if( auto dc_network =
-        dynamic_cast< DCNetworkBlock * >( network_block ) ) {
-     auto subset = v_line_indices;
-     dc_network->set_kappa( kappa.cbegin() , std::move( subset ) );
-    }
-    else {
-     // Unrecognized NetworkBlock
-     auto error_message = "InvestmentFunction::update_blocks: "
-      "unrecognized NetworkBlock: " + network_block->classname() + ".";
-     throw( std::logic_error( error_message ) );
-    }
-   } // end( for each time instant )
-  } // end( non-empty line indices )
-
+  } // end( for each time instant )
  } // end( for each stage )
+} // end( InvestmentFunction::update_network_blocks )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::update_blocks() {
+
+ const auto saved_f_ignore_modifications = f_ignore_modifications;
+
+ f_ignore_modifications = true;
+
+ // The indices of the UnitBlocks
+ std::vector< Index > block_indices;
+ block_indices.reserve( v_asset_indices.size() );
+
+ // The investment to be made in the UnitBlocks
+ std::vector< double > block_investment;
+ block_investment.reserve( v_asset_indices.size() );
+
+ // The indices of the transmission lines
+ std::vector< Index > line_indices;
+ line_indices.reserve( v_asset_indices.size() );
+
+ // The investment to be made in the transmission lines
+ std::vector< double > line_investment;
+ line_investment.reserve( v_asset_indices.size() );
+
+ for( Index i = 0 ; i < v_asset_indices.size() ; ++i ) {
+
+  const auto asset_type =  v_asset_type[ i ];
+  const auto asset_index =  v_asset_indices[ i ];
+  const auto var_value = get_var_value( i , false );
+
+  if( asset_type == eUnitBlock ) {
+   block_indices.push_back( asset_index );
+   block_investment.push_back( var_value );
+  }
+  else if( asset_type == eLine ) {
+   line_indices.push_back( asset_index );
+   line_investment.push_back( var_value );
+  }
+  else {
+   throw( std::logic_error( "InvestmentFunction::update_blocks: invalid asset"
+                            " type: " + std::to_string( asset_type ) ) );
+  }
+ } // end( for each asset )
+
+ update_unit_blocks( block_indices , block_investment );
+ update_network_blocks( line_indices , line_investment );
 
  f_ignore_modifications = saved_f_ignore_modifications;
  f_blocks_are_updated = true;

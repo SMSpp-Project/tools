@@ -41,6 +41,8 @@ namespace SMSpp_di_unipi_it
 
  class UCBlock;                // forward declaration of UClock
 
+ class UnitBlock;              // forward declaration of UnitBlock
+
 /*--------------------------------------------------------------------------*/
 /*------------------------------- CLASSES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -76,6 +78,11 @@ class InvestmentFunction : public C05Function , public Block {
 /** @name Public Types
  *  @{ */
 
+ /// public enum representing the types of assets
+ /** Public enum representing the types of assets. */
+
+ enum AssetType { eUnitBlock = 0 , eLine = 1 };
+
  /* Since InvestmentFunction is both a ThinVarDepInterface and a Block, it
   * "sees" two definitions of "Index", "Range", and "Subset". These are
   * actually the same, but compilers still don't like it. Disambiguate by
@@ -93,14 +100,10 @@ class InvestmentFunction : public C05Function , public Block {
 
  using IndexVector = std::vector< Index >;
  using RealVector = std::vector< double >;
+ using AssetTypeVector = std::vector< AssetType >;
 
  using VarVector = std::vector< ColVariable * >;
  ///< representing the x variables upon which the function depends
-
- /// public enum representing the types of assets
- /** Public enum representing the types of assets. */
-
- enum AssetType { eUnitBlock = 0 , eLine = 1 };
 
 /*--------------------------------------------------------------------------*/
  /// virtualized concrete iterator
@@ -232,21 +235,19 @@ class InvestmentFunction : public C05Function , public Block {
   *        That is, get_active_var( 0 ) == x[ 0 ], get_active_var( 1 ) == x[ 1
   *        ], ...
   *
-  * @param block_indices a vector containing the indices of the UnitBlocks of
-  *        the UCBlock that are subject to investment. The correspondence
-  *        between \p block_indices and \p x is positional, i.e., if \p
-  *        block_indices is not empty, \p block_indices[ i ] is the index of
-  *        the UnitBlock associated with the i-th active variable of this
-  *        function (given by get_active_var( i )).
+  * @param asset_indices a vector containing the indices of the assets that
+  *        are subject to investment. An asset can be either a UnitBlock or a
+  *        transmission line. If it is a UnitBlock, then its index is simply
+  *        the index that this UnitBlock has within its UCBlock. If it is a
+  *        transmission line, then its index is the index that this
+  *        transmission line has within its NetworkBlock. The correspondence
+  *        between \p asset_indices and \p x is positional, i.e., if \p
+  *        asset_indices is not empty, \p asset_indices[ i ] is the index of
+  *        the asset associated with the i-th active variable of this function
+  *        (given by get_active_var( i )).
   *
-  * @param line_indices a vector containing the indices of the transmission
-  *        lines that are subject to investment. The correspondence between \p
-  *        line_indices and \p x is positional, i.e., if \p line_indices is
-  *        not empty, \p line_indices[ i ] is the index of the transmission
-  *        line associated with the active variable of this function whose
-  *        index is i + \p block_indices.size(), i.e., given by
-  *        get_active_var( i + \p block_indices.size() ).
-  *
+  * @param asset_type a vector containing the type of each asset.
+
   * @param linear_coefficients a vector containing the coefficients of the
   *        linear term of this function. The correspondence between \p
   *        linear_coefficients and \p x is positional, i.e., the coefficient
@@ -262,8 +263,8 @@ class InvestmentFunction : public C05Function , public Block {
   * respectively) so that this can be used as the void constructor. */
 
  InvestmentFunction( Block * inner_block = nullptr , VarVector && x = {} ,
-                     IndexVector && block_indices = {} ,
-                     IndexVector && line_indices = {} ,
+                     IndexVector && asset_indices = {} ,
+                     AssetTypeVector && asset_type = {} ,
                      RealVector && linear_coefficients = {} ,
                      Observer * const observer = nullptr );
 
@@ -1379,6 +1380,45 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- PRIVATE METHODS -------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+ /// Update the given UnitBlock according to the given \p investment
+ /** This function updates the given UnitBlock according to the given \p
+  * investment.
+  *
+  * @param block A pointer to a UnitBlock.
+  *
+  * @param investment The investment to be made in the given UnitBlock. */
+
+ void update_unit_block( UnitBlock * block , double investment );
+
+/*--------------------------------------------------------------------------*/
+
+ /// Update a set of UnitBlock according to the given \p investment
+ /** This function updates a set of UnitBlock, given by their indices \p
+  * block_indices, according to the given \p investment.
+  *
+  * @param block_indices Indices of the UnitBlock which must be updated.
+  *
+  * @param investment The investment to be made in each UnitBlock. */
+
+ void update_unit_blocks( const std::vector< Index > & block_indices ,
+                          const std::vector< double > & investment );
+
+/*--------------------------------------------------------------------------*/
+
+ /// Update a set of line according to the given \p investment
+ /** This function updates a set of transmission lines, given by their indices
+  * \p line_indices, according to the given \p investment.
+  *
+  * @param line_indices Indices of the transmission lines which must be
+  *        updated.
+  *
+  * @param investment The investment to be made in each line. */
+
+ void update_network_blocks( const std::vector< Index > & line_indices ,
+                             const std::vector< double > & investment );
+
 /*--------------------------------------------------------------------------*/
 
  /// update the sub-Block of the UCBlock
