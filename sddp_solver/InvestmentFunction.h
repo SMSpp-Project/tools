@@ -1144,11 +1144,8 @@ class InvestmentFunction : public C05Function , public Block {
  double f_value;
  ///< the value of this InvestmentFunction after compute() is called
 
- std::vector< Index > v_block_indices;
- ///< indices of the UnitBlocks that are subject to investment
-
- std::vector< Index > v_line_indices;
- ///< indices of the lines that are subject to investment
+ std::vector< Index > v_block_indices_map;
+ ///< map the index of an UnitBlock to the index of the asset under investment
 
  std::vector< Index > v_asset_indices;
  ///< indices of the assets that are subject to investment
@@ -1488,7 +1485,7 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
- double compute_scale_linearization( Index i , Index stage );
+ double compute_scale_linearization( Index block_index , Index stage );
 
 /*--------------------------------------------------------------------------*/
 
@@ -1517,12 +1514,16 @@ class InvestmentFunction : public C05Function , public Block {
 /*--------------------------------------------------------------------------*/
 
  /// updates the linearization with respect to the set of UnitBlock
- void update_linearization_unit_blocks( Index stage );
+ void update_linearization_unit_blocks
+ ( Index stage ,
+   const std::vector< std::pair< Index , Index > > & block_indices );
 
 /*--------------------------------------------------------------------------*/
 
  /// updates the linearization with respect to the set of NetworkBlock
- void update_linearization_network_blocks( Index stage );
+ void update_linearization_network_blocks
+ ( Index stage ,
+   const std::vector< std::pair< Index , Index > > & line_indices );
 
 /*--------------------------------------------------------------------------*/
 

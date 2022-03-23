@@ -85,15 +85,6 @@ InvestmentFunction::InvestmentFunction
 
  const auto num_assets = v_asset_indices.size();
 
- v_block_indices.reserve( num_assets );
- v_line_indices.reserve( num_assets );
- for( Index i = 0 ; i < num_assets ; ++i ) {
-  if( v_asset_type[ i ] == eUnitBlock )
-   v_block_indices.push_back( v_asset_indices[ i ] );
-  else if( v_asset_type[ i ] == eLine )
-   v_line_indices.push_back( v_asset_indices[ i ] );
- }
-
  // default parameter values
  AAccMlt = get_dflt_dbl_par( dblAAccMlt );
  set_par( intGPMaxSz , C05Function::get_dflt_int_par( intGPMaxSz ) );
@@ -147,17 +138,6 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
     throw( std::logic_error( "InvestmentFunction::deserialize: the 'AssetType'"
                              " netCDF variable, if provided, must have size 0,"
                              " 1, or 'NumAssets'." ) );
-  }
-
-  // Construct UnitBlock and line indices
-
-  v_block_indices.reserve( num_assets );
-  v_line_indices.reserve( num_assets );
-  for( Index i = 0 ; i < num_assets ; ++i ) {
-   if( v_asset_type[ i ] == eUnitBlock )
-    v_block_indices.push_back( v_asset_indices[ i ] );
-   else if( v_asset_type[ i ] == eLine )
-    v_line_indices.push_back( v_asset_indices[ i ] );
   }
 
   // Deserialize the lower bound on the active variables
@@ -406,17 +386,13 @@ void InvestmentFunction::remove_variable( Index i , ModParam issueMod ) {
  auto var = v_x[ i ];
  v_x.erase( v_x.begin() + i );    // erase it in v_x
 
- if( i < v_block_indices.size() )
-  // The Variable being removed is associated with an UnitBlock
-  v_block_indices.erase( v_block_indices.begin() + i );
- else
-  // The Variable being removed is associated with a transmission line
-  v_line_indices.erase( v_line_indices.begin() + i - v_block_indices.size() );
-
- // Erase the linear coefficient associated with the Variable being removed
- v_linear_coefficients.erase( v_linear_coefficients.begin() + i );
+ // Erase the asset index, asset type, and the linear coefficient associated
+ // with the Variable being removed
+ v_asset_indices.erase( v_asset_indices.begin() + i );
+ v_asset_type.erase( v_asset_type.begin() + i );
 
  f_blocks_are_updated = false;
+ generator_node_map.clear(); // the generator map must be rebuilt
 
  if( ( ! f_Observer ) || ( ! f_Observer->issue_mod( issueMod ) ) )
   return;
@@ -440,6 +416,7 @@ void InvestmentFunction::remove_variables( Range range , ModParam issueMod ) {
   return;
 
  f_blocks_are_updated = false;
+ generator_node_map.clear(); // the generator map must be rebuilt
 
  if( ( range.first == 0 ) && ( range.second == Index( v_x.size() ) ) ) {
   // removing *all* Variables
@@ -449,8 +426,8 @@ void InvestmentFunction::remove_variables( Range range , ModParam issueMod ) {
    vars[ i ] = v_x[ i ];
 
   v_x.clear();
-  v_block_indices.clear();
-  v_line_indices.clear();
+  v_asset_indices.clear();
+  v_asset_type.clear();
   v_linear_coefficients.clear();
 
   // Now issue the Modification.
@@ -472,37 +449,23 @@ void InvestmentFunction::remove_variables( Range range , ModParam issueMod ) {
 
  const auto erase = [ this , &v_x_it , range ]() {
 
-  using size_type = decltype( v_block_indices.size() );
-
-  // Range of UnitBlocks being removed
-  const auto range_blocks = std::make_pair
-   ( std::min( v_block_indices.size() , size_type{ range.first } ) ,
-     std::min( v_block_indices.size() , size_type{ range.second } ) );
-
-  // Range of lines being removed
-  const auto range_lines = std::make_pair
-   ( std::max( v_block_indices.size() , size_type{ range.first } ) -
-     v_block_indices.size() ,
-     std::max( v_block_indices.size() , size_type{ range.second } ) -
-     v_block_indices.size() );
-
   // Iterators to the elements to be removed
 
-  const auto v_block_indices_it =
-   std::make_pair( v_block_indices.begin() + range_blocks.first ,
-                   v_block_indices.begin() + range_blocks.second );
+  const auto v_asset_indices_it =
+   std::make_pair( v_asset_indices.begin() + range.first ,
+                   v_asset_indices.begin() + range.second );
 
-  const auto v_line_indices_it =
-   std::make_pair( v_line_indices.begin() + range_lines.first ,
-                   v_line_indices.begin() + range_lines.second );
+  const auto v_asset_type_it =
+   std::make_pair( v_asset_type.begin() + range.first ,
+                   v_asset_type.begin() + range.second );
 
   const auto v_linear_coefficients_it =
    std::make_pair( v_linear_coefficients.begin() + range.first ,
                    v_linear_coefficients.begin() + range.second );
 
   v_x.erase( v_x_it.first , v_x_it.second );
-  v_block_indices.erase( v_block_indices_it.first , v_block_indices_it.second );
-  v_line_indices.erase( v_line_indices_it.first , v_line_indices_it.second );
+  v_asset_indices.erase( v_asset_indices_it.first , v_asset_indices_it.second );
+  v_asset_type.erase( v_asset_type_it.first , v_asset_type_it.second );
   v_linear_coefficients.erase( v_linear_coefficients_it.first ,
                                v_linear_coefficients_it.second );
  };
@@ -566,11 +529,12 @@ void InvestmentFunction::remove_variables( Subset && indices , bool ordered ,
 
   // Clear all elements
   v_x.clear();
-  v_block_indices.clear();
-  v_line_indices.clear();
+  v_asset_indices.clear();
+  v_asset_type.clear();
   v_linear_coefficients.clear();
 
   f_blocks_are_updated = false;
+  generator_node_map.clear(); // the generator map must be rebuilt
 
   // Now issue the Modification: note that the subset is empty.
   // An InvestmentFunction is strongly quasi-additive, and indices is ordered.
@@ -592,20 +556,11 @@ void InvestmentFunction::remove_variables( Subset && indices , bool ordered ,
                                 "Variable index in the Subset indices." ) );
 
  f_blocks_are_updated = false;
+ generator_node_map.clear(); // the generator map must be rebuilt
 
  const auto erase = [ this , &indices ]() {
-  Subset blocks_to_remove, lines_to_remove;
-  blocks_to_remove.reserve( indices.size() );
-  lines_to_remove.reserve( indices.size() );
-  for( auto i : indices ) {
-   if( i < v_block_indices.size() )
-    blocks_to_remove.push_back( i );
-   else
-    lines_to_remove.push_back( i - v_block_indices.size() );
-  }
-
-  compact( v_block_indices , blocks_to_remove );
-  compact( v_line_indices , lines_to_remove );
+  compact( v_asset_indices , indices );
+  compact( v_asset_type , indices );
   compact( v_linear_coefficients , indices );
   compact( v_x , indices );
  };
@@ -1093,15 +1048,34 @@ void InvestmentFunction::reset_linearization() {
 
 /*--------------------------------------------------------------------------*/
 
-Index InvestmentFunction::get_node( Index stage , Index i ,
+Index InvestmentFunction::get_node( Index stage , Index block_index ,
                                     Index generator ) const {
- // i is between 0 and v_block_indices.size() - 1.
+ // i is between 0 and the number of UnitBlock assets - 1.
+ const auto i = v_block_indices_map[ block_index ];
  return generator_node_map[ stage ][ i ][ generator ];
 }
 
 /*--------------------------------------------------------------------------*/
 
 void InvestmentFunction::build_generator_node_map() {
+
+ // The indices of the UnitBlocks
+ std::vector< Index > block_indices;
+ block_indices.reserve( v_asset_indices.size() );
+
+ for( Index i = 0 ; i < v_asset_indices.size() ; ++i ) {
+  if( v_asset_type[ i ] == eUnitBlock )
+   block_indices.push_back( v_asset_indices[ i ] );
+ }
+
+ if( block_indices.empty() )
+  return;
+
+ v_block_indices_map.resize
+  ( 1 + * std::max_element( block_indices.cbegin() , block_indices.cend() ) );
+ for( Index i = 0 ; i < block_indices.size() ; ++i ) {
+  v_block_indices_map[ block_indices[ i ] ] = i;
+ }
 
  const auto sddp_block = static_cast< SDDPBlock * >( v_Block.front() );
  const auto num_stages = sddp_block->get_time_horizon();
@@ -1110,7 +1084,7 @@ void InvestmentFunction::build_generator_node_map() {
 
  for( Index stage = 0 ; stage < num_stages ; ++stage ) {
 
-  generator_node_map[ stage ].resize( v_block_indices.size() );
+  generator_node_map[ stage ].resize( block_indices.size() );
 
   const auto ucblock = get_ucblock( stage );
   const auto network_data = ucblock->get_NetworkData();
@@ -1119,8 +1093,8 @@ void InvestmentFunction::build_generator_node_map() {
   if( number_nodes <= 1 ) {
    // Since there is only one node, all generators belong to the same node
    // (node 0).
-   for( Index i = 0 ; i < v_block_indices.size() ; ++i ) {
-    const auto unit_block = ucblock->get_unit_block( v_block_indices[ i ] );
+   for( Index i = 0 ; i < block_indices.size() ; ++i ) {
+    const auto unit_block = ucblock->get_unit_block( block_indices[ i ] );
     const auto num_generators = unit_block->get_number_generators();
     generator_node_map[ stage ][ i ].resize( num_generators , 0 );
    }
@@ -1138,12 +1112,12 @@ void InvestmentFunction::build_generator_node_map() {
     const auto unit_block = ucblock->get_unit_block( unit_id );
     const auto num_generators = unit_block->get_number_generators();
 
-    auto it = std::find( v_block_indices.cbegin() ,
-                         v_block_indices.cend() , unit_id );
+    auto it = std::find( block_indices.cbegin() ,
+                         block_indices.cend() , unit_id );
 
-    const auto index = std::distance( v_block_indices.cbegin() , it );
+    const auto index = std::distance( block_indices.cbegin() , it );
 
-    if( index == v_block_indices.size() ) {
+    if( index == block_indices.size() ) {
      // This UnitBlock is not subject to investment.
      elc_generator += num_generators;
      continue;
@@ -1163,8 +1137,8 @@ void InvestmentFunction::build_generator_node_map() {
 
 /*--------------------------------------------------------------------------*/
 
-double InvestmentFunction::compute_scale_linearization( Index i ,
-                                                        Index stage ) {
+double InvestmentFunction::compute_scale_linearization
+( Index block_index , Index stage ) {
 
  /* TODO The following code does not take into account the pollutant budget
   * constraints and the heat constraints. When these constraints are correctly
@@ -1175,7 +1149,7 @@ double InvestmentFunction::compute_scale_linearization( Index i ,
  const auto number_nodes = network_data ? network_data->get_number_nodes() : 1;
  const auto time_horizon = ucblock->get_time_horizon();
 
- const auto block = ucblock->get_unit_block( v_block_indices[ i ] );
+ const auto block = ucblock->get_unit_block( block_index );
 
  // This is the contribution to the linearization associated with this
  // UnitBlock.
@@ -1190,7 +1164,7 @@ double InvestmentFunction::compute_scale_linearization( Index i ,
 
   for( Index g = 0 ; g < block->get_number_generators() ; ++g ) {
 
-   const auto node = get_node( stage , i , g );
+   const auto node = get_node( stage , block_index , g );
    const auto dual = node_injection_constraints[ t ][ node ].get_dual() * dual_sign;
    const auto active_power = block->get_active_power( g )[ t ].get_value();
    linearization += dual * active_power;
@@ -1224,7 +1198,7 @@ double InvestmentFunction::compute_scale_linearization( Index i ,
      // Compute the index of the first electrical generator of the current
      // UnitBlock.
      Index elc_generator = 0;
-     for( Index unit_id = 0 ; unit_id < v_block_indices[ i ] ; ++unit_id ) {
+     for( Index unit_id = 0 ; unit_id < block_index ; ++unit_id ) {
       const auto unit_block = ucblock->get_unit_block( unit_id );
       elc_generator += unit_block->get_number_generators();
      }
@@ -1270,7 +1244,7 @@ double InvestmentFunction::compute_scale_linearization( Index i ,
      // Compute the index of the first electrical generator of the current
      // UnitBlock.
      Index elc_generator = 0;
-     for( Index unit_id = 0 ; unit_id < v_block_indices[ i ] ; ++unit_id ) {
+     for( Index unit_id = 0 ; unit_id < block_index ; ++unit_id ) {
       const auto unit_block = ucblock->get_unit_block( unit_id );
       elc_generator += unit_block->get_number_generators();
      }
@@ -1316,7 +1290,7 @@ double InvestmentFunction::compute_scale_linearization( Index i ,
      // Compute the index of the first electrical generator of the current
      // UnitBlock.
      Index elc_generator = 0;
-     for( Index unit_id = 0 ; unit_id < v_block_indices[ i ] ; ++unit_id ) {
+     for( Index unit_id = 0 ; unit_id < block_index ; ++unit_id ) {
       const auto unit_block = ucblock->get_unit_block( unit_id );
       elc_generator += unit_block->get_number_generators();
      }
@@ -1553,7 +1527,9 @@ double InvestmentFunction::compute_kappa_linearization
 
 /*--------------------------------------------------------------------------*/
 
-void InvestmentFunction::update_linearization_unit_blocks( Index stage ) {
+void InvestmentFunction::update_linearization_unit_blocks
+( Index stage ,
+  const std::vector< std::pair< Index , Index > > & block_indices ) {
 
  /* The UnitBlocks that are subject to investment can be divided into two
   * groups, depending on how the investment is represented.
@@ -1573,14 +1549,14 @@ void InvestmentFunction::update_linearization_unit_blocks( Index stage ) {
 
  const auto ucblock = get_ucblock( stage );
 
- for( Index i = 0 ; i < v_block_indices.size() ; ++i ) {
+ for( const auto & [ block_index , var_index ] : block_indices ) {
 
-  const auto var_index = i;
-  auto block = ucblock->get_unit_block( v_block_indices[ i ] );
+  auto block = ucblock->get_unit_block( block_index );
 
   if( dynamic_cast< const ThermalUnitBlock * >( block ) ||
       dynamic_cast< const BatteryUnitBlock * >( block ) ) {
-   v_linearization[ var_index ] += compute_scale_linearization( i , stage );
+   v_linearization[ var_index ] +=
+    compute_scale_linearization( block_index , stage );
   }
   else if( auto intermittent_unit =
            dynamic_cast< IntermittentUnitBlock * >( block ) ) {
@@ -1601,10 +1577,13 @@ void InvestmentFunction::update_linearization_unit_blocks( Index stage ) {
 
 /*--------------------------------------------------------------------------*/
 
-void InvestmentFunction::update_linearization_network_blocks( Index stage ) {
+void InvestmentFunction::update_linearization_network_blocks
+( Index stage ,
+  const std::vector< std::pair< Index , Index > > & line_indices ) {
+
  // Update the linearization with respect to the lines
 
- if( v_line_indices.empty() )
+ if( line_indices.empty() )
   // There is no investment in lines, so there is nothing to be done.
   return;
 
@@ -1639,10 +1618,7 @@ void InvestmentFunction::update_linearization_network_blocks( Index stage ) {
    const auto obj_sign =
     ( dc_network->get_objective_sense() == Objective::eMin ) ? - 1 : 1;
 
-   for( Index i = 0 ; i < v_line_indices.size() ; ++i ) {
-
-    const auto var_index = v_block_indices.size() + i;
-    const auto line = v_line_indices[ i ];
+   for( const auto & [ line , var_index ] : line_indices ) {
 
     const auto dual = constraints[ line ].get_dual() * dual_sign;
     const auto min_flow = dc_network->get_min_power_flow( line );
@@ -1727,26 +1703,46 @@ void InvestmentFunction::update_linearization() {
                             "dual solution not available." ) );
  };
 
+ // The indices of the UnitBlocks and the indices of their variables
+ std::vector< std::pair< Index , Index > > block_indices;
+ block_indices.reserve( v_asset_indices.size() );
+
+ // The indices of the transmission lines and the indices of their variables
+ std::vector< std::pair< Index , Index > > line_indices;
+ line_indices.reserve( v_asset_indices.size() );
+
+ for( Index i = 0 ; i < v_asset_indices.size() ; ++i ) {
+
+  const auto asset_type =  v_asset_type[ i ];
+  const auto asset_index =  v_asset_indices[ i ];
+
+  if( asset_type == eUnitBlock ) {
+   block_indices.push_back( { asset_index , i } );
+  }
+  else if( asset_type == eLine ) {
+   line_indices.push_back( { asset_index , i } );
+  }
+  else {
+   throw( std::logic_error( "InvestmentFunction::update_linearization: invalid"
+                            " asset type: " + std::to_string( asset_type ) ) );
+  }
+ } // end( for each asset )
+
  for( Index stage = 0 ; stage < num_stages ; ++stage ) {
 
   retrieve_dual_solution( stage );
 
-  if( ! v_block_indices.empty() )
+  if( ! block_indices.empty() )
    // The primal solution may only be necessary if there are UnitBlocks
    // subject to investment.
    retrieve_var_solution( stage );
 
-  update_linearization_unit_blocks( stage );
-  update_linearization_network_blocks( stage );
+  update_linearization_unit_blocks( stage , block_indices );
+  update_linearization_network_blocks( stage , line_indices );
  } // end( for each stage )
 
 }  // end( InvestmentFunction::update_linearization() )
 
-/*--------------------------------------------------------------------------*/
-
-
-/*--------------------------------------------------------------------------*/
-/*-------------------------- PRIVATE METHODS -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 void InvestmentFunction::update_unit_block( UnitBlock * block ,
@@ -1887,6 +1883,7 @@ void InvestmentFunction::send_nuclear_modification
  // "nuclear modification" for Function: everything changed
  global_pool.invalidate();
  f_blocks_are_updated = false;
+ generator_node_map.clear(); // the generator map must be rebuilt
  if( f_Observer )
   f_Observer->add_Modification
    ( std::make_shared<FunctionMod>( this , FunctionMod::NaNshift ) , chnl );
