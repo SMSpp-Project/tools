@@ -1799,7 +1799,9 @@ void InvestmentFunction::update_linearization_network_blocks
 
    // HVDC lines
 
-   assert( dc_network->get_lines_type() == NetworkBlock::kHVDC );
+   const auto network_data = ucblock->get_NetworkData();
+   assert( ( ! network_data ) ||
+           network_data->get_lines_type() == NetworkBlock::kHVDC );
 
    const auto & constraints = dc_network->get_power_flow_limit_HVDC_bounds();
 
