@@ -35,6 +35,8 @@
 /// namespace for the Structured Modeling System++ (SMS++)
 namespace SMSpp_di_unipi_it
 {
+ class BatteryUnitBlock;       // forward declaration of BatteryUnitBlock
+
  class BendersBFunction;       // forward declaration of BendersBFunction
 
  class IntermittentUnitBlock;  // forward declaration of IntermittentUnitBlock
@@ -1494,7 +1496,7 @@ class InvestmentFunction : public C05Function , public Block {
   * by the given IntermittentUnitBlock, considering the constraints that are
   * affected by kappa.
   *
-  * @param intermittent_unit A pointer to the IntermittentUnitBlock.
+  * @param unit A pointer to the IntermittentUnitBlock.
   *
   * @param var_index The index of the active Variable associated with the
   *        IntermittentUnitBlock's kappa.
@@ -1503,8 +1505,27 @@ class InvestmentFunction : public C05Function , public Block {
   *         IntermittentUnitBlock, considering the constraints that are
   *         affected by kappa. */
 
- double compute_kappa_linearization
- ( IntermittentUnitBlock * intermittent_unit , Index var_index );
+ double compute_kappa_linearization( IntermittentUnitBlock * unit ,
+                                     Index var_index );
+
+/*--------------------------------------------------------------------------*/
+
+ /// returns the contribution to the linearization by the given Block
+ /** This function computes and returns the contribution to the linearization
+  * by the given BatteryUnitBlock, considering the constraints that are
+  * affected by kappa.
+  *
+  * @param unit A pointer to the BatteryUnitBlock.
+  *
+  * @param var_index The index of the active Variable associated with the
+  *        BatteryUnitBlock's kappa.
+  *
+  * @return the contribution to the linearization by the given
+  *         BatteryUnitBlock, considering the constraints that are affected by
+  *         kappa. */
+
+ double compute_kappa_linearization( const BatteryUnitBlock * unit ,
+                                     Index var_index );
 
 /*--------------------------------------------------------------------------*/
 

@@ -679,7 +679,12 @@ int InvestmentFunction::compute( bool changedvars ) {
  for( int scenario = 0 ; scenario < num_scenarios ; ++scenario ) {
   solver->set_par( SDDPGreedySolver::intScenarioId , scenario );
 
+  const auto saved_f_ignore_modifications = f_ignore_modifications;
+  f_ignore_modifications = true;
+
   f_solver_status = solver->compute( true );
+
+  f_ignore_modifications = saved_f_ignore_modifications;
 
   if( ! solver->has_var_solution() )
    return( f_solver_status );
@@ -718,6 +723,8 @@ int InvestmentFunction::compute( bool changedvars ) {
  // Consider the linear term of the objective
 
  for( Index i = 0 ; i < v_linear_coefficients.size() ; ++i ) {
+
+  // TODO disregard the assets that are already "installed"
 
   // Update the objective value
   f_value += v_linear_coefficients[ i ] * get_var_value( i , false );
@@ -782,16 +789,18 @@ bool InvestmentFunction::is_concave( void ) const {
 
 bool InvestmentFunction::has_linearization( const bool diagonal ) {
 
- auto solver = get_solver();
+ auto solver = get_solver< CDASolver >();
 
  if( ! solver )
   return false;
 
  if( diagonal ) {
   f_diagonal_linearization_required = true;
-  return solver->has_var_solution();
+  return solver->has_var_solution() && solver->has_dual_solution();
  }
  else {
+  f_diagonal_linearization_required = false;
+  // TODO
   throw( std::logic_error( "InvestmentFunction::has_linearization: vertical "
                            "linearization not implemented yet." ) );
  }
@@ -815,7 +824,7 @@ void InvestmentFunction::store_linearization( Index name , ModParam issueMod ) {
                                ( this , C05FunctionMod::GlobalPoolAdded ,
                                  Subset( { name } ) , 0 ,
                                  Observer::par2concern( issueMod ) ) ,
-			       Observer::par2chnl( issueMod ) );
+                               Observer::par2chnl( issueMod ) );
 
 } // end InvestmentFunction::store_linearization( Index )
 
@@ -834,7 +843,7 @@ void InvestmentFunction::store_combination_of_linearizations
                                ( this , C05FunctionMod::GlobalPoolAdded ,
                                  Subset( { name } ) , 0 ,
                                  Observer::par2concern( issueMod ) ) ,
-			       Observer::par2chnl( issueMod ) );
+                               Observer::par2chnl( issueMod ) );
 
 }  // end( InvestmentFunction::store_combination_of_linearizations )
 
@@ -851,7 +860,7 @@ void InvestmentFunction::delete_linearization( const Index name ,
                                ( this , C05FunctionMod::GlobalPoolRemoved ,
                                  Subset( { name } ) , 0 ,
                                  Observer::par2concern( issueMod ) ) ,
-			       Observer::par2chnl( issueMod ) );
+                               Observer::par2chnl( issueMod ) );
 }  // end( InvestmentFunction::delete_linearization )
 
 /*--------------------------------------------------------------------------*/
@@ -867,7 +876,7 @@ void InvestmentFunction::delete_linearizations( Subset && which , bool ordered ,
                                ( this , C05FunctionMod::GlobalPoolRemoved ,
                                  std::move( which ) , 0 ,
                                  Observer::par2concern( issueMod ) ) ,
-			       Observer::par2chnl( issueMod ) );
+                               Observer::par2chnl( issueMod ) );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -940,8 +949,6 @@ void InvestmentFunction::get_linearization_coefficients
 Function::FunctionValue
 InvestmentFunction::get_linearization_constant( Index name ) {
 
- // TODO
-
  if( name == Inf<Index>() ) {
   // Linearization just computed and not in the global pool yet.
 
@@ -951,15 +958,16 @@ InvestmentFunction::get_linearization_constant( Index name ) {
     alpha -= v_linearization[ i ] * get_var_value( i );
    }
 
-   //return f_linearization_constant;
    return alpha;
   }
   else {
+   // TODO
    throw( std::logic_error( "InvestmentFunction::get_linearization_constant: "
                             "vertical linearization not implemented yet." ) );
   }
  }
  else {
+  // TODO
   throw( std::logic_error( "InvestmentFunction::get_linearization_constant: "
                            "linearization from global pool not implemented "
                            "yet." ) );
@@ -984,7 +992,7 @@ Function::FunctionValue InvestmentFunction::get_value( void ) const {
 /*--------------------------------------------------------------------------*/
 
 void InvestmentFunction::add_Modification( sp_Mod mod ,
-                                         Observer::ChnlName chnl ) {
+                                           Observer::ChnlName chnl ) {
  if( f_ignore_modifications )
   return;
  send_nuclear_modification( chnl );
@@ -1072,7 +1080,8 @@ void InvestmentFunction::build_generator_node_map() {
   return;
 
  v_block_indices_map.resize
-  ( 1 + * std::max_element( block_indices.cbegin() , block_indices.cend() ) );
+  ( 1 + * std::max_element( block_indices.cbegin() , block_indices.cend() ) ,
+    Inf< Index >() );
  for( Index i = 0 ; i < block_indices.size() ; ++i ) {
   v_block_indices_map[ block_indices[ i ] ] = i;
  }
@@ -1107,7 +1116,7 @@ void InvestmentFunction::build_generator_node_map() {
   for( Index node_id = 0 ; node_id < number_nodes ; ++node_id ) {
 
    Index elc_generator = 0;
-   for( Index unit_id = 0 ; unit_id < number_units ; unit_id++ ) {
+   for( Index unit_id = 0 ; unit_id < number_units ; ++unit_id ) {
 
     const auto unit_block = ucblock->get_unit_block( unit_id );
     const auto num_generators = unit_block->get_number_generators();
@@ -1165,7 +1174,7 @@ double InvestmentFunction::compute_scale_linearization
   for( Index g = 0 ; g < block->get_number_generators() ; ++g ) {
 
    const auto node = get_node( stage , block_index , g );
-   const auto dual = node_injection_constraints[ t ][ node ].get_dual() * dual_sign;
+   const auto dual = node_injection_constraints[ t ][ node ].get_dual();
    const auto active_power = block->get_active_power( g )[ t ].get_value();
    linearization += dual * active_power;
 
@@ -1215,7 +1224,8 @@ double InvestmentFunction::compute_scale_linearization
           block->get_primary_spinning_reserve( generator ) ) {
 
        const auto primary_spinning_reserve = & primary_s_r[ t ];
-       const auto dual = primary_demand_constraints[ t ][ zone_id ].get_dual() * dual_sign;
+       const auto dual =
+        std::abs( primary_demand_constraints[ t ][ zone_id ].get_dual() );
        linearization += - dual * primary_spinning_reserve->get_value();
       }
 
@@ -1261,7 +1271,8 @@ double InvestmentFunction::compute_scale_linearization
           block->get_secondary_spinning_reserve( generator ) ) {
 
        const auto secondary_spinning_reserve = & secondary_s_r[ t ];
-       const auto dual = secondary_demand_constraints[ t ][ zone_id ].get_dual() * dual_sign;
+       const auto dual =
+        std::abs( secondary_demand_constraints[ t ][ zone_id ].get_dual() );
        linearization += - dual * secondary_spinning_reserve->get_value();
       }
 
@@ -1303,7 +1314,8 @@ double InvestmentFunction::compute_scale_linearization
       if( ! ucblock->generator_belongs_to_node( elc_generator , node_id ) )
        continue;
 
-      const auto dual = inertia_demand_constraints[ t ][ zone_id ].get_dual() * dual_sign;
+      const auto dual =
+       std::abs( inertia_demand_constraints[ t ][ zone_id ].get_dual() );
 
       // Commitment variable
 
@@ -1335,8 +1347,8 @@ double InvestmentFunction::compute_scale_linearization
 
  } // end( non-empty inertia demand constraints )
 
- /* Finally, add the contribution associated with the objective function of
-  * the UnitBlock.
+ /* Finally, add the contribution associated with the objective function (if
+  * any) of the UnitBlock.
   *
   * The objective function of a UnitBlock may have the form k*f(x), where k is
   * the scale factor. The contribution associated with the objective to the
@@ -1346,31 +1358,32 @@ double InvestmentFunction::compute_scale_linearization
   * objective (whose value must then be f(x)), and finally scale the UnitBlock
   * back to its original scale factor. */
 
- auto objective =
-  static_cast< FRealObjective * >( block->get_objective() );
+ if( auto objective =
+     dynamic_cast< FRealObjective * >( block->get_objective() ) ) {
 
- const auto scale = block->get_scale();
+  const auto scale = block->get_scale();
 
- if( scale != 0 ) {
-  objective->compute();
-  linearization += objective->value() / scale;
- }
- else {
-  /* Scale the UnitBlock to 1 so that we can retrieve the value of the
-   * objective associated with a single representative unit. No Modification
-   * should be issued since the UnitBlock will be scaled back to the original
-   * scale factor after the objective is computed. */
-  block->scale( 1.0 , eNoMod , eNoMod );
+  if( scale != 0 ) {
+   objective->compute();
+   linearization += objective->value() / scale;
+  }
+  else {
+   /* Scale the UnitBlock to 1 so that we can retrieve the value of the
+    * objective associated with a single representative unit. No Modification
+    * should be issued since the UnitBlock will be scaled back to the original
+    * scale factor after the objective is computed. */
+   block->scale( 1.0 , eNoMod , eNoMod );
 
-  // Compute the Objective and retrieve its value.
-  objective->compute();
-  linearization += objective->value();
+   // Compute the Objective and retrieve its value.
+   objective->compute();
+   linearization += objective->value();
 
-  // Scale the UnitBlock to its original scale factor.
-  block->scale( scale , eNoMod , eNoMod );
+   // Scale the UnitBlock to its original scale factor.
+   block->scale( scale , eNoMod , eNoMod );
 
-  // Recompute the objective to take into account its original scale factor.
-  objective->compute();
+   // Recompute the objective to take into account its original scale factor.
+   objective->compute();
+  }
  }
 
  return linearization;
@@ -1527,6 +1540,171 @@ double InvestmentFunction::compute_kappa_linearization
 
 /*--------------------------------------------------------------------------*/
 
+double InvestmentFunction::compute_kappa_linearization
+( const BatteryUnitBlock * unit , Index var_index ) {
+
+ /* The kappa constant associated with a BatteryUnitBlock appears in the
+  * following constraints for each time instant t:
+  *
+  * - Minimum and maximum power output constraint (lambda):
+  *
+  *   kappa * P^{min}_{t} <= p^{ac}_{t} - p^{pr}_{t} - p^{sc}_{t}  [lambda_min]
+  *
+  *   p^{ac}_{t} + p^{pr}_{t} + p^{sc}_{t} <= kappa * P^{max}_{t}  [lambda_max]
+  *
+  * - Intake and outtake level bounds (alpha):
+  *
+  *   p^{+}_{t} <= kappa * P^{max}_{t}                             [alpha_max]
+  *
+  *   p^{+}_{t} <= kappa * u^{+}_t * P^{max}_{t}                   [alpha_max_u]
+  *
+  *   p^{-}_{t} <= - kappa * (1 - u^{+}_t) * P^{min}_{t}           [alpha_min_u]
+  *
+  * - Storage level bounds (beta):
+  *
+  *   kappa * V^{min}_t <= v_t                                     [beta_min]
+  *
+  *   v_t <= kappa * V^{max}_t                                     [beta_max]
+  *
+  * - Primary and secondary reserves bounds (gamma):
+  *
+  *   p^{pr}_t <= kappa P^{pr max}_t                               [gamma_pr]
+  *
+  *   p^{sc}_t <= kappa P^{sc max}_t                               [gamma_sc]
+  *
+  * The name between [] represents the dual variable associated with each
+  * constraint. The linearization coefficient for the investment variable
+  * associated with the BatteryUnitBlock is
+  *
+  *   P^{min} ' (lambda_min + (1 - u^+) * alpha_min_u) -
+  *   P^{max} ' (lambda_max + alpha_max + u^+ * alpha_max_u) +
+  *   V^{min} ' beta_min - V^{max} ' beta_max -
+  *   P^{pr max} ' gamma_pr - P^{sc max} ' gamma_sc
+  */
+
+ double linearization = 0;
+
+ // Minimum and maximum power output constraint
+
+ const auto & min_power_constraints = unit->get_min_power_constraints();
+
+ const auto & max_power_constraints = unit->get_max_power_constraints();
+
+ // Intake and outtake level bounds
+
+ const auto & intake_bound_constraints = unit->get_max_intake_constraints();
+
+ const auto & max_intake_binary_constraints =
+  unit->get_max_intake_binary_constraints();
+
+ const auto & max_outtake_binary_constraints =
+  unit->get_max_outtake_binary_constraints();
+
+ const auto & u = unit->get_intake_outtake_binary_variables();
+
+ // Storage level bounds
+
+ const auto & storage_level_bound_constraints =
+  unit->get_storage_level_bound_constraints();
+
+ // Primary and secondary reserves bounds
+
+ const auto & primary_reserve_bounds = unit->get_primary_reserve_bounds();
+
+ const auto & secondary_reserve_bounds = unit->get_secondary_reserve_bounds();
+
+ // Lower bound on the kappa variable
+
+ const auto var_lower_bound = get_var_lower_bound( var_index );
+
+ /* The dual value of a constraint that has both finite lower and upper bounds
+  * is associated with either the lower bound or the upper bound
+  * constraint. This will help determine to which bound the dual is associated
+  * with. */
+ const auto obj_sign =
+  ( unit->get_objective_sense() == Objective::eMin ) ? - 1 : 1;
+
+ const auto time_horizon = unit->get_time_horizon();
+
+ for( Index t = 0 ; t < time_horizon ; ++t ) {
+
+  const auto min_power = unit->get_minimum_power( t );
+  const auto max_power = unit->get_maximum_power( t );
+  const auto min_storage = unit->get_minimum_storage( t );
+  const auto max_storage = unit->get_maximum_storage( t );
+
+  // Minimum and maximum power output constraint
+
+  const auto lambda_min = std::abs( min_power_constraints[ t ].get_dual() );
+  const auto lambda_max = std::abs( max_power_constraints[ t ].get_dual() );
+
+  linearization += min_power * lambda_min - max_power * lambda_max;
+
+  // Intake and outtake level bounds
+
+  if( ! intake_bound_constraints.empty() ) {
+   double alpha_max = 0;
+
+   const auto dual = intake_bound_constraints[ t ].get_dual() * dual_sign;
+   if( intake_bound_constraints[ t ].get_lhs() == 0.0 ) {
+    // The constraint has a zero lower bound.
+    if( obj_sign * dual < 0 )
+     // The bound is associated with the upper bound constraint.
+     alpha_max = std::abs( dual );
+   }
+   else {
+    // The constraint must not have a lower bound
+    assert( intake_bound_constraints[ t ].get_lhs() == - Inf< double >() );
+    // and therefore the dual is associated with the upper bound constraint.
+    alpha_max = std::abs( dual );
+   }
+
+   linearization += - alpha_max * max_power;
+  }
+
+  if( ! max_intake_binary_constraints.empty() ) {
+   const auto alpha_max_u =
+    std::abs( max_intake_binary_constraints[ t ].get_dual() );
+   linearization += - alpha_max_u * u[ t ].get_value() * max_power;
+  }
+
+  if( ! max_outtake_binary_constraints.empty() ) {
+   const auto alpha_min_u =
+    std::abs( max_outtake_binary_constraints[ t ].get_dual() );
+   linearization += ( 1.0 - u[ t ].get_value() ) * alpha_min_u * min_power;
+  }
+
+  // Storage level bounds
+
+  const auto dual = storage_level_bound_constraints[ t ].get_dual() * dual_sign;
+  if( obj_sign * dual >= 0 ) {
+   // The bound is associated with the lower bound constraint.
+   linearization += min_storage * std::abs( dual );
+  }
+  else {
+   // The bound is associated with the upper bound constraint.
+   linearization += - max_storage * std::abs( dual );
+  }
+
+  // Primary and secondary reserves bounds
+
+  if( ! primary_reserve_bounds.empty() ) {
+   const auto gamma_pr = std::abs( primary_reserve_bounds[ t ].get_dual() );
+   linearization += - unit->get_maximum_primary_power( t ) * gamma_pr;
+  }
+
+  if( ! secondary_reserve_bounds.empty() ) {
+   const auto gamma_sc = std::abs( secondary_reserve_bounds[ t ].get_dual() );
+   linearization += - unit->get_maximum_secondary_power( t ) * gamma_sc;
+  }
+
+ }
+
+ return linearization;
+}
+
+/*--------------------------------------------------------------------------*/
+
 void InvestmentFunction::update_linearization_unit_blocks
 ( Index stage ,
   const std::vector< std::pair< Index , Index > > & block_indices ) {
@@ -1553,15 +1731,17 @@ void InvestmentFunction::update_linearization_unit_blocks
 
   auto block = ucblock->get_unit_block( block_index );
 
-  if( dynamic_cast< const ThermalUnitBlock * >( block ) ||
-      dynamic_cast< const BatteryUnitBlock * >( block ) ) {
-   v_linearization[ var_index ] +=
-    compute_scale_linearization( block_index , stage );
+  if( dynamic_cast< const ThermalUnitBlock * >( block ) ) {
+   v_linearization[ var_index ] += compute_scale_linearization( block_index ,
+                                                                stage );
   }
-  else if( auto intermittent_unit =
-           dynamic_cast< IntermittentUnitBlock * >( block ) ) {
-   v_linearization[ var_index ] +=
-    compute_kappa_linearization( intermittent_unit , var_index );
+  else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
+   v_linearization[ var_index ] += compute_kappa_linearization( unit ,
+                                                                var_index );
+  }
+  else if( auto unit = dynamic_cast< IntermittentUnitBlock * >( block ) ) {
+   v_linearization[ var_index ] += compute_kappa_linearization( unit ,
+                                                                var_index );
   }
   else {
    // Unrecognized Block
@@ -1747,9 +1927,11 @@ void InvestmentFunction::update_linearization() {
 
 void InvestmentFunction::update_unit_block( UnitBlock * block ,
                                             double investment ) {
- if( dynamic_cast< const ThermalUnitBlock * >( block ) ||
-     dynamic_cast< const BatteryUnitBlock * >( block ) ) {
+ if( dynamic_cast< const ThermalUnitBlock * >( block ) ) {
   block->scale( investment );
+ }
+ else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
+  unit->set_kappa( investment );
  }
  else if( auto unit = dynamic_cast< IntermittentUnitBlock * >( block ) ) {
   unit->set_kappa( investment );
