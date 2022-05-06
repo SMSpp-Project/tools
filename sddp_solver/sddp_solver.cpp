@@ -701,8 +701,10 @@ void invest( InvestmentBlock * investment_block ) {
 
  // Load possibly given cuts
 
- if( ! cuts_filename.empty() )
+ if( ! cuts_filename.empty() ) {
   sddp_solver->set_par( SDDPGreedySolver::strLoadCuts , cuts_filename );
+  sddp_solver->set_par( SDDPGreedySolver::intLoadCutsOnce , 1 );
+ }
 
  // Eliminate redundant cuts if it is desired
 
