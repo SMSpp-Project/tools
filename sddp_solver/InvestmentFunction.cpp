@@ -169,6 +169,19 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
    // All coefficients are zero.
    v_linear_coefficients.resize( num_assets , 0 );
   }
+
+  // Deserialize the amount of assets currently installed in the system
+
+  if( ::deserialize( group , "AmountInstalled" , num_assets ,
+                     v_amount_installed , true , true ) ) {
+   if( v_amount_installed.size() == 1 )
+    v_amount_installed.resize( num_assets , v_amount_installed.front() );
+   else if( v_amount_installed.size() != num_assets )
+    throw( std::logic_error( "InvestmentFunction::deserialize: the "
+                             "'InstalledCapacity' netCDF variable, if provided,"
+                             " must have size 0, 1, or 'NumAssets'." ) );
+  }
+
  } // end( if( num_assets ) )
 
  // Deserialize the inner Block
@@ -610,6 +623,9 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
  ::serialize( group , "Cost" , netCDF::NcDouble() , NumAssets ,
               v_linear_coefficients );
 
+ ::serialize( group , "AmountInstalled" , netCDF::NcDouble() , NumAssets ,
+              v_amount_installed );
+
  if( auto inner_block = get_inner_block() ) {
   auto inner_block_group = group.addGroup( BLOCK_NAME );
   inner_block->serialize( inner_block_group );
@@ -724,20 +740,22 @@ int InvestmentFunction::compute( bool changedvars ) {
 
  for( Index i = 0 ; i < v_linear_coefficients.size() ; ++i ) {
 
-  // TODO disregard the assets that are already "installed"
+  const auto amount_installed = get_amount_installed( i );
 
   // Update the objective value
-  f_value += v_linear_coefficients[ i ] * get_var_value( i , false );
+  f_value += v_linear_coefficients[ i ] * ( get_var_value( i , false ) -
+                                            amount_installed );
 
   // Update the linearization
   v_linearization[ i ] += v_linear_coefficients[ i ];
- }
 
- for( Index i = 0 ; i < v_linear_coefficients.size() ; ++i ) {
+  // Update the linearization constant
   if( f_reformulated_bounds && ( i < v_lower_bound.size() ) &&
       ( v_lower_bound[ i ] > -Inf< double >() ) ) {
    f_linearization_constant += v_linear_coefficients[ i ] * v_lower_bound[ i ];
   }
+
+  f_linearization_constant -= v_linear_coefficients[ i ] * amount_installed;
  }
 
  // Unlock the inner Block if it is necessary
@@ -1455,33 +1473,31 @@ double InvestmentFunction::compute_kappa_linearization
 
   // Bound constraints on the active power
 
+  double lambda_min = 0;
+  double lambda_max = 0;
+
   // Retrieve the dual associated with the bound constraints
 
-  double bound_dual = 0;
-  if( ! active_power_bound_constraints.empty() )
-   bound_dual = active_power_bound_constraints[ t ].get_dual() * dual_sign;
+  if( ! active_power_bound_constraints.empty() ) {
+   const auto bound_dual =
+    active_power_bound_constraints[ t ].get_dual() * dual_sign;
 
-  // Now determine the dual value associated with each bound
+   // Now determine the dual value associated with each bound
 
-  double lambda_min;
-  double lambda_max;
-
-  if( active_power_bound_constraints[ t ].get_lhs() ==
-      active_power_bound_constraints[ t ].get_rhs() ) {
-   // Equality constraint
-   lambda_min = 0;
-   lambda_max = bound_dual;
-  }
-  else if( obj_sign * bound_dual >= 0 ) {
-   // The dual value is associated with the lower bound constraint
-   lambda_min = std::abs( bound_dual );
-   lambda_max = 0;
-  }
-  else {
-   // The dual value is associated with the upper bound constraint
-   lambda_min = 0;
-   lambda_max = std::abs( bound_dual );
-  }
+   if( active_power_bound_constraints[ t ].get_lhs() ==
+       active_power_bound_constraints[ t ].get_rhs() ) {
+    // Equality constraint
+    lambda_max = bound_dual;
+   }
+   else if( obj_sign * bound_dual >= 0 ) {
+    // The dual value is associated with the lower bound constraint
+    lambda_min = std::abs( bound_dual );
+   }
+   else {
+    // The dual value is associated with the upper bound constraint
+    lambda_max = std::abs( bound_dual );
+   }
+  } // end( ! active_power_bound_constraints.empty() )
 
   // Minimum and maximum total power constraints
 
@@ -1613,10 +1629,6 @@ double InvestmentFunction::compute_kappa_linearization
 
  const auto & secondary_reserve_bounds = unit->get_secondary_reserve_bounds();
 
- // Lower bound on the kappa variable
-
- const auto var_lower_bound = get_var_lower_bound( var_index );
-
  /* The dual value of a constraint that has both finite lower and upper bounds
   * is associated with either the lower bound or the upper bound
   * constraint. This will help determine to which bound the dual is associated
@@ -1736,12 +1748,20 @@ void InvestmentFunction::update_linearization_unit_blocks
                                                                 stage );
   }
   else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
-   v_linearization[ var_index ] += compute_kappa_linearization( unit ,
-                                                                var_index );
+   if( f_scale_battery )
+    v_linearization[ var_index ] += compute_scale_linearization( block_index ,
+                                                                 stage );
+   else
+    v_linearization[ var_index ] += compute_kappa_linearization( unit ,
+                                                                 var_index );
   }
   else if( auto unit = dynamic_cast< IntermittentUnitBlock * >( block ) ) {
-   v_linearization[ var_index ] += compute_kappa_linearization( unit ,
-                                                                var_index );
+   if( f_scale_intermittent )
+    v_linearization[ var_index ] += compute_scale_linearization( block_index ,
+                                                                 stage );
+   else
+    v_linearization[ var_index ] += compute_kappa_linearization( unit ,
+                                                                 var_index );
   }
   else {
    // Unrecognized Block
@@ -1777,12 +1797,14 @@ void InvestmentFunction::update_linearization_network_blocks
   if( const auto dc_network =
       dynamic_cast< const DCNetworkBlock * >( network_block ) ) {
 
+   // HVDC lines
+
+   assert( dc_network->get_lines_type() == NetworkBlock::kHVDC );
+
    const auto & constraints = dc_network->get_power_flow_limit_HVDC_bounds();
 
    if( constraints.empty() )
     continue;
-
-   // HVDC lines
 
    /* For each line l, the flow limit constraints on that line are:
     *
@@ -1931,10 +1953,16 @@ void InvestmentFunction::update_unit_block( UnitBlock * block ,
   block->scale( investment );
  }
  else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
-  unit->set_kappa( investment );
+  if( f_scale_battery )
+   unit->scale( investment );
+  else
+   unit->set_kappa( investment );
  }
  else if( auto unit = dynamic_cast< IntermittentUnitBlock * >( block ) ) {
-  unit->set_kappa( investment );
+  if( f_scale_intermittent )
+   unit->scale( investment );
+  else
+   unit->set_kappa( investment );
  }
  else {
   // Unrecognized UnitBlock

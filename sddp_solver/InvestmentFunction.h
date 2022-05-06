@@ -819,6 +819,15 @@ class InvestmentFunction : public C05Function , public Block {
   *   not provided, then we assume that LowerBound[i] = 0 for all i in {0,
   *   ..., NumAssets - 1}.
   *
+  * - The variable "AmountInstalled", of type netCDF::NcDouble(), which is
+  *   either a scalar or indexed over "NumAssets". If it is a scalar, then we
+  *   assume that AmountInstalled[i] = AmountInstalled[0] for all i in {0,
+  *   ..., NumAssets - 1}. The i-th element of this vector provides the amount
+  *   of the i-th asset that is currently installed in the system and,
+  *   therefore, that is not subject to investment costs. This variable is
+  *   optional. If it is not provided, then we assume that AmountInstalled[i]
+  *   = 1 for all i in {0, ..., NumAssets - 1}.
+  *
   * - The group "SDDPBlock", containing the description of the inner Block. */
 
  void serialize( netCDF::NcGroup & group ) const override;
@@ -1070,6 +1079,25 @@ class InvestmentFunction : public C05Function , public Block {
   return v_asset_type;
  }
 
+/*--------------------------------------------------------------------------*/
+
+ /// returns the amount of the given asset currently installed in the system
+ /** This function returns the amount of the given \p asset that is currently
+  * installed in the system and, therefore, that is not subject to investment
+  * costs.
+  *
+  * @param asset The index of an asset subject to investment.
+  *
+  * @return The amount of the given \p asset currently installed in the
+  *         system. */
+
+ double get_amount_installed( Index asset ) const {
+  if( v_amount_installed.empty() )
+   return 1;
+  assert( asset < v_amount_installed.size() );
+  return v_amount_installed[ asset ];
+ }
+
 /** @} ---------------------------------------------------------------------*/
 /*-------------------- Methods for handling Modification -------------------*/
 /*--------------------------------------------------------------------------*/
@@ -1141,6 +1169,10 @@ class InvestmentFunction : public C05Function , public Block {
   * if the lower bound l is finite. This bool variable thus indicates whether
   * the natural bounds on the active variables have been reformulated. */
 
+ bool f_scale_battery = false; ///< scale battery units
+
+ bool f_scale_intermittent = false; ///< scale intermittent units
+
  void * f_id; ///< the "identity" of the InvestmentFunction
 
  double f_value;
@@ -1163,6 +1195,9 @@ class InvestmentFunction : public C05Function , public Block {
 
  std::vector< double > v_linear_coefficients;
  ///< linear coefficients of the active Variable
+
+ std::vector< double > v_amount_installed;
+ ///< amount of each asset currently installed in the system
 
  std::vector< std::vector< std::vector< Index > > > generator_node_map;
  ///< maps the index of a generator to the node it belongs to
