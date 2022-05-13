@@ -8,8 +8,8 @@
  * be given in a netCDF file. This tool can be executed as follows:
  *
  *   ./sddp_solver [-m MODE] [-i INDEX] [-s NUMBER] [-t STAGE] [-n NUMBER]
- *                 [-r] [-B FILE] [-S FILE] [-p PATH] [-c PATH] [-l FILE] [-e]
- *                 <nc4-file>
+ *                 [-r] [-B FILE] [-S FILE] [-p PATH] [-c PATH] [-l FILE]
+ *                 [-x FILE ][-e] <nc4-file>
  *
  * The only mandatory argument is the netCDF file containing the description
  * of the SDDPBlock. This netCDF file can be either a BlockFile or a
@@ -44,6 +44,17 @@
  * initial state for the next simulation. See the comments below for more
  * details. If the value NUMBER provided by this option is greater than 1,
  * then NUMBER consecutive simulations are performed.
+ *
+ * In investment mode (i.e., when the "-m investment" option is used), it is
+ * possible to provide an initial point (investment) through the -x
+ * option. This option must be followed by a file containing the initial
+ * point. If there are N assets subject to investment, then this file must
+ * contain N numbers, where the i-th number is the initial value for the
+ * investment in the i-th asset. If this option is not used, then the initial
+ * value x_i for the investment in the i-th asset is determined as follows. If
+ * the lower bound l_i on the i-th investment is finite, then x_i =
+ * l_i. Otherwise, if the upper bound u_i on the i-th investment is finite,
+ * then x_i = u_i. Otherwise, if both bounds are not finite, then x_i = 0.
  *
  * The -r option indicates that the integrality constraints over the variables
  * must be relaxed.
@@ -132,6 +143,7 @@ std::string block_config_filename{};
 std::string solver_config_filename{};
 std::string config_filename_prefix{};
 std::string cuts_filename{};
+std::string initial_point_filename{};
 long scenario_id = 0;
 long num_sub_blocks_per_stage = 1;
 long number_simulations = 1;
@@ -198,7 +210,8 @@ void print_help() {
            << "  -r, --relax                     Relax integer variables.\n"
            << "  -S, --solvercfg <file>          Solver configuration.\n"
            << "  -s, --num-simulations <number>  Number of simulations to be performed.\n"
-           << "  -t, --stage <stage>             Stage from which initial state is taken."
+           << "  -t, --stage <stage>             Stage from which initial state is taken.\n"
+           << "  -x, --initial-investment <file> Initial investment."
            << std::endl;
 }
 
@@ -225,7 +238,7 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:c:hei:l:m:n:p:rS:s:t:";
+ const char * const short_opts = "B:c:hei:l:m:n:p:rS:s:t:x:";
  const option long_opts[] = {
   { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
   { "configdir" ,                required_argument , nullptr , 'c' } ,
@@ -240,6 +253,7 @@ void process_args( int argc , char ** argv ) {
   { "solvercfg" ,                required_argument , nullptr , 'S' } ,
   { "num-simulations" ,          required_argument , nullptr , 's' } ,
   { "stage" ,                    required_argument , nullptr , 't' } ,
+  { "initial-investment" ,       required_argument , nullptr , 'x' } ,
   { nullptr ,                    no_argument ,       nullptr , 0 }
  };
 
@@ -314,6 +328,9 @@ void process_args( int argc , char ** argv ) {
    }
    case 't':
     initial_solution_stage = get_long_option();
+    break;
+   case 'x':
+    initial_point_filename = std::string( optarg );
     break;
    case 'h': // -h or --help
     print_help();
@@ -674,6 +691,70 @@ void simulate( SDDPBlock * sddp_block ) {
 
 /*--------------------------------------------------------------------------*/
 
+std::vector< double > get_default_initial_point( InvestmentBlock * block) {
+ block->generate_abstract_constraints();
+ const auto & box_constraints = block->get_constraints();
+ std::vector< double > initial_point( box_constraints.size() );
+ for( Index i = 0 ; i < box_constraints.size() ; ++i ) {
+  if( box_constraints[ i ].get_lhs() > -Inf< double >() )
+   initial_point[ i ] = box_constraints[ i ].get_lhs();
+  else if( box_constraints[ i ].get_rhs() < Inf< double >() )
+   initial_point[ i ] = box_constraints[ i ].get_rhs();
+  else
+   initial_point[ i ] = 0;
+ }
+
+ return initial_point;
+}
+
+/*--------------------------------------------------------------------------*/
+
+std::vector< double > load_initial_point() {
+ if( initial_point_filename.empty() )
+  return {};
+
+ std::ifstream file( initial_point_filename );
+
+ // Make sure the file is open
+ if( ! file.is_open() )
+  throw( std::runtime_error( "It was not possible to open the file \"" +
+                             initial_point_filename + "\"." ) );
+
+ std::vector< double > initial_point;
+
+ double component;
+ while( file >> component )
+  initial_point.push_back( component );
+
+ return initial_point;
+}
+
+/*--------------------------------------------------------------------------*/
+
+void set_initial_point( InvestmentBlock * investment_block ) {
+
+ // Set the initial point
+
+ investment_block->generate_abstract_variables();
+
+ auto initial_point = load_initial_point();
+
+ if( initial_point.empty() )
+  initial_point = get_default_initial_point( investment_block );
+
+ const auto num_variables = investment_block->get_number_variables();
+ if( initial_point.size() != num_variables )
+  throw( std::logic_error( "The initial point has size " +
+                           std::to_string( initial_point.size() ) + ", but "
+                           "there are " + std::to_string( num_variables ) +
+                           " variables." ) );
+
+ if( ! initial_point.empty() )
+  investment_block->set_variable_values( initial_point );
+}
+
+/*--------------------------------------------------------------------------*/
+
 void invest( InvestmentBlock * investment_block ) {
 
  auto investment_function = static_cast< InvestmentFunction * >
@@ -710,6 +791,8 @@ void invest( InvestmentBlock * investment_block ) {
 
  if( eliminate_reduntant_cuts )
   CutProcessing().remove_redundant_cuts( sddp_block );
+
+ // Solve
 
  auto investment_solver = investment_block->get_registered_solvers().front();
 
@@ -1070,6 +1153,11 @@ void process_prob_file( const netCDF::NcFile & file ) {
    throw( std::logic_error("BlockConfig group was not properly provided.") );
   block_config->apply( main_block );
   block_config->clear();
+
+  if( investment_block ) {
+   // Possibly set the initial point
+   set_initial_point( investment_block );
+  }
 
   // Configure solver
   auto solver_config_group = problem_group.getGroup( "BlockSolver" );
@@ -1969,6 +2057,10 @@ void process_block_file( const netCDF::NcFile & file ) {
     ( investment_block->get_function() );
 
    investment_function->set_ComputeConfig( &investment_function_config );
+
+   // Possibly set the initial point
+
+   set_initial_point( investment_block );
   }
 
   solver_config->apply( main_block );
