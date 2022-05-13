@@ -38,9 +38,6 @@
 #include <functional>
 #include <queue>
 
-const double dual_sign = -1.0; // TODO The Solver must provide the duals with
-                               // the right sign
-
 /*--------------------------------------------------------------------------*/
 /*------------------------- NAMESPACE AND USING ----------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -730,12 +727,6 @@ int InvestmentFunction::compute( bool changedvars ) {
   v_linearization[ i ] /= num_scenarios;
  }
 
- f_linearization_constant /= num_scenarios;
-
- // Update the linearization constant to take into account the objective value
-
- f_linearization_constant += f_value;
-
  // Consider the linear term of the objective
 
  for( Index i = 0 ; i < v_linear_coefficients.size() ; ++i ) {
@@ -748,14 +739,6 @@ int InvestmentFunction::compute( bool changedvars ) {
 
   // Update the linearization
   v_linearization[ i ] += v_linear_coefficients[ i ];
-
-  // Update the linearization constant
-  if( f_reformulated_bounds && ( i < v_lower_bound.size() ) &&
-      ( v_lower_bound[ i ] > -Inf< double >() ) ) {
-   f_linearization_constant += v_linear_coefficients[ i ] * v_lower_bound[ i ];
-  }
-
-  f_linearization_constant -= v_linear_coefficients[ i ] * amount_installed;
  }
 
  // Unlock the inner Block if it is necessary
@@ -1069,7 +1052,6 @@ InvestmentFunction::get_benders_function( Index stage ) const {
 
 void InvestmentFunction::reset_linearization() {
  v_linearization.assign( v_x.size() , 0 );
- f_linearization_constant = 0;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1127,6 +1109,8 @@ void InvestmentFunction::build_generator_node_map() {
    }
    continue;
   }
+
+  // There are multiple nodes.
 
   const auto number_units = ucblock->get_number_units();
   const auto & generator_node = ucblock->get_generator_node();
@@ -1192,15 +1176,25 @@ double InvestmentFunction::compute_scale_linearization
   for( Index g = 0 ; g < block->get_number_generators() ; ++g ) {
 
    const auto node = get_node( stage , block_index , g );
-   const auto dual = node_injection_constraints[ t ][ node ].get_dual();
-   const auto active_power = block->get_active_power( g )[ t ].get_value();
-   linearization += dual * active_power;
+
+   const auto & constraint = node_injection_constraints[ t ][ node ];
+   const auto function = constraint.get_function();
+
+   const auto dual = constraint.get_dual();
+   const auto & active_power = block->get_active_power( g )[ t ];
+   linearization += dual * active_power.get_value();
+
+   assert( active_power.is_active( &constraint ) < Inf< Index >() );
+   assert( function->is_active( &active_power ) < Inf< Index >() );
 
    if( auto fc = block->get_fixed_consumption( g ) ) {
     if( auto u = block->get_commitment( g ) ) {
      const auto commitment = u[ t ].get_value();
      const auto fixed_consumption = fc[ t ];
      linearization += dual * fixed_consumption * ( 1.0 - commitment );
+
+     assert( u[ t ].is_active( &constraint ) );
+     assert( function->is_active( &u[ t ] ) );
     }
    }
 
@@ -1242,9 +1236,8 @@ double InvestmentFunction::compute_scale_linearization
           block->get_primary_spinning_reserve( generator ) ) {
 
        const auto primary_spinning_reserve = & primary_s_r[ t ];
-       const auto dual =
-        std::abs( primary_demand_constraints[ t ][ zone_id ].get_dual() );
-       linearization += - dual * primary_spinning_reserve->get_value();
+       const auto dual = primary_demand_constraints[ t ][ zone_id ].get_dual();
+       linearization += dual * primary_spinning_reserve->get_value();
       }
 
      } // end( for each generator )
@@ -1289,9 +1282,8 @@ double InvestmentFunction::compute_scale_linearization
           block->get_secondary_spinning_reserve( generator ) ) {
 
        const auto secondary_spinning_reserve = & secondary_s_r[ t ];
-       const auto dual =
-        std::abs( secondary_demand_constraints[ t ][ zone_id ].get_dual() );
-       linearization += - dual * secondary_spinning_reserve->get_value();
+       const auto dual = secondary_demand_constraints[ t ][ zone_id ].get_dual();
+       linearization += dual * secondary_spinning_reserve->get_value();
       }
 
      } // end( for each generator )
@@ -1332,8 +1324,7 @@ double InvestmentFunction::compute_scale_linearization
       if( ! ucblock->generator_belongs_to_node( elc_generator , node_id ) )
        continue;
 
-      const auto dual =
-       std::abs( inertia_demand_constraints[ t ][ zone_id ].get_dual() );
+      const auto dual = inertia_demand_constraints[ t ][ zone_id ].get_dual();
 
       // Commitment variable
 
@@ -1343,7 +1334,7 @@ double InvestmentFunction::compute_scale_linearization
       if( commitment && inertia_commitment ) {
        const auto commitment_t = & commitment[ t ];
        linearization +=
-        - dual * inertia_commitment[ t ] * commitment_t->get_value();
+        dual * inertia_commitment[ t ] * commitment_t->get_value();
       }
 
       // Active power variable
@@ -1352,10 +1343,8 @@ double InvestmentFunction::compute_scale_linearization
       auto inertia_power = block->get_inertia_power( generator );
 
       if( active_power && inertia_power ) {
-
        auto active_power_t = & active_power[ t ];
-       linearization +=
-        - dual * inertia_power[ t ] * active_power_t->get_value();
+       linearization += dual * inertia_power[ t ] * active_power_t->get_value();
       }
 
      } // end( for each generator )
@@ -1473,30 +1462,20 @@ double InvestmentFunction::compute_kappa_linearization
 
   // Bound constraints on the active power
 
-  double lambda_min = 0;
-  double lambda_max = 0;
-
-  // Retrieve the dual associated with the bound constraints
-
   if( ! active_power_bound_constraints.empty() ) {
-   const auto bound_dual =
-    active_power_bound_constraints[ t ].get_dual() * dual_sign;
+   const auto dual = active_power_bound_constraints[ t ].get_dual();
 
-   // Now determine the dual value associated with each bound
+   // Now determine which bound is associated with the dual value
 
-   if( active_power_bound_constraints[ t ].get_lhs() ==
-       active_power_bound_constraints[ t ].get_rhs() ) {
-    // Equality constraint
-    lambda_max = bound_dual;
-   }
-   else if( obj_sign * bound_dual >= 0 ) {
-    // The dual value is associated with the lower bound constraint
-    lambda_min = std::abs( bound_dual );
-   }
-   else {
-    // The dual value is associated with the upper bound constraint
-    lambda_max = std::abs( bound_dual );
-   }
+   double bound = 0;
+   if( obj_sign * dual > 0 )
+    // The dual is associated with the lower bound constraint
+    bound = min_power[ t ];
+   else
+    // The dual is associated with the upper bound constraint
+    bound = max_power[ t ];
+
+   linearization += - dual * bound;
   } // end( ! active_power_bound_constraints.empty() )
 
   // Minimum and maximum total power constraints
@@ -1514,41 +1493,7 @@ double InvestmentFunction::compute_kappa_linearization
   // Update the linearization coefficient
 
   linearization +=
-   min_power[ t ] * ( lambda_min + alpha_min ) -
-   max_power[ t ] * ( lambda_max + gamma * alpha_max );
-
-  // Update the linearization constant
-
-  if( const auto p_ac = intermittent_unit->get_active_power( 0 ) )
-   f_linearization_constant += p_ac[ t ].get_value() *
-    ( lambda_max - lambda_min + gamma * alpha_max - alpha_min );
-
-  if( const auto p_pr = intermittent_unit->get_primary_spinning_reserve( 0 ) )
-   f_linearization_constant += p_pr[ t ].get_value() *
-    ( alpha_min + alpha_max );
-
-  if( const auto p_sc = intermittent_unit->get_secondary_spinning_reserve( 0 ) )
-   f_linearization_constant += p_sc[ t ].get_value() *
-    ( alpha_min + alpha_max );
-
-  // If the bounds on the variables have been reformulated, consider the
-  // contribution of the lower bound.
-
-  if( f_reformulated_bounds && ( var_lower_bound > -Inf< double >() ) ) {
-
-   // Lower bound constraint
-   f_linearization_constant +=   lambda_min * min_power[ t ] * var_lower_bound;
-
-   // Upper bound constraint
-   f_linearization_constant += - lambda_max * max_power[ t ] * var_lower_bound;
-
-   // Minimum total power constraint
-   f_linearization_constant += alpha_min * min_power[ t ] * var_lower_bound;
-
-   // Maximum total power constraint
-   f_linearization_constant +=
-    - alpha_max * gamma * max_power[ t ] * var_lower_bound;
-  }
+   min_power[ t ] * ( alpha_min ) - max_power[ t ] * ( gamma * alpha_max );
  }
 
  return linearization;
@@ -1657,21 +1602,16 @@ double InvestmentFunction::compute_kappa_linearization
   if( ! intake_bound_constraints.empty() ) {
    double alpha_max = 0;
 
-   const auto dual = intake_bound_constraints[ t ].get_dual() * dual_sign;
-   if( intake_bound_constraints[ t ].get_lhs() == 0.0 ) {
-    // The constraint has a zero lower bound.
-    if( obj_sign * dual < 0 )
-     // The bound is associated with the upper bound constraint.
-     alpha_max = std::abs( dual );
-   }
-   else {
-    // The constraint must not have a lower bound
-    assert( intake_bound_constraints[ t ].get_lhs() == - Inf< double >() );
-    // and therefore the dual is associated with the upper bound constraint.
-    alpha_max = std::abs( dual );
-   }
+   const auto dual = intake_bound_constraints[ t ].get_dual();
 
-   linearization += - alpha_max * max_power;
+   // Now determine which bound is associated with the dual value
+
+   double bound = 0;
+   if( obj_sign * dual < 0 )
+    // The dual is associated with the upper bound constraint
+    bound = max_power;
+
+   linearization += - dual * bound;
   }
 
   if( ! max_intake_binary_constraints.empty() ) {
@@ -1688,15 +1628,15 @@ double InvestmentFunction::compute_kappa_linearization
 
   // Storage level bounds
 
-  const auto dual = storage_level_bound_constraints[ t ].get_dual() * dual_sign;
-  if( obj_sign * dual >= 0 ) {
-   // The bound is associated with the lower bound constraint.
-   linearization += min_storage * std::abs( dual );
+  const auto dual = storage_level_bound_constraints[ t ].get_dual();
+  auto bound = max_storage;
+  if( obj_sign * dual > 0 ) {
+   // The bound is associated with the lower bound constraint
+   bound = min_storage;
   }
-  else {
-   // The bound is associated with the upper bound constraint.
-   linearization += - max_storage * std::abs( dual );
-  }
+
+  // The bound is associated with the upper bound constraint.
+  linearization += - dual * bound;
 
   // Primary and secondary reserves bounds
 
@@ -1824,52 +1764,18 @@ void InvestmentFunction::update_linearization_network_blocks
 
    for( const auto & [ line , var_index ] : line_indices ) {
 
-    const auto dual = constraints[ line ].get_dual() * dual_sign;
+    const auto dual = constraints[ line ].get_dual();
     const auto min_flow = dc_network->get_min_power_flow( line );
     const auto max_flow = dc_network->get_max_power_flow( line );
 
-    // Dual value associated with the lower bound constraint.
-    double lambda_min;
-
-    // Dual value associated with the upper bound constraint.
-    double lambda_max;
-
-    if( obj_sign * dual >= 0 ) {
+    auto bound = max_flow;
+    if( obj_sign * dual > 0 )
      // The dual value is associated with the lower bound constraint.
-     lambda_min = std::abs( dual );
-     lambda_max = 0;
-    }
-    else {
-     // The dual value is associated with the upper bound constraint.
-     lambda_min = 0;
-     lambda_max = std::abs( dual );
-    }
+     bound = min_flow;
 
     // Finally, update the linearization.
 
-    // Update the linearization coefficient.
-
-    v_linearization[ var_index ] +=
-     lambda_min * min_flow - lambda_max * max_flow;
-
-    // Update the linearization constant.
-
-    const auto power_flow = dc_network->get_power_flow();
-    if( ! power_flow.empty() ) {
-     f_linearization_constant +=
-      ( lambda_max - lambda_min ) * power_flow[ line ].get_value();
-    }
-
-    // If the bounds on the variables have been reformulated, consider the
-    // contribution of the lower bound.
-
-    const auto var_lower_bound = get_var_lower_bound( var_index );
-
-    if( f_reformulated_bounds && ( var_lower_bound > -Inf< double >() ) ) {
-     f_linearization_constant +=
-      var_lower_bound * ( lambda_min * min_flow - lambda_max * max_flow );
-    }
-
+    v_linearization[ var_index ] += - dual * bound;
    } // end( for each line )
   } // end( dynamic_cast< const DCNetworkBlock * > )
   else {
@@ -1892,7 +1798,7 @@ void InvestmentFunction::update_linearization() {
  auto retrieve_var_solution = [ this ]( Index stage ) {
   auto ucblock_solver = get_ucblock_solver( stage );
   if( ucblock_solver->has_var_solution() )
-   ucblock_solver->get_var_solution();
+   ucblock_solver->get_var_solution(); // TODO pass Configuration
   else
    throw( std::logic_error( "InvestmentFunction::update_linearization: "
                             "primal solution not available." ) );
@@ -1901,7 +1807,7 @@ void InvestmentFunction::update_linearization() {
  auto retrieve_dual_solution = [ this ]( Index stage ) {
   auto ucblock_solver = get_ucblock_solver( stage );
   if( ucblock_solver->has_dual_solution() )
-   ucblock_solver->get_dual_solution();
+   ucblock_solver->get_dual_solution(); // TODO pass Configuration
   else
    throw( std::logic_error( "InvestmentFunction::update_linearization: "
                             "dual solution not available." ) );

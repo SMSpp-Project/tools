@@ -1190,9 +1190,6 @@ class InvestmentFunction : public C05Function , public Block {
  std::vector< double > v_linearization;
  ///< linearization associated with the most recent call to compute()
 
- double f_linearization_constant;
- ///< linearization constant associated with the most recent call to compute()
-
  std::vector< double > v_linear_coefficients;
  ///< linear coefficients of the active Variable
 
