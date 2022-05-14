@@ -100,6 +100,7 @@ Options:
   -S, --solvercfg <file>          Solver configuration.
   -s, --num-simulations <number>  Number of simulations to be performed.
   -t, --stage <stage>             Stage from which initial state is taken.
+  -x, --initial-investment <file> Initial investment.
 ```
 
 The input netCDF file can be a problem file or a block file:
@@ -135,6 +136,17 @@ stage of a simulation is used as the initial state for the next
 simulation. See the comments below for more details. If the value NUMBER
 provided by this option is greater than 1, then NUMBER consecutive simulations
 are performed.
+
+In investment mode (i.e., when the `-m investment` option is used), it is
+possible to provide an initial point (investment) through the `-x`
+option. This option must be followed by a file containing the initial
+point. If there are N assets subject to investment, then this file must
+contain N numbers, where the i-th number is the initial value for the
+investment in the i-th asset. If this option is not used, then the initial
+value x_i for the investment in the i-th asset is determined as follows. If
+the lower bound l_i on the i-th investment is finite, then x_i =
+l_i. Otherwise, if the upper bound u_i on the i-th investment is finite, then
+x_i = u_i. Otherwise, if both bounds are not finite, then x_i = 0.
 
 The `-r` option indicates that the integrality constraints over the variables
 must be relaxed.
