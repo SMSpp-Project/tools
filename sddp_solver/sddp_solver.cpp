@@ -579,7 +579,8 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
            " and " + std::to_string( stage ) +
            " do not have the same structure." ) );
 
- if( ( mode == eSimulation ) && ( ! simulate_investment ) ) {
+ if( ( mode == eSimulation ) ||
+     ( ( mode == eInvestment ) && simulate_investment ) ) {
   auto init_up_down_time = compute_init_up_down_time
    ( sddp_block , previous_unit , unit , stage );
 
