@@ -150,6 +150,7 @@ long number_simulations = 1;
 long initial_solution_stage = -1;
 bool relax_integrality = false;
 bool eliminate_reduntant_cuts = false;
+bool simulate_investment = false;
 const bool force_hard_components = false;
 const bool continuous_relaxation = true;
 
@@ -211,7 +212,8 @@ void print_help() {
            << "  -S, --solvercfg <file>          Solver configuration.\n"
            << "  -s, --num-simulations <number>  Number of simulations to be performed.\n"
            << "  -t, --stage <stage>             Stage from which initial state is taken.\n"
-           << "  -x, --initial-investment <file> Initial investment."
+           << "  -x, --initial-investment <file> Initial investment.\n"
+           << "  -z, --simulate-investment       Simulate the given investment."
            << std::endl;
 }
 
@@ -238,7 +240,7 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:c:hei:l:m:n:p:rS:s:t:x:";
+ const char * const short_opts = "B:c:hei:l:m:n:p:rS:s:t:x:z";
  const option long_opts[] = {
   { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
   { "configdir" ,                required_argument , nullptr , 'c' } ,
@@ -254,6 +256,7 @@ void process_args( int argc , char ** argv ) {
   { "num-simulations" ,          required_argument , nullptr , 's' } ,
   { "stage" ,                    required_argument , nullptr , 't' } ,
   { "initial-investment" ,       required_argument , nullptr , 'x' } ,
+  { "simulate-investment" ,      no_argument       , nullptr , 'z' } ,
   { nullptr ,                    no_argument ,       nullptr , 0 }
  };
 
@@ -331,6 +334,9 @@ void process_args( int argc , char ** argv ) {
     break;
    case 'x':
     initial_point_filename = std::string( optarg );
+    break;
+   case 'z':
+    simulate_investment = true;
     break;
    case 'h': // -h or --help
     print_help();
@@ -573,7 +579,7 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
            " and " + std::to_string( stage ) +
            " do not have the same structure." ) );
 
- if( mode == eSimulation ) {
+ if( ( mode == eSimulation ) && ( ! simulate_investment ) ) {
   auto init_up_down_time = compute_init_up_down_time
    ( sddp_block , previous_unit , unit , stage );
 
@@ -749,6 +755,14 @@ void set_initial_point( InvestmentBlock * investment_block ) {
                            "there are " + std::to_string( num_variables ) +
                            " variables." ) );
 
+ const auto & var_lower_bound = investment_block->get_variable_lower_bound();
+
+ for( Index i = 0 ; i < initial_point.size() ; ++i ) {
+  if( reformulate_variable_bounds && ( i < var_lower_bound.size() ) &&
+      ( var_lower_bound[ i ] > -Inf< double >() ) )
+   initial_point[ i ] -= var_lower_bound[ i ];
+ }
+
  if( ! initial_point.empty() )
   investment_block->set_variable_values( initial_point );
 }
@@ -794,42 +808,54 @@ void invest( InvestmentBlock * investment_block ) {
 
  // Solve
 
- auto investment_solver = investment_block->get_registered_solvers().front();
-
- investment_solver->set_log( &std::cout );
-
- auto status = investment_solver->compute();
-
-#ifdef USE_MPI
- boost::mpi::communicator world;
- if( world.rank() == 0 ) {
-#endif
-
-  const auto lb = investment_solver->get_lb();
-  const auto ub = investment_solver->get_ub();
-
-  std::cout << "Lower bound: " << std::setprecision( 20 ) << lb << std::endl;
-  std::cout << "Upper bound: " << std::setprecision( 20 ) << ub << std::endl;
-
-  if( investment_solver->has_var_solution() ) {
-   investment_solver->get_var_solution();
-   std::cout << "Solution: " << std::endl;
-   const auto & variables = investment_block->get_variables();
-   const auto & var_lower_bound = investment_block->get_variable_lower_bound();
-   const auto width = std::to_string( variables.size() ).size();
-   for( Index i = 0 ; i < variables.size() ; ++i ) {
-    auto value = variables[ i ].get_value();
-    if( reformulate_variable_bounds && ( i < var_lower_bound.size() ) &&
-        ( var_lower_bound[ i ] > -Inf< double >() ) )
-     value += var_lower_bound[ i ];
-    std::cout << std::setw( width ) << i << " " << value << std::endl;
-   }
-  }
-
-#ifdef USE_MPI
+ if( simulate_investment ) {
+  // Simulate
+  auto objective =
+   static_cast< FRealObjective * >( investment_block->get_objective() );
+  objective->compute();
+  const auto value = objective->value();
+  std::cout << "Value: " << std::setprecision( 20 ) << value << std::endl;
  }
+ else {
+
+  // Optimize
+
+  auto investment_solver = investment_block->get_registered_solvers().front();
+
+  investment_solver->set_log( &std::cout );
+
+  auto status = investment_solver->compute();
+
+#ifdef USE_MPI
+  boost::mpi::communicator world;
+  if( world.rank() == 0 ) {
 #endif
 
+   const auto lb = investment_solver->get_lb();
+   const auto ub = investment_solver->get_ub();
+
+   std::cout << "Lower bound: " << std::setprecision( 20 ) << lb << std::endl;
+   std::cout << "Upper bound: " << std::setprecision( 20 ) << ub << std::endl;
+
+   if( investment_solver->has_var_solution() ) {
+    investment_solver->get_var_solution();
+    std::cout << "Solution: " << std::endl;
+    const auto & variables = investment_block->get_variables();
+    const auto & var_lower_bound = investment_block->get_variable_lower_bound();
+    const auto width = std::to_string( variables.size() ).size();
+    for( Index i = 0 ; i < variables.size() ; ++i ) {
+     auto value = variables[ i ].get_value();
+     if( reformulate_variable_bounds && ( i < var_lower_bound.size() ) &&
+         ( var_lower_bound[ i ] > -Inf< double >() ) )
+      value += var_lower_bound[ i ];
+     std::cout << std::setw( width ) << i << " " << value << std::endl;
+    }
+   }
+
+#ifdef USE_MPI
+  }
+#endif
+ }
 }
 
 /*--------------------------------------------------------------------------*/
