@@ -792,7 +792,7 @@ class InvestmentFunction : public C05Function , public Block {
   *   transmission line, then its index is the index that this transmission
   *   line has within its NetworkBlock.
   *
-  * - The one-dimensional variable "AssetType", of type netCDF::Ubyte(), which
+  * - The one-dimensional variable "AssetType", of type netCDF::Uint(), which
   *   is either a scalar or indexed over "NumAssets", indicating the type of
   *   the i-th asset. For a UnitBlock, the type is 0, and for a transmission
   *   line, the type is 1. If it is a scalar, then we assume that AssetType[i]

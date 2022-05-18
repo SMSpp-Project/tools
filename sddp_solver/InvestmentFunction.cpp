@@ -611,7 +611,7 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
  ::serialize( group , "Assets" , netCDF::NcUint() , NumAssets ,
               v_asset_indices );
 
- ::serialize( group , "AssetType" , netCDF::NcUbyte() , NumAssets ,
+ ::serialize( group , "AssetType" , netCDF::NcUint() , NumAssets ,
               v_asset_type );
 
  ::serialize( group , "LowerBound" , netCDF::NcDouble() , NumAssets ,
@@ -773,17 +773,13 @@ Function::FunctionValue InvestmentFunction::get_constant_term( void ) const {
 /*--------------------------------------------------------------------------*/
 
 bool InvestmentFunction::is_convex( void ) const {
- if( v_Block.empty() )
-  return false;
- return( get_inner_block_objective_sense() == Objective::eMin );
+ return true;
 }
 
 /*--------------------------------------------------------------------------*/
 
 bool InvestmentFunction::is_concave( void ) const {
- if( v_Block.empty() )
-  return false;
- return( get_inner_block_objective_sense() == Objective::eMax );
+ return false;
 }
 
 /*--------------------------------------------------------------------------*/
