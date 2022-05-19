@@ -579,8 +579,7 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
            " and " + std::to_string( stage ) +
            " do not have the same structure." ) );
 
- if( ( mode == eSimulation ) ||
-     ( ( mode == eInvestment ) && simulate_investment ) ) {
+ if( mode == eSimulation ) {
   auto init_up_down_time = compute_init_up_down_time
    ( sddp_block , previous_unit , unit , stage );
 
@@ -2071,8 +2070,9 @@ void process_block_file( const netCDF::NcFile & file ) {
 
    // TODO This config file must be indicated in some appropriate way.
 
-   auto sddp_solver_config =
-    load_BlockSolverConfig( config_filename_prefix + "sddp_greedy_investment.txt" );
+   const auto filename = config_filename_prefix + "sddp_greedy_investment.txt";
+
+   auto sddp_solver_config = load_BlockSolverConfig( filename );
 
    ComputeConfig investment_function_config;
 
