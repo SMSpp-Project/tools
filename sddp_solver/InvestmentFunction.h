@@ -41,6 +41,8 @@ namespace SMSpp_di_unipi_it
 
  class IntermittentUnitBlock;  // forward declaration of IntermittentUnitBlock
 
+ class SDDPBlock;              // forward declaration of SDDPBlock
+
  class UCBlock;                // forward declaration of UClock
 
  class UnitBlock;              // forward declaration of UnitBlock
@@ -466,18 +468,62 @@ class InvestmentFunction : public C05Function , public Block {
   *        its allocated memory is released. */
 
  void set_inner_block( Block * block , bool destroy_previous_block = true ) {
-  if( ( ! v_Block.empty() ) && block == v_Block.front() &&
+  if( ( v_Block.size() == 1 ) && ( block == v_Block.front() ) &&
       ( ! destroy_previous_block ) )
    return; // the given Block is already here; silently return
 
-  if( destroy_previous_block && ! v_Block.empty() )
-   delete v_Block.front();
+  if( destroy_previous_block )
+   for( auto block : v_Block )
+    delete block;
 
   v_Block.clear();
   v_Block.push_back( block );
 
   if( block )
    block->set_f_Block( this );
+
+  send_nuclear_modification();
+ }
+
+/*--------------------------------------------------------------------------*/
+ /// set the sub-Block of the InvestmentFunction
+ /** This method sets the sub-Block of the InvestmentFunction (a.k.a. Block B
+  * representing problem (B) in the definition of this InvestmentFunction).
+  *
+  * @param blocks the pointers to the (identical) Block satisfying the
+  *        conditions stated in the definition of this InvestmentFunction.
+  *
+  * @param destroy_previous_blocks indicates whether the previous inner Block
+  *        must be destroyed. The default value of this parameter is \c true,
+  *        which means that the previous inner Block (if any) are destroyed
+  *        and their allocated memory is released. */
+
+ void set_inner_blocks( std::vector< Block * > & blocks ,
+                        bool destroy_previous_blocks = true ) {
+  if( ( ! v_Block.empty() ) && ( blocks.size() == v_Block.size() ) &&
+      ( ! destroy_previous_blocks ) ) {
+
+   bool blocks_are_here = true;
+   for( Index i = 0 ; i < blocks.size() ; ++i )
+    if( blocks[ i ] != v_Block[ i ] ) {
+     blocks_are_here = false;
+     break;
+    }
+
+   if( blocks_are_here )
+    return; // the given Blocks are already here; silently return
+  }
+
+  if( destroy_previous_blocks )
+   for( auto block : v_Block )
+    delete block;
+
+  v_Block.clear();
+  v_Block = blocks;
+
+  for( auto block : v_Block )
+   if( block )
+    block->set_f_Block( this );
 
   send_nuclear_modification();
  }
@@ -621,8 +667,8 @@ class InvestmentFunction : public C05Function , public Block {
   f_id = id ? id : this;
 
   // propagate downwards the id change
-  if( ! v_Block.empty() )
-   for( auto s : v_Block.front()->get_registered_solvers() )
+  for( auto block : v_Block )
+   for( auto s : block->get_registered_solvers() )
     s->set_id( id );
  }
 
@@ -765,6 +811,15 @@ class InvestmentFunction : public C05Function , public Block {
 
  void reformulated_bounds( bool reformulated ) {
   f_reformulated_bounds = reformulated;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void set_number_sub_blocks( Index n ) {
+  assert( v_Block.empty() ||
+          std::all_of( v_Block.cbegin() , v_Block.cend() ,
+                       []( Block * b ) { return b == nullptr ; } ) );
+  f_num_sub_blocks = n;
  }
 
 /** @} ---------------------------------------------------------------------*/
@@ -1021,44 +1076,32 @@ class InvestmentFunction : public C05Function , public Block {
   override final;
 
 /*--------------------------------------------------------------------------*/
- /// return a pointer to the (only) sub-Block of the InvestmentFunction
- /** This method returns a pointer to the only sub-Block of the
-  * InvestmentFunction (a.k.a. Block B representing problem (B) in the
-  * definition of this InvestmentFunction). If this InvestmentFunction has no
-  * sub-Block, a \c nullptr is returned. */
-
- Block * get_inner_block() const {
-  if( v_Block.empty() )
-   return( nullptr );
-  return( v_Block.front() );
- }
-
-/*--------------------------------------------------------------------------*/
- /// returns a pointer to the Solver attached to the sub-Block (if any)
- /** This method returns a pointer to the Solver attached to the sub-Block of
-  * this InvestmentFunction. The template parameter \p T indicates the type of
-  * Solver whose pointer will be returned; its default value is Solver. If
+ /// returns a pointer to the Solver attached to the i-th sub-Block (if any)
+ /** This method returns a pointer to the Solver attached to the i-th
+  * sub-Block of this InvestmentFunction. The template parameter \p T
+  * indicates the type of Solver whose pointer will be returned; its default
+  * value is Solver. If
   *
-  * - this InvestmentFunction does not have a sub-Block; or
+  * - \p i is not an index corresponding to a sub-Block; or
   *
-  * - the sub-Block of this InvestmentFunction does not have a Solver attached
-  *   to it; or
+  * - the i-th sub-Block of this InvestmentFunction does not have a Solver
+  *   attached to it; or
   *
-  * - the Solver attached to the sub-Block is not or does not derive from \p T
+  * - the Solver attached to the i-th sub-Block is not or does not derive from
+  *   \p T
   *
   * then a nullptr is returned. Otherwise, a pointer of type \p T is
   * returned. */
 
  template<class T = Solver>
- inline T * get_solver() const {
-  if( v_Block.empty() )
+ inline T * get_solver( Index i ) const {
+  if( i >= v_Block.size() )
    return nullptr;
 
-  if( v_Block.front()->get_registered_solvers().empty() )
+  if( v_Block[ i ]->get_registered_solvers().empty() )
    return nullptr;
 
-  return dynamic_cast< T * >
-   ( v_Block.front()->get_registered_solvers().front() );
+  return dynamic_cast< T * >( v_Block[ i ]->get_registered_solvers().front() );
  }
 
 /**@} ----------------------------------------------------------------------*/
@@ -1172,6 +1215,14 @@ class InvestmentFunction : public C05Function , public Block {
  bool f_scale_battery = false; ///< scale battery units
 
  bool f_scale_intermittent = false; ///< scale intermittent units
+
+ bool f_has_value = false;
+ ///< the value of the Function was successfully computed
+
+ bool f_has_diagonal_linearization = false;
+ ///< a diagonal linearization is available
+
+ Index f_num_sub_blocks = 1; ///< number of (identical) sub-Blocks
 
  void * f_id; ///< the "identity" of the InvestmentFunction
 
@@ -1429,11 +1480,15 @@ class InvestmentFunction : public C05Function , public Block {
  /** This function updates a set of UnitBlock, given by their indices \p
   * block_indices, according to the given \p investment.
   *
+  * @param sub_block_index The index of a sub-Block of this
+  *        InvestmentFunction.
+  *
   * @param block_indices Indices of the UnitBlock which must be updated.
   *
   * @param investment The investment to be made in each UnitBlock. */
 
- void update_unit_blocks( const std::vector< Index > & block_indices ,
+ void update_unit_blocks( Index sub_block_index ,
+                          const std::vector< Index > & block_indices ,
                           const std::vector< double > & investment );
 
 /*--------------------------------------------------------------------------*/
@@ -1442,12 +1497,16 @@ class InvestmentFunction : public C05Function , public Block {
  /** This function updates a set of transmission lines, given by their indices
   * \p line_indices, according to the given \p investment.
   *
+  * @param sub_block_index The index of a sub-Block of this
+  *        InvestmentFunction.
+  *
   * @param line_indices Indices of the transmission lines which must be
   *        updated.
   *
   * @param investment The investment to be made in each line. */
 
- void update_network_blocks( const std::vector< Index > & line_indices ,
+ void update_network_blocks( Index sub_block_index ,
+                             const std::vector< Index > & line_indices ,
                              const std::vector< double > & investment );
 
 /*--------------------------------------------------------------------------*/
@@ -1474,18 +1533,42 @@ class InvestmentFunction : public C05Function , public Block {
 
  /// return a pointer to the Solver of the UCBlock associated with \p stage
  /** This function returns a pointer to the Solver of the UCBlock associated
-  * with the given \p stage.
+  * with the given \p stage in the \p i-th sub-Block..
   *
   * @param stage A stage.
   *
+  * @param i The index of a sub-Block.
+  *
   * @return A pointer to the Solver of the UCBlock associated with the given
-  *         \p stage. */
+  *         \p stage in the \p i-th sub-Block. */
 
- CDASolver * get_ucblock_solver( Index stage ) const;
+ CDASolver * get_ucblock_solver( Index stage , Index i ) const;
 
 /*--------------------------------------------------------------------------*/
 
- UCBlock * get_ucblock( Index stage ) const;
+ /// returns a pointer to the UCBlock associated with the given \p stage
+ /** This function returns a pointer to the UCBlock associated with
+  * the given \p stage in the \p i-th sub-Block.
+  *
+  * @param stage A stage.
+  *
+  * @param i The index of a sub-Block.
+  *
+  * @return A pointer to the UCBlock associated with the given \p stage in the
+  *         \p i-th sub-Block. */
+
+ UCBlock * get_ucblock( Index stage , Index i ) const;
+
+/*--------------------------------------------------------------------------*/
+
+ /// returns a pointer to the i-th SDDPBlock
+ /** This function returns a pointer to the i-th SDDPBlock.
+  *
+  * @param i The index of a sub-Block of this InvestmentFunction.
+  *
+  * @return A pointer to the i-th SDDPBlock of this InvestmentFunction. */
+
+ SDDPBlock * get_sddp_block( Index i ) const;
 
 /*--------------------------------------------------------------------------*/
 
@@ -1519,7 +1602,8 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
- double compute_scale_linearization( Index block_index , Index stage );
+ double compute_scale_linearization( Index block_index , Index stage ,
+                                     Index sub_block_index );
 
 /*--------------------------------------------------------------------------*/
 
@@ -1562,20 +1646,27 @@ class InvestmentFunction : public C05Function , public Block {
 /*--------------------------------------------------------------------------*/
 
  /// updates the linearization to reflect the most recent scenario considered
- void update_linearization();
+ /** This function updates the linearization to reflect the most recent
+  * scenario considered, whose subproblem was solved by the Solver attached to
+  * the sub-Block whose index is \p sub_block_index.
+  *
+  * @param sub_block_index The index of the sub-Block which will be used to
+  *        update the linearization. */
+
+ void update_linearization( Index sub_block_index );
 
 /*--------------------------------------------------------------------------*/
 
  /// updates the linearization with respect to the set of UnitBlock
  void update_linearization_unit_blocks
- ( Index stage ,
+ ( Index stage , Index sub_block_index ,
    const std::vector< std::pair< Index , Index > > & block_indices );
 
 /*--------------------------------------------------------------------------*/
 
  /// updates the linearization with respect to the set of NetworkBlock
  void update_linearization_network_blocks
- ( Index stage ,
+ ( Index stage , Index sub_block_index ,
    const std::vector< std::pair< Index , Index > > & line_indices );
 
 /*--------------------------------------------------------------------------*/
@@ -1591,7 +1682,17 @@ class InvestmentFunction : public C05Function , public Block {
 /*--------------------------------------------------------------------------*/
 
  /// returns a pointer to the BendersBFunction associated with the given stage
- BendersBFunction * get_benders_function( Index stage ) const;
+ /** This function returns a pointer to the BendersBFunction associated with
+  * the given \p stage in the \p i-th sub-Block.
+  *
+  * @param stage A stage.
+  *
+  * @param i The index of a sub-Block.
+  *
+  * @return A pointer to the BendersBFunction associated with the given \p
+  *         stage in the \p i-th sub-Block. */
+
+ BendersBFunction * get_benders_function( Index stage , Index i ) const;
 
 /*--------------------------------------------------------------------------*/
 
@@ -1644,13 +1745,39 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
+ /// returns the number of scenarios
+ Index get_number_scenarios() const;
+
+/*--------------------------------------------------------------------------*/
+
+ /// returns the number of stages
+ Index get_number_stages() const;
+
+/*--------------------------------------------------------------------------*/
+
+ /// locks a(n unlocked) sub-Block and returns its index
+ Index lock_sub_block();
+
+/*--------------------------------------------------------------------------*/
+
+ /// unlocks the i-th sub-Block
+ void unlock_sub_block( Index i );
+
+/*--------------------------------------------------------------------------*/
+
  SMSpp_insert_in_factory_h; // insert InvestmentFunction in the Block factory
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- PRIVATE FIELDS  -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
- /// global pool of linearizations
+ /// It indicates whether each sub-Block is locked
+ std::vector< bool > is_locked;
+
+ /// This is the waiting time before trying to acquire the lock again
+ double waiting_time = 1e-4;
+
+ /// Global pool of linearizations
  GlobalPool global_pool;
 
  /// Name of the netCDF sub-group containing the description of the inner Block

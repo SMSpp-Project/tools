@@ -103,6 +103,7 @@ void InvestmentBlock::deserialize( const netCDF::NcGroup & group ) {
   investment_function->set_variables( std::move( p_variables ) );
  }
 
+ investment_function->set_number_sub_blocks( f_num_sub_blocks );
  investment_function->deserialize( group );
  set_function( investment_function );
  investment_function->set_f_Block( this );

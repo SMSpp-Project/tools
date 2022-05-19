@@ -203,6 +203,12 @@ public:
 
  void generate_objective( Configuration *objc = nullptr ) override;
 
+/*--------------------------------------------------------------------------*/
+
+ void set_number_sub_blocks( Index n ) {
+  f_num_sub_blocks = n;
+ }
+
 /**@} ----------------------------------------------------------------------*/
 /*------------- METHODS FOR Saving THE DATA OF THE InvestmentBlock ---------*/
 /*--------------------------------------------------------------------------*/
@@ -451,6 +457,8 @@ protected:
 
  /// It indicates whether the bound constraints must be reformulated
  int f_reformulate_bounds = 0;
+
+ Index f_num_sub_blocks = 1;
 
  /// The Objective of this InvestmentBlock
  FRealObjective objective;

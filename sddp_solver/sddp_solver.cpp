@@ -697,7 +697,7 @@ void simulate( SDDPBlock * sddp_block ) {
 
 /*--------------------------------------------------------------------------*/
 
-std::vector< double > get_default_initial_point( InvestmentBlock * block) {
+std::vector< double > get_default_initial_point( InvestmentBlock * block ) {
  block->generate_abstract_constraints();
  const auto & box_constraints = block->get_constraints();
  std::vector< double > initial_point( box_constraints.size() );
@@ -774,37 +774,41 @@ void invest( InvestmentBlock * investment_block ) {
  auto investment_function = static_cast< InvestmentFunction * >
   ( investment_block->get_function() );
 
- auto sddp_block =
-  dynamic_cast< SDDPBlock * >( investment_function->get_inner_block() );
+ for( Index i = 0 ; i < investment_function->get_number_nested_Blocks() ;
+      ++i ) {
 
- if( ! sddp_block ) {
-  std::cout << "The sub-Block of the InvestmentBlock is not an SDDPBlock."
-            << std::endl;
-  exit( 1 );
+  auto sddp_block =
+   dynamic_cast< SDDPBlock * >( investment_function->get_nested_Block( i ) );
+
+  if( ! sddp_block ) {
+   std::cout << "The sub-Block of the InvestmentBlock is not an SDDPBlock."
+             << std::endl;
+   exit( 1 );
+  }
+
+  auto sddp_solver = dynamic_cast< SDDPGreedySolver * >
+   ( sddp_block->get_registered_solvers().front() );
+
+  if( ! sddp_solver )
+   throw( std::logic_error( "The Solver for the SDDPBlock must be a "
+                            "SDDPGreedySolver in investment mode." ) );
+
+  sddp_solver->set_callback( [ sddp_block ]( Index stage ) {
+   callback( sddp_block , stage );
+  } );
+
+  // Load possibly given cuts
+
+  if( ! cuts_filename.empty() ) {
+   sddp_solver->set_par( SDDPGreedySolver::strLoadCuts , cuts_filename );
+   sddp_solver->set_par( SDDPGreedySolver::intLoadCutsOnce , 1 );
+  }
+
+  // Eliminate redundant cuts if it is desired
+
+  if( eliminate_reduntant_cuts )
+   CutProcessing().remove_redundant_cuts( sddp_block );
  }
-
- auto sddp_solver = dynamic_cast< SDDPGreedySolver * >
-  ( sddp_block->get_registered_solvers().front() );
-
- if( ! sddp_solver )
-  throw( std::logic_error( "The Solver for the SDDPBlock must be a "
-                           "SDDPGreedySolver in investment mode." ) );
-
- sddp_solver->set_callback( [ sddp_block ]( Index stage ) {
-  callback( sddp_block , stage );
- } );
-
- // Load possibly given cuts
-
- if( ! cuts_filename.empty() ) {
-  sddp_solver->set_par( SDDPGreedySolver::strLoadCuts , cuts_filename );
-  sddp_solver->set_par( SDDPGreedySolver::intLoadCutsOnce , 1 );
- }
-
- // Eliminate redundant cuts if it is desired
-
- if( eliminate_reduntant_cuts )
-  CutProcessing().remove_redundant_cuts( sddp_block );
 
  // Solve
 
@@ -1150,19 +1154,37 @@ void process_prob_file( const netCDF::NcFile & file ) {
   }
   else if( block_type == "InvestmentBlock" ) {
    investment_block = new InvestmentBlock;
+   investment_block->set_number_sub_blocks( num_sub_blocks_per_stage );
    investment_block->deserialize( block_group );
    main_block = investment_block;
 
    auto investment_function = static_cast< InvestmentFunction * >
     ( investment_block->get_function() );
 
-   sddp_block =
-    dynamic_cast< SDDPBlock * >( investment_function->get_inner_block() );
+   for( auto sddp_block_ : investment_function->get_nested_Blocks() ) {
 
-   if( ! sddp_block ) {
-    std::cout << "The sub-Block of the InvestmentBlock is not an SDDPBlock."
-              << std::endl;
-    exit( 1 );
+    auto sddp_block = dynamic_cast< SDDPBlock * >( sddp_block_ );
+
+    if( ! sddp_block ) {
+     std::cout << "The sub-Block of the InvestmentBlock is not an SDDPBlock."
+               << std::endl;
+     exit( 1 );
+    }
+
+    // Set the output stream for the log of the inner Solvers
+
+    set_log( sddp_block , &std::cout );
+
+    // Load possibly given cuts
+
+    if( mode == eOptimization ) {
+     load_cuts( sddp_block );
+    }
+
+    // Eliminate redundant cuts if it is desired
+
+    if( eliminate_reduntant_cuts )
+     CutProcessing().remove_redundant_cuts( sddp_block );
    }
   }
   else {
@@ -1194,20 +1216,22 @@ void process_prob_file( const netCDF::NcFile & file ) {
   block_solver_config->apply( main_block );
   block_solver_config->clear();
 
-  // Set the output stream for the log of the inner Solvers
+  if( sddp_block ) {
+   // Set the output stream for the log of the inner Solvers
 
-  set_log( sddp_block , &std::cout );
+   set_log( sddp_block , &std::cout );
 
-  // Load possibly given cuts
+   // Load possibly given cuts
 
-  if( mode == eOptimization ) {
-   load_cuts( sddp_block );
+   if( mode == eOptimization ) {
+    load_cuts( sddp_block );
+   }
+
+   // Eliminate redundant cuts if it is desired
+
+   if( eliminate_reduntant_cuts )
+    CutProcessing().remove_redundant_cuts( sddp_block );
   }
-
-  // Eliminate redundant cuts if it is desired
-
-  if( eliminate_reduntant_cuts )
-   CutProcessing().remove_redundant_cuts( sddp_block );
 
   std::cout << "Problem: " << problem.first << std::endl;
 
@@ -2008,19 +2032,37 @@ void process_block_file( const netCDF::NcFile & file ) {
   }
   else if( block_type == "InvestmentBlock" ) {
    investment_block = new InvestmentBlock;
+   investment_block->set_number_sub_blocks( num_sub_blocks_per_stage );
    investment_block->deserialize( block_description.second );
    main_block = investment_block;
 
    auto investment_function = static_cast< InvestmentFunction * >
     ( investment_block->get_function() );
 
-   sddp_block =
-    dynamic_cast< SDDPBlock * >( investment_function->get_inner_block() );
+   for( auto sddp_block_ : investment_function->get_nested_Blocks() ) {
 
-   if( ! sddp_block ) {
-    std::cout << "The sub-Block of the InvestmentBlock is not an SDDPBlock."
-              << std::endl;
-    exit( 1 );
+    auto sddp_block = dynamic_cast< SDDPBlock * >( sddp_block_ );
+
+    if( ! sddp_block ) {
+     std::cout << "The sub-Block of the InvestmentBlock is not an SDDPBlock."
+               << std::endl;
+     exit( 1 );
+    }
+
+    // Set the output stream for the log of the inner Solvers
+
+    set_log( sddp_block , &std::cout );
+
+    // Load possibly given cuts
+
+    if( mode == eOptimization ) {
+     load_cuts( sddp_block );
+    }
+
+    // Eliminate redundant cuts if it is desired
+
+    if( eliminate_reduntant_cuts )
+     CutProcessing().remove_redundant_cuts( sddp_block );
    }
   }
   else {
@@ -2039,34 +2081,68 @@ void process_block_file( const netCDF::NcFile & file ) {
    is_using_lagrangian_dual_solver =
     using_lagrangian_dual_solver( solver_config );
 
-   configure_Blocks( sddp_block , relax_integrality ,
-                     is_using_lagrangian_dual_solver );
+   if( investment_block ) {
 
-   if( ! block_solver_config_provided ) {
-    block_config = build_BlockConfig( sddp_block );
-    block_config->apply( sddp_block );
-    block_config->clear();
+    auto investment_function = static_cast< InvestmentFunction * >
+     ( investment_block->get_function() );
+
+    for( auto sddp_block_ : investment_function->get_nested_Blocks() ) {
+
+     auto sddp_block = dynamic_cast< SDDPBlock * >( sddp_block_ );
+
+     configure_Blocks( sddp_block , relax_integrality ,
+                       is_using_lagrangian_dual_solver );
+
+     if( ! block_solver_config_provided ) {
+      block_config = build_BlockConfig( sddp_block );
+      block_config->apply( sddp_block );
+      block_config->clear();
+     }
+    }
+
+    if( reformulate_variable_bounds ) {
+     // Since BundleSolver cannot currently handle general bounds on the
+     // variables of the form l <= x <= u, we create a BlockConfig to instruct
+     // the InvestmentBlock to reformulate the bound constraints by replacing
+     // l <= x <= u by 0 <= x <= u - l.
+     auto config = new BlockConfig;
+     config->f_static_constraints_Configuration =
+      new SimpleConfiguration<int>( 1 );
+
+     investment_block->set_BlockConfig( config );
+    }
+
    }
 
-   if( investment_block && reformulate_variable_bounds ) {
-    // Since BundleSolver cannot currently handle general bounds on the
-    // variables of the form l <= x <= u, we create a BlockConfig to instruct
-    // the InvestmentBlock to reformulate the bound constraints by replacing
-    // l <= x <= u by 0 <= x <= u - l.
-    auto config = new BlockConfig;
-    config->f_static_constraints_Configuration =
-     new SimpleConfiguration<int>( 1 );
+   else {
 
-    investment_block->set_BlockConfig( config );
+    configure_Blocks( sddp_block , relax_integrality ,
+                      is_using_lagrangian_dual_solver );
+
+    if( ! block_solver_config_provided ) {
+     block_config = build_BlockConfig( sddp_block );
+     block_config->apply( sddp_block );
+     block_config->clear();
+    }
+
    }
   }
 
   // Configure the Solver
 
-  if( is_using_lagrangian_dual_solver )
+  if( is_using_lagrangian_dual_solver && sddp_block )
    config_Lagrangian_dual( solver_config , sddp_block );
 
   if( investment_block ) {
+
+   if( is_using_lagrangian_dual_solver ) {
+    auto investment_function = static_cast< InvestmentFunction * >
+     ( investment_block->get_function() );
+    for( auto sddp_block_ : investment_function->get_nested_Blocks() ) {
+     auto sddp_block = dynamic_cast< SDDPBlock * >( sddp_block_ );
+     config_Lagrangian_dual( solver_config , sddp_block );
+    }
+   }
 
    // TODO This config file must be indicated in some appropriate way.
 
@@ -2092,20 +2168,23 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   solver_config->apply( main_block );
 
-  // Set the output stream for the log of the inner Solvers
+  if( sddp_block ) {
 
-  set_log( sddp_block , &std::cout );
+   // Set the output stream for the log of the inner Solvers
 
-  // Load possibly given cuts
+   set_log( sddp_block , &std::cout );
 
-  if( mode == eOptimization ) {
-   load_cuts( sddp_block );
+   // Load possibly given cuts
+
+   if( mode == eOptimization ) {
+    load_cuts( sddp_block );
+   }
+
+   // Eliminate redundant cuts if it is desired
+
+   if( eliminate_reduntant_cuts )
+    CutProcessing().remove_redundant_cuts( sddp_block );
   }
-
-  // Eliminate redundant cuts if it is desired
-
-  if( eliminate_reduntant_cuts )
-   CutProcessing().remove_redundant_cuts( sddp_block );
 
   // Solve
 
