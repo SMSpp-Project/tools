@@ -1791,24 +1791,6 @@ void InvestmentFunction::update_linearization() {
  const auto sddp_block = static_cast< SDDPBlock * >( v_Block.front() );
  const auto num_stages = sddp_block->get_time_horizon();
 
- auto retrieve_var_solution = [ this ]( Index stage ) {
-  auto ucblock_solver = get_ucblock_solver( stage );
-  if( ucblock_solver->has_var_solution() )
-   ucblock_solver->get_var_solution(); // TODO pass Configuration
-  else
-   throw( std::logic_error( "InvestmentFunction::update_linearization: "
-                            "primal solution not available." ) );
- };
-
- auto retrieve_dual_solution = [ this ]( Index stage ) {
-  auto ucblock_solver = get_ucblock_solver( stage );
-  if( ucblock_solver->has_dual_solution() )
-   ucblock_solver->get_dual_solution(); // TODO pass Configuration
-  else
-   throw( std::logic_error( "InvestmentFunction::update_linearization: "
-                            "dual solution not available." ) );
- };
-
  // The indices of the UnitBlocks and the indices of their variables
  std::vector< std::pair< Index , Index > > block_indices;
  block_indices.reserve( v_asset_indices.size() );
@@ -1834,15 +1816,29 @@ void InvestmentFunction::update_linearization() {
   }
  } // end( for each asset )
 
+ auto solver = get_solver< CDASolver >();
+
+ // Retrieve the dual solution
+
+ if( solver && solver->has_dual_solution() )
+  solver->get_dual_solution(); // TODO pass Configuration
+ else
+  throw( std::logic_error( "InvestmentFunction::update_linearization: "
+                           "dual solution not available." ) );
+
+ // Retrieve the primal solution.
+
+ if( ! block_indices.empty() ) {
+  // The primal solution may only be necessary if there are UnitBlocks
+  // subject to investment.
+  if( solver && solver->has_var_solution() )
+   solver->get_var_solution(); // TODO pass Configuration
+  else
+   throw( std::logic_error( "InvestmentFunction::update_linearization: "
+                            "primal solution not available." ) );
+ }
+
  for( Index stage = 0 ; stage < num_stages ; ++stage ) {
-
-  retrieve_dual_solution( stage );
-
-  if( ! block_indices.empty() )
-   // The primal solution may only be necessary if there are UnitBlocks
-   // subject to investment.
-   retrieve_var_solution( stage );
-
   update_linearization_unit_blocks( stage , block_indices );
   update_linearization_network_blocks( stage , line_indices );
  } // end( for each stage )
