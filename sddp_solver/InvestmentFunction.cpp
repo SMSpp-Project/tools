@@ -731,7 +731,7 @@ int InvestmentFunction::compute( bool changedvars ) {
 
  int error_status = kError;
 
- #pragma omp parallel for share( interrupt_loop ) reduction( + : f_value )
+ #pragma omp parallel for reduction( + : f_value )
  for( int scenario = 0 ; scenario < num_scenarios ; ++scenario ) {
 
   if( interrupt_loop )
