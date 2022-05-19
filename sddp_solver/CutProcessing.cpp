@@ -51,7 +51,7 @@ using Subset = Block::Subset;
 namespace {
 
  double get_sign( const PolyhedralFunction * function ) {
-  return function->is_convex() ? - 1.0 : 1.0;
+  return( function->is_convex() ? - 1.0 : 1.0 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -77,7 +77,7 @@ namespace {
   const auto & A = function->get_A();
 
   if( A.empty() )
-   return nullptr;
+   return( nullptr );
 
   const auto & b = function->get_b();
 
@@ -121,7 +121,7 @@ namespace {
 
   lp->add_dynamic_constraint( * constraints , "c" );
 
-  return lp;
+  return( lp );
  }
 
 /*--------------------------------------------------------------------------*/

@@ -305,7 +305,7 @@ void process_prob_file( const netCDF::NcFile & file ) {
 BlockSolverConfig * build_BlockSolverConfig() {
  auto block_solver_config = new BlockSolverConfig;
  block_solver_config->add_ComputeConfig( "SDDPGreedySolver" );
- return block_solver_config;
+ return( block_solver_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -335,7 +335,7 @@ BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block ) {
   benders_block_config->set_Config_Objective( benders_function_config );
  }
 
- return sddp_config;
+ return( sddp_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -372,7 +372,7 @@ BlockConfig * load_BlockConfig() {
   std::cout << "Block configuration was not provided. "
    "Using default configuration." << std::endl;
  }
- return block_config;
+ return( block_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -408,7 +408,7 @@ BlockSolverConfig * load_BlockSolverConfig() {
   std::cout << "Solver configuration was not provided. "
    "Using default configuration." << std::endl;
  }
- return solver_config;
+ return( solver_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -523,5 +523,5 @@ int main( int argc , char ** argv ) {
    exit( 1 );
  }
 
- return 0;
+ return( 0 );
 }

@@ -77,7 +77,7 @@ int main( int argc, char ** argv ) {
 
  // Configure block
  BlockConfig * b_config;
- if( !bconf_file.empty() ) {
+ if( ! bconf_file.empty() ) {
   b_config = get_blockconfig( bconf_file );
   if( b_config == nullptr ) {
    std::cerr << exe << ": Block configuration not valid" << std::endl;
@@ -88,7 +88,7 @@ int main( int argc, char ** argv ) {
 
  // Configure solver
  BlockSolverConfig * s_config;
- if( !sconf_file.empty() ) {
+ if( ! sconf_file.empty() ) {
   s_config = get_blocksolverconfig( sconf_file );
   if( s_config == nullptr ) {
    std::cerr << exe << ": Solver configuration not valid" << std::endl;
@@ -109,5 +109,5 @@ int main( int argc, char ** argv ) {
  std::cout.setf( std::ios::scientific, std::ios::floatfield );
  std::cout << std::setprecision( 8 );
  solve_all( block );
- return 0;
+ return( 0 );
 }

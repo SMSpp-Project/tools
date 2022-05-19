@@ -135,7 +135,7 @@ std::string docopt_desc{}; ///< Tool description
 // Gets the name of the executable from its full path
 std::string get_filename( const std::string & fullpath ) {
  std::size_t found = fullpath.find_last_of( "/\\" );
- return fullpath.substr( found + 1 );
+ return( fullpath.substr( found + 1 ) );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -174,7 +174,7 @@ long get_long_option() {
                        ( errno || ( end && *end ) ) ) ) {
   option = -1;
  }
- return option;
+ return( option );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -351,7 +351,7 @@ Block * get_uc_block( const SDDPBlock * sddp_block , const Index stage ) {
  auto benders_function = static_cast< BendersBFunction * >
   ( objective->get_function() );
 
- return benders_function->get_inner_block();
+ return( benders_function->get_inner_block() );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -362,7 +362,7 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
  auto previous_unit = dynamic_cast< HydroUnitBlock * >( previous_block );
 
  if( ! unit && ! previous_unit )
-  return false;
+  return( false );
 
  if( ! unit || ! previous_unit )
   throw( std::logic_error
@@ -391,7 +391,7 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
 
  unit->set_initial_flow_rate( flow_rate.cbegin() );
 
- return true;
+ return( true );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -402,7 +402,7 @@ bool update_battery_unit( Block * previous_block , Block * block ,
  auto previous_unit = dynamic_cast< BatteryUnitBlock * >( previous_block );
 
  if( ! unit && ! previous_unit )
-  return false;
+  return( false );
 
  if( ! unit || ! previous_unit )
   throw( std::logic_error
@@ -422,7 +422,7 @@ bool update_battery_unit( Block * previous_block , Block * block ,
 
  unit->set_initial_storage( initial_storage_data.cbegin() );
 
- return true;
+ return( true );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -436,7 +436,7 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
 
  auto shutdown = previous_unit->get_shut_down( time_horizon - 1 );
  if( shutdown && shutdown->get_value() >= 0.5 ) {
-  return 0;
+  return( 0 );
  }
 
  int init_up_down_time = 0;
@@ -453,7 +453,7 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
   for( Index t = 1 ; t < time_horizon ; ++t , --commitment ) {
    if( std::abs( commitment->get_value() -
                  ( commitment - 1 )->get_value() ) > 0.5 )
-    return init_up_down_time;
+    return( init_up_down_time );
    if( on ) ++init_up_down_time;
    else --init_up_down_time;
   }
@@ -489,7 +489,7 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
   }
  }
 
- return init_up_down_time;
+ return( init_up_down_time );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -502,7 +502,7 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
  auto unit = dynamic_cast< ThermalUnitBlock * >( block );
 
  if( ! unit && ! previous_unit )
-  return false;
+  return( false );
 
  if( ! unit || ! previous_unit )
   throw( std::logic_error
@@ -522,7 +522,7 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
   { ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
  unit->set_initial_power( active_power_data.cbegin() );
 
- return true;
+ return( true );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -965,7 +965,7 @@ BlockSolverConfig * build_BlockSolverConfig() {
   block_solver_config->add_ComputeConfig( "SDDPSolver" , config );
  }
 
- return block_solver_config;
+ return( block_solver_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1002,7 +1002,7 @@ BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block ) {
   benders_block_config->set_Config_Objective( benders_function_config );
  }
 
- return sddp_config;
+ return( sddp_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1012,7 +1012,7 @@ BlockConfig * load_BlockConfig() {
  if( block_config_filename.empty() ) {
   std::cout << "Block configuration was not provided. "
    "Using default configuration." << std::endl;
-  return nullptr;
+  return( nullptr );
  }
 
  std::ifstream block_config_file;
@@ -1048,7 +1048,7 @@ BlockConfig * load_BlockConfig() {
  }
 
  block_config_file.close();
- return block_config;
+ return( block_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1058,7 +1058,7 @@ BlockSolverConfig * load_BlockSolverConfig() {
  if( solver_config_filename.empty() ) {
   std::cout << "Solver configuration was not provided. "
    "Using default configuration." << std::endl;
-  return nullptr;
+  return( nullptr );
  }
 
  std::ifstream solver_config_file;
@@ -1093,7 +1093,7 @@ BlockSolverConfig * load_BlockSolverConfig() {
  }
 
  solver_config_file.close();
- return solver_config;
+ return( solver_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1102,9 +1102,9 @@ std::string get_str_par( ComputeConfig * compute_config ,
                          std::string par_name ) {
  for( const auto & pair : compute_config->str_pars ) {
   if( pair.first == par_name )
-   return pair.second;
+   return( pair.second );
  }
- return "";
+ return( "" );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1112,9 +1112,9 @@ std::string get_str_par( ComputeConfig * compute_config ,
 int get_int_par( ComputeConfig * compute_config , std::string par_name ) {
  for( const auto & pair : compute_config->int_pars ) {
   if( pair.first == par_name )
-   return pair.second;
+   return( pair.second );
  }
- return Inf<int>();
+ return( Inf< int >() );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1173,12 +1173,12 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
   for( Index j = 0 ; j < inner_solver_config->num_ComputeConfig() ; ++j ) {
    if( inner_solver_config->get_SolverName( j ) == "LagrangianDualSolver" ) {
     delete inner_config;
-    return true;
+    return( true );
    }
   }
   delete inner_config;
  }
- return false;
+ return( false );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1450,7 +1450,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    ( std::remove_if( lagrangian_dual_compute_config->vint_pars.begin() ,
                      lagrangian_dual_compute_config->vint_pars.end() ,
                      []( const auto & pair ) {
-                      return pair.first == "vintNoEasy"; } ) ,
+                      return( pair.first == "vintNoEasy" ); } ) ,
      lagrangian_dual_compute_config->vint_pars.end() );
 
   // Add the vintNoEasy parameter that was constructed here
@@ -1473,7 +1473,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   ( std::remove_if( compute_config->str_pars.begin() ,
                     compute_config->str_pars.end() ,
                     []( const auto & pair ){
-                     return pair.first == "strInnerBSC"; } ) ,
+                     return( pair.first == "strInnerBSC" ); } ) ,
     compute_config->str_pars.end() );
 
  /* The extra Configuration of the SDDPSolver and the SDDPGreedySolver is a
@@ -1710,7 +1710,7 @@ std::vector<double> get_final_state( SDDPBlock * block , Index stage ) {
     ( static_cast< const ColVariable & >( variable ).get_value() );
   }
  }
- return state;
+ return( state );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1967,5 +1967,5 @@ int main( int argc , char ** argv ) {
  }
 
  file.close();
- return 0;
+ return( 0 );
 }

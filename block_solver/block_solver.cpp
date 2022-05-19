@@ -60,7 +60,7 @@ void load_library( const std::string & class_name ) {
  auto lib_path = "lib" + lib + LIBEXT;
  void * handle = dlopen( lib_path.c_str(), RTLD_LAZY );
 
- if( !handle ) {
+ if( ! handle ) {
   std::cerr << "Error:" << dlerror();
   exit( 1 );
  } else {
@@ -179,7 +179,7 @@ int main( int argc, char ** argv ) {
 
     // Configure block
     BlockConfig * b_config;
-    if( !bconf_file.empty() ) {
+    if( ! bconf_file.empty() ) {
      b_config = get_blockconfig( bconf_file );
      if( b_config == nullptr ) {
       std::cerr << exe << ": Block configuration not valid" << std::endl;
@@ -190,7 +190,7 @@ int main( int argc, char ** argv ) {
 
     // Configure solver
     BlockSolverConfig * s_config;
-    if( !sconf_file.empty() ) {
+    if( ! sconf_file.empty() ) {
      s_config = get_blocksolverconfig( sconf_file );
      if( s_config == nullptr ) {
       std::cerr << exe << ": Block configuration not valid" << std::endl;
@@ -225,5 +225,5 @@ int main( int argc, char ** argv ) {
 #ifdef USE_DL
  unload_libraries();
 #endif
- return 0;
+ return( 0 );
 }

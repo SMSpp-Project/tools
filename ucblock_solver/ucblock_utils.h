@@ -35,7 +35,7 @@ BlockConfig * default_configure_ucblock( Block * uc_block ) {
  auto b_config = new RBlockConfig;
 
  for( auto sb : uc_block->get_nested_Blocks() ) {
-  if( !dynamic_cast<UnitBlock *>( sb ) ) {
+  if( ! dynamic_cast<UnitBlock *>( sb ) ) {
    continue;
   }
 
@@ -65,7 +65,7 @@ BlockConfig * default_configure_ucblock( Block * uc_block ) {
   b_config->add_sub_BlockConfig( sbc , idx );
  }
 
- return b_config;
+ return( b_config );
 }
 
 // BlockConfig * default_configure_ucblock( Block * uc_block ) {
@@ -75,7 +75,7 @@ BlockConfig * default_configure_ucblock( Block * uc_block ) {
 //  for( Block::Index i = 0; i < num_nested_blocks; ++i ) {
 //
 //   auto sub_block = uc_block->get_nested_Block( i );
-//   if( !dynamic_cast<UnitBlock *>( sub_block ) )
+//   if( ! dynamic_cast<UnitBlock *>( sub_block ) )
 //    continue;
 //
 //   auto subconf = new RBlockConfig;
@@ -103,7 +103,7 @@ BlockConfig * default_configure_ucblock( Block * uc_block ) {
 //   static_cast<RBlockConfig *>( b_config )->add_sub_BlockConfig( subconf, i );
 //  }
 //
-//  return b_config;
+//  return( b_config );
 // }
 
 /*--------------------------------------------------------------------------*/
@@ -130,21 +130,21 @@ void check_UCBlock_data( Block * block ) {
 
      auto thermal_unit_block = dynamic_cast<ThermalUnitBlock *>(j);
      if( thermal_unit_block ) {
-      if( !thermal_unit_block->get_max_power().empty() ) {
+      if( ! thermal_unit_block->get_max_power().empty() ) {
        sum_max_power += thermal_unit_block->get_max_power()[ t ];
       }
       continue;
      }
      auto battery_unit_block = dynamic_cast<BatteryUnitBlock *>(j);
      if( battery_unit_block ) {
-      if( !battery_unit_block->get_maximum_power().empty() ) {
+      if( ! battery_unit_block->get_maximum_power().empty() ) {
        sum_max_power += battery_unit_block->get_maximum_power()[ t ];
       }
       continue;
      }
      auto slack_unit_block = dynamic_cast<SlackUnitBlock *>(j);
      if( slack_unit_block ) {
-      if( !slack_unit_block->get_max_power().empty() ) {
+      if( ! slack_unit_block->get_max_power().empty() ) {
        sum_max_power += slack_unit_block->get_max_power()[ t ];
       }
       continue;
@@ -153,7 +153,7 @@ void check_UCBlock_data( Block * block ) {
      auto intermittent_unit_block = dynamic_cast<IntermittentUnitBlock *>(j);
      if( intermittent_unit_block ) {
       Kappa = intermittent_unit_block->get_kappa();
-      if( !intermittent_unit_block->get_maximum_power().empty() ) {
+      if( ! intermittent_unit_block->get_maximum_power().empty() ) {
        sum_max_power += ( intermittent_unit_block->get_maximum_power()[ t ] ) *
                         ( Kappa );
       }
@@ -162,9 +162,9 @@ void check_UCBlock_data( Block * block ) {
 
      auto hydro_unit_block = dynamic_cast<HydroUnitBlock *>(j);
      if( hydro_unit_block ) {
-      if( !hydro_unit_block->get_maximum_flow().empty() &&
-          !hydro_unit_block->get_maximum_flow().empty() ) {
-       if( !hydro_unit_block->get_maximum_power().empty() ) {
+      if( ! hydro_unit_block->get_maximum_flow().empty() &&
+          ! hydro_unit_block->get_maximum_flow().empty() ) {
+       if( ! hydro_unit_block->get_maximum_power().empty() ) {
         for( Index g = 0 ;
              g < hydro_unit_block->get_number_generators() ; ++g ) {
          if( hydro_unit_block->get_maximum_flow()[ t ][ g ] > 0 &&
@@ -186,10 +186,10 @@ void check_UCBlock_data( Block * block ) {
            for( Index time = 0 ;
                 time < uc_block->get_time_horizon() ; ++time ) {
 
-            if( !hydro_unit_block->get_inflows().empty() ) {
+            if( ! hydro_unit_block->get_inflows().empty() ) {
              v_Inflows[ g ] += hydro_unit_block->get_inflows()[ g ][ time ];
             }
-            if( !hydro_unit_block->get_minimum_volumetric().empty() ) {
+            if( ! hydro_unit_block->get_minimum_volumetric().empty() ) {
             }
            }
            v_MinVolumetric[ g ] = hydro_unit_block->get_minimum_volumetric()[ g ][
@@ -210,9 +210,9 @@ void check_UCBlock_data( Block * block ) {
        auto sub_hydro_unitblock = hydrosystem_unitblock
         ->get_hydro_unit_block( hIdx );
        if( sub_hydro_unitblock != nullptr ) {
-        if( !sub_hydro_unitblock->get_maximum_flow().empty() &&
-            !sub_hydro_unitblock->get_maximum_flow().empty() ) {
-         if( !sub_hydro_unitblock->get_maximum_power().empty() ) {
+        if( ! sub_hydro_unitblock->get_maximum_flow().empty() &&
+            ! sub_hydro_unitblock->get_maximum_flow().empty() ) {
+         if( ! sub_hydro_unitblock->get_maximum_power().empty() ) {
           for( Index g = 0 ;
                g < sub_hydro_unitblock->get_number_generators() ; ++g ) {
            if( sub_hydro_unitblock->get_maximum_flow()[ t ][ g ] > 0 &&
@@ -234,7 +234,7 @@ void check_UCBlock_data( Block * block ) {
     if( sum_max_power < Active_power_demand ) {
      std::cout << "----- ActivePowerDemand " << n_network_blocks++ << std::endl;
 
-     throw ( std::logic_error
+     throw( std::logic_error
       ( "::UCBlock_Data_Check: Available Power does not exceed the "
         "Load " ) );
     }
