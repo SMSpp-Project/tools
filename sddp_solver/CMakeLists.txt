@@ -14,7 +14,8 @@ if (TARGET SMS++::UCBlock AND
     TARGET SMS++::SDDPBlock AND
     TARGET SMS++::MILPSolver)
 
-    add_executable(sddp_solver sddp_solver.cpp CutProcessing.cpp)
+    add_executable(sddp_solver sddp_solver.cpp CutProcessing.cpp
+                   InvestmentFunction.cpp InvestmentBlock.cpp)
     target_compile_features(sddp_solver PUBLIC cxx_std_17)
     target_include_directories(sddp_solver PRIVATE ../ucblock_solver)
     target_link_libraries(sddp_solver PRIVATE
@@ -36,6 +37,11 @@ if (TARGET SMS++::UCBlock AND
         message(STATUS "sddp_solver: MPI and Boost::mpi found. Using MPI.")
         target_compile_definitions(sddp_solver PRIVATE USE_MPI)
         target_link_libraries(sddp_solver PRIVATE Boost::mpi MPI::MPI_CXX)
+    endif ()
+
+    find_package(OpenMP)
+    if (OPENMP_FOUND)
+        target_link_libraries(sddp_solver PRIVATE OpenMP::OpenMP_CXX)
     endif ()
 
     # Install
