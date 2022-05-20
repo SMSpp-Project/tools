@@ -874,14 +874,14 @@ class InvestmentFunction : public C05Function , public Block {
   *   not provided, then we assume that LowerBound[i] = 0 for all i in {0,
   *   ..., NumAssets - 1}.
   *
-  * - The variable "AmountInstalled", of type netCDF::NcDouble(), which is
+  * - The variable "InstalledQuantity", of type netCDF::NcDouble(), which is
   *   either a scalar or indexed over "NumAssets". If it is a scalar, then we
-  *   assume that AmountInstalled[i] = AmountInstalled[0] for all i in {0,
+  *   assume that InstalledQuantity[i] = InstalledQuantity[0] for all i in {0,
   *   ..., NumAssets - 1}. The i-th element of this vector provides the amount
   *   of the i-th asset that is currently installed in the system and,
   *   therefore, that is not subject to investment costs. This variable is
-  *   optional. If it is not provided, then we assume that AmountInstalled[i]
-  *   = 1 for all i in {0, ..., NumAssets - 1}.
+  *   optional. If it is not provided, then we assume that
+  *   InstalledQuantity[i] = 1 for all i in {0, ..., NumAssets - 1}.
   *
   * - The group "SDDPBlock", containing the description of the inner Block. */
 
@@ -1134,11 +1134,11 @@ class InvestmentFunction : public C05Function , public Block {
   * @return The amount of the given \p asset currently installed in the
   *         system. */
 
- double get_amount_installed( Index asset ) const {
-  if( v_amount_installed.empty() )
+ double get_installed_quantity( Index asset ) const {
+  if( v_installed_quantity.empty() )
    return 1;
-  assert( asset < v_amount_installed.size() );
-  return v_amount_installed[ asset ];
+  assert( asset < v_installed_quantity.size() );
+  return v_installed_quantity[ asset ];
  }
 
 /** @} ---------------------------------------------------------------------*/
@@ -1244,7 +1244,7 @@ class InvestmentFunction : public C05Function , public Block {
  std::vector< double > v_linear_coefficients;
  ///< linear coefficients of the active Variable
 
- std::vector< double > v_amount_installed;
+ std::vector< double > v_installed_quantity;
  ///< amount of each asset currently installed in the system
 
  std::vector< std::vector< std::vector< Index > > > generator_node_map;

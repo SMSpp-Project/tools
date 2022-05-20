@@ -171,11 +171,11 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
 
   // Deserialize the amount of assets currently installed in the system
 
-  if( ::deserialize( group , "AmountInstalled" , num_assets ,
-                     v_amount_installed , true , true ) ) {
-   if( v_amount_installed.size() == 1 )
-    v_amount_installed.resize( num_assets , v_amount_installed.front() );
-   else if( v_amount_installed.size() != num_assets )
+  if( ::deserialize( group , "InstalledQuantity" , num_assets ,
+                     v_installed_quantity , true , true ) ) {
+   if( v_installed_quantity.size() == 1 )
+    v_installed_quantity.resize( num_assets , v_installed_quantity.front() );
+   else if( v_installed_quantity.size() != num_assets )
     throw( std::logic_error( "InvestmentFunction::deserialize: the "
                              "'InstalledCapacity' netCDF variable, if provided,"
                              " must have size 0, 1, or 'NumAssets'." ) );
@@ -640,8 +640,8 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
  ::serialize( group , "Cost" , netCDF::NcDouble() , NumAssets ,
               v_linear_coefficients );
 
- ::serialize( group , "AmountInstalled" , netCDF::NcDouble() , NumAssets ,
-              v_amount_installed );
+ ::serialize( group , "InstalledQuantity" , netCDF::NcDouble() , NumAssets ,
+              v_installed_quantity );
 
  if( auto inner_block = get_nested_Block( 0 ) ) {
   auto inner_block_group = group.addGroup( BLOCK_NAME );
@@ -814,11 +814,11 @@ int InvestmentFunction::compute( bool changedvars ) {
 
  for( Index i = 0 ; i < v_linear_coefficients.size() ; ++i ) {
 
-  const auto amount_installed = get_amount_installed( i );
+  const auto installed_quantity = get_installed_quantity( i );
 
   // Update the objective value
   f_value += v_linear_coefficients[ i ] * ( get_var_value( i , false ) -
-                                            amount_installed );
+                                            installed_quantity );
 
   // Update the linearization
   v_linearization[ i ] += v_linear_coefficients[ i ];
