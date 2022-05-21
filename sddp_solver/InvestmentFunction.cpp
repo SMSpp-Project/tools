@@ -103,6 +103,22 @@ InvestmentFunction::~InvestmentFunction() {
 void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
                                       ModParam issueMod ) {
 
+ // Deserialize the attributes
+
+ auto replicate_battery = group.getAtt( "ReplicateBatteryUnits" );
+ if( ( ! replicate_battery.isNull() ) ) {
+  int replicate;
+  replicate_battery.getValues( & replicate );
+  f_replicate_battery = replicate;
+ }
+
+ auto replicate_intermittent = group.getAtt( "ReplicateIntermittentUnits" );
+ if( ! replicate_intermittent.isNull() ) {
+  int replicate;
+  replicate_intermittent.getValues( & replicate );
+  f_replicate_intermittent = replicate;
+ }
+
  // Deserialize the dimensions
 
  Index num_assets;
@@ -625,6 +641,14 @@ void InvestmentFunction::remove_variables( Subset && indices , bool ordered ,
 void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
 
  Block::serialize( group );
+
+ if( f_replicate_battery )
+  group.putAtt( "ReplicateBatteryUnits" , netCDF::NcInt() ,
+                int( f_replicate_battery ) );
+
+ if( f_replicate_intermittent )
+  group.putAtt( "ReplicateIntermittentUnits" , netCDF::NcInt() ,
+                int( f_replicate_intermittent ) );
 
  auto NumAssets = group.addDim( "NumAssets" , v_asset_indices.size() );
 
@@ -1775,7 +1799,7 @@ void InvestmentFunction::update_linearization_unit_blocks
     compute_scale_linearization( block_index , stage , sub_block_index );
   }
   else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
-   if( f_scale_battery )
+   if( f_replicate_battery )
     v_linearization[ var_index ] +=
      compute_scale_linearization( block_index , stage , sub_block_index );
    else
@@ -1783,7 +1807,7 @@ void InvestmentFunction::update_linearization_unit_blocks
      compute_kappa_linearization( unit , var_index );
   }
   else if( auto unit = dynamic_cast< IntermittentUnitBlock * >( block ) ) {
-   if( f_scale_intermittent )
+   if( f_replicate_intermittent )
     v_linearization[ var_index ] +=
      compute_scale_linearization( block_index , stage , sub_block_index );
    else
@@ -1944,13 +1968,13 @@ void InvestmentFunction::update_unit_block( UnitBlock * block ,
   block->scale( investment );
  }
  else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
-  if( f_scale_battery )
+  if( f_replicate_battery )
    unit->scale( investment );
   else
    unit->set_kappa( investment );
  }
  else if( auto unit = dynamic_cast< IntermittentUnitBlock * >( block ) ) {
-  if( f_scale_intermittent )
+  if( f_replicate_intermittent )
    unit->scale( investment );
   else
    unit->set_kappa( investment );

@@ -835,6 +835,20 @@ class InvestmentFunction : public C05Function , public Block {
   * managed by the serialize() method of the base Block class, plus the
   * InvestmentFunction-specific data with the following format:
   *
+  * - The attribute "ReplicateBatteryUnits", of type netCDF::Int(), which
+  *   indicates that investment in a battery unit is made by replicating the
+  *   unit, i.e., by considering multiple identical units of that unit. This
+  *   attribute is optional. If it is not provided or its value is zero, then
+  *   investing in a battery unit means scaling its minimum and maximum power
+  *   and storage levels. Otherwise, the battery units are replicated.
+  *
+  * - The attribute "ReplicateIntermittentUnits", of type netCDF::Int(), which
+  *   indicates that investment in an intermittent unit is made by replicating
+  *   the unit, i.e., by considering multiple identical units of that
+  *   unit. This attribute is optional. If it is not provided or its value is
+  *   zero, then investing in an intermittent unit means scaling its minimum
+  *   and maximum power. Otherwise, the intermittent units are replicated.
+  *
   * - The dimension "NumAssets" containing the number of assets that are
   *   subject to investment. This dimension is optional. If it is not
   *   provided, then it is assumed that NumAssets = 0.
@@ -1212,9 +1226,9 @@ class InvestmentFunction : public C05Function , public Block {
   * if the lower bound l is finite. This bool variable thus indicates whether
   * the natural bounds on the active variables have been reformulated. */
 
- bool f_scale_battery = false; ///< scale battery units
+ bool f_replicate_battery = false; ///< replicate battery units
 
- bool f_scale_intermittent = false; ///< scale intermittent units
+ bool f_replicate_intermittent = false; ///< replicate intermittent units
 
  bool f_has_value = false;
  ///< the value of the Function was successfully computed
