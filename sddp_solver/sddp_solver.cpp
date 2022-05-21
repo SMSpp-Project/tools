@@ -745,8 +745,12 @@ void set_initial_point( InvestmentBlock * investment_block ) {
 
  auto initial_point = load_initial_point();
 
- if( initial_point.empty() )
+ bool initial_point_provided = true;
+
+ if( initial_point.empty() ) {
+  initial_point_provided = false;
   initial_point = get_default_initial_point( investment_block );
+ }
 
  const auto num_variables = investment_block->get_number_variables();
  if( initial_point.size() != num_variables )
@@ -755,12 +759,13 @@ void set_initial_point( InvestmentBlock * investment_block ) {
                            "there are " + std::to_string( num_variables ) +
                            " variables." ) );
 
- const auto & var_lower_bound = investment_block->get_variable_lower_bound();
-
- for( Index i = 0 ; i < initial_point.size() ; ++i ) {
-  if( reformulate_variable_bounds && ( i < var_lower_bound.size() ) &&
-      ( var_lower_bound[ i ] > -Inf< double >() ) )
-   initial_point[ i ] -= var_lower_bound[ i ];
+ if( initial_point_provided && reformulate_variable_bounds ) {
+  const auto & var_lower_bound = investment_block->get_variable_lower_bound();
+  for( Index i = 0 ; i < initial_point.size() ; ++i ) {
+   if( ( i < var_lower_bound.size() ) &&
+       ( var_lower_bound[ i ] > -Inf< double >() ) )
+    initial_point[ i ] -= var_lower_bound[ i ];
+  }
  }
 
  if( ! initial_point.empty() )
