@@ -840,13 +840,10 @@ void invest( InvestmentBlock * investment_block ) {
   if( world.rank() == 0 ) {
 #endif
 
-   const auto lb = investment_solver->get_lb();
-   const auto ub = investment_solver->get_ub();
-
-   std::cout << "Lower bound: " << std::setprecision( 20 ) << lb << std::endl;
-   std::cout << "Upper bound: " << std::setprecision( 20 ) << ub << std::endl;
-
    if( investment_solver->has_var_solution() ) {
+    const auto solution_value = investment_solver->get_var_value();
+    std::cout << "Solution value: " << std::setprecision( 20 )
+              << solution_value << std::endl;
     investment_solver->get_var_solution();
     std::cout << "Solution: " << std::endl;
     const auto & variables = investment_block->get_variables();
@@ -859,6 +856,9 @@ void invest( InvestmentBlock * investment_block ) {
       value += var_lower_bound[ i ];
      std::cout << std::setw( width ) << i << " " << value << std::endl;
     }
+   }
+   else {
+    std::cout << "No solution has been found." << std::endl;
    }
 
 #ifdef USE_MPI
