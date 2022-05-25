@@ -350,7 +350,7 @@ class UCBlockSolutionOutput
 
 /*--------------------------------------------------------------------------*/
 
- /// dual values for the mazimum pollutant emmision constraints
+ /// dual values for the maximum pollutant emission constraints
  void print_maximum_pollutant_emission_duals( UCBlock * uc_block ) const {
 
   const auto number_pollutants = uc_block->get_number_pollutants();

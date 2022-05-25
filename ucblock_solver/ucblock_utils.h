@@ -605,10 +605,11 @@ void print_ucblock_solver_results( Block * block ) {
   if( network_block != nullptr ) {
    std::cout << "----- NetworkBlock " << n_netw_blocks++ << std::endl;
 
-   auto node_inj = network_block->get_node_injection();
    std::cout << "Node injection     = [";
-   for( Index j = 0 ; j < network_block->get_number_nodes() ; ++j ) {
-    std::cout << std::setw( 20 ) << node_inj[ j ].get_value();
+   for( Index t = 0 ; t < network_block->get_number_intervals() ; ++t ) {
+    auto node_inj = network_block->get_node_injection( t );
+    for( Index j = 0 ; j < network_block->get_number_nodes() ; ++j )
+     std::cout << std::setw( 20 ) << node_inj[ j ].get_value();
    }
    std::cout << " ]" << std::endl;
 
