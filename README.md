@@ -81,6 +81,87 @@ The input netCDF file can be a problem file or a Block file:
 See the [`examples`](thermalunit_solver/examples) directory for sample input
 files and configurations.
 
+### InvestmentBlock Solver
+
+```sh
+Usage: investment_solver [options] <nc4-file>
+
+Options:
+  -B, --blockcfg <file>            Block configuration.
+  -c, --configdir <path>           The prefix for all config filenames.
+  -e, --eliminate-redundant-cuts   Eliminate given redundant cuts.
+  -h, --help                       Print this help.
+  -l, --load-cuts <file>           Load cuts from a file.
+  -n, --num-blocks <number>        Number of sub-Blocks per stage.
+  -p, --prefix <path>              The prefix for all Block filenames.
+  -r, --relax                      Relax integer variables.
+  -S, --solvercfg <file>           Solver configuration.
+  -s, --simulate                   Simulate the given investment.
+  -x, --initial-investment <file>  Initial investment.
+```
+
+The input netCDF file can be a problem file or a block file:
+
+- a problem file already contains a Block configuration and a Solver
+  configuration; any Block or Solver configuration provided by command line
+  will be ignored;
+
+- for a block file, if a Block configuration or a Solver configuration is not
+  provided, a default configuration will be used.
+
+The `-c` option specifies the prefix to the paths to all configuration
+files. This means that if PATH is the value passed to the `-c` option, then
+the name (or path) to each configuration file will be prepended by
+PATH. The `-p` option specifies the prefix to the paths to all files
+specified by the attribute "filename" in the input netCDF file.
+
+It is possible to provide an initial point (initial solution or initial
+investment) through the `-x` option. This option must be followed by a file
+containing the initial point. If there are N assets subject to investment,
+then this file must contain N numbers, where the i-th number is the initial
+value for the investment in the i-th asset. If this option is not used,
+then the initial value x_i for the investment in the i-th asset is
+determined as follows. If the lower bound l_i on the i-th investment is
+finite, then x_i = l_i. Otherwise, if the upper bound u_i on the i-th
+investment is finite, then x_i = u_i. Otherwise, if both bounds are not
+finite, then x_i = 0.
+
+The `-r` option indicates that the integrality constraints over the variables
+must be relaxed.
+
+The `-n` option specifies the number of sub-Blocks of SDDPBlock that must be
+constructed for each stage. By default, SDDPBlock contains a single
+sub-Blocks for each stage. This option must be provided in order to solve
+multiple scenarios in parallel. In this case, the number of scenarios that
+are solved in parallel is n (assuming n is not larger than the number of
+scenarios).
+
+The `-B` and `-S` options are only considered if the given netCDF file is a
+BlockFile. The `-B` option specifies a BlockConfig file to be applied to every
+InvestmentBlock; while the `-S` option specifies a BlockSolverConfig file for
+every InvestmentBlock. If the `-B` option is not provided when the given
+netCDF file is a BlockFile, then a default configuration is considered.
+
+Initial cuts can be provided by using the `-l` option. This option must be
+followed by the path to the file containing the initial cuts. This file
+must have the following format. The first line contains a header and its
+content is ignored. Each of the following lines represent a cut and has the
+following format:
+
+    t, a_0, a_1, ..., a_k, b
+
+where t is a stage (an integer between 0 and time horizon minus 1), a_0,
+..., a_k are the coefficients of the cut, and b is the constant term of the
+cut.
+
+As a preprocessing, given redundant cuts can be removed by using the `-e`
+option. Notice that all cuts will be subject to being removed, whether they
+are provided in a netCDF file or by the `-l` option.
+
+There are a few ways to specify the initial state for the first stage
+subproblem. This can be done by setting the initial state variable of
+SDDPBlock or by setting the initial state parameter of SDDPGreedySolver.
+
 ### SDDPBlock Solver
 
 ```sh
@@ -247,7 +328,7 @@ conduct, and the process for submitting merge requests to us.
 
 - **Niccolo' Iardella**  
   Dipartimento di Informatica  
-  Universitaè di Pisa
+  Universita' di Pisa
 
 - **Rafael Durbano Lobato**  
   Dipartimento di Informatica  

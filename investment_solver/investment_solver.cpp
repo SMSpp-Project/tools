@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*/
-/*-------------------------- File sddp_solver.cpp --------------------------*/
+/*----------------------- File investment_solver.cpp -----------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
  *
@@ -49,9 +49,10 @@
  *
  * The -B and -S options are only considered if the given netCDF file is a
  * BlockFile. The -B option specifies a BlockConfig file to be applied to
- * every SDDPBlock; while the -S option specifies a BlockSolverConfig file for
- * every SDDPBlock. If the -B option is not provided when the given netCDF
- * file is a BlockFile, then a default configuration is considered.
+ * every InvestmentBlock; while the -S option specifies a BlockSolverConfig
+ * file for every InvestmentBlock. If the -B option is not provided when the
+ * given netCDF file is a BlockFile, then a default configuration is
+ * considered.
  *
  * Initial cuts can be provided by using the -l option. This option must be
  * followed by the path to the file containing the initial cuts. This file
@@ -71,21 +72,7 @@
  *
  * There are a few ways to specify the initial state for the first stage
  * subproblem. This can be done by setting the initial state variable of
- * SDDPBlock or by setting the initial state parameter of SDDPSolver or
- * SDDPGreedySolver. When running multiple simulations (when the -s option is
- * used in simulation mode, i.e., with "-m simulation"), there is an
- * additional way to specify the initial state. The (final) state of some
- * stage from a simulation can be used as the initial state for the first
- * stage of the next simulation. The stage at which the state can be taken to
- * serve as the initial state for the next simulation can be specified by the
- * -t option. This option must be followed by an integer number STAGE. If
- * STAGE is between 0 and T-1, where T is the time horizon of the problem,
- * then the solution (final state) of the subproblem associated with stage
- * STAGE of a simulation will serve as the initial state for the first stage
- * subproblem of the next simulation. If STAGE does not belong to that
- * interval (that is, if it is negative or greater than or equal to T) or if
- * the -t option is not used, then no changes are made to the way the initial
- * state is specified.
+ * SDDPBlock or by setting the initial state parameter of SDDPGreedySolver.
  *
  * \author Rafael Durbano Lobato \n
  *         Dipartimento di Informatica \n
