@@ -137,6 +137,8 @@ const bool reformulate_variable_bounds = true;
 std::string exe{};         ///< Name of the executable file
 std::string docopt_desc{}; ///< Tool description
 
+std::vector< double > initial_point;
+
 /*--------------------------------------------------------------------------*/
 
 // Gets the name of the executable from its full path
@@ -559,7 +561,7 @@ void set_initial_point( InvestmentBlock * investment_block ) {
 
  investment_block->generate_abstract_variables();
 
- auto initial_point = load_initial_point();
+ initial_point = load_initial_point();
 
  bool initial_point_provided = true;
 
@@ -575,17 +577,21 @@ void set_initial_point( InvestmentBlock * investment_block ) {
                            "there are " + std::to_string( num_variables ) +
                            " variables." ) );
 
- if( initial_point_provided && reformulate_variable_bounds ) {
-  const auto & var_lower_bound = investment_block->get_variable_lower_bound();
-  for( Index i = 0 ; i < initial_point.size() ; ++i ) {
-   if( ( i < var_lower_bound.size() ) &&
-       ( var_lower_bound[ i ] > -Inf< double >() ) )
-    initial_point[ i ] -= var_lower_bound[ i ];
-  }
- }
+ if( initial_point_provided ) {
 
- if( ! initial_point.empty() )
-  investment_block->set_variable_values( initial_point );
+  auto initial_point_ = initial_point;
+
+  if( reformulate_variable_bounds ) {
+   const auto & var_lower_bound = investment_block->get_variable_lower_bound();
+   for( Index i = 0 ; i < initial_point_.size() ; ++i ) {
+    if( ( i < var_lower_bound.size() ) &&
+        ( var_lower_bound[ i ] > -Inf< double >() ) )
+     initial_point_[ i ] -= var_lower_bound[ i ];
+   }
+  }
+
+  investment_block->set_variable_values( initial_point_ );
+ }
 }
 
 /*--------------------------------------------------------------------------*/
@@ -638,10 +644,24 @@ void invest( InvestmentBlock * investment_block ) {
  // Solve
 
  if( simulate_investment ) {
+
+  if( ! initial_point.empty() ) {
+   std::cout << "Simulating the investment (";
+   bool first_point = true;
+   for( auto x : initial_point ) {
+    if( ! first_point )
+     std::cout << ", ";
+    std::cout << x;
+    first_point = false;
+   }
+   std::cout << ")." << std::endl;
+  }
+
   // Simulate
   auto objective =
    static_cast< FRealObjective * >( investment_block->get_objective() );
   objective->compute();
+
   const auto value = objective->value();
   std::cout << "Value: " << std::setprecision( 20 ) << value << std::endl;
  }
@@ -1661,7 +1681,7 @@ int main( int argc , char ** argv ) {
  boost::mpi::environment env(argc, argv);
 #endif
 
- docopt_desc = "SMS++ SDDP solver.\n";
+ docopt_desc = "SMS++ investment solver.\n";
  exe = get_filename( argv[ 0 ] );
  process_args( argc , argv );
 
