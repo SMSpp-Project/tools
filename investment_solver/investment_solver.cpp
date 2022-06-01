@@ -99,15 +99,21 @@
 #include <iostream>
 #include <queue>
 
+#include <BatteryUnitBlock.h>
 #include <BendersBlock.h>
 #include <BlockSolverConfig.h>
 #include <CPXMILPSolver.h>
 #include <HydroSystemUnitBlock.h>
+#include <IntermittentUnitBlock.h>
+#include <NetworkBlock.h>
 #include <RBlockConfig.h>
 #include <SDDPBlock.h>
 #include <StochasticBlock.h>
 #include <SDDPGreedySolver.h>
 #include <SDDPSolver.h>
+#include <SlackUnitBlock.h>
+#include <ThermalUnitBlock.h>
+#include <UCBlock.h>
 
 #include "CutProcessing.h"
 #include "InvestmentBlock.h"
