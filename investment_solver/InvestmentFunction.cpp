@@ -679,12 +679,6 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
 
 int InvestmentFunction::compute( bool changedvars ) {
 
- if( true ) { // TODO remover
-  std::cout << std::endl;
-  for( Index i = 0 ; i < v_x.size() ; ++i )
-   std::cout << "x(" << i << ") = " << std::setprecision(20) << get_var_value( i , false ) << std::endl;
- }
-
  if( ( ! changedvars ) && f_blocks_are_updated )
   // TODO We need another flag telling whether the sub-Block has changed since
   // the last call.
