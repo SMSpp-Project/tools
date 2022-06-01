@@ -7,8 +7,8 @@
  * SDDPSolver or the SDDPGreedySolver. The description of the SDDPBlock must
  * be given in a netCDF file. This tool can be executed as follows:
  *
- *   ./sddp_solver [-r] [-s] [-i INDEX] [-m NUMBER] [-t STAGE] [-n NUMBER]
- *                 [-B FILE] [-S FILE] [-p PATH] [-c PATH] [-l FILE] [-e]
+ *   ./sddp_solver [-r] [-s] [-e] [-l FILE] [-i INDEX] [-m NUMBER] [-t STAGE]
+ *                 [-n NUMBER] [-B FILE] [-S FILE] [-p PATH] [-c PATH]
  *                 <nc4-file>
  *
  * The only mandatory argument is the netCDF file containing the description
@@ -21,10 +21,12 @@
  * solved.
  *
  * The -c option specifies the prefix to the paths to all configuration
- * files. The -p option specifies the prefix to the paths to all files
+ * files. This means that if PATH is the value passed to the -c option, then
+ * the name (or path) to each configuration file will be prepended by
+ * PATH. The -p option specifies the prefix to the paths to all files
  * specified by the attribute "filename" in the input netCDF file.
  *
- * The -s option indicates whether a simulation should be performed. If this
+ * The -s option indicates whether a simulation must be performed. If this
  * option is used, then the SDDPBlock is solved using the
  * SDDPGreedySolver. Otherwise, the SDDPBlock is solved by the SDDPSolver.
  *
@@ -45,7 +47,11 @@
  * must be relaxed.
  *
  * The -n option specifies the number of sub-Blocks of SDDPBlock that must be
- * constructed for each stage.
+ * constructed for each stage. By default, SDDPBlock contains a single
+ * sub-Blocks for each stage. This option must be provided in order to solve
+ * multiple scenarios in parallel. In this case, the number of scenarios that
+ * are solved in parallel is n (assuming n is not larger than the number of
+ * scenarios).
  *
  * The -B and -S options are only considered if the given netCDF file is a
  * BlockFile. The -B option specifies a BlockConfig file to be applied to
@@ -156,19 +162,19 @@ void print_help() {
            << "  " << exe << " -h | --help\n"
            << std::endl
            << "Options:\n"
-           << "  -B, --blockcfg <file>                    Block configuration.\n"
-           << "  -c, --configdir <path>                   The prefix for all config filenames.\n"
-           << "  -e, --eliminate-redundant-cuts           Eliminate given redundant cuts.\n"
-           << "  -h, --help                               Print this help.\n"
-           << "  -i, --scenario <index>                   The index of the scenario.\n"
-           << "  -l, --load-cuts <file>                   Load cuts from a file.\n"
-           << "  -m <number>, --num-simulations <number>  Number of simulations to be performed.\n"
-           << "  -n, --num-blocks <number>                Number of sub-Blocks per stage.\n"
-           << "  -p, --prefix <path>                      The prefix for all Block filenames.\n"
-           << "  -r, --relax                              Relax integer variables.\n"
-           << "  -s, --simulation                         Simulation mode.\n"
-           << "  -S, --solvercfg <file>                   Solver configuration.\n"
-           << "  -t <stage>, --stage <stage>              Stage from which initial state is taken."
+           << "  -B, --blockcfg <file>           Block configuration.\n"
+           << "  -c, --configdir <path>          The prefix for all config filenames.\n"
+           << "  -e, --eliminate-redundant-cuts  Eliminate given redundant cuts.\n"
+           << "  -h, --help                      Print this help.\n"
+           << "  -i, --scenario <index>          The index of the scenario.\n"
+           << "  -l, --load-cuts <file>          Load cuts from a file.\n"
+           << "  -m, --num-simulations <number>  Number of simulations to be performed.\n"
+           << "  -n, --num-blocks <number>       Number of sub-Blocks per stage.\n"
+           << "  -p, --prefix <path>             The prefix for all Block filenames.\n"
+           << "  -r, --relax                     Relax integer variables.\n"
+           << "  -s, --simulation                Simulation mode.\n"
+           << "  -S, --solvercfg <file>          Solver configuration.\n"
+           << "  -t, --stage <stage>             Stage from which initial state is taken."
            << std::endl;
 }
 
