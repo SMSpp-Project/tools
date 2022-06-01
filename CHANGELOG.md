@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Investment mode to sddp_solver.
+- The investment_solver tool to solve an InvestmentBlock.
 
 ## [0.5.0] - 2021-12-08
 
