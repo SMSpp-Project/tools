@@ -7,6 +7,7 @@ At the moment we provide:
 - a single Thermal Unit solver
 - a UCBlock solver
 - an SDDPBlock solver
+- an InvestmentBlock solver
 - a small utility to change some parameters in a configuration
   file while leaving all the rest unchanged
 
@@ -150,9 +151,9 @@ following format:
 
     t, a_0, a_1, ..., a_k, b
 
-where t is a stage (an integer between 0 and time horizon minus 1), a_0,
-..., a_k are the coefficients of the cut, and b is the constant term of the
-cut.
+where 't' is a stage (an integer between 0 and time horizon minus 1), 'a_0',
+..., 'a_k' are the coefficients of the cut, and 'b' is the constant term of
+the cut.
 
 As a preprocessing, given redundant cuts can be removed by using the `-e`
 option. Notice that all cuts will be subject to being removed, whether they
@@ -286,7 +287,7 @@ Usage: chgcfg in-cfg out-cfg [ par1 val1 [ par2 val2 [ ... ] ] ]
 `out-cfg` is the output configuration file; it must be different from
 `in_cfg`, and any existing content in the file is deleted.
 
-Then, an aritrary number of `par-i val-i` pairs is allowed: each `par-i`
+Then, an arbitrary number of `par-i val-i` pairs is allowed: each `par-i`
 is checked against the existing parameters in `in-cfg`, and if it is found
 the value `val-i` is put in `out-cfg` following `par-i`, replacing whatever
 is there in `in-file`. Anything that does not contain any of the `par-i` is
@@ -299,7 +300,7 @@ original file by specifying them multiple times in the command line: the
 first command-line copy modifies the first occurrence in the file and so on.
 
 The module has a compile-time option, commanded by the macro BAREBONES in
-`chgcfg.cpp`; if activatwd, the produced configuration file will be
+`chgcfg.cpp`; if activated, the produced configuration file will be
 stripped by all non-necessary comments and comment lines.
 
 
