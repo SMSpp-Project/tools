@@ -258,17 +258,17 @@ class InvestmentFunction : public C05Function , public Block {
   *        the i-th active variable of this function (given by get_active_var(
   *        i )) is given by \p cost[ i ].
   *
-  * @param desinvestment_cost a vector containing the coefficients of the
-  *        linear term of this function associated with desinvestments. The
-  *        correspondence between \p desinvestment_cost and \p x is
+  * @param disinvestment_cost a vector containing the coefficients of the
+  *        linear term of this function associated with disinvestments. The
+  *        correspondence between \p disinvestment_cost and \p x is
   *        positional, i.e., the coefficient of the i-th active variable of
   *        this function (given by get_active_var( i )) is given by \p
-  *        desinvestment_cost[ i ].
+  *        disinvestment_cost[ i ].
   *
   * @param observer a pointer to the Observer of this InvestmentFunction.
   *
   * As the && implies, \p x, \p block_indices, \p line_indices, \p cost, and
-  * \p desinvestment_cost become property of the InvestmentFunction object.
+  * \p disinvestment_cost become property of the InvestmentFunction object.
   *
   * All inputs have a default (nullptr, {}, {}, {}, {}, and nullptr,
   * respectively) so that this can be used as the void constructor. */
@@ -277,7 +277,7 @@ class InvestmentFunction : public C05Function , public Block {
                      IndexVector && asset_indices = {} ,
                      AssetTypeVector && asset_type = {} ,
                      RealVector && cost = {} ,
-                     RealVector && desinvestment_cost = {} ,
+                     RealVector && disinvestment_cost = {} ,
                      Observer * const observer = nullptr );
 
 /*--------------------------------------------------------------------------*/
@@ -898,10 +898,10 @@ class InvestmentFunction : public C05Function , public Block {
   * InvestmentFunction. If x[i] is greater than InstalledQuantity[i], then the
   * i-th asset is being subject to investment. If x[i] is less than
   * InstalledQuantity[i], then the i-th asset is being subject to
-  * desinvestment. Because the cost of investment is tipically different from
-  * the cost of desinvestment, the fixed (des)investment cost is composed by
+  * disinvestment. Because the cost of investment is tipically different from
+  * the cost of disinvestment, the fixed (des)investment cost is composed by
   * two parts: the one associated with an investment and the one associated
-  * with a desinvestment. The fixed cost associated with the i-th asset is
+  * with a disinvestment. The fixed cost associated with the i-th asset is
   * given by
   *
   *   c[i] * ( x[i] - InstalledQuantity[i] ) if x[i] > InstalledQuantity[i],
@@ -921,17 +921,17 @@ class InvestmentFunction : public C05Function , public Block {
   *   InvestmentFunction. This variable is optional. If it is not provided
   *   then all investment costs are considered to be zero.
   *
-  * - The one-dimensional variable "DesinvestmentCost", of type
+  * - The one-dimensional variable "DisinvestmentCost", of type
   *   netCDF::NcDouble(), which is either a scalar or indexed over
-  *   "NumAssets", containing the fixed (linear) cost of desinvesting in one
+  *   "NumAssets", containing the fixed (linear) cost of disinvesting in one
   *   unit of each asset. This variable thus defines the coefficients "d" (see
   *   above) of the linear term of the function represented by this
   *   InvestmentFunction. If it is a scalar, then we assume that
-  *   DesinvestmentCost[i] = DesinvestmentCost[0] for all i in {0, ...,
+  *   DisinvestmentCost[i] = DisinvestmentCost[0] for all i in {0, ...,
   *   NumAssets - 1}. The i-th element of this vector is associated with the
   *   i-th asset and, therefore, with the i-th active ColVariable of this
   *   InvestmentFunction. This variable is optional. If it is not provided
-  *   then all desinvestment costs are considered to be zero.
+  *   then all disinvestment costs are considered to be zero.
   *
   * - The group "SDDPBlock", containing the description of the inner Block. */
 
@@ -1294,8 +1294,8 @@ class InvestmentFunction : public C05Function , public Block {
  std::vector< double > v_cost;
  ///< the cost of investing in one unit of each asset
 
- std::vector< double > v_desinvestment_cost;
- ///< the cost of desinvesting in one unit of each asset
+ std::vector< double > v_disinvestment_cost;
+ ///< the cost of disinvesting in one unit of each asset
 
  std::vector< double > v_installed_quantity;
  ///< amount of each asset currently installed in the system
@@ -1807,10 +1807,10 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
- /// returns the desinvestment cost of the i-th asset
- double get_desinvestment_cost( Index i ) const {
-  if( i < v_desinvestment_cost.size() )
-   return v_desinvestment_cost[ i ];
+ /// returns the disinvestment cost of the i-th asset
+ double get_disinvestment_cost( Index i ) const {
+  if( i < v_disinvestment_cost.size() )
+   return v_disinvestment_cost[ i ];
   return 0;
  }
 
