@@ -71,8 +71,8 @@ void InvestmentFunction::load( std::istream &input , char frmt ) {
 
 InvestmentFunction::InvestmentFunction
 ( Block * inner_block , VarVector && x , IndexVector && asset_indices ,
-  AssetTypeVector && asset_type , RealVector && linear_coefficients ,
-  Observer * const observer )
+  AssetTypeVector && asset_type , RealVector && cost ,
+  RealVector && disinvestment_cost , Observer * const observer )
  : C05Function( observer ) , f_blocks_are_updated( false ) ,
    f_solver_status( kUnEval ) , f_diagonal_linearization_required( false ) ,
    f_id( this ) {
@@ -82,7 +82,8 @@ InvestmentFunction::InvestmentFunction
 
  v_asset_indices = std::move( asset_indices );
  v_asset_type = std::move( asset_type );
- v_linear_coefficients  = std::move( linear_coefficients );
+ v_cost = std::move( cost );
+ v_disinvestment_cost = std::move( disinvestment_cost );
 
  const auto num_assets = v_asset_indices.size();
 
@@ -169,20 +170,36 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
                              " 1, or 'NumAssets'." ) );
   }
 
-  // Deserialize the linear coeffients of the objective function
+  // Deserialize the costs of investments
 
   if( ::deserialize( group , "Cost" , num_assets ,
-                     v_linear_coefficients , true , true ) ) {
-   if( v_linear_coefficients.size() == 1 )
-    v_linear_coefficients.resize( num_assets , v_linear_coefficients.front() );
-   else if( v_linear_coefficients.size() != num_assets )
+                     v_cost , true , true ) ) {
+   if( v_cost.size() == 1 )
+    v_cost.resize( num_assets , v_cost.front() );
+   else if( v_cost.size() != num_assets )
     throw( std::logic_error( "InvestmentFunction::deserialize: the 'Cost'"
                              " netCDF variable, if provided, must have size "
                              "0, 1, or 'NumAssets'." ) );
   }
   else {
    // All coefficients are zero.
-   v_linear_coefficients.resize( num_assets , 0 );
+   v_cost.resize( num_assets , 0 );
+  }
+
+  // Deserialize the costs of disinvestments
+
+  if( ::deserialize( group , "DisinvestmentCost" , num_assets ,
+                     v_disinvestment_cost , true , true ) ) {
+   if( v_disinvestment_cost.size() == 1 )
+    v_disinvestment_cost.resize( num_assets , v_disinvestment_cost.front() );
+   else if( v_disinvestment_cost.size() != num_assets )
+    throw( std::logic_error( "InvestmentFunction::deserialize: the "
+                             "'DisinvestmentCost' netCDF variable, if provided,"
+                             " must have size 0, 1, or 'NumAssets'." ) );
+  }
+  else {
+   // All coefficients are zero.
+   v_disinvestment_cost.resize( num_assets , 0 );
   }
 
   // Deserialize the amount of assets currently installed in the system
@@ -342,12 +359,19 @@ void InvestmentFunction::set_ComputeConfig( ComputeConfig * scfg ) {
 /*--------------------------------------------------------------------------*/
 
 void InvestmentFunction::set_variables( VarVector && x ) {
- if( ! v_linear_coefficients.empty() )
-  if( v_linear_coefficients.size() != x.size() )
+ if( ! v_cost.empty() )
+  if( v_cost.size() != x.size() )
    throw( std::logic_error("InvestmentFunction::set_variables: given x has "
                            "size " + std::to_string( x.size() ) + ", but the "
                            "number of linear coefficients is " +
-                           std::to_string( v_linear_coefficients.size() ) ) );
+                           std::to_string( v_cost.size() ) ) );
+
+ if( ! v_disinvestment_cost.empty() )
+  if( v_disinvestment_cost.size() != x.size() )
+   throw( std::logic_error("InvestmentFunction::set_variables: given x has "
+                           "size " + std::to_string( x.size() ) + ", but the "
+                           "number of linear coefficients is " +
+                           std::to_string( v_disinvestment_cost.size() ) ) );
 
  v_x = std::move( x );
  f_blocks_are_updated = false;
@@ -474,7 +498,8 @@ void InvestmentFunction::remove_variables( Range range , ModParam issueMod ) {
   v_x.clear();
   v_asset_indices.clear();
   v_asset_type.clear();
-  v_linear_coefficients.clear();
+  v_cost.clear();
+  v_disinvestment_cost.clear();
 
   // Now issue the Modification.
   // An InvestmentFunction is strongly quasi-additive.
@@ -505,15 +530,20 @@ void InvestmentFunction::remove_variables( Range range , ModParam issueMod ) {
    std::make_pair( v_asset_type.begin() + range.first ,
                    v_asset_type.begin() + range.second );
 
-  const auto v_linear_coefficients_it =
-   std::make_pair( v_linear_coefficients.begin() + range.first ,
-                   v_linear_coefficients.begin() + range.second );
+  const auto v_cost_it =
+   std::make_pair( v_cost.begin() + range.first ,
+                   v_cost.begin() + range.second );
+
+  const auto v_disinvestment_cost_it =
+   std::make_pair( v_disinvestment_cost.begin() + range.first ,
+                   v_disinvestment_cost.begin() + range.second );
 
   v_x.erase( v_x_it.first , v_x_it.second );
   v_asset_indices.erase( v_asset_indices_it.first , v_asset_indices_it.second );
   v_asset_type.erase( v_asset_type_it.first , v_asset_type_it.second );
-  v_linear_coefficients.erase( v_linear_coefficients_it.first ,
-                               v_linear_coefficients_it.second );
+  v_cost.erase( v_cost_it.first , v_cost_it.second );
+  v_disinvestment_cost.erase( v_disinvestment_cost_it.first ,
+                              v_disinvestment_cost_it.second );
  };
 
  if( f_Observer && f_Observer->issue_mod( issueMod ) ) {
@@ -577,7 +607,8 @@ void InvestmentFunction::remove_variables( Subset && indices , bool ordered ,
   v_x.clear();
   v_asset_indices.clear();
   v_asset_type.clear();
-  v_linear_coefficients.clear();
+  v_cost.clear();
+  v_disinvestment_cost.clear();
 
   f_blocks_are_updated = false;
   generator_node_map.clear(); // the generator map must be rebuilt
@@ -607,7 +638,8 @@ void InvestmentFunction::remove_variables( Subset && indices , bool ordered ,
  const auto erase = [ this , &indices ]() {
   compact( v_asset_indices , indices );
   compact( v_asset_type , indices );
-  compact( v_linear_coefficients , indices );
+  compact( v_cost , indices );
+  compact( v_disinvestment_cost , indices );
   compact( v_x , indices );
  };
 
@@ -661,11 +693,14 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
  ::serialize( group , "LowerBound" , netCDF::NcDouble() , NumAssets ,
               v_lower_bound );
 
- ::serialize( group , "Cost" , netCDF::NcDouble() , NumAssets ,
-              v_linear_coefficients );
+ ::serialize( group , "Cost" , netCDF::NcDouble() , NumAssets , v_cost );
 
- ::serialize( group , "InstalledQuantity" , netCDF::NcDouble() , NumAssets ,
-              v_installed_quantity );
+ ::serialize( group , "DisinvestmentCost" , netCDF::NcDouble() , NumAssets ,
+              v_disinvestment_cost );
+
+ if( ! v_installed_quantity.empty() )
+  ::serialize( group , "InstalledQuantity" , netCDF::NcDouble() , NumAssets ,
+               v_installed_quantity );
 
  if( auto inner_block = get_nested_Block( 0 ) ) {
   auto inner_block_group = group.addGroup( BLOCK_NAME );
@@ -836,16 +871,25 @@ int InvestmentFunction::compute( bool changedvars ) {
 
  // Consider the linear term of the objective
 
- for( Index i = 0 ; i < v_linear_coefficients.size() ; ++i ) {
+ for( Index i = 0 ; i < v_x.size() ; ++i ) {
 
   const auto installed_quantity = get_installed_quantity( i );
+  const auto x = get_var_value( i , false );
 
-  // Update the objective value
-  f_value += v_linear_coefficients[ i ] * ( get_var_value( i , false ) -
-                                            installed_quantity );
+  // Update the objective value and the linearization
 
-  // Update the linearization
-  v_linearization[ i ] += v_linear_coefficients[ i ];
+  if( x > installed_quantity ) {
+   // An investment is being made in asset i
+   const auto cost = get_cost( i );
+   f_value += cost * ( x - installed_quantity );
+   v_linearization[ i ] += cost;
+  }
+  else {
+   // A disinvestment is being made in asset i
+   const auto disinvestment_cost = get_disinvestment_cost( i );
+   f_value += disinvestment_cost * ( installed_quantity - x );
+   v_linearization[ i ] -= disinvestment_cost;
+  }
  }
 
  // Unlock the inner Block if it is necessary

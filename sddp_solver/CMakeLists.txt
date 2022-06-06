@@ -14,8 +14,7 @@ if (TARGET SMS++::UCBlock AND
     TARGET SMS++::SDDPBlock AND
     TARGET SMS++::MILPSolver)
 
-    add_executable(sddp_solver sddp_solver.cpp CutProcessing.cpp
-                   InvestmentFunction.cpp InvestmentBlock.cpp)
+    add_executable(sddp_solver sddp_solver.cpp CutProcessing.cpp)
     target_compile_features(sddp_solver PUBLIC cxx_std_17)
     target_include_directories(sddp_solver PRIVATE ../ucblock_solver)
     target_link_libraries(sddp_solver PRIVATE
