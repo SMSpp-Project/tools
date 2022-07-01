@@ -38,6 +38,11 @@ if (TARGET SMS++::UCBlock AND
         target_link_libraries(sddp_solver PRIVATE Boost::mpi MPI::MPI_CXX)
     endif ()
 
+    find_package(OpenMP)
+    if (OPENMP_FOUND)
+        target_link_libraries(sddp_solver PRIVATE OpenMP::OpenMP_CXX)
+    endif ()
+
     # Install
     install(TARGETS sddp_solver
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

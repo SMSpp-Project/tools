@@ -43,6 +43,7 @@
 sddp_greedy_solver
 sddp_solver/sddp_solver
 ucblock_solver/ucblock_solver
+chgcfg/chgcfg
 
 # Debug files
 *.dSYM/

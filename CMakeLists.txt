@@ -18,7 +18,7 @@
 cmake_minimum_required(VERSION 3.12)
 cmake_policy(VERSION 3.12)
 project(SMS++_tools
-        VERSION 0.5.0
+        VERSION 0.5.1
         DESCRIPTION "SMS++ tools"
         HOMEPAGE_URL https://gitlab.com/smspp/tools
         LANGUAGES C CXX)
@@ -51,6 +51,8 @@ endif ()
 
 # ----- Tools --------------------------------------------------------------- #
 add_subdirectory(block_solver)
+add_subdirectory(chgcfg)
+add_subdirectory(investment_solver)
 add_subdirectory(sddp_solver)
 add_subdirectory(thermalunit_solver)
 add_subdirectory(ucblock_solver)
