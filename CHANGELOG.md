@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - The investment_solver tool to solve an InvestmentBlock.
+- The chgcfg tool to change configuration files.
+- Consecutive simulations to sddp_solver.
 
 ## [0.5.0] - 2021-12-08
 
