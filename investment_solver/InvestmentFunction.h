@@ -215,6 +215,24 @@ class InvestmentFunction : public C05Function , public Block {
   VarVector::const_iterator itr_;
   };
 
+/*--------------------------------------------------------------------------*/
+ /// public enum for the int algorithmic parameters
+ /** Public enum describing the different algorithmic parameters of int type
+  * that InvestmentFunction has in addition to those of C05Function. The value
+  * intLastInvestmentFPar is provided so that the list can be easily further
+  * extended by derived classes. */
+
+ enum int_par_type_InvestmentF {
+
+  intComputeLinearization = intLastParC05F ,
+  ///< determines whether linearizations must be computed
+
+  intLastInvestmentFPar ///< first allowed new int parameter for derived classes
+                        /**< Convenience value for easily allow derived classes
+                         * to extend the set of int algorithmic parameters. */
+
+ };  // end( int_par_type_InvestmentF )
+
 /**@} ----------------------------------------------------------------------*/
 /*------------- CONSTRUCTING AND DESTRUCTING InvestmentFunction ------------*/
 /*--------------------------------------------------------------------------*/
@@ -583,7 +601,7 @@ class InvestmentFunction : public C05Function , public Block {
  *  @{ */
 
  [[nodiscard]] idx_type get_num_int_par() const override {
-  return C05Function::get_num_int_par();
+  return( intLastInvestmentFPar );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -594,6 +612,8 @@ class InvestmentFunction : public C05Function , public Block {
   *
   * - intGPMaxSz
   *
+  * - intComputeLinearization
+  *
   * Any other parameter is handled by the C05Function.
   *
   * @param par The parameter whose value is desired.
@@ -603,6 +623,7 @@ class InvestmentFunction : public C05Function , public Block {
  [[nodiscard]] int get_int_par( idx_type par ) const override {
   switch( par ) {
    case( intGPMaxSz ): return( global_pool.size() );
+   case( intComputeLinearization ): return( f_compute_linearization );
   }
   return( C05Function::get_int_par( par ) );
  }
@@ -631,6 +652,8 @@ class InvestmentFunction : public C05Function , public Block {
 /*--------------------------------------------------------------------------*/
 
  [[nodiscard]] int get_dflt_int_par( idx_type par ) const override {
+  if( par == intComputeLinearization )
+   return( 1 );
   return( C05Function::get_dflt_int_par( par ) );
  }
 
@@ -638,6 +661,8 @@ class InvestmentFunction : public C05Function , public Block {
 
  [[nodiscard]] idx_type int_par_str2idx( const std::string & name )
   const override {
+  if( name == "intComputeLinearization" )
+   return( intComputeLinearization );
   return( C05Function::int_par_str2idx( name ) );
  }
 
@@ -645,6 +670,9 @@ class InvestmentFunction : public C05Function , public Block {
 
  [[nodiscard]] const std::string & int_par_idx2str( idx_type idx )
   const override {
+  static const std::vector< std::string > pars = { "intComputeLinearization" };
+  if( idx == intComputeLinearization )
+   return( pars[ 0 ] );
   return( C05Function::int_par_idx2str( idx ) );
  }
 
@@ -1240,6 +1268,9 @@ class InvestmentFunction : public C05Function , public Block {
 
  bool f_diagonal_linearization_required = false;
  ///< indicates whether a diagonal linearization is required
+
+ bool f_compute_linearization = true;
+ ///< indicates whether a linearization must be computed
 
  FunctionValue AAccMlt;
  ///< maximum absolute error in the multipliers of a linear combination

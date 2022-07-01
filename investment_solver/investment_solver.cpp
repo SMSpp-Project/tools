@@ -658,6 +658,10 @@ void invest( InvestmentBlock * investment_block ) {
    std::cout << ")." << std::endl;
   }
 
+  // Disable the computation of linearization
+  investment_function->
+   set_par( InvestmentFunction::intComputeLinearization , 0 );
+
   // Simulate
   auto objective =
    static_cast< FRealObjective * >( investment_block->get_objective() );

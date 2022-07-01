@@ -88,6 +88,8 @@ InvestmentFunction::InvestmentFunction
  const auto num_assets = v_asset_indices.size();
 
  // default parameter values
+
+ f_compute_linearization = get_dflt_int_par( intComputeLinearization );
  AAccMlt = get_dflt_dbl_par( dblAAccMlt );
  set_par( intGPMaxSz , C05Function::get_dflt_int_par( intGPMaxSz ) );
 }
@@ -381,6 +383,11 @@ void InvestmentFunction::set_variables( VarVector && x ) {
 
 void InvestmentFunction::set_par( const idx_type par , const int value ) {
  switch( par ) {
+
+  case( intComputeLinearization ):
+   f_compute_linearization = value;
+   break;
+
   case( intGPMaxSz ): {
    if( value < 0 )
     throw( std::invalid_argument( "InvestmentFunction::set_par: intGPMaxSz "
@@ -814,7 +821,8 @@ int InvestmentFunction::compute( bool changedvars ) {
    #pragma omp critical( InvestmentFunction )
    {
     f_solver_status = status;
-    update_linearization( sub_block_index );
+    if( f_compute_linearization )
+     update_linearization( sub_block_index );
    }
   }
   catch( const std::exception & e ) {
@@ -900,7 +908,10 @@ int InvestmentFunction::compute( bool changedvars ) {
    v_Block[ i ]->unlock( f_id );
  }
 
- f_has_diagonal_linearization = true;
+ // At this point, if a linearization has been computed, then a diagonal
+ // linearization is available.
+ f_has_diagonal_linearization = f_compute_linearization;
+
  f_has_value = true;
 
  return( f_solver_status );
