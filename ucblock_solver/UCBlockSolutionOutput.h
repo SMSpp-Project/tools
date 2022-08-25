@@ -129,10 +129,7 @@
  *
  * \version 0.1
  *
- * \date 23 - 04 - 2021
- *
  * \author Rafael Durbano Lobato \n
- *         Operations Research Group \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
@@ -274,7 +271,7 @@ public:
    []( UCBlock * block , Index time , Index node ) -> double {
     const auto & constraints = block->get_node_injection_constraints();
     if( time < constraints.size() && node < constraints[ time ].size() )
-     return constraints[ time ][ node ].get_dual();
+     return - constraints[ time ][ node ].get_dual();
     return 0;
    };
 
