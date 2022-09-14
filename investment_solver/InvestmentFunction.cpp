@@ -28,6 +28,7 @@
 #include "IntermittentUnitBlock.h"
 #include "InvestmentFunction.h"
 #include "SDDPBlock.h"
+#include "SDDPBlockSolutionOutput.h"
 #include "SDDPGreedySolver.h"
 #include "SMSTypedefs.h"
 #include "StochasticBlock.h"
@@ -386,6 +387,10 @@ void InvestmentFunction::set_par( const idx_type par , const int value ) {
 
   case( intComputeLinearization ):
    f_compute_linearization = value;
+   break;
+
+  case( intOutputSolution ):
+   f_output_solution = value;
    break;
 
   case( intGPMaxSz ): {
@@ -840,6 +845,12 @@ int InvestmentFunction::compute( bool changedvars ) {
   // Update the function value
 
   f_value += solver->get_var_value();
+
+  // Possibly output the solution
+
+  if( f_output_solution )
+   SDDPBlockSolutionOutput().print( get_sddp_block( sub_block_index ) ,
+                                    scenario , true );
 
   // Unlock the sub-Block
 

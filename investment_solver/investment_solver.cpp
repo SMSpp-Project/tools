@@ -7,7 +7,7 @@
  * InvestmentBlock. The description of the InvestmentBlock must be given in a
  * netCDF file. This tool can be executed as follows:
  *
- *   ./investment_solver [-s] [-r] [-e] [-l FILE] [-n NUMBER] [-B FILE]
+ *   ./investment_solver [-s] [-r] [-e] [-o] [-l FILE] [-n NUMBER] [-B FILE]
  *                       [-p PATH] [-c PATH] [-x FILE ] -S FILE <nc4-file>
  *
  * The only mandatory arguments are the netCDF file containing the description
@@ -39,6 +39,16 @@
  *
  * The -r option indicates that the integrality constraints over the variables
  * must be relaxed.
+ *
+ * To simulate a given investment, i.e., to compute the investment function at
+ * a given point, the -s option must be used. The investment to be simulated
+ * is given by the initial point as described above: a given point provided by
+ * the -x option or the default initial point.
+ *
+ * If the -o option is used, then part of the primal and dual solutions of
+ * every UCBlock for each scenario is output while the investment function is
+ * computed. Typically, one may want the solutions to be output in simulation
+ * mode (i.e., when the -s option is used).
  *
  * The -n option specifies the number of sub-Blocks of SDDPBlock that must be
  * constructed for each stage. By default, SDDPBlock contains a single
@@ -127,6 +137,7 @@ bool relax_integrality = false;
 bool eliminate_reduntant_cuts = false;
 bool simulate_investment = false;
 bool single_scenario = false;
+bool output_solution = false;
 const bool force_hard_components = false;
 const bool continuous_relaxation = true;
 
@@ -164,6 +175,7 @@ void print_help() {
            << "  -h, --help                      Print this help.\n"
            << "  -l, --load-cuts <file>          Load cuts from a file.\n"
            << "  -n, --num-blocks <number>       Number of sub-Blocks per stage.\n"
+           << "  -o, --output-solution           Output the solutions.\n"
            << "  -p, --prefix <path>             The prefix for all Block filenames.\n"
            << "  -r, --relax                     Relax integer variables.\n"
            << "  -S, --solvercfg <file>          Solver configuration.\n"
@@ -195,7 +207,7 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:c:hel:n:p:rS:sx:";
+ const char * const short_opts = "B:c:hel:n:op:rS:sx:";
  const option long_opts[] = {
   { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
   { "configdir" ,                required_argument , nullptr , 'c' } ,
@@ -203,6 +215,7 @@ void process_args( int argc , char ** argv ) {
   { "eliminate-redundant-cuts" , no_argument ,       nullptr , 'e' } ,
   { "load-cuts" ,                required_argument , nullptr , 'l' } ,
   { "num-blocks" ,               required_argument , nullptr , 'n' } ,
+  { "output-solution" ,          no_argument ,       nullptr , 'o' } ,
   { "prefix" ,                   required_argument , nullptr , 'p' } ,
   { "relax" ,                    no_argument ,       nullptr , 'r' } ,
   { "solvercfg" ,                required_argument , nullptr , 'S' } ,
@@ -243,6 +256,9 @@ void process_args( int argc , char ** argv ) {
     }
     break;
    }
+   case 'o':
+    output_solution = true;
+    break;
    case 'p':
     Block::set_filename_prefix( std::string( optarg ) );
     break;
@@ -661,6 +677,10 @@ void invest( InvestmentBlock * investment_block ) {
   // Disable the computation of linearization
   investment_function->
    set_par( InvestmentFunction::intComputeLinearization , 0 );
+
+  // Possibly output the solution
+  investment_function->
+   set_par( InvestmentFunction::intOutputSolution , output_solution );
 
   // Simulate
   auto objective =

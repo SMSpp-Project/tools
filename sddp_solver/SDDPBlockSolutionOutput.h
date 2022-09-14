@@ -3,12 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  *
- * \version 0.1
- *
- * \date 28 - 01 - 2020
- *
  * \author Rafael Durbano Lobato \n
- *         Operations Research Group \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
@@ -27,6 +22,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "SDDPBlock.h"
+#include "StochasticBlock.h"
 #include "UCBlockSolutionOutput.h"
 
 #include <iostream>

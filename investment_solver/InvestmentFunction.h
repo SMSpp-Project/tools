@@ -227,9 +227,17 @@ class InvestmentFunction : public C05Function , public Block {
   intComputeLinearization = intLastParC05F ,
   ///< determines whether linearizations must be computed
 
-  intLastInvestmentFPar ///< first allowed new int parameter for derived classes
-                        /**< Convenience value for easily allow derived classes
-                         * to extend the set of int algorithmic parameters. */
+  intOutputSolution ,
+  ///< indicates whether the solution should be output
+  /**< If the value for this parameter is nonzero, then part of the primal and
+   * dual solutions obtained for each UCBlock for each scenario is output
+   * while this InvestmentFunction is being compute()-ed. The default value of
+   * this parameter is 0, which means that no solution is output. */
+
+  intLastInvestmentFPar
+  ///< first allowed new int parameter for derived classes
+  /**< Convenience value for easily allow derived classes to extend the set of
+   * int algorithmic parameters. */
 
  };  // end( int_par_type_InvestmentF )
 
@@ -564,6 +572,19 @@ class InvestmentFunction : public C05Function , public Block {
   *               default value for this parameter is defined by the
   *               C05Function.
   *
+  * - intComputeLinearization: This parameter indicates whether linearizations
+  *                            must be computed. The default value is 1, which
+  *                            means that linearizations are computed.
+  *
+  * - intOutputSolution: This parameter indicates whether the solution of each
+  *                      UCBlock must be output. If the value for this
+  *                      parameter is nonzero, then part of the primal and
+  *                      dual solutions obtained for each UCBlock for each
+  *                      scenario is output while this InvestmentFunction is
+  *                      being compute()-ed. The default value of this
+  *                      parameter is 0, which means that no solution is
+  *                      output.
+  *
   * Any other parameter is handled by the C05Function.
   *
   * @param par The parameter to be set.
@@ -614,6 +635,8 @@ class InvestmentFunction : public C05Function , public Block {
   *
   * - intComputeLinearization
   *
+  * - intOutputSolution
+  *
   * Any other parameter is handled by the C05Function.
   *
   * @param par The parameter whose value is desired.
@@ -624,6 +647,7 @@ class InvestmentFunction : public C05Function , public Block {
   switch( par ) {
    case( intGPMaxSz ): return( global_pool.size() );
    case( intComputeLinearization ): return( f_compute_linearization );
+   case( intOutputSolution ): return( f_output_solution );
   }
   return( C05Function::get_int_par( par ) );
  }
@@ -654,6 +678,8 @@ class InvestmentFunction : public C05Function , public Block {
  [[nodiscard]] int get_dflt_int_par( idx_type par ) const override {
   if( par == intComputeLinearization )
    return( 1 );
+  if( par == intOutputSolution )
+   return( 0 );
   return( C05Function::get_dflt_int_par( par ) );
  }
 
@@ -663,6 +689,8 @@ class InvestmentFunction : public C05Function , public Block {
   const override {
   if( name == "intComputeLinearization" )
    return( intComputeLinearization );
+  if( name == "intOutputSolution" )
+   return( intOutputSolution );
   return( C05Function::int_par_str2idx( name ) );
  }
 
@@ -670,9 +698,10 @@ class InvestmentFunction : public C05Function , public Block {
 
  [[nodiscard]] const std::string & int_par_idx2str( idx_type idx )
   const override {
-  static const std::vector< std::string > pars = { "intComputeLinearization" };
-  if( idx == intComputeLinearization )
-   return( pars[ 0 ] );
+  static const std::vector< std::string > pars = { "intComputeLinearization" ,
+                                                   "intOutputSolution" };
+  if( ( idx >= intComputeLinearization ) && ( idx < intLastInvestmentFPar ) )
+   return( pars[ idx - intComputeLinearization ] );
   return( C05Function::int_par_idx2str( idx ) );
  }
 
@@ -1271,6 +1300,9 @@ class InvestmentFunction : public C05Function , public Block {
 
  bool f_compute_linearization = true;
  ///< indicates whether a linearization must be computed
+
+ bool f_output_solution = false;
+ ///< indicates whether the solution of each UCBlock must be output
 
  FunctionValue AAccMlt;
  ///< maximum absolute error in the multipliers of a linear combination
