@@ -156,6 +156,7 @@
 #include "ThermalUnitBlock.h"
 #include "UCBlock.h"
 
+#include <iomanip>
 #include <iostream>
 
 /*--------------------------------------------------------------------------*/

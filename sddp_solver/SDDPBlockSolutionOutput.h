@@ -25,6 +25,7 @@
 #include "StochasticBlock.h"
 #include "UCBlockSolutionOutput.h"
 
+#include <iomanip>
 #include <iostream>
 
 /*--------------------------------------------------------------------------*/
