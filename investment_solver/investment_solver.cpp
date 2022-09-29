@@ -574,41 +574,45 @@ std::vector< double > load_initial_point() {
 
 void set_initial_point( InvestmentBlock * investment_block ) {
 
- // Set the initial point
+ // Generate the abstract variables so that we can set their values.
 
  investment_block->generate_abstract_variables();
 
+ // Possibly load a given initial point.
+
  initial_point = load_initial_point();
 
- bool initial_point_provided = true;
+ if( ! initial_point.empty() ) {
+  // An initial point has been provided.
 
- if( initial_point.empty() ) {
-  initial_point_provided = false;
+  const auto num_variables = investment_block->get_number_variables();
+  if( initial_point.size() != num_variables )
+   throw( std::logic_error( "The initial point has size " +
+                            std::to_string( initial_point.size() ) + ", but "
+                            "there are " + std::to_string( num_variables ) +
+                            " variables." ) );
+
+  if( reformulate_variable_bounds ) {
+
+   // If variable bounds have been reformulated, the initial point must be
+   // adjusted.
+
+   const auto & var_lower_bound = investment_block->get_variable_lower_bound();
+   for( Index i = 0 ; i < initial_point.size() ; ++i ) {
+    if( ( i < var_lower_bound.size() ) &&
+        ( var_lower_bound[ i ] > -Inf< double >() ) )
+     initial_point[ i ] -= var_lower_bound[ i ];
+   }
+  }
+ }
+ else {
+  // Since no initial point has been provided, we use the default one.
   initial_point = get_default_initial_point( investment_block );
  }
 
- const auto num_variables = investment_block->get_number_variables();
- if( initial_point.size() != num_variables )
-  throw( std::logic_error( "The initial point has size " +
-                           std::to_string( initial_point.size() ) + ", but "
-                           "there are " + std::to_string( num_variables ) +
-                           " variables." ) );
+ // Finally, set the initial point.
 
- if( initial_point_provided ) {
-
-  auto initial_point_ = initial_point;
-
-  if( reformulate_variable_bounds ) {
-   const auto & var_lower_bound = investment_block->get_variable_lower_bound();
-   for( Index i = 0 ; i < initial_point_.size() ; ++i ) {
-    if( ( i < var_lower_bound.size() ) &&
-        ( var_lower_bound[ i ] > -Inf< double >() ) )
-     initial_point_[ i ] -= var_lower_bound[ i ];
-   }
-  }
-
-  investment_block->set_variable_values( initial_point_ );
- }
+ investment_block->set_variable_values( initial_point );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -664,12 +668,21 @@ void invest( InvestmentBlock * investment_block ) {
 
   if( ! initial_point.empty() ) {
    std::cout << "Simulating the investment (";
-   bool first_point = true;
-   for( auto x : initial_point ) {
-    if( ! first_point )
+
+   const auto & var_lower_bound = investment_block->get_variable_lower_bound();
+
+   for( Index i = 0 ; i < initial_point.size() ; ++i ) {
+
+    auto x_i = initial_point[ i ];
+    if( reformulate_variable_bounds && ( i < var_lower_bound.size() ) &&
+        ( var_lower_bound[ i ] > -Inf< double >() ) )
+     // Since variable bounds have been reformulated, adjust x_i so that the
+     // user sees the expected initial point.
+     x_i += var_lower_bound[ i ];
+
+    if( i > 0 )
      std::cout << ", ";
-    std::cout << x;
-    first_point = false;
+    std::cout << x_i;
    }
    std::cout << ")." << std::endl;
   }
