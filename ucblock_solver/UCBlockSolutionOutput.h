@@ -127,8 +127,6 @@
  * - pz+1 is the number of zones for pollutant p and v_j is the dual value of
  *   the constraint associated with zone j.
  *
- * \version 0.1
- *
  * \author Rafael Durbano Lobato \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
@@ -156,6 +154,7 @@
 #include "ThermalUnitBlock.h"
 #include "UCBlock.h"
 
+#include <iomanip>
 #include <iostream>
 
 /*--------------------------------------------------------------------------*/
@@ -448,7 +447,7 @@ public:
   auto get_active_power =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( const auto active_power = block->get_active_power( g ) )
-     return ( active_power + t )->get_value();
+     return ( active_power + t )->get_value() * block->get_scale();
     return 0;
    };
 
@@ -483,12 +482,12 @@ public:
     if( auto b = dynamic_cast<IntermittentUnitBlock *>( block ) ) {
      const auto & max_power = b->get_maximum_power();
      if( t < max_power.size() )
-      return max_power[ t ];
+      return max_power[ t ] * b->get_kappa();
     }
     if( auto b = dynamic_cast<BatteryUnitBlock *>( block ) ) {
      const auto & max_power = b->get_maximum_power();
      if( t < max_power.size() )
-      return b->get_maximum_power()[ t ];
+      return max_power[ t ] * b->get_kappa();
     }
     return Inf<double>();
    };
@@ -509,7 +508,7 @@ public:
   auto get_primary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_primary_spinning_reserve( g ) )
-     return ( reserve + t )->get_value();
+     return ( reserve + t )->get_value() * block->get_scale();
     return 0;
    };
 
@@ -529,7 +528,7 @@ public:
   auto get_secondary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_secondary_spinning_reserve( g ) )
-     return ( reserve + t )->get_value();
+     return ( reserve + t )->get_value() * block->get_scale();
     return 0;
    };
 

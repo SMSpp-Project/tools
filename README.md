@@ -94,6 +94,7 @@ Options:
   -h, --help                       Print this help.
   -l, --load-cuts <file>           Load cuts from a file.
   -n, --num-blocks <number>        Number of sub-Blocks per stage.
+  -o, --output-solution            Output the solutions.
   -p, --prefix <path>              The prefix for all Block filenames.
   -r, --relax                      Relax integer variables.
   -S, --solvercfg <file>           Solver configuration.
@@ -129,6 +130,16 @@ finite, then x_i = 0.
 
 The `-r` option indicates that the integrality constraints over the variables
 must be relaxed.
+
+To simulate a given investment, i.e., to compute the investment function at a
+given point, the `-s` option must be used. The investment to be simulated is
+given by the initial point as described above: a given point provided by the
+`-x` option or the default initial point.
+
+If the `-o` option is used, then part of the primal and dual solutions of
+every UCBlock for each scenario is output while the investment function is
+computed. Typically, one may want the solutions to be output in simulation
+mode (i.e., when the `-s` option is used).
 
 The `-n` option specifies the number of sub-Blocks of SDDPBlock that must be
 constructed for each stage. By default, SDDPBlock contains a single
