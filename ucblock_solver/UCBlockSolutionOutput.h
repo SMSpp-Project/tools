@@ -127,12 +127,7 @@
  * - pz+1 is the number of zones for pollutant p and v_j is the dual value of
  *   the constraint associated with zone j.
  *
- * \version 0.1
- *
- * \date 23 - 04 - 2021
- *
  * \author Rafael Durbano Lobato \n
- *         Operations Research Group \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
@@ -158,6 +153,7 @@
 #include "ThermalUnitBlock.h"
 #include "UCBlock.h"
 
+#include <iomanip>
 #include <iostream>
 
 /*--------------------------------------------------------------------------*/
@@ -274,7 +270,7 @@ class UCBlockSolutionOutput
    []( UCBlock * block , Index time , Index node ) -> double {
     const auto & constraints = block->get_node_injection_constraints();
     if( time < constraints.size() && node < constraints[ time ].size() )
-     return( constraints[ time ][ node ].get_dual() );
+     return( - constraints[ time ][ node ].get_dual() );
     return( 0 );
    };
 
@@ -451,8 +447,8 @@ class UCBlockSolutionOutput
   auto get_active_power =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( const auto active_power = block->get_active_power( g ) )
-     return( active_power + t )->get_value();
-    return( 0 );
+     return ( active_power + t )->get_value();
+    return 0;
    };
 
   print_generator_data( output , blocks , get_active_power );
@@ -486,12 +482,12 @@ class UCBlockSolutionOutput
     if( auto b = dynamic_cast<IntermittentUnitBlock *>( block ) ) {
      const auto & max_power = b->get_maximum_power();
      if( t < max_power.size() )
-      return( max_power[ t ] );
+      return max_power[ t ];
     }
     if( auto b = dynamic_cast<BatteryUnitBlock *>( block ) ) {
      const auto & max_power = b->get_maximum_power();
      if( t < max_power.size() )
-      return( b->get_maximum_power()[ t ] );
+      return b->get_maximum_power()[ t ];
     }
     return( Inf< double >() );
    };
@@ -512,8 +508,8 @@ class UCBlockSolutionOutput
   auto get_primary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_primary_spinning_reserve( g ) )
-     return( reserve + t )->get_value();
-    return( 0 );
+     return ( reserve + t )->get_value();
+    return 0;
    };
 
   print_generator_data( output , blocks , get_primary_spinning_reserve );
@@ -532,8 +528,8 @@ class UCBlockSolutionOutput
   auto get_secondary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_secondary_spinning_reserve( g ) )
-     return( reserve + t )->get_value();
-    return( 0 );
+     return ( reserve + t )->get_value();
+    return 0;
    };
 
   print_generator_data( output , blocks , get_secondary_spinning_reserve );

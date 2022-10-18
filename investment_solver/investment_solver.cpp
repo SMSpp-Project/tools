@@ -7,7 +7,7 @@
  * InvestmentBlock. The description of the InvestmentBlock must be given in a
  * netCDF file. This tool can be executed as follows:
  *
- *   ./investment_solver [-s] [-r] [-e] [-l FILE] [-n NUMBER] [-B FILE]
+ *   ./investment_solver [-s] [-r] [-e] [-o] [-l FILE] [-n NUMBER] [-B FILE]
  *                       [-p PATH] [-c PATH] [-x FILE ] -S FILE <nc4-file>
  *
  * The only mandatory arguments are the netCDF file containing the description
@@ -39,6 +39,16 @@
  *
  * The -r option indicates that the integrality constraints over the variables
  * must be relaxed.
+ *
+ * To simulate a given investment, i.e., to compute the investment function at
+ * a given point, the -s option must be used. The investment to be simulated
+ * is given by the initial point as described above: a given point provided by
+ * the -x option or the default initial point.
+ *
+ * If the -o option is used, then part of the primal and dual solutions of
+ * every UCBlock for each scenario is output while the investment function is
+ * computed. Typically, one may want the solutions to be output in simulation
+ * mode (i.e., when the -s option is used).
  *
  * The -n option specifies the number of sub-Blocks of SDDPBlock that must be
  * constructed for each stage. By default, SDDPBlock contains a single
@@ -127,6 +137,7 @@ bool relax_integrality = false;
 bool eliminate_reduntant_cuts = false;
 bool simulate_investment = false;
 bool single_scenario = false;
+bool output_solution = false;
 const bool force_hard_components = false;
 const bool continuous_relaxation = true;
 
@@ -164,6 +175,7 @@ void print_help() {
            << "  -h, --help                      Print this help.\n"
            << "  -l, --load-cuts <file>          Load cuts from a file.\n"
            << "  -n, --num-blocks <number>       Number of sub-Blocks per stage.\n"
+           << "  -o, --output-solution           Output the solutions.\n"
            << "  -p, --prefix <path>             The prefix for all Block filenames.\n"
            << "  -r, --relax                     Relax integer variables.\n"
            << "  -S, --solvercfg <file>          Solver configuration.\n"
@@ -195,7 +207,7 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:c:hel:n:p:rS:sx:";
+ const char * const short_opts = "B:c:hel:n:op:rS:sx:";
  const option long_opts[] = {
   { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
   { "configdir" ,                required_argument , nullptr , 'c' } ,
@@ -203,6 +215,7 @@ void process_args( int argc , char ** argv ) {
   { "eliminate-redundant-cuts" , no_argument ,       nullptr , 'e' } ,
   { "load-cuts" ,                required_argument , nullptr , 'l' } ,
   { "num-blocks" ,               required_argument , nullptr , 'n' } ,
+  { "output-solution" ,          no_argument ,       nullptr , 'o' } ,
   { "prefix" ,                   required_argument , nullptr , 'p' } ,
   { "relax" ,                    no_argument ,       nullptr , 'r' } ,
   { "solvercfg" ,                required_argument , nullptr , 'S' } ,
@@ -243,6 +256,9 @@ void process_args( int argc , char ** argv ) {
     }
     break;
    }
+   case 'o':
+    output_solution = true;
+    break;
    case 'p':
     Block::set_filename_prefix( std::string( optarg ) );
     break;
@@ -558,41 +574,45 @@ std::vector< double > load_initial_point() {
 
 void set_initial_point( InvestmentBlock * investment_block ) {
 
- // Set the initial point
+ // Generate the abstract variables so that we can set their values.
 
  investment_block->generate_abstract_variables();
 
+ // Possibly load a given initial point.
+
  initial_point = load_initial_point();
 
- bool initial_point_provided = true;
+ if( ! initial_point.empty() ) {
+  // An initial point has been provided.
 
- if( initial_point.empty() ) {
-  initial_point_provided = false;
+  const auto num_variables = investment_block->get_number_variables();
+  if( initial_point.size() != num_variables )
+   throw( std::logic_error( "The initial point has size " +
+                            std::to_string( initial_point.size() ) + ", but "
+                            "there are " + std::to_string( num_variables ) +
+                            " variables." ) );
+
+  if( reformulate_variable_bounds ) {
+
+   // If variable bounds have been reformulated, the initial point must be
+   // adjusted.
+
+   const auto & var_lower_bound = investment_block->get_variable_lower_bound();
+   for( Index i = 0 ; i < initial_point.size() ; ++i ) {
+    if( ( i < var_lower_bound.size() ) &&
+        ( var_lower_bound[ i ] > -Inf< double >() ) )
+     initial_point[ i ] -= var_lower_bound[ i ];
+   }
+  }
+ }
+ else {
+  // Since no initial point has been provided, we use the default one.
   initial_point = get_default_initial_point( investment_block );
  }
 
- const auto num_variables = investment_block->get_number_variables();
- if( initial_point.size() != num_variables )
-  throw( std::logic_error( "The initial point has size " +
-                           std::to_string( initial_point.size() ) + ", but "
-                           "there are " + std::to_string( num_variables ) +
-                           " variables." ) );
+ // Finally, set the initial point.
 
- if( initial_point_provided ) {
-
-  auto initial_point_ = initial_point;
-
-  if( reformulate_variable_bounds ) {
-   const auto & var_lower_bound = investment_block->get_variable_lower_bound();
-   for( Index i = 0 ; i < initial_point_.size() ; ++i ) {
-    if( ( i < var_lower_bound.size() ) &&
-        ( var_lower_bound[ i ] > -Inf< double >() ) )
-     initial_point_[ i ] -= var_lower_bound[ i ];
-   }
-  }
-
-  investment_block->set_variable_values( initial_point_ );
- }
+ investment_block->set_variable_values( initial_point );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -648,15 +668,32 @@ void invest( InvestmentBlock * investment_block ) {
 
   if( ! initial_point.empty() ) {
    std::cout << "Simulating the investment (";
-   bool first_point = true;
-   for( auto x : initial_point ) {
-    if( ! first_point )
+
+   const auto & var_lower_bound = investment_block->get_variable_lower_bound();
+
+   for( Index i = 0 ; i < initial_point.size() ; ++i ) {
+
+    auto x_i = initial_point[ i ];
+    if( reformulate_variable_bounds && ( i < var_lower_bound.size() ) &&
+        ( var_lower_bound[ i ] > -Inf< double >() ) )
+     // Since variable bounds have been reformulated, adjust x_i so that the
+     // user sees the expected initial point.
+     x_i += var_lower_bound[ i ];
+
+    if( i > 0 )
      std::cout << ", ";
-    std::cout << x;
-    first_point = false;
+    std::cout << x_i;
    }
    std::cout << ")." << std::endl;
   }
+
+  // Disable the computation of linearization
+  investment_function->
+   set_par( InvestmentFunction::intComputeLinearization , 0 );
+
+  // Possibly output the solution
+  investment_function->
+   set_par( InvestmentFunction::intOutputSolution , output_solution );
 
   // Simulate
   auto objective =

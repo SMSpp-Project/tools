@@ -695,8 +695,10 @@ void solve( SDDPBlock * sddp_block ) {
  SDDPBlockSolutionOutput o;
  o.print_cuts( sddp_block , "BellmanValuesAllOUT.csv" );
 
- CutProcessing().remove_redundant_cuts
-  ( static_cast< SDDPBlock * >( sddp_block ) );
+ if( eliminate_reduntant_cuts )
+  CutProcessing().remove_redundant_cuts
+   ( static_cast< SDDPBlock * >( sddp_block ) );
+
  o.print_cuts( sddp_block , "BellmanValuesOUT.csv" );
 }
 
