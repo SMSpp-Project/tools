@@ -145,6 +145,9 @@ const bool continuous_relaxation = true;
 std::string exe{};         ///< Name of the executable file
 std::string docopt_desc{}; ///< Tool description
 
+const double feasibility_tolerance = 1.0e-6;
+const bool relative_violation = false;
+
 /*--------------------------------------------------------------------------*/
 
 // Gets the name of the executable from its full path
@@ -813,7 +816,9 @@ void load_cuts( SDDPBlock * sddp_block ) {
 /*--------------------------------------------------------------------------*/
 
 void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
-                       bool add_reserve_variables_to_objective ) {
+                       bool add_reserve_variables_to_objective ,
+                       double feasibility_tolerance ,
+                       bool relative_violation ) {
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
   auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
@@ -827,6 +832,9 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
   std::queue< Block *> blocks;
   blocks.push( inner_block );
+
+  SimpleConfiguration< std::pair< double , int > >
+   is_feasible_config( { feasibility_tolerance , relative_violation } );
 
   while( ! blocks.empty() ) {
    auto block = blocks.front();
@@ -844,6 +852,7 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
    if( auto polyhedral = dynamic_cast< PolyhedralFunctionBlock * >( block ) ) {
     auto config = new BlockConfig;
     config->f_static_variables_Configuration = new SimpleConfiguration<int>(1);
+    config->f_is_feasible_Configuration = is_feasible_config.clone();
     polyhedral->set_BlockConfig( config );
    }
 
@@ -853,6 +862,7 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
      new SimpleConfiguration<int>( var_type );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration<int>( cons_type );
+    config->f_is_feasible_Configuration = is_feasible_config.clone();
     unit->set_BlockConfig( config );
    }
 
@@ -862,6 +872,7 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
      new SimpleConfiguration<int>( var_type );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration<int>( cons_type );
+    config->f_is_feasible_Configuration = is_feasible_config.clone();
     unit->set_BlockConfig( config );
    }
 
@@ -875,7 +886,15 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
     if( add_reserve_variables_to_objective )
      config->f_objective_Configuration = new SimpleConfiguration<int>( 3 );
 
+    config->f_is_feasible_Configuration = is_feasible_config.clone();
+
     unit->set_BlockConfig( config );
+   }
+
+   else {
+    auto config = new BlockConfig;
+    config->f_is_feasible_Configuration = is_feasible_config.clone();
+    block->set_BlockConfig( config );
    }
 
   }
@@ -1646,7 +1665,8 @@ void process_block_file( const netCDF::NcFile & file ) {
     using_lagrangian_dual_solver( solver_config );
 
    configure_Blocks( sddp_block , relax_integrality ,
-                     is_using_lagrangian_dual_solver );
+                     is_using_lagrangian_dual_solver ,
+                     feasibility_tolerance , relative_violation );
 
    if( ! block_solver_config_provided ) {
     block_config = build_BlockConfig( sddp_block );
@@ -1816,7 +1836,8 @@ void multiple_simulations( const netCDF::NcFile & file ) {
      using_lagrangian_dual_solver( solver_config );
 
     configure_Blocks( sddp_block , relax_integrality ,
-                      is_using_lagrangian_dual_solver );
+                      is_using_lagrangian_dual_solver ,
+                      feasibility_tolerance , relative_violation );
 
     if( ! block_solver_config_provided ) {
      block_config = build_BlockConfig( sddp_block );
