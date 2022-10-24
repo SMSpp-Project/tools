@@ -145,7 +145,8 @@ const bool continuous_relaxation = true;
 std::string exe{};         ///< Name of the executable file
 std::string docopt_desc{}; ///< Tool description
 
-/// It replaces any zero value that the IntermittentUnitBlock maximum power may assume
+// It replaces any zero value that the IntermittentUnitBlock maximum power may
+// assume
 const double epsilon_max_power = 1.0e-16;
 
 /// Tolerance to be considered in Block::is_feasible()
@@ -153,6 +154,13 @@ const double feasibility_tolerance = 1.0e-6;
 
 /// Type of violation to be considered in Block::is_feasible()
 const bool relative_violation = false;
+
+// Name of Configuration files for each component of the Lagrangian dual of
+// the UCBlock
+const std::string thermal_config_filename = "TUBSCfg.txt";
+const std::string hydro_config_filename = "HSUBSCfg.txt";
+const std::string other_unit_config_filename = "OUBSCfg.txt";
+const std::string default_config_filename = "LPBSCfg.txt";
 
 /*--------------------------------------------------------------------------*/
 
@@ -821,10 +829,31 @@ void load_cuts( SDDPBlock * sddp_block ) {
 
 /*--------------------------------------------------------------------------*/
 
+bool using_thermal_dp_solver( const std::string & config_file ) {
+ std::ifstream stream( config_file );
+ BlockSolverConfig config( stream );
+ for( const auto & solver_name : config.get_SolverNames() )
+  if( solver_name == "ThermalUnitDPSolver" )
+   return true;
+ return false;
+}
+
+/*--------------------------------------------------------------------------*/
+
 void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
                        bool add_reserve_variables_to_objective ,
                        double feasibility_tolerance , bool relative_violation ,
                        bool is_using_lagrangian_dual_solver ) {
+
+ const SimpleConfiguration< std::pair< double , int > >
+  is_feasible_config( { feasibility_tolerance , relative_violation } );
+
+ const bool is_using_thermal_dp_solver = is_using_lagrangian_dual_solver ?
+  using_thermal_dp_solver( thermal_config_filename ) : false;
+
+ const int var_type = relax_binary_variables;
+ const int cons_type = 1; // generate OneVarConstraints
+
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
   auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
@@ -839,9 +868,6 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
   std::queue< Block *> blocks;
   blocks.push( inner_block );
 
-  SimpleConfiguration< std::pair< double , int > >
-   is_feasible_config( { feasibility_tolerance , relative_violation } );
-
   while( ! blocks.empty() ) {
    auto block = blocks.front();
    blocks.pop();
@@ -849,10 +875,6 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
    for( decltype( n ) i = 0 ; i < n ; ++i ) {
     blocks.push( block->get_nested_Block( i ) );
    }
-
-   int var_type = 0;
-   if( relax_binary_variables ) var_type = 1;
-   int cons_type = 1; // generate OneVarConstraints
 
    // Configure PolyhedralFunctionBlock
    if( auto polyhedral = dynamic_cast< PolyhedralFunctionBlock * >( block ) ) {
@@ -893,6 +915,12 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
      config->f_objective_Configuration = new SimpleConfiguration<int>( 3 );
 
     config->f_is_feasible_Configuration = is_feasible_config.clone();
+
+    if( is_using_thermal_dp_solver ) {
+     // The ThermalUnitDPSolver cannot currently deal with spinning
+     // reserves. Thus, any reserve that is provided must be ignored.
+     config->f_extra_Configuration = new SimpleConfiguration< int >( 127 << 1 );
+    }
 
     unit->set_BlockConfig( config );
    }
@@ -1361,11 +1389,6 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
  // The Configuration to be passed to get_dual_solution() of the inner Solver.
  Configuration * get_dual_solution_config = nullptr;
-
- const std::string thermal_config_filename = "TUBSCfg.txt";
- const std::string hydro_config_filename = "HSUBSCfg.txt";
- const std::string other_unit_config_filename = "OUBSCfg.txt";
- const std::string default_config_filename = "LPBSCfg.txt";
 
  enum ConfigIndex { thermal = 0 , hydro , other_unit , default_config };
 
