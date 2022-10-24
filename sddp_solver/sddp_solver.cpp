@@ -880,10 +880,6 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
  const SimpleConfiguration< std::pair< double , int > >
   is_feasible_config( { feasibility_tolerance , relative_violation } );
 
- const bool is_using_thermal_dp_solver = is_using_lagrangian_dual_solver ?
-  using_thermal_dp_solver( config_filename_prefix + thermal_config_filename ) :
-  false;
-
  const int var_type = relax_binary_variables;
  const int cons_type = 1; // generate OneVarConstraints
 
@@ -948,12 +944,6 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
      config->f_objective_Configuration = new SimpleConfiguration<int>( 3 );
 
     config->f_is_feasible_Configuration = is_feasible_config.clone();
-
-    if( is_using_thermal_dp_solver ) {
-     // The ThermalUnitDPSolver cannot currently deal with spinning
-     // reserves. Thus, any reserve that is provided must be ignored.
-     config->f_extra_Configuration = new SimpleConfiguration< int >( 127 << 1 );
-    }
 
     unit->set_BlockConfig( config );
    }
@@ -1234,6 +1224,9 @@ int get_int_par( ComputeConfig * compute_config , std::string par_name ) {
 /*--------------------------------------------------------------------------*/
 
 bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
+
+ if( ! sddp_solver_config )
+  return false;
 
  BlockSolverConfig * inner_solver_config = nullptr;
  ComputeConfig * compute_config = nullptr;
@@ -1692,6 +1685,16 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
 /*--------------------------------------------------------------------------*/
 
+void ignore_netcdf_variables() {
+ // The ThermalUnitDPSolver cannot currently deal with spinning
+ // reserves. Thus, any reserve that is provided must be ignored.
+ auto ignore_netcdf_variables = ThermalUnitBlock::get_ignore_netcdf_variables();
+ ignore_netcdf_variables |= 1;
+ ThermalUnitBlock::set_ignore_netcdf_variables( ignore_netcdf_variables );
+}
+
+/*--------------------------------------------------------------------------*/
+
 void process_block_file( const netCDF::NcFile & file ) {
  std::multimap< std::string , netCDF::NcGroup > blocks = file.getGroups();
 
@@ -1715,6 +1718,13 @@ void process_block_file( const netCDF::NcFile & file ) {
  auto cleared_solver_config = solver_config->clone();
  cleared_solver_config->clear();
 
+ const auto is_using_lagrangian_dual_solver =
+  using_lagrangian_dual_solver( solver_config );
+
+ if( is_using_lagrangian_dual_solver && using_thermal_dp_solver
+     ( config_filename_prefix + thermal_config_filename ) )
+  ignore_netcdf_variables();
+
  // For each Block descriptor
  for( auto block_description : blocks ) {
 
@@ -1726,14 +1736,9 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Configure the SDDPBlock
 
-  bool is_using_lagrangian_dual_solver = false;
-
   if( given_block_config )
    given_block_config->apply( sddp_block );
   else {
-   is_using_lagrangian_dual_solver =
-    using_lagrangian_dual_solver( solver_config );
-
    configure_Blocks( sddp_block , relax_integrality ,
                      is_using_lagrangian_dual_solver ,
                      feasibility_tolerance , relative_violation ,
@@ -1850,6 +1855,13 @@ void multiple_simulations( const netCDF::NcFile & file ) {
  auto cleared_solver_config = solver_config->clone();
  cleared_solver_config->clear();
 
+ const auto is_using_lagrangian_dual_solver =
+  using_lagrangian_dual_solver( solver_config );
+
+ if( is_using_lagrangian_dual_solver && using_thermal_dp_solver
+     ( config_filename_prefix + thermal_config_filename ) )
+  ignore_netcdf_variables();
+
  // For each Block descriptor
  for( auto block_description : blocks ) {
 
@@ -1898,14 +1910,9 @@ void multiple_simulations( const netCDF::NcFile & file ) {
 
    // Configure the SDDPBlock
 
-   bool is_using_lagrangian_dual_solver = false;
-
    if( given_block_config )
     given_block_config->apply( sddp_block );
    else {
-    is_using_lagrangian_dual_solver =
-     using_lagrangian_dual_solver( solver_config );
-
     configure_Blocks( sddp_block , relax_integrality ,
                       is_using_lagrangian_dual_solver ,
                       feasibility_tolerance , relative_violation ,
