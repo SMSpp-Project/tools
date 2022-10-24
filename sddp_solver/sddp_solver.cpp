@@ -829,12 +829,44 @@ void load_cuts( SDDPBlock * sddp_block ) {
 
 /*--------------------------------------------------------------------------*/
 
-bool using_thermal_dp_solver( const std::string & config_file ) {
- std::ifstream stream( config_file );
- BlockSolverConfig config( stream );
- for( const auto & solver_name : config.get_SolverNames() )
-  if( solver_name == "ThermalUnitDPSolver" )
+bool using_thermal_dp_solver( const std::string & config_filename ) {
+ std::ifstream stream( config_filename );
+
+ if( ! stream.is_open() ) {
+  std::cerr << "Solver configuration " + config_filename +
+   " was not found." << std::endl;
+  exit( 1 );
+ }
+
+ std::string config_name;
+ stream >> eatcomments >> config_name;
+ auto config = Configuration::new_Configuration( config_name );
+ auto solver_config = dynamic_cast< BlockSolverConfig * >( config );
+
+ if( ! solver_config ) {
+  std::cerr << "Solver configuration is not valid: "
+            << config_name << std::endl;
+  delete config;
+  exit( 1 );
+ }
+
+ try {
+  stream >> *solver_config;
+ }
+ catch( ... ) {
+  std::cout << "Error while loading Solver configuration: "
+            << config_name << std::endl;
+  delete config;
+  exit( 1 );
+ }
+
+ for( const auto & solver_name : solver_config->get_SolverNames() )
+  if( solver_name == "ThermalUnitDPSolver" ) {
+   delete config;
    return true;
+  }
+
+ delete config;
  return false;
 }
 
@@ -849,7 +881,8 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
   is_feasible_config( { feasibility_tolerance , relative_violation } );
 
  const bool is_using_thermal_dp_solver = is_using_lagrangian_dual_solver ?
-  using_thermal_dp_solver( thermal_config_filename ) : false;
+  using_thermal_dp_solver( config_filename_prefix + thermal_config_filename ) :
+  false;
 
  const int var_type = relax_binary_variables;
  const int cons_type = 1; // generate OneVarConstraints
