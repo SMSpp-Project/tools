@@ -145,7 +145,13 @@ const bool continuous_relaxation = true;
 std::string exe{};         ///< Name of the executable file
 std::string docopt_desc{}; ///< Tool description
 
+/// It replaces any zero value that the IntermittentUnitBlock maximum power may assume
+const double epsilon_max_power = 1.0e-16;
+
+/// Tolerance to be considered in Block::is_feasible()
 const double feasibility_tolerance = 1.0e-6;
+
+/// Type of violation to be considered in Block::is_feasible()
 const bool relative_violation = false;
 
 /*--------------------------------------------------------------------------*/
@@ -817,8 +823,8 @@ void load_cuts( SDDPBlock * sddp_block ) {
 
 void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
                        bool add_reserve_variables_to_objective ,
-                       double feasibility_tolerance ,
-                       bool relative_violation ) {
+                       double feasibility_tolerance , bool relative_violation ,
+                       bool is_using_lagrangian_dual_solver ) {
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
   auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
@@ -888,6 +894,14 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
     config->f_is_feasible_Configuration = is_feasible_config.clone();
 
+    unit->set_BlockConfig( config );
+   }
+   else if( auto unit = dynamic_cast< IntermittentUnitBlock * >( block ) ;
+            unit && is_using_lagrangian_dual_solver ) {
+    auto config = new BlockConfig;
+    config->f_is_feasible_Configuration = is_feasible_config.clone();
+    config->f_extra_Configuration =
+     new SimpleConfiguration< double >( epsilon_max_power );
     unit->set_BlockConfig( config );
    }
 
@@ -1666,7 +1680,8 @@ void process_block_file( const netCDF::NcFile & file ) {
 
    configure_Blocks( sddp_block , relax_integrality ,
                      is_using_lagrangian_dual_solver ,
-                     feasibility_tolerance , relative_violation );
+                     feasibility_tolerance , relative_violation ,
+                     is_using_lagrangian_dual_solver );
 
    if( ! block_solver_config_provided ) {
     block_config = build_BlockConfig( sddp_block );
@@ -1837,7 +1852,8 @@ void multiple_simulations( const netCDF::NcFile & file ) {
 
     configure_Blocks( sddp_block , relax_integrality ,
                       is_using_lagrangian_dual_solver ,
-                      feasibility_tolerance , relative_violation );
+                      feasibility_tolerance , relative_violation ,
+                      is_using_lagrangian_dual_solver );
 
     if( ! block_solver_config_provided ) {
      block_config = build_BlockConfig( sddp_block );
