@@ -1685,16 +1685,6 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
 /*--------------------------------------------------------------------------*/
 
-void ignore_netcdf_variables() {
- // The ThermalUnitDPSolver cannot currently deal with spinning
- // reserves. Thus, any reserve that is provided must be ignored.
- auto ignore_netcdf_variables = ThermalUnitBlock::get_ignore_netcdf_variables();
- ignore_netcdf_variables |= 1;
- ThermalUnitBlock::set_ignore_netcdf_variables( ignore_netcdf_variables );
-}
-
-/*--------------------------------------------------------------------------*/
-
 void process_block_file( const netCDF::NcFile & file ) {
  std::multimap< std::string , netCDF::NcGroup > blocks = file.getGroups();
 
@@ -1723,7 +1713,9 @@ void process_block_file( const netCDF::NcFile & file ) {
 
  if( is_using_lagrangian_dual_solver && using_thermal_dp_solver
      ( config_filename_prefix + thermal_config_filename ) )
-  ignore_netcdf_variables();
+  // The ThermalUnitDPSolver cannot currently deal with spinning
+  // reserves. Thus, any reserve that is provided must be ignored.
+  ThermalUnitBlock::ignore_reserve();
 
  // For each Block descriptor
  for( auto block_description : blocks ) {
@@ -1860,7 +1852,9 @@ void multiple_simulations( const netCDF::NcFile & file ) {
 
  if( is_using_lagrangian_dual_solver && using_thermal_dp_solver
      ( config_filename_prefix + thermal_config_filename ) )
-  ignore_netcdf_variables();
+  // The ThermalUnitDPSolver cannot currently deal with spinning
+  // reserves. Thus, any reserve that is provided must be ignored.
+  ThermalUnitBlock::ignore_reserve();
 
  // For each Block descriptor
  for( auto block_description : blocks ) {
