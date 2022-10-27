@@ -142,6 +142,9 @@ bool eliminate_reduntant_cuts = false;
 const bool force_hard_components = false;
 const bool continuous_relaxation = true;
 
+// This variable indicates whether negative prices may occur
+const bool negative_prices = false;
+
 std::string exe{};         ///< Name of the executable file
 std::string docopt_desc{}; ///< Tool description
 
@@ -858,8 +861,8 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
    else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration =
-     new SimpleConfiguration<int>( var_type );
+    config->f_static_variables_Configuration = new SimpleConfiguration<
+     std::pair< int , int > >( { negative_prices , var_type } );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration<int>( cons_type );
     unit->set_BlockConfig( config );
