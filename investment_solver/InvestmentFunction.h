@@ -1085,6 +1085,11 @@ class InvestmentFunction : public C05Function , public Block {
  bool has_linearization( bool diagonal = true ) override final;
 
 /*--------------------------------------------------------------------------*/
+ /// compute a new linearization for this InvestmentFunction
+
+ bool compute_new_linearization( bool diagonal = true ) override;
+
+/*--------------------------------------------------------------------------*/
  /// store a linearization in the global pool
 
  void store_linearization( Index name , ModParam issueMod = eModBlck )
@@ -1218,17 +1223,6 @@ class InvestmentFunction : public C05Function , public Block {
 
   return dynamic_cast< T * >( v_Block[ i ]->get_registered_solvers().front() );
  }
-
-/*--------------------------------------------------------------------------*/
-
- /// returns true if and only if the linear constraints are satisfied
- /** This function returns true if and only if the linear constraints are
-  * satisfied, considering the current values of the active Variable of this
-  * InvestmentFunction.
-  *
-  * @return true if and only if the linear constraints are satisfied. */
-
- bool is_feasible();
 
 /**@} ----------------------------------------------------------------------*/
 /*-------- METHODS FOR READING THE DATA OF THE InvestmentFunction ----------*/
@@ -1952,7 +1946,35 @@ class InvestmentFunction : public C05Function , public Block {
 /*---------------------------- PRIVATE METHODS  ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
+ /// returns the value of the i-th linear constraint
+ /** This function returns the value of the i-th linear constraints, i.e.,
+  * a_i'x.
+  *
+  * @param i The index of a linear constraint.
+  *
+  * @return the value of the i-th constraint. */
+
  double compute_linear_constraint_value( Index i ) const;
+
+/*--------------------------------------------------------------------------*/
+
+ /// returns true if and only if the unverified constraints are satisfied
+ /** This function returns true if and only if the linear constraints that
+  * have not been verified by a previous call to this function are satisfied,
+  * considering the current values of the active Variable of this
+  * InvestmentFunction.
+  *
+  * The linear constraints are verified in order, from the first one to the
+  * last one. Whenever a violated constraint is found, this function returns
+  * false and the remaining constraints are not verified. If this function is
+  * invoked again (before a new call to compute() is made), then only the
+  * remaining (unverified) constraints are verified and, again, up until the
+  * first violated constraints is found.
+  *
+  * @return true if and only if the unverified linear constraints are
+  *         satisfied. */
+
+ bool is_feasible();
 
 };  // end( class( InvestmentFunction ) )
 

@@ -1079,6 +1079,15 @@ bool InvestmentFunction::has_linearization( const bool diagonal ) {
  }
 }  // end( InvestmentFunction::has_linearization )
 
+
+/*--------------------------------------------------------------------------*/
+
+bool InvestmentFunction::compute_new_linearization( bool diagonal ) {
+ if( diagonal )
+  return false;
+ return ! is_feasible();
+}
+
 /*--------------------------------------------------------------------------*/
 
 void InvestmentFunction::store_linearization( Index name , ModParam issueMod ) {
@@ -1344,7 +1353,7 @@ bool InvestmentFunction::is_feasible( void ) {
  }
 
  return true;
-} // end ( InvestmentFunction::get_value )
+} // end ( InvestmentFunction::is_feasible )
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- Methods for handling Modification -------------------*/
