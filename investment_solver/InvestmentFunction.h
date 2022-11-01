@@ -104,6 +104,7 @@ class InvestmentFunction : public C05Function , public Block {
 
  using IndexVector = std::vector< Index >;
  using RealVector = std::vector< double >;
+ using MultiVector = std::vector< RealVector >;
  using AssetTypeVector = std::vector< AssetType >;
 
  using VarVector = std::vector< ColVariable * >;
@@ -1374,6 +1375,15 @@ class InvestmentFunction : public C05Function , public Block {
 
  std::vector< double > v_lower_bound;
  ///< lower bound on the value of the active variables
+
+ MultiVector v_A;
+ ///< the coefficient matrix of the linear constraints
+
+ RealVector v_constraints_lower_bound;
+ ///< the lower bound of the linear constraints
+
+ RealVector v_constraints_upper_bound;
+ ///< the upper bound of the linear constraints
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- PRIVATE PART OF THE CLASS --------------------------*/

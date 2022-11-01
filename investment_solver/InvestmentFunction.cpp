@@ -125,6 +125,8 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
 
  // Deserialize the dimensions
 
+ // Number of assets
+
  Index num_assets;
 
  if( ! ::deserialize_dim( group , "NumAssets" , num_assets ) )
@@ -137,6 +139,15 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
                            ") is different from the number of active variables "
                            "(" + std::to_string( v_x.size() ) + ")." );
  }
+
+ // Number of linear constraints
+
+ Index num_constraints;
+
+ if( ! ::deserialize_dim( group , "NumConstraints" , num_constraints ) )
+  num_constraints = 0;
+
+ // Deserialize the assets
 
  if( num_assets ) {
 
@@ -218,6 +229,72 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
   }
 
  } // end( if( num_assets ) )
+
+ // Deserialize the linear constraints
+
+ if( num_constraints ) {
+
+  if( ::deserialize( group , "Constraints_LowerBound" , num_constraints ,
+                     v_constraints_lower_bound , true , true ) ) {
+   if( v_constraints_lower_bound.size() == 1 )
+    v_constraints_lower_bound.resize( num_constraints ,
+                                      v_constraints_lower_bound.front() );
+   else if( v_constraints_lower_bound.size() != num_constraints )
+    throw( std::logic_error
+           ( "InvestmentFunction::deserialize: the 'Constraints_LowerBound'"
+             " netCDF variable, if provided, must have size "
+             "0, 1, or 'NumConstraints'." ) );
+  }
+  else {
+   // The lower bound is - infinity
+   v_constraints_lower_bound.resize( num_constraints , -Inf< double >() );
+  }
+
+  if( ::deserialize( group , "Constraints_UpperBound" , num_constraints ,
+                     v_constraints_upper_bound , true , true ) ) {
+   if( v_constraints_upper_bound.size() == 1 )
+    v_constraints_upper_bound.resize( num_constraints ,
+                                      v_constraints_upper_bound.front() );
+   else if( v_constraints_upper_bound.size() != num_constraints )
+    throw( std::logic_error
+           ( "InvestmentFunction::deserialize: the 'Constraints_UpperBound'"
+             " netCDF variable, if provided, must have size "
+             "0, 1, or 'NumConstraints'." ) );
+  }
+  else {
+   // The upper bound is infinity
+   v_constraints_upper_bound.resize( num_constraints , Inf< double >() );
+  }
+
+  for( Index i = 0 ; i < num_constraints ; ++i )
+   if( v_constraints_lower_bound[ i ] > v_constraints_upper_bound[ i ] )
+    throw( std::logic_error
+           ( "InvestmentFunction::deserialize: Constraints_LowerBound[" +
+             std::to_string( i ) + "] = " +
+             std::to_string( v_constraints_lower_bound[ i ] ) + " > " +
+             std::to_string( v_constraints_upper_bound[ i ] ) + " = " +
+             "Constraints_UpperBound[" + std::to_string( i ) + "]." ) );
+
+  auto A = group.getVar( "Constraints_A" );
+  if( A.isNull() )
+   throw( std::logic_error( "InvestmentFunction::deserialize: the netCDF "
+                            "variable 'Constraints_A' has not been "
+                            "provided." ) );
+
+  auto dim_A = A.getDims();
+  if( ( A.getDimCount() != 2 ) || ( dim_A[ 0 ].getSize() != num_constraints ) ||
+      ( dim_A[ 1 ].getSize() != num_assets ) )
+   throw( std::logic_error( "InvestmentFunction::deserialize: the netCDF "
+                            "variable 'Constraints_A' must have dimensions "
+                            "'NumConstraints' x 'NumAssets'" ) );
+
+  v_A.resize( num_constraints );
+  for( Index i = 0 ; i < v_A.size() ; ++i ) {
+   v_A[ i ].resize( num_assets );
+   A.getVar( { i , 0 } , { 1 , num_assets } , v_A[ i ].data() );
+  }
+
+ } // end( deserialize linear constraints )
 
  // Deserialize the inner Block
 
@@ -694,7 +771,8 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
   group.putAtt( "ReplicateIntermittentUnits" , netCDF::NcInt() ,
                 int( f_replicate_intermittent ) );
 
- auto NumAssets = group.addDim( "NumAssets" , v_asset_indices.size() );
+ const auto num_assets = v_asset_indices.size();
+ auto NumAssets = group.addDim( "NumAssets" , num_assets );
 
  ::serialize( group , "Assets" , netCDF::NcUint() , NumAssets ,
               v_asset_indices );
@@ -713,6 +791,25 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
  if( ! v_installed_quantity.empty() )
   ::serialize( group , "InstalledQuantity" , netCDF::NcDouble() , NumAssets ,
                v_installed_quantity );
+
+ if( ! v_A.empty() ) {
+ // Deserialize the linear constraints
+
+  const auto num_constraints = v_A.size();
+  auto NumConstraints = group.addDim( "NumConstraints" , num_constraints );
+
+ ::serialize( group , "Constraints_LowerBound" , netCDF::NcDouble() ,
+              NumConstraints , v_constraints_lower_bound );
+
+ ::serialize( group , "Constraints_UpperBound" , netCDF::NcDouble() ,
+              NumConstraints , v_constraints_upper_bound );
+
+  auto Constraints_A = group.addVar( "Constraints_A" , netCDF::NcDouble() ,
+                                     { NumConstraints , NumAssets } );
+
+  for( Index i = 0 ; i < num_constraints ; ++i )
+   Constraints_A.putVar( { i , 0 } , { 1 , num_assets } , v_A[ i ].data() );
+ }
 
  if( auto inner_block = get_nested_Block( 0 ) ) {
   auto inner_block_group = group.addGroup( BLOCK_NAME );
