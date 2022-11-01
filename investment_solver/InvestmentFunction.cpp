@@ -86,7 +86,7 @@ InvestmentFunction::InvestmentFunction
  v_cost = std::move( cost );
  v_disinvestment_cost = std::move( disinvestment_cost );
 
- const auto num_assets = v_asset_indices.size();
+ f_violated_constraint = { Inf< Index >() , eLHS };
 
  // default parameter values
 
@@ -831,6 +831,13 @@ int InvestmentFunction::compute( bool changedvars ) {
  f_has_diagonal_linearization = false;
  f_has_value = false;
 
+ f_violated_constraint = { Inf< Index >() , eLHS };
+ if( ! is_feasible() ) { // the linear constraints are not satisfied
+  f_has_value = true;
+  f_value = Inf< double >();
+  return( kOK );
+ }
+
  if( v_Block.empty() )
   throw( std::logic_error( "InvestmentFunction::compute: there must be at "
                            "least one sub-Block, but there is none." ) );
@@ -1068,9 +1075,7 @@ bool InvestmentFunction::has_linearization( const bool diagonal ) {
  }
  else {
   f_diagonal_linearization_required = false;
-  // TODO
-  throw( std::logic_error( "InvestmentFunction::has_linearization: vertical "
-                           "linearization not implemented yet." ) );
+  return f_violated_constraint.first < Inf< Index >();
  }
 }  // end( InvestmentFunction::has_linearization )
 
@@ -1160,8 +1165,18 @@ void InvestmentFunction::get_linearization_coefficients
  if( range.second <= range.first )
   return;
 
- for( Index i = range.first ; i < range.second ; ++i ) {
-  g[ i - range.first ] = v_linearization[ i ];
+ if( f_diagonal_linearization_required ) {
+  // diagonal linearization
+  for( Index i = range.first ; i < range.second ; ++i )
+   g[ i - range.first ] = v_linearization[ i ];
+ }
+ else {
+  // vertical linearization
+  assert( f_violated_constraint.first < v_A.size() );
+  const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+  const auto i = f_violated_constraint.first;
+  for( Index j = range.first ; j < range.second ; ++j )
+   g[ j - range.first ] = sign * v_A[ i ][ j ];
  }
 }  // end( InvestmentFunction::get_linearization_coefficients( * , range ) )
 
@@ -1178,8 +1193,18 @@ void InvestmentFunction::get_linearization_coefficients
  if( range.second <= range.first )
   return;
 
- for( Index i = range.first ; i < range.second ; ++i ) {
-  g.coeffRef( i ) = v_linearization[ i ];
+ if( f_diagonal_linearization_required ) {
+  // diagonal linearization
+  for( Index i = range.first ; i < range.second ; ++i )
+   g.coeffRef( i ) = v_linearization[ i ];
+ }
+ else {
+  // vertical linearization
+  assert( f_violated_constraint.first < v_A.size() );
+  const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+  const auto i = f_violated_constraint.first;
+  for( Index j = range.first ; j < range.second ; ++j )
+   g.coeffRef( j ) = sign * v_A[ i ][ j ];
  }
 }  // end( InvestmentFunction::get_linearization_coefficients( sv , range ) )
 
@@ -1192,9 +1217,20 @@ void InvestmentFunction::get_linearization_coefficients
   throw( std::logic_error( "InvestmentFunction::get_linearization_coefficients: "
                            "linearization from global pool not implemented yet." ) );
 
- Index k = 0;
- for( auto i : subset ) {
-  g[ k++ ] = v_linearization[ i ];
+ if( f_diagonal_linearization_required ) {
+  // diagonal linearization
+  Index k = 0;
+  for( auto i : subset )
+   g[ k++ ] = v_linearization[ i ];
+ }
+ else {
+  // vertical linearization
+  assert( f_violated_constraint.first < v_A.size() );
+  const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+  const auto i = f_violated_constraint.first;
+  Index k = 0;
+  for( auto j : subset )
+   g[ k++ ] = sign * v_A[ i ][ j ];
  }
 }  // end( InvestmentFunction::get_linearization_coefficients( * , subset ) )
 
@@ -1207,8 +1243,18 @@ void InvestmentFunction::get_linearization_coefficients
   throw( std::logic_error( "InvestmentFunction::get_linearization_coefficients: "
                            "linearization from global pool not implemented yet." ) );
 
- for( auto i : subset ) {
-  g.coeffRef( i ) = v_linearization[ i ];
+ if( f_diagonal_linearization_required ) {
+  // diagonal linearization
+  for( auto i : subset )
+   g.coeffRef( i ) = v_linearization[ i ];
+ }
+ else {
+  // vertical linearization
+  assert( f_violated_constraint.first < v_A.size() );
+  const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+  const auto i = f_violated_constraint.first;
+  for( auto j : subset )
+   g.coeffRef( j ) = sign * v_A[ i ][ j ];
  }
 }  // end( InvestmentFunction::get_linearization_coefficients( sv, subset ) )
 
@@ -1229,9 +1275,22 @@ InvestmentFunction::get_linearization_constant( Index name ) {
    return alpha;
   }
   else {
-   // TODO
-   throw( std::logic_error( "InvestmentFunction::get_linearization_constant: "
-                            "vertical linearization not implemented yet." ) );
+   assert( f_violated_constraint.first < v_A.size() );
+   const auto i = f_violated_constraint.first;
+   double alpha = 0;
+   if( f_reformulated_bounds ) {
+    for( Index j = 0 ; j < v_A[ i ].size() ; ++j )
+     if( ( j < v_lower_bound.size() )
+         && ( v_lower_bound[ j ] > -Inf< double >() ) )
+      alpha += v_A[ i ][ j ] * v_lower_bound[ j ];
+   }
+
+   if( f_violated_constraint.second == eLHS )
+    alpha = v_constraints_lower_bound[ i ] - alpha;
+   else
+    alpha = alpha - v_constraints_upper_bound[ i ];
+
+   return alpha;
   }
  }
  else {
@@ -1252,6 +1311,39 @@ Function::FunctionValue InvestmentFunction::get_value( void ) const {
  if( get_inner_block_objective_sense() == Objective::eMin )
   return Inf< double >();
  return -Inf< double >();
+} // end ( InvestmentFunction::get_value )
+
+/*--------------------------------------------------------------------------*/
+
+double InvestmentFunction::compute_linear_constraint_value( Index i ) const {
+ double value = 0;
+ for( Index j = 0 ; j < v_A[ i ].size() ; ++j )
+  value += v_A[ i ][ j ] * get_var_value( j , false );
+ return value;
+}
+
+/*--------------------------------------------------------------------------*/
+
+bool InvestmentFunction::is_feasible( void ) {
+
+ Index start = 0;
+ if( f_violated_constraint.first < Inf< Index >() )
+  start = f_violated_constraint.first + 1;
+
+ for( Index i = start ; i < v_A.size() ; ++i ) {
+  auto constraint_value = compute_linear_constraint_value( i );
+  if( constraint_value < v_constraints_lower_bound[ i ] ) {
+   f_violated_constraint = { i , eLHS };
+   return false;
+  }
+
+  if( constraint_value > v_constraints_upper_bound[ i ] ) {
+   f_violated_constraint = { i , eRHS };
+   return false;
+  }
+ }
+
+ return true;
 } // end ( InvestmentFunction::get_value )
 
 /*--------------------------------------------------------------------------*/

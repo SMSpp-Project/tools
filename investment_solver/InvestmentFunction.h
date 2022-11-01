@@ -87,6 +87,11 @@ class InvestmentFunction : public C05Function , public Block {
 
  enum AssetType { eUnitBlock = 0 , eLine = 1 };
 
+ /// public enum representing the sides of the linear constraints
+ /** Public enum representing the sides of the linear constraints. */
+
+ enum ConstraintSide { eLHS = 0 , eRHS = 1 };
+
  /* Since InvestmentFunction is both a ThinVarDepInterface and a Block, it
   * "sees" two definitions of "Index", "Range", and "Subset". These are
   * actually the same, but compilers still don't like it. Disambiguate by
@@ -109,6 +114,8 @@ class InvestmentFunction : public C05Function , public Block {
 
  using VarVector = std::vector< ColVariable * >;
  ///< representing the x variables upon which the function depends
+
+ using ViolatedConstraint = std::pair< Index , ConstraintSide >;
 
 /*--------------------------------------------------------------------------*/
  /// virtualized concrete iterator
@@ -1212,6 +1219,17 @@ class InvestmentFunction : public C05Function , public Block {
   return dynamic_cast< T * >( v_Block[ i ]->get_registered_solvers().front() );
  }
 
+/*--------------------------------------------------------------------------*/
+
+ /// returns true if and only if the linear constraints are satisfied
+ /** This function returns true if and only if the linear constraints are
+  * satisfied, considering the current values of the active Variable of this
+  * InvestmentFunction.
+  *
+  * @return true if and only if the linear constraints are satisfied. */
+
+ bool is_feasible();
+
 /**@} ----------------------------------------------------------------------*/
 /*-------- METHODS FOR READING THE DATA OF THE InvestmentFunction ----------*/
 /*--------------------------------------------------------------------------*/
@@ -1384,6 +1402,9 @@ class InvestmentFunction : public C05Function , public Block {
 
  RealVector v_constraints_upper_bound;
  ///< the upper bound of the linear constraints
+
+ ViolatedConstraint f_violated_constraint;
+ ///< it indicates which linear constraint has been violated
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- PRIVATE PART OF THE CLASS --------------------------*/
@@ -1926,6 +1947,12 @@ class InvestmentFunction : public C05Function , public Block {
 
  /// Name of the netCDF sub-group containing the description of the inner Block
  inline static const std::string BLOCK_NAME = "SDDPBlock";
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- PRIVATE METHODS  ----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+ double compute_linear_constraint_value( Index i ) const;
 
 };  // end( class( InvestmentFunction ) )
 
