@@ -87,6 +87,11 @@ class InvestmentFunction : public C05Function , public Block {
 
  enum AssetType { eUnitBlock = 0 , eLine = 1 };
 
+ /// public enum representing the sides of the linear constraints
+ /** Public enum representing the sides of the linear constraints. */
+
+ enum ConstraintSide { eLHS = 0 , eRHS = 1 };
+
  /* Since InvestmentFunction is both a ThinVarDepInterface and a Block, it
   * "sees" two definitions of "Index", "Range", and "Subset". These are
   * actually the same, but compilers still don't like it. Disambiguate by
@@ -104,10 +109,13 @@ class InvestmentFunction : public C05Function , public Block {
 
  using IndexVector = std::vector< Index >;
  using RealVector = std::vector< double >;
+ using MultiVector = std::vector< RealVector >;
  using AssetTypeVector = std::vector< AssetType >;
 
  using VarVector = std::vector< ColVariable * >;
  ///< representing the x variables upon which the function depends
+
+ using ViolatedConstraint = std::pair< Index , ConstraintSide >;
 
 /*--------------------------------------------------------------------------*/
  /// virtualized concrete iterator
@@ -1077,6 +1085,11 @@ class InvestmentFunction : public C05Function , public Block {
  bool has_linearization( bool diagonal = true ) override final;
 
 /*--------------------------------------------------------------------------*/
+ /// compute a new linearization for this InvestmentFunction
+
+ bool compute_new_linearization( bool diagonal = true ) override;
+
+/*--------------------------------------------------------------------------*/
  /// store a linearization in the global pool
 
  void store_linearization( Index name , ModParam issueMod = eModBlck )
@@ -1374,6 +1387,18 @@ class InvestmentFunction : public C05Function , public Block {
 
  std::vector< double > v_lower_bound;
  ///< lower bound on the value of the active variables
+
+ MultiVector v_A;
+ ///< the coefficient matrix of the linear constraints
+
+ RealVector v_constraints_lower_bound;
+ ///< the lower bound of the linear constraints
+
+ RealVector v_constraints_upper_bound;
+ ///< the upper bound of the linear constraints
+
+ ViolatedConstraint f_violated_constraint;
+ ///< it indicates which linear constraint has been violated
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- PRIVATE PART OF THE CLASS --------------------------*/
@@ -1916,6 +1941,40 @@ class InvestmentFunction : public C05Function , public Block {
 
  /// Name of the netCDF sub-group containing the description of the inner Block
  inline static const std::string BLOCK_NAME = "SDDPBlock";
+
+/*--------------------------------------------------------------------------*/
+/*---------------------------- PRIVATE METHODS  ----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+ /// returns the value of the i-th linear constraint
+ /** This function returns the value of the i-th linear constraints, i.e.,
+  * a_i'x.
+  *
+  * @param i The index of a linear constraint.
+  *
+  * @return the value of the i-th constraint. */
+
+ double compute_linear_constraint_value( Index i ) const;
+
+/*--------------------------------------------------------------------------*/
+
+ /// returns true if and only if the unverified constraints are satisfied
+ /** This function returns true if and only if the linear constraints that
+  * have not been verified by a previous call to this function are satisfied,
+  * considering the current values of the active Variable of this
+  * InvestmentFunction.
+  *
+  * The linear constraints are verified in order, from the first one to the
+  * last one. Whenever a violated constraint is found, this function returns
+  * false and the remaining constraints are not verified. If this function is
+  * invoked again (before a new call to compute() is made), then only the
+  * remaining (unverified) constraints are verified and, again, up until the
+  * first violated constraints is found.
+  *
+  * @return true if and only if the unverified linear constraints are
+  *         satisfied. */
+
+ bool is_feasible();
 
 };  // end( class( InvestmentFunction ) )
 

@@ -86,7 +86,7 @@ InvestmentFunction::InvestmentFunction
  v_cost = std::move( cost );
  v_disinvestment_cost = std::move( disinvestment_cost );
 
- const auto num_assets = v_asset_indices.size();
+ f_violated_constraint = { Inf< Index >() , eLHS };
 
  // default parameter values
 
@@ -125,6 +125,8 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
 
  // Deserialize the dimensions
 
+ // Number of assets
+
  Index num_assets;
 
  if( ! ::deserialize_dim( group , "NumAssets" , num_assets ) )
@@ -137,6 +139,15 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
                            ") is different from the number of active variables "
                            "(" + std::to_string( v_x.size() ) + ")." );
  }
+
+ // Number of linear constraints
+
+ Index num_constraints;
+
+ if( ! ::deserialize_dim( group , "NumConstraints" , num_constraints ) )
+  num_constraints = 0;
+
+ // Deserialize the assets
 
  if( num_assets ) {
 
@@ -218,6 +229,72 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
   }
 
  } // end( if( num_assets ) )
+
+ // Deserialize the linear constraints
+
+ if( num_constraints ) {
+
+  if( ::deserialize( group , "Constraints_LowerBound" , num_constraints ,
+                     v_constraints_lower_bound , true , true ) ) {
+   if( v_constraints_lower_bound.size() == 1 )
+    v_constraints_lower_bound.resize( num_constraints ,
+                                      v_constraints_lower_bound.front() );
+   else if( v_constraints_lower_bound.size() != num_constraints )
+    throw( std::logic_error
+           ( "InvestmentFunction::deserialize: the 'Constraints_LowerBound'"
+             " netCDF variable, if provided, must have size "
+             "0, 1, or 'NumConstraints'." ) );
+  }
+  else {
+   // The lower bound is - infinity
+   v_constraints_lower_bound.resize( num_constraints , -Inf< double >() );
+  }
+
+  if( ::deserialize( group , "Constraints_UpperBound" , num_constraints ,
+                     v_constraints_upper_bound , true , true ) ) {
+   if( v_constraints_upper_bound.size() == 1 )
+    v_constraints_upper_bound.resize( num_constraints ,
+                                      v_constraints_upper_bound.front() );
+   else if( v_constraints_upper_bound.size() != num_constraints )
+    throw( std::logic_error
+           ( "InvestmentFunction::deserialize: the 'Constraints_UpperBound'"
+             " netCDF variable, if provided, must have size "
+             "0, 1, or 'NumConstraints'." ) );
+  }
+  else {
+   // The upper bound is infinity
+   v_constraints_upper_bound.resize( num_constraints , Inf< double >() );
+  }
+
+  for( Index i = 0 ; i < num_constraints ; ++i )
+   if( v_constraints_lower_bound[ i ] > v_constraints_upper_bound[ i ] )
+    throw( std::logic_error
+           ( "InvestmentFunction::deserialize: Constraints_LowerBound[" +
+             std::to_string( i ) + "] = " +
+             std::to_string( v_constraints_lower_bound[ i ] ) + " > " +
+             std::to_string( v_constraints_upper_bound[ i ] ) + " = " +
+             "Constraints_UpperBound[" + std::to_string( i ) + "]." ) );
+
+  auto A = group.getVar( "Constraints_A" );
+  if( A.isNull() )
+   throw( std::logic_error( "InvestmentFunction::deserialize: the netCDF "
+                            "variable 'Constraints_A' has not been "
+                            "provided." ) );
+
+  auto dim_A = A.getDims();
+  if( ( A.getDimCount() != 2 ) || ( dim_A[ 0 ].getSize() != num_constraints ) ||
+      ( dim_A[ 1 ].getSize() != num_assets ) )
+   throw( std::logic_error( "InvestmentFunction::deserialize: the netCDF "
+                            "variable 'Constraints_A' must have dimensions "
+                            "'NumConstraints' x 'NumAssets'" ) );
+
+  v_A.resize( num_constraints );
+  for( Index i = 0 ; i < v_A.size() ; ++i ) {
+   v_A[ i ].resize( num_assets );
+   A.getVar( { i , 0 } , { 1 , num_assets } , v_A[ i ].data() );
+  }
+
+ } // end( deserialize linear constraints )
 
  // Deserialize the inner Block
 
@@ -694,7 +771,8 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
   group.putAtt( "ReplicateIntermittentUnits" , netCDF::NcInt() ,
                 int( f_replicate_intermittent ) );
 
- auto NumAssets = group.addDim( "NumAssets" , v_asset_indices.size() );
+ const auto num_assets = v_asset_indices.size();
+ auto NumAssets = group.addDim( "NumAssets" , num_assets );
 
  ::serialize( group , "Assets" , netCDF::NcUint() , NumAssets ,
               v_asset_indices );
@@ -713,6 +791,25 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
  if( ! v_installed_quantity.empty() )
   ::serialize( group , "InstalledQuantity" , netCDF::NcDouble() , NumAssets ,
                v_installed_quantity );
+
+ if( ! v_A.empty() ) {
+ // Deserialize the linear constraints
+
+  const auto num_constraints = v_A.size();
+  auto NumConstraints = group.addDim( "NumConstraints" , num_constraints );
+
+ ::serialize( group , "Constraints_LowerBound" , netCDF::NcDouble() ,
+              NumConstraints , v_constraints_lower_bound );
+
+ ::serialize( group , "Constraints_UpperBound" , netCDF::NcDouble() ,
+              NumConstraints , v_constraints_upper_bound );
+
+  auto Constraints_A = group.addVar( "Constraints_A" , netCDF::NcDouble() ,
+                                     { NumConstraints , NumAssets } );
+
+  for( Index i = 0 ; i < num_constraints ; ++i )
+   Constraints_A.putVar( { i , 0 } , { 1 , num_assets } , v_A[ i ].data() );
+ }
 
  if( auto inner_block = get_nested_Block( 0 ) ) {
   auto inner_block_group = group.addGroup( BLOCK_NAME );
@@ -733,6 +830,13 @@ int InvestmentFunction::compute( bool changedvars ) {
 
  f_has_diagonal_linearization = false;
  f_has_value = false;
+
+ f_violated_constraint = { Inf< Index >() , eLHS };
+ if( ! is_feasible() ) { // the linear constraints are not satisfied
+  f_has_value = true;
+  f_value = Inf< double >();
+  return( kOK );
+ }
 
  if( v_Block.empty() )
   throw( std::logic_error( "InvestmentFunction::compute: there must be at "
@@ -971,11 +1075,18 @@ bool InvestmentFunction::has_linearization( const bool diagonal ) {
  }
  else {
   f_diagonal_linearization_required = false;
-  // TODO
-  throw( std::logic_error( "InvestmentFunction::has_linearization: vertical "
-                           "linearization not implemented yet." ) );
+  return f_violated_constraint.first < Inf< Index >();
  }
 }  // end( InvestmentFunction::has_linearization )
+
+
+/*--------------------------------------------------------------------------*/
+
+bool InvestmentFunction::compute_new_linearization( bool diagonal ) {
+ if( diagonal )
+  return false;
+ return ! is_feasible();
+}
 
 /*--------------------------------------------------------------------------*/
 
@@ -1063,8 +1174,18 @@ void InvestmentFunction::get_linearization_coefficients
  if( range.second <= range.first )
   return;
 
- for( Index i = range.first ; i < range.second ; ++i ) {
-  g[ i - range.first ] = v_linearization[ i ];
+ if( f_diagonal_linearization_required ) {
+  // diagonal linearization
+  for( Index i = range.first ; i < range.second ; ++i )
+   g[ i - range.first ] = v_linearization[ i ];
+ }
+ else {
+  // vertical linearization
+  assert( f_violated_constraint.first < v_A.size() );
+  const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+  const auto i = f_violated_constraint.first;
+  for( Index j = range.first ; j < range.second ; ++j )
+   g[ j - range.first ] = sign * v_A[ i ][ j ];
  }
 }  // end( InvestmentFunction::get_linearization_coefficients( * , range ) )
 
@@ -1081,8 +1202,18 @@ void InvestmentFunction::get_linearization_coefficients
  if( range.second <= range.first )
   return;
 
- for( Index i = range.first ; i < range.second ; ++i ) {
-  g.coeffRef( i ) = v_linearization[ i ];
+ if( f_diagonal_linearization_required ) {
+  // diagonal linearization
+  for( Index i = range.first ; i < range.second ; ++i )
+   g.coeffRef( i ) = v_linearization[ i ];
+ }
+ else {
+  // vertical linearization
+  assert( f_violated_constraint.first < v_A.size() );
+  const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+  const auto i = f_violated_constraint.first;
+  for( Index j = range.first ; j < range.second ; ++j )
+   g.coeffRef( j ) = sign * v_A[ i ][ j ];
  }
 }  // end( InvestmentFunction::get_linearization_coefficients( sv , range ) )
 
@@ -1095,9 +1226,20 @@ void InvestmentFunction::get_linearization_coefficients
   throw( std::logic_error( "InvestmentFunction::get_linearization_coefficients: "
                            "linearization from global pool not implemented yet." ) );
 
- Index k = 0;
- for( auto i : subset ) {
-  g[ k++ ] = v_linearization[ i ];
+ if( f_diagonal_linearization_required ) {
+  // diagonal linearization
+  Index k = 0;
+  for( auto i : subset )
+   g[ k++ ] = v_linearization[ i ];
+ }
+ else {
+  // vertical linearization
+  assert( f_violated_constraint.first < v_A.size() );
+  const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+  const auto i = f_violated_constraint.first;
+  Index k = 0;
+  for( auto j : subset )
+   g[ k++ ] = sign * v_A[ i ][ j ];
  }
 }  // end( InvestmentFunction::get_linearization_coefficients( * , subset ) )
 
@@ -1110,8 +1252,18 @@ void InvestmentFunction::get_linearization_coefficients
   throw( std::logic_error( "InvestmentFunction::get_linearization_coefficients: "
                            "linearization from global pool not implemented yet." ) );
 
- for( auto i : subset ) {
-  g.coeffRef( i ) = v_linearization[ i ];
+ if( f_diagonal_linearization_required ) {
+  // diagonal linearization
+  for( auto i : subset )
+   g.coeffRef( i ) = v_linearization[ i ];
+ }
+ else {
+  // vertical linearization
+  assert( f_violated_constraint.first < v_A.size() );
+  const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+  const auto i = f_violated_constraint.first;
+  for( auto j : subset )
+   g.coeffRef( j ) = sign * v_A[ i ][ j ];
  }
 }  // end( InvestmentFunction::get_linearization_coefficients( sv, subset ) )
 
@@ -1132,9 +1284,22 @@ InvestmentFunction::get_linearization_constant( Index name ) {
    return alpha;
   }
   else {
-   // TODO
-   throw( std::logic_error( "InvestmentFunction::get_linearization_constant: "
-                            "vertical linearization not implemented yet." ) );
+   assert( f_violated_constraint.first < v_A.size() );
+   const auto i = f_violated_constraint.first;
+   double alpha = 0;
+   if( f_reformulated_bounds ) {
+    for( Index j = 0 ; j < v_A[ i ].size() ; ++j )
+     if( ( j < v_lower_bound.size() )
+         && ( v_lower_bound[ j ] > -Inf< double >() ) )
+      alpha += v_A[ i ][ j ] * v_lower_bound[ j ];
+   }
+
+   if( f_violated_constraint.second == eLHS )
+    alpha = v_constraints_lower_bound[ i ] - alpha;
+   else
+    alpha = alpha - v_constraints_upper_bound[ i ];
+
+   return alpha;
   }
  }
  else {
@@ -1156,6 +1321,39 @@ Function::FunctionValue InvestmentFunction::get_value( void ) const {
   return Inf< double >();
  return -Inf< double >();
 } // end ( InvestmentFunction::get_value )
+
+/*--------------------------------------------------------------------------*/
+
+double InvestmentFunction::compute_linear_constraint_value( Index i ) const {
+ double value = 0;
+ for( Index j = 0 ; j < v_A[ i ].size() ; ++j )
+  value += v_A[ i ][ j ] * get_var_value( j , false );
+ return value;
+}
+
+/*--------------------------------------------------------------------------*/
+
+bool InvestmentFunction::is_feasible( void ) {
+
+ Index start = 0;
+ if( f_violated_constraint.first < Inf< Index >() )
+  start = f_violated_constraint.first + 1;
+
+ for( Index i = start ; i < v_A.size() ; ++i ) {
+  auto constraint_value = compute_linear_constraint_value( i );
+  if( constraint_value < v_constraints_lower_bound[ i ] ) {
+   f_violated_constraint = { i , eLHS };
+   return false;
+  }
+
+  if( constraint_value > v_constraints_upper_bound[ i ] ) {
+   f_violated_constraint = { i , eRHS };
+   return false;
+  }
+ }
+
+ return true;
+} // end ( InvestmentFunction::is_feasible )
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- Methods for handling Modification -------------------*/
