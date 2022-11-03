@@ -918,6 +918,7 @@ int InvestmentFunction::compute( bool changedvars ) {
   const auto status = solver->compute( true );
 
   if( ! solver->has_var_solution() ) {
+   unlock_sub_block( sub_block_index );
    #pragma omp critical( InvestmentFunction )
    {
     interrupt_loop = true;
@@ -938,6 +939,7 @@ int InvestmentFunction::compute( bool changedvars ) {
    // An error occurred while updating the linearization.
    std::cout << "InvestmentFunction::compute(): an error occurred while "
     "updating the linearization: '" << e.what() << "'" << std::endl;
+   unlock_sub_block( sub_block_index );
    #pragma omp critical( InvestmentFunction )
    {
     error_status = kError;
