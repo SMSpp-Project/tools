@@ -447,8 +447,8 @@ class UCBlockSolutionOutput
   auto get_active_power =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( const auto active_power = block->get_active_power( g ) )
-     return ( active_power + t )->get_value();
-    return 0;
+     return( active_power + t )->get_value();
+    return( 0 );
    };
 
   print_generator_data( output , blocks , get_active_power );
@@ -508,8 +508,8 @@ class UCBlockSolutionOutput
   auto get_primary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_primary_spinning_reserve( g ) )
-     return ( reserve + t )->get_value();
-    return 0;
+     return( reserve + t )->get_value();
+    return( 0 );
    };
 
   print_generator_data( output , blocks , get_primary_spinning_reserve );
@@ -528,8 +528,8 @@ class UCBlockSolutionOutput
   auto get_secondary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_secondary_spinning_reserve( g ) )
-     return ( reserve + t )->get_value();
-    return 0;
+     return( reserve + t )->get_value();
+    return( 0 );
    };
 
   print_generator_data( output , blocks , get_secondary_spinning_reserve );

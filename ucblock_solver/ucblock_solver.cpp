@@ -89,7 +89,7 @@ int main( int argc, char ** argv ) {
  } else {
   // TODO: Try to remove this
   std::cout << "Using a default Block configuration" << std::endl;
-  b_config = default_configure_ucblock( block );
+  b_config = default_configure_UCBlock( block );
  }
  b_config->apply( block );
 
@@ -108,9 +108,8 @@ int main( int argc, char ** argv ) {
  s_config->apply( block );
 
  // Write nc4 problem
- if( writeprob ) {
+ if( writeprob )
   write_nc4problem( block, b_config, s_config );
- }
 
  // Solve
  std::cout.setf( std::ios::scientific, std::ios::floatfield );
@@ -118,7 +117,7 @@ int main( int argc, char ** argv ) {
  solve_all( block );
 
  // Print the results
- print_ucblock_solver_results( block , solution_output_type );
+ print_UCBlock_solver_results( block , solution_output_type );
 
  return( 0 );
 }
