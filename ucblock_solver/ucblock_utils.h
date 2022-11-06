@@ -225,7 +225,8 @@ void check_UCBlock_data( Block * block ) {
      }
     }
     if( sum_max_power < Active_power_demand ) {
-     std::cout << "----- ActivePowerDemand " << n_network_blocks++ << std::endl;
+     std::cout << "----- ActivePowerDemand " <<
+               n_net_blocks++ << " -----" << std::endl;
 
      throw( std::logic_error
       ( "::UCBlock_Data_Check: Available Power does not exceed the "
@@ -243,7 +244,7 @@ void print_UCBlock_solver_results( Block * block ) {
  solver->get_var_solution();
 
  int n_unit_blocks = 0;
- int n_netw_blocks = 0;
+ int n_net_blocks = 0;
 
  std::cout << std::endl;
 
@@ -256,7 +257,7 @@ void print_UCBlock_solver_results( Block * block ) {
   Index number_inertia_zones = uc_block->get_number_inertia_zones();
 
   if( auto unit_block = dynamic_cast<UnitBlock *>( i ) ) {
-   std::cout << "----- UnitBlock " << n_unit_blocks++ << std::endl;
+   std::cout << "----- UnitBlock " << n_unit_blocks++ << " -----" << std::endl;
 
    if( auto obj =
     dynamic_cast<FRealObjective *>( unit_block->get_objective()) ) {
@@ -267,6 +268,10 @@ void print_UCBlock_solver_results( Block * block ) {
 
    if( auto thermal_unit_block =
     dynamic_cast<ThermalUnitBlock *>( unit_block ) ) {
+
+    if( thermal_unit_block->get_investment_cost() != 0 )
+     std::cout << "Design binary  = " <<
+               thermal_unit_block->get_design().get_value() << std::endl;
 
     auto commitment = thermal_unit_block->get_commitment( 0 );
     std::cout << "Commitment     = [";
@@ -329,6 +334,10 @@ void print_UCBlock_solver_results( Block * block ) {
    if( auto battery_unit_block =
     dynamic_cast<BatteryUnitBlock *>( unit_block ) ) {
 
+    if( battery_unit_block->get_investment_cost() != 0 )
+     std::cout << "Design binary  = " <<
+               battery_unit_block->get_design().get_value() << std::endl;
+
     auto active_power = battery_unit_block->get_active_power( 0 );
     std::cout << "Active power   = [";
     for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
@@ -368,8 +377,8 @@ void print_UCBlock_solver_results( Block * block ) {
      std::cout << std::setw( 20 ) << t.get_value();
     std::cout << " ]" << std::endl;
 
-    auto binary_var = battery_unit_block->get_battery_binary();
-    if( !binary_var.empty() ) {
+    auto binary_var = battery_unit_block->get_intake_outtake_binary_variables();
+    if( ! binary_var.empty() ) {
      std::cout << "Binary var   = [";
      for( auto & t : binary_var )
       std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value() );
@@ -377,9 +386,9 @@ void print_UCBlock_solver_results( Block * block ) {
     }
    }
 
-   if( auto hsu_block = dynamic_cast<HydroUnitBlock *>( unit_block ) ) {
+   if( auto hydro_block = dynamic_cast<HydroUnitBlock *>( unit_block ) ) {
     for( Index g = 0 ; g < unit_block->get_number_generators() ; ++g ) {
-     auto active_power = hsu_block->get_active_power( g );
+     auto active_power = hydro_block->get_active_power( g );
      std::cout << "Active power [" + std::to_string( g ) + "]" " = [";
      for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
       std::cout << std::setw( 20 ) << active_power[ t ].get_value();
@@ -389,7 +398,7 @@ void print_UCBlock_solver_results( Block * block ) {
     if( number_primary_zones > 0 ) {
      for( Index g = 0 ;
           g < unit_block->get_number_generators() ; ++g ) {
-      auto primary_reserve = hsu_block->get_primary_spinning_reserve( g );
+      auto primary_reserve = hydro_block->get_primary_spinning_reserve( g );
       std::cout << "Primary reserve [" + std::to_string( g ) + "]" " = [";
       for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
        std::cout << std::setw( 20 ) << primary_reserve[ t ].get_value();
@@ -399,7 +408,7 @@ void print_UCBlock_solver_results( Block * block ) {
     if( number_secondary_zones > 0 ) {
      for( Index g = 0 ;
           g < unit_block->get_number_generators() ; ++g ) {
-      auto secondary_reserve = hsu_block
+      auto secondary_reserve = hydro_block
        ->get_secondary_spinning_reserve( g );
       std::cout << "Secondary reserve [" + std::to_string( g ) + "]" " = [";
       for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
@@ -407,8 +416,8 @@ void print_UCBlock_solver_results( Block * block ) {
       std::cout << " ]" << std::endl;
      }
     }
-    for( Index l = 0 ; l < hsu_block->get_number_generators() ; ++l ) {
-     auto flow_rate = hsu_block->get_flow_rate( l );
+    for( Index l = 0 ; l < hydro_block->get_number_generators() ; ++l ) {
+     auto flow_rate = hydro_block->get_flow_rate( l );
      std::cout << "Flow rate    [" + std::to_string( l ) + "]" " = [";
      for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
       std::cout << std::setw( 25 ) << std::setprecision( 14 )
@@ -416,8 +425,8 @@ void print_UCBlock_solver_results( Block * block ) {
      std::cout << " ]" << std::endl;
     }
 
-    for( Index n = 0 ; n < hsu_block->get_number_reservoirs() ; ++n ) {
-     auto volumetric = hsu_block->get_volumetric( n );
+    for( Index n = 0 ; n < hydro_block->get_number_reservoirs() ; ++n ) {
+     auto volumetric = hydro_block->get_volumetric( n );
      std::cout << "Volumetric   [" + std::to_string( n ) + "]" " = [";
      for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
       std::cout << std::setw( 25 ) << std::setprecision( 14 )
@@ -427,11 +436,10 @@ void print_UCBlock_solver_results( Block * block ) {
     std::cout << std::setprecision( 8 );
    }
 
-   // If HydroSystemBlocks are there:
    if( auto hsu_block = dynamic_cast<HydroSystemUnitBlock *>( unit_block ) ) {
     for( Index hIdx = 0 ;
          hIdx < hsu_block->get_number_hydro_units() ; ++hIdx ) {
-     std::cout << "----- SubHydroBlock " << hIdx << std::endl;
+     std::cout << "----- SubHydroBlock " << hIdx << " -----" << std::endl;
      // for each hydro block inside, print the solution
      //dynamic_cast<HydroUnitBlock *>( unit_block );
      if( auto sub_hsu_block = hsu_block->
@@ -489,6 +497,10 @@ void print_UCBlock_solver_results( Block * block ) {
 
    if( auto intermittent_unit_block =
     dynamic_cast<IntermittentUnitBlock *>( unit_block ) ) {
+
+    if( intermittent_unit_block->get_investment_cost() != 0 )
+     std::cout << "Design binary  = " <<
+               intermittent_unit_block->get_design().get_value() << std::endl;
 
     auto active_power = intermittent_unit_block->get_active_power( 0 );
     std::cout << "Active power   = [";
@@ -553,11 +565,18 @@ void print_UCBlock_solver_results( Block * block ) {
      std::cout << " ]" << std::endl;
     }
    }
-  }
 
+  } else if( auto network_block = dynamic_cast<NetworkBlock *>( i ) ) {
 
-  if( auto network_block = dynamic_cast<NetworkBlock *>( i ) ) {
-   std::cout << "----- NetworkBlock " << n_netw_blocks++ << std::endl;
+   std::cout << "----- NetworkBlock " <<
+             n_net_blocks++ << " -----" << std::endl;
+
+   if( auto obj =
+    dynamic_cast<FRealObjective *>( network_block->get_objective()) ) {
+    auto fun = obj->get_function();
+    fun->compute();
+    std::cout << "Function value   = " << fun->get_value() << std::endl;
+   }
 
    std::cout << "Node injection   = [" << std::endl;
    for( Index t = 0 ; t < network_block->get_number_intervals() ; ++t ) {
@@ -576,7 +595,7 @@ void print_UCBlock_solver_results( Block * block ) {
     std::cout << " ]" << std::endl;
 
     auto auxiliary_variable = dc_network_block->get_auxiliary_variable();
-    if( !auxiliary_variable.empty() ) {
+    if( ! auxiliary_variable.empty() ) {
      std::cout << "Auxiliary variable     = [";
      for( auto & n : auxiliary_variable )
       std::cout << std::setw( 20 ) << n.get_value();
@@ -622,7 +641,7 @@ void print_UCBlock_solver_results( Block * block ) {
     std::cout << " ]" << std::endl;
 
     auto max_power = ec_network_block->get_max_power();
-    if( !max_power.empty() ) {
+    if( ! max_power.empty() ) {
      std::cout << "Max power     = [";
      for( auto & n : max_power )
       std::cout << std::setw( 20 ) << n.get_value();
@@ -639,7 +658,7 @@ void print_UCBlock_solver_results( Block * block ) {
 void print_UCBlock_solver_results( UCBlock * block ,
                                    int solution_output_type ) {
 
- if( !( solution_output_type > 0 && solution_output_type < 4 ) )
+ if( ! ( solution_output_type > 0 && solution_output_type < 4 ) )
   return;
 
  if( solution_output_type == 1 || solution_output_type == 3 )
