@@ -50,14 +50,14 @@ intMnSSC    0     # min number of consecutive SS with the same t for a t increas
 intMnNSC    1     # min number of consecutive NS with the same t for a t decrease
 inttSPar1  12     # long-term t-strategy (0 = none, 4 = soft, 8 = hard, 12 = balancing)
 
-intMaxNrEvls 2    # maximum number of function evaluations at each iteration 
+intMaxNrEvls 2    # maximum number of function evaluations at each iteration
 
 intMPName  15     # MP solver: 0 = QPP, 7 = Cplex with quadratic stabilization
                   # + 8 = check for duplicate linearizations
 
 # QPPenalty's parameters : - - - - - -
 intMPlvl   2      # log verbosity of Master Problem
-                  
+
 intQPmp1   0	  # MxAdd, how many variables can be added to the base at each
       	          # iteration in BMinQuad (0 = at will)
 intQPmp2   0      # MxRmv, how many variables can be removed from the base at each

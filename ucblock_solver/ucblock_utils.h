@@ -2,12 +2,10 @@
  * Utilities for the UC solver.
  *
  * \author Ali Ghezelsoflu \n
- *         Operations Research Group \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
  * \author Niccolo' Iardella \n
- *         Operations Research Group \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
@@ -36,18 +34,18 @@ BlockConfig * default_configure_UCBlock( Block * uc_block ) {
  auto b_config = new RBlockConfig;
 
  for( auto sb : uc_block->get_nested_Blocks() ) {
-  if( ! dynamic_cast<UnitBlock *>( sb ) ) {
+  if( ! dynamic_cast< UnitBlock * >( sb ) ) {
    continue;
   }
 
   auto sbc = new RBlockConfig;
 
   // If HydroSystemUnitBlock, we configure its PolyhedralFunctionBlocks
-  if( auto hsu_block = dynamic_cast<HydroSystemUnitBlock *>( sb ) ) {
+  if( auto hsu_block = dynamic_cast< HydroSystemUnitBlock * >( sb ) ) {
 
    for( auto ssb : hsu_block->get_nested_Blocks() ) {
 
-    if( auto pf_block = dynamic_cast<PolyhedralFunctionBlock *>( ssb ) ) {
+    if( auto pf_block = dynamic_cast< PolyhedralFunctionBlock * >( ssb ) ) {
 
      auto ssbc = new BlockConfig();
      ssbc->f_static_variables_Configuration =
@@ -73,21 +71,21 @@ BlockConfig * default_configure_UCBlock( Block * uc_block ) {
   for( Block::Index i = 0; i < num_nested_blocks; ++i ) {
 
    auto sub_block = uc_block->get_nested_Block( i );
-   if( ! dynamic_cast<UnitBlock *>( sub_block ) )
+   if( ! dynamic_cast< UnitBlock * >( sub_block ) )
     continue;
 
    auto sub_conf = new RBlockConfig;
    sub_conf->f_static_variables_Configuration =
     new SimpleConfiguration< int >( 15 );
 
-   if( auto hsu_block = dynamic_cast<HydroSystemUnitBlock *>( sub_block ) ) {
+   if( auto hsu_block = dynamic_cast< HydroSystemUnitBlock * >( sub_block ) ) {
     auto num_nested_blocks_hydro = hsu_block->get_number_nested_Blocks();
 
     for( Block::Index j = 0; j < num_nested_blocks_hydro; ++j ) {
      auto sub_Block_hydro = hsu_block->get_nested_Block( j );
 
      if( auto sub_pf_block =
-      dynamic_cast<PolyhedralFunctionBlock *>( sub_Block_hydro ) ) {
+      dynamic_cast< PolyhedralFunctionBlock * >( sub_Block_hydro ) ) {
       auto sub_sub_conf = new BlockConfig();
       sub_sub_conf->f_static_variables_Configuration =
        new SimpleConfiguration< int >( 1 );
@@ -96,7 +94,8 @@ BlockConfig * default_configure_UCBlock( Block * uc_block ) {
     }
    }
 
-   static_cast<RBlockConfig *>( b_config )->add_sub_BlockConfig( sub_conf, i );
+   static_cast< RBlockConfig * >( b_config )->add_sub_BlockConfig( sub_conf,
+   i );
   }
 
   return( b_config );
@@ -105,7 +104,7 @@ BlockConfig * default_configure_UCBlock( Block * uc_block ) {
 /*--------------------------------------------------------------------------*/
 /*
 void check_UCBlock_data( Block * block ) {
- auto uc_block = dynamic_cast<UCBlock *>(block);
+ auto uc_block = dynamic_cast< UCBlock * >(block);
 
  if( uc_block == nullptr )
   return;
@@ -124,21 +123,21 @@ void check_UCBlock_data( Block * block ) {
     double sum_max_power = 0;
     for( auto j : block->get_nested_Blocks() ) {
 
-     auto thermal_unit_block = dynamic_cast<ThermalUnitBlock *>( j );
+     auto thermal_unit_block = dynamic_cast< ThermalUnitBlock * >( j );
      if( thermal_unit_block ) {
       if( ! thermal_unit_block->get_max_power().empty() ) {
        sum_max_power += thermal_unit_block->get_max_power()[ t ];
       }
       continue;
      }
-     auto battery_unit_block = dynamic_cast<BatteryUnitBlock *>( j );
+     auto battery_unit_block = dynamic_cast< BatteryUnitBlock * >( j );
      if( battery_unit_block ) {
       if( ! battery_unit_block->get_maximum_power().empty() ) {
        sum_max_power += battery_unit_block->get_maximum_power()[ t ];
       }
       continue;
      }
-     auto slack_unit_block = dynamic_cast<SlackUnitBlock *>( j );
+     auto slack_unit_block = dynamic_cast< SlackUnitBlock * >( j );
      if( slack_unit_block ) {
       if( ! slack_unit_block->get_max_power().empty() ) {
        sum_max_power += slack_unit_block->get_max_power()[ t ];
@@ -146,7 +145,8 @@ void check_UCBlock_data( Block * block ) {
       continue;
      }
      int Kappa = 1;
-     auto intermittent_unit_block = dynamic_cast<IntermittentUnitBlock *>( j );
+     auto intermittent_unit_block = dynamic_cast< IntermittentUnitBlock * >(
+     j );
      if( intermittent_unit_block ) {
       Kappa = intermittent_unit_block->get_kappa();
       if( ! intermittent_unit_block->get_maximum_power().empty() ) {
@@ -156,7 +156,7 @@ void check_UCBlock_data( Block * block ) {
       continue;
      }
 
-     auto hydro_unit_block = dynamic_cast<HydroUnitBlock *>( j );
+     auto hydro_unit_block = dynamic_cast< HydroUnitBlock * >( j );
      if( hydro_unit_block ) {
       if( ! hydro_unit_block->get_maximum_flow().empty() &&
           ! hydro_unit_block->get_maximum_flow().empty() ) {
@@ -199,7 +199,7 @@ void check_UCBlock_data( Block * block ) {
       }
       continue;
      }
-     if( auto hsu_block = dynamic_cast<HydroSystemUnitBlock *>( j ) ) {
+     if( auto hsu_block = dynamic_cast< HydroSystemUnitBlock * >( j ) ) {
       for( Index hIdx = 0 ;
            hIdx < hsu_block->get_number_hydro_units() ; ++hIdx ) {
        if( auto sub_hsu_block = hsu_block->get_hydro_unit_block( hIdx ) ) {
@@ -250,24 +250,25 @@ void print_UCBlock_solver_results( Block * block ) {
 
  for( auto i : block->get_nested_Blocks() ) {
 
-  auto uc_block = dynamic_cast<UCBlock *>(block);
+  auto uc_block = dynamic_cast< UCBlock * >(block);
 
   Index number_primary_zones = uc_block->get_number_primary_zones();
   Index number_secondary_zones = uc_block->get_number_secondary_zones();
   Index number_inertia_zones = uc_block->get_number_inertia_zones();
 
-  if( auto unit_block = dynamic_cast<UnitBlock *>( i ) ) {
-   std::cout << "----- UnitBlock " << n_unit_blocks++ << " -----" << std::endl;
+  if( auto unit_block = dynamic_cast< UnitBlock * >( i ) ) {
+   std::cout << "----- " << unit_block->classname() <<
+             " " << n_unit_blocks++ << " -----" << std::endl;
 
    if( auto obj =
-    dynamic_cast<FRealObjective *>( unit_block->get_objective()) ) {
+    dynamic_cast< FRealObjective * >( unit_block->get_objective() ) ) {
     auto fun = obj->get_function();
     fun->compute();
     std::cout << "Function value = " << fun->get_value() << std::endl;
    }
 
    if( auto thermal_unit_block =
-    dynamic_cast<ThermalUnitBlock *>( unit_block ) ) {
+    dynamic_cast< ThermalUnitBlock * >( unit_block ) ) {
 
     if( thermal_unit_block->get_investment_cost() != 0 )
      std::cout << "Design binary  = " <<
@@ -332,7 +333,7 @@ void print_UCBlock_solver_results( Block * block ) {
    }
 
    if( auto battery_unit_block =
-    dynamic_cast<BatteryUnitBlock *>( unit_block ) ) {
+    dynamic_cast< BatteryUnitBlock * >( unit_block ) ) {
 
     if( battery_unit_block->get_investment_cost() != 0 )
      std::cout << "Design binary  = " <<
@@ -386,7 +387,7 @@ void print_UCBlock_solver_results( Block * block ) {
     }
    }
 
-   if( auto hydro_block = dynamic_cast<HydroUnitBlock *>( unit_block ) ) {
+   if( auto hydro_block = dynamic_cast< HydroUnitBlock * >( unit_block ) ) {
     for( Index g = 0 ; g < unit_block->get_number_generators() ; ++g ) {
      auto active_power = hydro_block->get_active_power( g );
      std::cout << "Active power [" + std::to_string( g ) + "]" " = [";
@@ -436,12 +437,11 @@ void print_UCBlock_solver_results( Block * block ) {
     std::cout << std::setprecision( 8 );
    }
 
-   if( auto hsu_block = dynamic_cast<HydroSystemUnitBlock *>( unit_block ) ) {
+   if( auto hsu_block = dynamic_cast< HydroSystemUnitBlock * >( unit_block ) ) {
     for( Index hIdx = 0 ;
          hIdx < hsu_block->get_number_hydro_units() ; ++hIdx ) {
      std::cout << "----- SubHydroBlock " << hIdx << " -----" << std::endl;
      // for each hydro block inside, print the solution
-     //dynamic_cast<HydroUnitBlock *>( unit_block );
      if( auto sub_hsu_block = hsu_block->
       get_hydro_unit_block( hIdx ) ) {
       for( Index g = 0 ; g < sub_hsu_block->get_number_generators() ; ++g ) {
@@ -496,7 +496,7 @@ void print_UCBlock_solver_results( Block * block ) {
    }
 
    if( auto intermittent_unit_block =
-    dynamic_cast<IntermittentUnitBlock *>( unit_block ) ) {
+    dynamic_cast< IntermittentUnitBlock * >( unit_block ) ) {
 
     if( intermittent_unit_block->get_investment_cost() != 0 )
      std::cout << "Design binary  = " <<
@@ -525,11 +525,11 @@ void print_UCBlock_solver_results( Block * block ) {
       std::cout << std::setw( 20 )
                 << secondary_spinning_reserve[ t ].get_value();
      std::cout << " ]" << std::endl;
-
     }
    }
 
-   if( auto slack_unit_block = dynamic_cast<SlackUnitBlock *>( unit_block ) ) {
+   if( auto slack_unit_block =
+    dynamic_cast< SlackUnitBlock * >( unit_block ) ) {
 
     auto active_power = slack_unit_block->get_active_power( 0 );
     std::cout << "Active power   = [";
@@ -566,17 +566,28 @@ void print_UCBlock_solver_results( Block * block ) {
     }
    }
 
-  } else if( auto network_block = dynamic_cast<NetworkBlock *>( i ) ) {
+  } else if( auto network_block = dynamic_cast< NetworkBlock * >( i ) ) {
 
-   std::cout << "----- NetworkBlock " <<
+   std::cout << "----- " << network_block->classname() << " " <<
              n_net_blocks++ << " -----" << std::endl;
 
    if( auto obj =
-    dynamic_cast<FRealObjective *>( network_block->get_objective()) ) {
+    dynamic_cast< FRealObjective * >( network_block->get_objective() ) ) {
     auto fun = obj->get_function();
     fun->compute();
-    std::cout << "Function value   = " << fun->get_value() << std::endl;
+    auto constant_term = network_block->get_NetworkData()->get_const_term();
+    std::cout << "Function value   = " << fun->get_value() // + constant_term
+              << std::endl;
    }
+
+   std::cout << "Power demand     = [" << std::endl;
+   for( Index t = 0 ; t < network_block->get_number_intervals() ; ++t ) {
+    auto demand = network_block->get_active_demand( t );
+    for( Index j = 0 ; j < network_block->get_number_nodes() ; ++j )
+     std::cout << std::setw( 20 ) << demand[ j ];
+    std::cout << std::endl;
+   }
+   std::cout << " ]" << std::endl;
 
    std::cout << "Node injection   = [" << std::endl;
    for( Index t = 0 ; t < network_block->get_number_intervals() ; ++t ) {
@@ -587,7 +598,8 @@ void print_UCBlock_solver_results( Block * block ) {
    }
    std::cout << " ]" << std::endl;
 
-   if( auto dc_network_block = dynamic_cast<DCNetworkBlock *>(network_block) ) {
+   if( auto dc_network_block = dynamic_cast< DCNetworkBlock * >(network_block)
+    ) {
     auto power_flow = dc_network_block->get_power_flow();
     std::cout << "Power flow       = [";
     for( auto & n : power_flow )
@@ -602,7 +614,7 @@ void print_UCBlock_solver_results( Block * block ) {
      std::cout << " ]" << std::endl;
     }
    } else if( auto ec_network_block =
-    dynamic_cast<ECNetworkBlock *>(network_block) ) {
+    dynamic_cast< ECNetworkBlock * >(network_block) ) {
 
     std::cout << "Micro power injection   = [" << std::endl;
     for( Index t = 0 ; t < ec_network_block->get_number_intervals() ; ++t ) {
@@ -649,6 +661,7 @@ void print_UCBlock_solver_results( Block * block ) {
     }
    }
   }
+  std::cout << std::endl;
  }
 }
 
