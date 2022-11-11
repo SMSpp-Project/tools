@@ -828,13 +828,16 @@ int InvestmentFunction::compute( bool changedvars ) {
   // the last call.
   return( f_solver_status ); //  nothing changed since last call, nothing to do
 
+ output_variable_values();
+
  f_has_diagonal_linearization = false;
  f_has_value = false;
 
  f_violated_constraint = { Inf< Index >() , eLHS };
  if( ! is_feasible() ) { // the linear constraints are not satisfied
   f_has_value = true;
-  f_value = Inf< double >();
+  f_value = worst_value();
+  output_function_value();
   return( kOK );
  }
 
@@ -851,8 +854,11 @@ int InvestmentFunction::compute( bool changedvars ) {
  // Try to lock the inner Blocks.
  for( Index i = 0 ; i < v_Block.size() ; ++i ) {
   owned[ i ] = v_Block[ i ]->is_owned_by( f_id );
-  if( ( ! owned[ i ] ) && ( ! v_Block[ i ]->lock( f_id ) ) )
+  if( ( ! owned[ i ] ) && ( ! v_Block[ i ]->lock( f_id ) ) ) {
+   f_value = worst_value();
+   output_function_value();
    return( kError ); // If this does not work, this is clearly an error.
+  }
  }
 
  // Since the inner Solver may need to lock the inner Block, the
@@ -883,8 +889,10 @@ int InvestmentFunction::compute( bool changedvars ) {
     if( ! owned[ i ] )
      v_Block[ i ]->unlock( f_id );  // unlock the inner Block
    }
-   std::cout << "InvestmentFunction::compute(): an error occurred while "
+   std::cerr << "InvestmentFunction::compute(): an error occurred while "
     "updating the Blocks: '" << e.what() << "'" << std::endl;
+   f_value = worst_value();
+   output_function_value();
    return( kError );
   }
  }
@@ -979,6 +987,8 @@ int InvestmentFunction::compute( bool changedvars ) {
   }
 
   f_solver_status = error_status;
+  f_value = worst_value();
+  output_function_value();
   return( f_solver_status );
  }
 
@@ -1031,6 +1041,7 @@ int InvestmentFunction::compute( bool changedvars ) {
 
  f_has_value = true;
 
+ output_function_value();
  return( f_solver_status );
 
 }  // end( InvestmentFunction::compute )
@@ -1319,9 +1330,7 @@ InvestmentFunction::get_linearization_constant( Index name ) {
 Function::FunctionValue InvestmentFunction::get_value( void ) const {
  if( f_has_value )
   return f_value;
- if( get_inner_block_objective_sense() == Objective::eMin )
-  return Inf< double >();
- return -Inf< double >();
+ return worst_value();
 } // end ( InvestmentFunction::get_value )
 
 /*--------------------------------------------------------------------------*/
@@ -2440,6 +2449,45 @@ void InvestmentFunction::unlock_sub_block( Index i ) {
  {
   is_locked[ i ] = false;
  }
+}
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::output_variable_values() const {
+ if( f_output_filename.empty() )
+  return;
+
+ std::ofstream file( f_output_filename , std::ios_base::app );
+
+ if( ! file.is_open() ) {
+  std::cerr << "InvestmentFunction::output_variable_values: "
+            << "it was not possible to open the file \""
+            << f_output_filename + "\"." << std::endl;
+  return;
+ }
+
+ file << "Variables: " << v_x.size() << std::endl;
+ file << std::setprecision( 20 );
+ for( Index i = 0 ; i < v_x.size() ; ++i )
+  file << get_var_value( i , false ) << std::endl;
+}
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::output_function_value() const {
+ if( f_output_filename.empty() )
+  return;
+
+ std::ofstream file( f_output_filename , std::ios_base::app );
+
+ if( ! file.is_open() ) {
+  std::cerr << "InvestmentFunction::output_function_value: "
+            << "it was not possible to open the file \""
+            << f_output_filename + "\"." << std::endl;
+  return;
+ }
+
+ file << "Function value: " << f_value << std::endl;
 }
 
 /*--------------------------------------------------------------------------*/

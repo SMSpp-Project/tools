@@ -227,7 +227,7 @@ class InvestmentFunction : public C05Function , public Block {
  /// public enum for the int algorithmic parameters
  /** Public enum describing the different algorithmic parameters of int type
   * that InvestmentFunction has in addition to those of C05Function. The value
-  * intLastInvestmentFPar is provided so that the list can be easily further
+  * intLastParInvestmentF is provided so that the list can be easily further
   * extended by derived classes. */
 
  enum int_par_type_InvestmentF {
@@ -242,12 +242,35 @@ class InvestmentFunction : public C05Function , public Block {
    * while this InvestmentFunction is being compute()-ed. The default value of
    * this parameter is 0, which means that no solution is output. */
 
-  intLastInvestmentFPar
+  intLastParInvestmentF
   ///< first allowed new int parameter for derived classes
   /**< Convenience value for easily allow derived classes to extend the set of
    * int algorithmic parameters. */
 
  };  // end( int_par_type_InvestmentF )
+
+/*--------------------------------------------------------------------------*/
+ /// public enum for the string algorithmic parameters
+ /** Public enum describing the different algorithmic parameters of "string"
+  * type that InvestmentFunction has in addition to those of C05Function. The
+  * value strLastInvestmentFPar is provided so that the list can be easily
+  * further extended by derived classes. */
+
+ enum str_par_type_InvestmentF {
+
+  strOutputFilename = str_par_type_C05F::strLastParC05F ,
+  ///< name of the file into which the variable and function values are output
+  /**< This is the name of the file into which the variable and function
+   * values are output (appended) every time this InvestmentFunction is
+   * compute()-ed. If it is empty, then the variable and function values are
+   * not output. The default value for this parameter is the empty string. */
+
+  strLastParInvestmentF
+  ///< first allowed new string parameter for derived classes
+  /**< Convenience value for easily allow derived classes to extend the set of
+   * string algorithmic parameters. */
+
+ };  // end( str_par_type_InvestmentF )
 
 /**@} ----------------------------------------------------------------------*/
 /*------------- CONSTRUCTING AND DESTRUCTING InvestmentFunction ------------*/
@@ -575,23 +598,24 @@ class InvestmentFunction : public C05Function , public Block {
  /** Set a given integer (int) numerical parameter. InvestmentFunctiontakes
   * care of the following parameters:
   *
-  * - intGPMaxSz: This parameter specifies the maximum number of
-  *               linearizations that can be stored in the global pool. The
-  *               default value for this parameter is defined by the
-  *               C05Function.
+  * - #intGPMaxSz: This parameter specifies the maximum number of
+  *                linearizations that can be stored in the global pool. The
+  *                default value for this parameter is defined by the
+  *                C05Function.
   *
-  * - intComputeLinearization: This parameter indicates whether linearizations
-  *                            must be computed. The default value is 1, which
-  *                            means that linearizations are computed.
+  * - #intComputeLinearization: This parameter indicates whether
+  *                             linearizations must be computed. The default
+  *                             value is 1, which means that linearizations
+  *                             are computed.
   *
-  * - intOutputSolution: This parameter indicates whether the solution of each
-  *                      UCBlock must be output. If the value for this
-  *                      parameter is nonzero, then part of the primal and
-  *                      dual solutions obtained for each UCBlock for each
-  *                      scenario is output while this InvestmentFunction is
-  *                      being compute()-ed. The default value of this
-  *                      parameter is 0, which means that no solution is
-  *                      output.
+  * - #intOutputSolution: This parameter indicates whether the solution of
+  *                       each UCBlock must be output. If the value for this
+  *                       parameter is nonzero, then part of the primal and
+  *                       dual solutions obtained for each UCBlock for each
+  *                       scenario is output while this InvestmentFunction is
+  *                       being compute()-ed. The default value of this
+  *                       parameter is 0, which means that no solution is
+  *                       output.
   *
   * Any other parameter is handled by the C05Function.
   *
@@ -607,7 +631,7 @@ class InvestmentFunction : public C05Function , public Block {
   * care of the following parameters. Any other parameter is handled by the
   * C05Function.
   *
-  * - dblAAccMlt
+  * - #dblAAccMlt
   *
   * @param par The parameter to be set.
   *
@@ -623,14 +647,51 @@ class InvestmentFunction : public C05Function , public Block {
   }
  }
 
+/*--------------------------------------------------------------------------*/
+ /// set a given string parameter
+ /** Set a given string parameter. InvestmentFunction takes care of the
+  * following parameters. Any other parameter is handled by the C05Function.
+  *
+  * - #strOutputFilename
+  *
+  * @param par The parameter to be set.
+  *
+  * @return The value of the parameter. */
+
+ void set_par( idx_type par , std::string && value ) override {
+  switch( par ) {
+   case( strOutputFilename ):
+    f_output_filename = std::move( value );
+    break;
+   default: C05Function::set_par( par , value );
+  }
+ }
+
 /** @} ---------------------------------------------------------------------*/
 /*------------------- METHODS FOR HANDLING THE PARAMETERS ------------------*/
 /*--------------------------------------------------------------------------*/
 /** @name Handling the parameters of the InvestmentFunction
  *  @{ */
 
+ /// get the number of int parameters
+ /** Get the number of int parameters.
+  *
+  * @return The number of int parameters.
+  */
+
  [[nodiscard]] idx_type get_num_int_par() const override {
-  return( intLastInvestmentFPar );
+  return( intLastParInvestmentF );
+ }
+
+/*--------------------------------------------------------------------------*/
+ /// get the number of string parameters
+ /** Get the number of string parameters.
+  *
+  * @return The number of string parameters.
+  */
+
+ idx_type get_num_str_par( void ) const override {
+  return( idx_type( strLastParInvestmentF ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -639,11 +700,11 @@ class InvestmentFunction : public C05Function , public Block {
  /** Get a specific integer (int) numerical parameter. InvestmentFunction
   * takes care of the following parameters:
   *
-  * - intGPMaxSz
+  * - #intGPMaxSz
   *
-  * - intComputeLinearization
+  * - #intComputeLinearization
   *
-  * - intOutputSolution
+  * - #intOutputSolution
   *
   * Any other parameter is handled by the C05Function.
   *
@@ -665,7 +726,7 @@ class InvestmentFunction : public C05Function , public Block {
  /** Get a specific float (double) numerical parameter. InvestmentFunction
   * takes care of the following parameters:
   *
-  * - dblAAccMlt
+  * - #dblAAccMlt
   *
   * Any other parameter is handled by the C05Function.
   *
@@ -683,12 +744,53 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
+ /// get a specific string numerical parameter
+ /** Get a specific string numerical parameter. Please see the
+  * #str_par_type_InvestmentF and #str_par_type_C05F enumerations for a
+  * detailed explanation of the possible parameters.
+  *
+  * @param par The parameter whose value is desired.
+  *
+  * @return The value of the given parameter. */
+
+ const std::string & get_str_par( const idx_type par ) const override {
+  switch( par ) {
+   case( strOutputFilename ): return f_output_filename;
+  }
+  return C05Function::get_str_par( par );
+ }
+
+/*--------------------------------------------------------------------------*/
+
  [[nodiscard]] int get_dflt_int_par( idx_type par ) const override {
   if( par == intComputeLinearization )
    return( 1 );
   if( par == intOutputSolution )
    return( 0 );
   return( C05Function::get_dflt_int_par( par ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ /// get the default value of a string parameter
+ /** Get the default value of the string parameter with given index. Please
+  * see #str_par_type_InvestmentF and #str_par_type_C05F enumerations for a
+  * detailed explanation of the possible parameters.
+  *
+  * @param par The parameter whose default value is desired.
+  *
+  * @return The default value of the given parameter. */
+
+ [[nodiscard]] const std::string & get_dflt_str_par( const idx_type par )
+  const override {
+
+  static const std::vector< std::string > default_values = { "" };
+
+  if( par >= str_par_type_C05F::strLastParC05F &&
+      par < str_par_type_InvestmentF::strLastParInvestmentF )
+   return default_values[ par - str_par_type_C05F::strLastParC05F ];
+
+  return C05Function::get_dflt_str_par( par );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -704,13 +806,53 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
+ /// returns the index of the string parameter with given string name
+ /** This method takes a string, which is assumed to be the name of a string
+  * parameter, and returns its index, i.e., the integer value that can be
+  * used in [set/get]_par() to set/get it.
+  *
+  * @param name The name of the parameter.
+  *
+  * @return The index of the parameter with the given \p name. */
+
+ [[nodiscard]] idx_type str_par_str2idx( const std::string & name )
+  const override {
+  if( name == "strOutputFilename" ) return strOutputFilename;
+  return C05Function::str_par_str2idx( name );
+ }
+
+/*--------------------------------------------------------------------------*/
+
  [[nodiscard]] const std::string & int_par_idx2str( idx_type idx )
   const override {
   static const std::vector< std::string > pars = { "intComputeLinearization" ,
                                                    "intOutputSolution" };
-  if( ( idx >= intComputeLinearization ) && ( idx < intLastInvestmentFPar ) )
+  if( ( idx >= intComputeLinearization ) && ( idx < intLastParInvestmentF ) )
    return( pars[ idx - intComputeLinearization ] );
   return( C05Function::int_par_idx2str( idx ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ /// returns the string name of the string parameter with given index
+ /** This method takes a string parameter index, i.e., the integer value that
+  * can be used in [set/get]_par() [see above] to set/get it, and returns its
+  * "string name".
+  *
+  * @param idx The index of the parameter.
+  *
+  * @return The name of the parameter with the given index \p idx. */
+
+ const std::string & str_par_idx2str( const idx_type idx ) const override {
+
+  static const std::vector<std::string> parameter_names =
+   { "strOutputFilename" };
+
+  if( idx >= str_par_type_C05F::strLastParC05F &&
+      idx < str_par_type_InvestmentF::strLastParInvestmentF )
+   return parameter_names[ idx - str_par_type_C05F::strLastParC05F ];
+
+  return C05Function::str_par_idx2str( idx );
  }
 
 /**@} ----------------------------------------------------------------------*/
@@ -1352,7 +1494,7 @@ class InvestmentFunction : public C05Function , public Block {
 
  void * f_id; ///< the "identity" of the InvestmentFunction
 
- double f_value;
+ FunctionValue f_value;
  ///< the value of this InvestmentFunction after compute() is called
 
  std::vector< Index > v_block_indices_map;
@@ -1399,6 +1541,9 @@ class InvestmentFunction : public C05Function , public Block {
 
  ViolatedConstraint f_violated_constraint;
  ///< it indicates which linear constraint has been violated
+
+ std::string f_output_filename;
+ ///< name of the file into which the variable and function values are output
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- PRIVATE PART OF THE CLASS --------------------------*/
@@ -1975,6 +2120,40 @@ class InvestmentFunction : public C05Function , public Block {
   *         satisfied. */
 
  bool is_feasible();
+
+/*--------------------------------------------------------------------------*/
+
+ /// returns the worst possible value for this InvestmentFunction
+ /** Thus function returns the worst possible value for this
+  * InvestmentFunction, which is +Inf if the sense of the Objective of the
+  * inner Block is minimization (Objective::eMin) and -Inf otherwise.
+  *
+  * @return +Inf if the sense of the Objective of the inner Block is
+  *         Objective::eMin and -Inf otherwise. */
+
+ FunctionValue worst_value() const {
+  if( get_inner_block_objective_sense() == Objective::eMin )
+   return Inf< FunctionValue >();
+  return -Inf< FunctionValue >();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ /// output the values of the active Variable of this InvestmentFunction
+ /** This function appends the current values of the active Variable of this
+  * InvestmentFunction into the file whose name is given by the parameter
+  * #strOutputFile (if this name is not empty). */
+
+ void output_variable_values() const;
+
+/*--------------------------------------------------------------------------*/
+
+ /// output the current value of this InvestmentFunction
+ /** This function appends the value of this InvestmentFunction into the file
+  * whose name is given by the parameter #strOutputFile (if this name is not
+  * empty). */
+
+ void output_function_value() const;
 
 };  // end( class( InvestmentFunction ) )
 

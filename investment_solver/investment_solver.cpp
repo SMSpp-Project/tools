@@ -714,6 +714,10 @@ void invest( InvestmentBlock * investment_block ) {
 
   investment_solver->set_log( &std::cout );
 
+  // Output the variable and function values at each iteration
+  investment_function->set_par( InvestmentFunction::strOutputFilename ,
+                                "investment_candidates.txt" );
+
   auto status = investment_solver->compute();
 
 #ifdef USE_MPI
