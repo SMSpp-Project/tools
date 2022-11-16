@@ -56,6 +56,7 @@ using namespace SMSpp_di_unipi_it;
 // register InvestmentFunction to the Block factory
 
 SMSpp_insert_in_factory_cpp_1( InvestmentFunction );
+SMSpp_insert_in_factory_cpp_1( InvestmentFunctionState );
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------------TODO-------------------------------------*/
@@ -495,6 +496,103 @@ void InvestmentFunction::set_par( const idx_type par , const int value ) {
   default: C05Function::set_par( par , value );
  }
 }  // end( InvestmentFunction::set_par )
+
+/*--------------------------------------------------------------------------*/
+/*-------- METHODS FOR HANDLING THE State OF THE InvestmentFunction --------*/
+/*--------------------------------------------------------------------------*/
+
+State * InvestmentFunction::get_State( void ) const {
+ return new InvestmentFunctionState( this );
+}  // end( InvestmentFunction::get_State )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::put_State( const State & state ) {
+
+ auto s = dynamic_cast< const InvestmentFunctionState & >( state );
+
+ const bool global_pool_was_empty = global_pool.empty();
+
+ global_pool.clone( s.global_pool );
+
+ if( ! f_Observer )
+  return;
+
+ // If the global pool was not initially empty, issue a Modification telling
+ // that all previous linearizations have been removed.
+
+ if( ! global_pool_was_empty )
+  f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+                                ( this , C05FunctionMod::GlobalPoolRemoved ,
+                                  Subset() , 0 , 0 ) );
+
+ // Collect the indices of all linearizations that were added and issue the
+ // Modification.
+
+ Subset added;
+ added.reserve( global_pool.size() );
+ for( Index i = 0 ; i < global_pool.size() ; ++i )
+  if( global_pool.is_linearization_there( i ) )
+   added.push_back( i );
+
+ if( ! added.empty() )
+  f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+                                ( this , C05FunctionMod::GlobalPoolAdded ,
+                                  std::move( added ) , 0 , 0 ) );
+
+}  // end( InvestmentFunction::put_State )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::put_State( State && state ) {
+
+ auto s = dynamic_cast< const InvestmentFunctionState && >( state );
+
+ const bool global_pool_was_empty = global_pool.empty();
+
+ global_pool.clone( std::move( s.global_pool ) );
+
+ if( ! f_Observer )
+  return;
+
+ // If the global pool was not initially empty, issue a Modification telling
+ // that all previous linearizations have been removed.
+
+ if( ! global_pool_was_empty )
+  f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+                                ( this , C05FunctionMod::GlobalPoolRemoved ,
+                                  Subset() , 0 , 0 ) );
+
+ // Collect the indices of all linearizations that were added and issue the
+ // Modification.
+
+ Subset added;
+ added.reserve( global_pool.size() );
+ for( Index i = 0 ; i < global_pool.size() ; ++i )
+  if( global_pool.is_linearization_there( i ) )
+   added.push_back( i );
+
+ if( ! added.empty() )
+  f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+                                ( this , C05FunctionMod::GlobalPoolAdded ,
+                                  std::move( added ) , 0 , 0 ) );
+}  // end( InvestmentFunction::put_State )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::serialize_State
+( netCDF::NcGroup & group , const std::string & sub_group_name ) const {
+
+ if( ! sub_group_name.empty() ) {
+  auto g = group.addGroup( sub_group_name );
+  serialize_State( g );
+  return;
+ }
+
+ group.putAtt( "type" , "InvestmentFunctionState" );
+ global_pool.serialize( group );
+
+}  // end( InvestmentFunction::serialize_State )
 
 /*--------------------------------------------------------------------------*/
 /*---- METHODS FOR HANDLING "ACTIVE" Variable IN THE InvestmentFunction ----*/
@@ -1986,8 +2084,6 @@ double InvestmentFunction::compute_kappa_linearization
   // Intake and outtake level bounds
 
   if( ! intake_bound_constraints.empty() ) {
-   double alpha_max = 0;
-
    const auto dual = intake_bound_constraints[ t ].get_dual();
 
    // Now determine which bound is associated with the dual value
@@ -2636,6 +2732,235 @@ void InvestmentFunction::GlobalPool::delete_linearizations( Subset & which ,
    if( is_linearization_there( i ) )
     delete_linearization( i );
  }
+}
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::deserialize
+( const netCDF::NcGroup & group ) {
+
+ auto gs = group.getDim( "InvestmentFunction_MaxGlob" );
+ const auto global_pool_size = gs.isNull() ? 0 : gs.getSize();
+
+ linearization_constants.assign( global_pool_size , NaN );
+ linearization_coefficients.resize( global_pool_size , {} );
+ is_diagonal.assign( global_pool_size , true );
+
+ if( global_pool_size ) {
+
+  ::deserialize( group , "InvestmentFunction_Constants" , { global_pool_size } ,
+                 linearization_constants , false , false );
+
+  auto nct = group.getVar( "InvestmentFunction_Type" );
+  if( nct.isNull() )
+   throw( std::logic_error( "InvestmentFunction::GlobalPool::deserialize: "
+                            "InvestmentFunction_Type was not found." ) );
+
+  auto nc_coeff = group.getVar( "InvestmentFunction_Coefficients" );
+
+  // Number of non-NaN constants
+  auto num_constants = std::count_if( std::cbegin( linearization_constants ) ,
+                                      std::cend( linearization_constants ) ,
+                                      []( FunctionValue v ) {
+                                       return ! std::isnan( v ); } );
+
+  Index num_var = 0;
+
+  if( num_constants ) {
+   // At least one linearization constant is not NaN. In this case, the
+   // coefficients must be provided.
+   if( nc_coeff.isNull() )
+    throw( std::logic_error( "InvestmentFunction::GlobalPool::deserialize: "
+                             "InvestmentFunction_Coefficients was not found."
+                             ) );
+
+   // Retrieve the number of variables.
+
+   assert( nc_coeff.getDimCount() == 1 );
+   const auto dim_size = nc_coeff.getDim( 0 ).getSize();
+   if( dim_size % num_constants != 0 )
+    throw( std::logic_error( "InvestmentFunction::GlobalPool::deserialize: "
+                             "InvestmentFunction_Coefficients has an "
+                             "incompatible dimension." ) );
+
+   num_var = dim_size / num_constants;
+  }
+
+  Index coeff_start = 0;
+
+  for( Index i = 0 ; i < global_pool_size ; ++i ) {
+   int type;
+   nct.getVar( { i } , &type );
+   is_diagonal[ i ] = ( type != 0 );
+
+   if( ! std::isnan( linearization_constants[ i ] ) ) {
+    // There is a linearization that is not
+    linearization_coefficients[ i ].resize( num_var );
+    nc_coeff.getVar( { coeff_start } , { num_var } ,
+                     linearization_coefficients[ i ].data() );
+    coeff_start += num_var;
+   }
+  }
+ }
+
+ auto nic = group.getDim( "InvestmentFunction_ImpCoeffNum" );
+ if( ( ! nic.isNull() ) && ( nic.getSize() ) ) {
+  important_linearization_lin_comb.resize( nic.getSize() );
+
+  auto ncCI = group.getVar( "InvestmentFunction_ImpCoeffInd" );
+  if( ncCI.isNull() )
+   throw( std::logic_error( "InvestmentFunction::GlobalPool::deserialize: "
+                            "InvestmentFunction_ImpCoeffInd was not found." ) );
+
+  auto ncCV = group.getVar( "InvestmentFunction_ImpCoeffVal" );
+  if( ncCV.isNull() )
+   throw( std::logic_error( "InvestmentFunction::GlobalPool::deserialize: "
+                            "InvestmentFunction_ImpCoeffVal was not found." ) );
+
+  for( Index i = 0 ; i < important_linearization_lin_comb.size() ; ++i ) {
+   ncCI.getVar( { i } , &( important_linearization_lin_comb[ i ].first ) );
+   ncCV.getVar( { i } , &( important_linearization_lin_comb[ i ].second ) );
+  }
+ }
+ else
+  important_linearization_lin_comb.clear();
+
+}  // end( InvestmentFunction::GlobalPool::deserialize )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::serialize( netCDF::NcGroup & group ) const {
+
+ const auto global_pool_size = size();
+
+ if( global_pool_size ) {
+
+  auto size_dim = group.addDim( "InvestmentFunction_MaxGlob" , global_pool_size );
+
+  group.addVar( "InvestmentFunction_Constants" , netCDF::NcDouble() , size_dim ).
+   putVar( linearization_constants.data() );
+
+  Index num_var = 0;
+  Index coeff_dim_size = 0;
+  for( Index i = 0 ; i < global_pool_size ; ++i )
+   if( ! std::isnan( linearization_constants[ i ] ) ) {
+    if( num_var == 0 )
+     num_var = linearization_coefficients[ i ].size();
+    assert( num_var == linearization_coefficients[ i ].size() );
+    coeff_dim_size += num_var;
+   }
+
+  if( coeff_dim_size ) {
+   auto nc_coeff_dim = group.addDim( "InvestmentFunction_Coefficients_Dim" ,
+                                     coeff_dim_size );
+   auto nc_coeff = group.addVar( "InvestmentFunction_Coefficients" ,
+                                 netCDF::NcDouble() , nc_coeff_dim );
+   Index coeff_start = 0;
+   for( Index i = 0 ; i < global_pool_size ; ++i )
+    if( ! std::isnan( linearization_constants[ i ] ) ) {
+     nc_coeff.putVar( { coeff_start } , { num_var } ,
+                      linearization_coefficients[ i ].data() );
+     coeff_start += num_var;
+    }
+  }
+
+  std::vector< int > type( global_pool_size );
+  for( Index i = 0 ; i < global_pool_size ; ++i )
+   type[ i ] = is_diagonal[ i ] ? 1 : 0;
+
+  group.addVar( "InvestmentFunction_Type" , netCDF::NcByte() , size_dim )
+   .putVar( { 0 } , { global_pool_size } , type.data() );
+ }
+
+ if( ! important_linearization_lin_comb.empty() ) {
+  auto linearization_dim = group.addDim
+   ( "InvestmentFunction_ImpCoeffNum" , important_linearization_lin_comb.size() );
+
+  auto linearization_coeff_index = group.addVar
+   ( "InvestmentFunction_ImpCoeffInd" , netCDF::NcInt() , linearization_dim );
+
+  auto linearization_coeff_value = group.addVar
+   ( "InvestmentFunction_ImpCoeffVal" , netCDF::NcDouble() , linearization_dim );
+
+  for( Index i = 0 ; i < important_linearization_lin_comb.size() ; ++i ) {
+   linearization_coeff_index.putVar
+    ( { i } , important_linearization_lin_comb[ i ].first );
+   linearization_coeff_value.putVar
+    ( { i } , important_linearization_lin_comb[ i ].second );
+  }
+ }
+}  // end( InvestmentFunction::GlobalPool::serialize )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::clone( const GlobalPool & global_pool ) {
+
+ if( this->size() < global_pool.size() ) {
+  // resize this GlobalPool to accomodate the given elements
+  this->resize( global_pool.size() );
+ }
+
+ std::copy( global_pool.is_diagonal.cbegin() ,
+            global_pool.is_diagonal.cend() ,
+            is_diagonal.begin() );
+
+ std::copy( global_pool.linearization_constants.cbegin() ,
+            global_pool.linearization_constants.cend() ,
+            linearization_constants.begin() );
+
+ important_linearization_lin_comb =
+  global_pool.important_linearization_lin_comb;
+
+ for( Index i = 0 ; i < size() ; ++i )
+  linearization_coefficients[ i ] = global_pool.linearization_coefficients[ i ];
+}  // end( InvestmentFunction::GlobalPool::clone )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::clone( GlobalPool && global_pool ) {
+
+ // The size of the GlobalPool will be at least the size it currently has.
+ const auto size = std::max( this->size() , global_pool.size() );
+
+ is_diagonal = std::move( global_pool.is_diagonal );
+
+ linearization_constants = std::move( global_pool.linearization_constants );
+
+ important_linearization_lin_comb =
+  std::move( global_pool.important_linearization_lin_comb );
+
+ linearization_coefficients =
+  std::move( global_pool.linearization_coefficients );
+
+ // Possibly resize this GlobalPool so that it has at least the same size it
+ // had before.
+
+ this->resize( size );
+
+}  // end( InvestmentFunction::GlobalPool::clone )
+
+/*--------------------------------------------------------------------------*/
+/*------------------------ InvestmentFunctionState -------------------------*/
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunctionState::deserialize( const netCDF::NcGroup & group ) {
+ global_pool.deserialize( group );
+}
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunctionState::serialize( netCDF::NcGroup & group ) const {
+ State::serialize( group );
+ global_pool.serialize( group );
+}
+
+/*--------------------------------------------------------------------------*/
+
+InvestmentFunctionState::InvestmentFunctionState
+( const InvestmentFunction * f ) {
+ if( ! f )
+  return;
+ global_pool.clone( f->global_pool );
 }
 
 /*--------------------------------------------------------------------------*/

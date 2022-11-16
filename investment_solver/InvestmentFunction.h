@@ -77,6 +77,12 @@ class InvestmentFunction : public C05Function , public Block {
  public:
 
 /*--------------------------------------------------------------------------*/
+/*-------------------------------- FRIENDS ---------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+ friend class InvestmentFunctionState;
+
+/*--------------------------------------------------------------------------*/
 /*---------------------- PUBLIC TYPES OF THE CLASS -------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @name Public Types
@@ -855,6 +861,28 @@ class InvestmentFunction : public C05Function , public Block {
   return C05Function::str_par_idx2str( idx );
  }
 
+/** @} ---------------------------------------------------------------------*/
+/*-------- METHODS FOR HANDLING THE State OF THE InvestmentFunction --------*/
+/*--------------------------------------------------------------------------*/
+/** @name Handling the State of the InvestmentFunction
+ */
+
+ State * get_State( void ) const override;
+
+/*--------------------------------------------------------------------------*/
+
+ void put_State( const State & state ) override;
+
+/*--------------------------------------------------------------------------*/
+
+ void put_State( State && state ) override;
+
+/*--------------------------------------------------------------------------*/
+
+ void serialize_State( netCDF::NcGroup & group ,
+		       const std::string & sub_group_name = "" )
+  const override;
+
 /**@} ----------------------------------------------------------------------*/
 /*----------------- METHODS FOR MANAGING THE "IDENTITY" --------------------*/
 /*--------------------------------------------------------------------------*/
@@ -1571,6 +1599,90 @@ class InvestmentFunction : public C05Function , public Block {
   virtual ~GlobalPool() {}
 
 /*--------------------------------------------------------------------------*/
+  /// de-serialize a GlobalPool out of the given netCDF::NcGroup
+  /** De-serialize a GlobalPool out of the given netCDF::NcGroup; see
+   * GlobalPool::serialize() for a description of the format.
+   *
+   * @param group a netCDF::NcGroup out of which the GlobalPool will be
+   *        de-serialized. */
+
+  void deserialize( const netCDF::NcGroup & group );
+
+/*--------------------------------------------------------------------------*/
+  /// serialize this GlobalPool into the given netCDF::NcGroup
+  /** This function serializes this GlobalPool into the given
+   * netCDF::NcGroup. The netCDF::NcGroup \p group will contain the following
+   * data:
+   *
+   * - The dimension "InvestmentFunction_MaxGlob" containing 1 + the maximum
+   *   active name in the global pool; this means that there can be only
+   *   InvestmentFunction_MaxGlob nonempty entries in the global pool, and the
+   *   largest possible name of an active entry is InvestmentFunction_MaxGlob -
+   *   1. This variable is optional. If it is not present then 0 (empty
+   *   global pool) is assumed.
+   *
+   * - The variable "InvestmentFunction_Type", of type netCDF::NcByte and
+   *   indexed over the dimension InvestmentFunction_MaxGlob, which contains
+   *   the vector of booleans specifying the type (diagonal/vertical) of each
+   *   linearization in the global pool. The i-th element of this vector
+   *   indicates the type of the i-th linearization: if it is zero, then the
+   *   linearization is vertical; otherwise, the linearization is
+   *   diagonal. This variable is optional only if InvestmentFunction_MaxGlob
+   *   == 0.
+   *
+   * - The variable "InvestmentFunction_Constants", of type netCDF::NcDouble
+   *   and indexed over the dimension InvestmentFunction_MaxGlob, which
+   *   contains the constants of the linearizations. This variable is optional
+   *   only if InvestmentFunction_MaxGlob == 0.
+   *
+   * - The variable "InvestmentFunction_Coefficients", of type
+   *   netCDF::NcDouble and indexed over the dimension
+   *   "InvestmentFunction_Coefficients_Dim", which contains the coefficients
+   *   of the linearizations whose constants (see the netCDF
+   *   "InvestmentFunction_Constants" variable) are not NaN. This variable is
+   *   optional only if InvestmentFunction_MaxGlob == 0 or there is no i such
+   *   that InvestmentFunction_Constants[ i ] != NaN. Let I = {i_0, i_1, ...,
+   *   i_k} be the set of indices such that InvestmentFunction_Constants[ i ]
+   *   != NaN if and only if i in I and i_j < i_{j+1} for all j in {0, ...,
+   *   k-1}. Then, the linearization coefficients associated with the
+   *   linearization i_j in I is given by
+   *
+   *   ( InvestmentFunction_Coefficients[j*NumVar], ...,
+   *     InvestmentFunction_Coefficients[(j+1)*NumVar - 1] ).
+   *
+   * - The dimension "InvestmentFunction_ImpCoeffNum" containing the number of
+   *   coefficients of the important combination of linearizations. This
+   *   dimension is optional. If it is not provided then 0 (no important
+   *   linearization) is assumed.
+   *
+   * - The variable "InvestmentFunction_ImpCoeffInd", of type netCDF::NcInt
+   *   and indexed over the dimension InvestmentFunction_ImpCoeffNum, which
+   *   contains indices of the linearizations that are part of the important
+   *   combination. This variable is optional only if
+   *   InvestmentFunction_ImpCoeffNum == 0.
+   *
+   * - The variable "InvestmentFunction_ImpCoeffVal", of type netCDF::NcDouble
+   *   and indexed over the dimension InvestmentFunction_ImpCoeffNum, which
+   *   contains the coefficients of the important combination of
+   *   linearizations. The variable is optional only if
+   *   InvestmentFunction_ImpCoeffNum == 0.
+   *
+   * @param group a netCDF::NcGroup into which this GlobalPool will be
+   *        serialized. */
+
+  void serialize( netCDF::NcGroup & group ) const;
+
+/*--------------------------------------------------------------------------*/
+  /// clone the given GlobalPool into this one
+
+  void clone( const GlobalPool & global_pool );
+
+/*--------------------------------------------------------------------------*/
+  /// clone the given GlobalPool into this one
+
+  void clone( GlobalPool && global_pool );
+
+/*--------------------------------------------------------------------------*/
   // resizes the global pool
   /** Resize the global pool to have the given \p size. It is important to
    * notice that
@@ -1588,6 +1700,15 @@ class InvestmentFunction : public C05Function , public Block {
   /// returns the size of the global pool
 
   Index size() const { return( linearization_constants.size() ); }
+
+/*--------------------------------------------------------------------------*/
+  /// returns true if and only if this GlobalPool contains no linearization
+
+  bool empty() const {
+   return std::all_of( linearization_constants.cbegin() ,
+                       linearization_constants.cend() ,
+                       []( const auto v ) { return std::isnan( v ); } );
+  }
 
 /*--------------------------------------------------------------------------*/
   /// stores the given linearization constant and solution in the global pool
@@ -2156,6 +2277,95 @@ class InvestmentFunction : public C05Function , public Block {
  void output_function_value() const;
 
 };  // end( class( InvestmentFunction ) )
+
+/*--------------------------------------------------------------------------*/
+/*---------------------- CLASS InvestmentFunctionState ---------------------*/
+/*--------------------------------------------------------------------------*/
+/// class to describe the "internal state" of an InvestmentFunction
+/** Derived class from State to describe the "internal state" of an
+ * InvestmentFunction, i.e., its global pool. This means saving the
+ * linearization constants, the types of the linearizations, the associated
+ * Solution, and the coefficients of the important combination of
+ * linearizations. */
+
+class InvestmentFunctionState : public State {
+
+/*----------------------- PUBLIC PART OF THE CLASS -------------------------*/
+
+public:
+
+/*-------------------------------- FRIENDS ---------------------------------*/
+
+ friend InvestmentFunction;
+
+/*---------- CONSTRUCTING AND DESTRUCTING InvestmentFunctionState ----------*/
+
+ /// constructor, doing everything or nothing.
+ /** Constructor of InvestmentFunctionState. If provided with a pointer to a
+  * InvestmentFunction, it immediately copies its "internal state", which is
+  * the only way in which the InvestmentFunctionState can be initialised out
+  * of an existing InvestmentFunction. If nullptr is passed (as by default),
+  * then an "empty" InvestmentFunctionState is constructed that can only be
+  * filled by calling deserialize(). */
+
+ InvestmentFunctionState( const InvestmentFunction * function = nullptr );
+
+/*--------------------------------------------------------------------------*/
+ /// de-serialize a InvestmentFunctionState out of netCDF::NcGroup
+ /** De-serialize a InvestmentFunctionState out of netCDF::NcGroup; see
+  * InvestmentFunctionState::serialize() for a description of the format.
+  *
+  * @param group The netCDF::NcGroup containing the
+  *        InvestmentFunctionState. */
+
+ void deserialize( const netCDF::NcGroup & group ) override;
+
+/*--------------------------------------------------------------------------*/
+ /// destructor
+
+ virtual ~InvestmentFunctionState() {}
+
+/*------ METHODS DESCRIBING THE BEHAVIOR OF A InvestmentFunctionState ------*/
+
+ /// serialize a InvestmentFunctionState into a netCDF::NcGroup
+ /** This method serializes this InvestmentFunctionState into the provided
+  * netCDF::NcGroup, so that it can later be read back by deserialize(). After
+  * the call, \p group will contain the attribute "type", common to all State,
+  * and everything necessary to describe a GlobalPool (see
+  * InvestmentFunction::GlobalPool::serialize()).
+  *
+  * @param group The netCDF::NcGroup into which into which this
+  *        InvestmentFunctionState will be serialized. */
+
+ void serialize( netCDF::NcGroup & group ) const override;
+
+/*-------------------- PROTECTED PART OF THE CLASS -------------------------*/
+
+protected:
+
+/*-------------------------- PROTECTED METHODS -----------------------------*/
+
+ void print( std::ostream &output ) const override {
+  output << "InvestmentFunctionState [" << this
+         << "] with max global pool element " << global_pool.size();
+ }
+
+/*--------------------------- PROTECTED FIELDS -----------------------------*/
+
+ /// global pool of linearizations
+ InvestmentFunction::GlobalPool global_pool;
+
+/*---------------------- PRIVATE PART OF THE CLASS -------------------------*/
+
+private:
+
+/*---------------------------- PRIVATE FIELDS ------------------------------*/
+
+ SMSpp_insert_in_factory_h;
+
+/*--------------------------------------------------------------------------*/
+
+};  // end( class( InvestmentFunctionState ) )
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/
