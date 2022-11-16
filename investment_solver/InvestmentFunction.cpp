@@ -509,7 +509,7 @@ State * InvestmentFunction::get_State( void ) const {
 
 void InvestmentFunction::put_State( const State & state ) {
 
- auto s = dynamic_cast< const InvestmentFunctionState & >( state );
+ const auto & s = dynamic_cast< const InvestmentFunctionState & >( state );
 
  const bool global_pool_was_empty = global_pool.empty();
 
@@ -546,7 +546,7 @@ void InvestmentFunction::put_State( const State & state ) {
 
 void InvestmentFunction::put_State( State && state ) {
 
- auto s = dynamic_cast< const InvestmentFunctionState && >( state );
+ auto && s = dynamic_cast< InvestmentFunctionState && >( state );
 
  const bool global_pool_was_empty = global_pool.empty();
 
