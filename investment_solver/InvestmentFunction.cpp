@@ -1277,21 +1277,23 @@ void InvestmentFunction::delete_linearizations( Subset && which , bool ordered ,
 void InvestmentFunction::get_linearization_coefficients
 ( FunctionValue * g , Range range , Index name ) {
 
- if( name != Inf< Index >() )
-  throw( std::logic_error( "InvestmentFunction::get_linearization_coefficients: "
-                           "linearization from global pool not implemented yet." ) );
-
  range.second = std::min( range.second , Index( v_x.size() ) );
  if( range.second <= range.first )
   return;
 
+ if( name != Inf< Index >() ) {
+  // Linearization from the global pool
+  global_pool.get_linearization_coefficients( g , range , name );
+  return;
+ }
+
  if( f_diagonal_linearization_required ) {
-  // diagonal linearization
+  // Diagonal linearization
   for( Index i = range.first ; i < range.second ; ++i )
    g[ i - range.first ] = v_linearization[ i ];
  }
  else {
-  // vertical linearization
+  // Vertical linearization
   assert( f_violated_constraint.first < v_A.size() );
   const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
   const auto i = f_violated_constraint.first;
@@ -1305,21 +1307,23 @@ void InvestmentFunction::get_linearization_coefficients
 void InvestmentFunction::get_linearization_coefficients
 ( SparseVector & g , Range range , Index name ) {
 
- if( name != Inf< Index >() )
-  throw( std::logic_error( "InvestmentFunction::get_linearization_coefficients: "
-                           "linearization from global pool not implemented yet." ) );
-
  range.second = std::min( range.second , Index( v_x.size() ) );
  if( range.second <= range.first )
   return;
 
+ if( name != Inf< Index >() ) {
+  // Linearization from the global pool
+  global_pool.get_linearization_coefficients( g , range , name );
+  return;
+ }
+
  if( f_diagonal_linearization_required ) {
-  // diagonal linearization
+  // Diagonal linearization
   for( Index i = range.first ; i < range.second ; ++i )
    g.coeffRef( i ) = v_linearization[ i ];
  }
  else {
-  // vertical linearization
+  // Vertical linearization
   assert( f_violated_constraint.first < v_A.size() );
   const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
   const auto i = f_violated_constraint.first;
@@ -1333,18 +1337,20 @@ void InvestmentFunction::get_linearization_coefficients
 void InvestmentFunction::get_linearization_coefficients
 ( FunctionValue * g , c_Subset & subset , const bool ordered , Index name ) {
 
- if( name != Inf< Index >() )
-  throw( std::logic_error( "InvestmentFunction::get_linearization_coefficients: "
-                           "linearization from global pool not implemented yet." ) );
+ if( name != Inf< Index >() ) {
+  // Linearization from the global pool
+  global_pool.get_linearization_coefficients( g , subset , ordered , name );
+  return;
+ }
 
  if( f_diagonal_linearization_required ) {
-  // diagonal linearization
+  // Diagonal linearization
   Index k = 0;
   for( auto i : subset )
    g[ k++ ] = v_linearization[ i ];
  }
  else {
-  // vertical linearization
+  // Vertical linearization
   assert( f_violated_constraint.first < v_A.size() );
   const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
   const auto i = f_violated_constraint.first;
@@ -1359,17 +1365,19 @@ void InvestmentFunction::get_linearization_coefficients
 void InvestmentFunction::get_linearization_coefficients
 ( SparseVector & g , c_Subset & subset , const bool ordered , Index name ) {
 
- if( name != Inf< Index >() )
-  throw( std::logic_error( "InvestmentFunction::get_linearization_coefficients: "
-                           "linearization from global pool not implemented yet." ) );
+ if( name != Inf< Index >() ) {
+  // Linearization from the global pool
+  global_pool.get_linearization_coefficients( g , subset , ordered , name );
+  return;
+ }
 
  if( f_diagonal_linearization_required ) {
-  // diagonal linearization
+  // Diagonal linearization
   for( auto i : subset )
    g.coeffRef( i ) = v_linearization[ i ];
  }
  else {
-  // vertical linearization
+  // Vertical linearization
   assert( f_violated_constraint.first < v_A.size() );
   const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
   const auto i = f_violated_constraint.first;
@@ -1387,6 +1395,7 @@ InvestmentFunction::get_linearization_constant( Index name ) {
   // Linearization just computed and not in the global pool yet.
 
   if( f_diagonal_linearization_required ) {
+   // Diagonal linearization
    auto alpha = f_value;
    for( Index i = 0 ; i < v_linearization.size() ; ++i ) {
     alpha -= v_linearization[ i ] * get_var_value( i );
@@ -1395,6 +1404,7 @@ InvestmentFunction::get_linearization_constant( Index name ) {
    return alpha;
   }
   else {
+   // Vertical linearization
    assert( f_violated_constraint.first < v_A.size() );
    const auto i = f_violated_constraint.first;
    double alpha = 0;
@@ -1414,10 +1424,8 @@ InvestmentFunction::get_linearization_constant( Index name ) {
   }
  }
  else {
-  // TODO
-  throw( std::logic_error( "InvestmentFunction::get_linearization_constant: "
-                           "linearization from global pool not implemented "
-                           "yet." ) );
+  // Linearization from the global pool
+  return global_pool.get_linearization_constant( name );
  }
 
  return 0;
@@ -2938,6 +2946,41 @@ void InvestmentFunction::GlobalPool::clone( GlobalPool && global_pool ) {
  this->resize( size );
 
 }  // end( InvestmentFunction::GlobalPool::clone )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::get_linearization_coefficients
+( FunctionValue * g , Range range , Index name ) const {
+ for( Index i = range.first ; i < range.second ; ++i )
+  g[ i - range.first ] = linearization_coefficients[ name ][ i ];
+}  // end( InvestmentFunction::GlobalPool::get_linearization_coefficients )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::get_linearization_coefficients
+( SparseVector & g , Range range , Index name ) const {
+ for( Index i = range.first ; i < range.second ; ++i )
+  g.coeffRef( i ) = linearization_coefficients[ name ][ i ];
+}  // end( InvestmentFunction::GlobalPool::get_linearization_coefficients )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::get_linearization_coefficients
+( FunctionValue * g , c_Subset & subset , const bool ordered , Index name )
+ const {
+ Index k = 0;
+ for( auto i : subset )
+  g[ k++ ] = linearization_coefficients[ name ][ i ];
+}  // end( InvestmentFunction::GlobalPool::get_linearization_coefficients )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::get_linearization_coefficients
+( SparseVector & g , c_Subset & subset , const bool ordered , Index name )
+ const {
+ for( auto i : subset )
+  g.coeffRef( i ) = linearization_coefficients[ name ][ i ];
+}  // end( InvestmentFunction::GlobalPool::get_linearization_coefficients )
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ InvestmentFunctionState -------------------------*/

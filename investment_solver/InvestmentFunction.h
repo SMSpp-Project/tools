@@ -1851,6 +1851,26 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
+  void get_linearization_coefficients( FunctionValue * g , Range range ,
+                                       Index name ) const;
+
+/*--------------------------------------------------------------------------*/
+
+  void get_linearization_coefficients( SparseVector & g , Range range ,
+                                       Index name ) const;
+
+/*--------------------------------------------------------------------------*/
+
+  void get_linearization_coefficients( FunctionValue * g , c_Subset & subset ,
+                                       const bool ordered , Index name ) const;
+
+/*--------------------------------------------------------------------------*/
+
+  void get_linearization_coefficients( SparseVector & g , c_Subset & subset ,
+                                       const bool ordered , Index name ) const;
+
+/*--------------------------------------------------------------------------*/
+
  private:
 
   std::vector< FunctionValue > linearization_constants;
