@@ -132,7 +132,16 @@ std::string solver_config_filename{};
 std::string config_filename_prefix{};
 std::string cuts_filename{};
 std::string initial_point_filename{};
+
+// State to be loaded into the InvestmentBlock Solver
+std::string solver_state_input_filename{};
+
+// Prefix to the name of the file that will store the State of the
+// InvestmentBlock Solver
+std::string solver_state_output_filename{};
+
 long num_sub_blocks_per_stage = 1;
+
 bool relax_integrality = false;
 bool eliminate_reduntant_cuts = false;
 bool simulate_investment = false;
@@ -172,7 +181,9 @@ void print_help() {
            << "  " << exe << " -h | --help\n"
            << std::endl
            << "Options:\n"
+           << "  -a, --output-state <name>       InvestmentBlock Solver state output filename prefix.\n"
            << "  -B, --blockcfg <file>           Block configuration.\n"
+           << "  -b, --input-state <file>        Input state for the InvestmentBlock Solver.\n"
            << "  -c, --configdir <path>          The prefix for all config filenames.\n"
            << "  -e, --eliminate-redundant-cuts  Eliminate given redundant cuts.\n"
            << "  -h, --help                      Print this help.\n"
@@ -210,9 +221,11 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:c:hel:n:op:rS:sx:";
+ const char * const short_opts = "a:B:b:c:hel:n:op:rS:sx:";
  const option long_opts[] = {
+  { "output-state" ,             required_argument , nullptr , 'a' } ,
   { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
+  { "input-state" ,              required_argument , nullptr , 'b' } ,
   { "configdir" ,                required_argument , nullptr , 'c' } ,
   { "help" ,                     no_argument ,       nullptr , 'h' } ,
   { "eliminate-redundant-cuts" , no_argument ,       nullptr , 'e' } ,
@@ -237,8 +250,14 @@ void process_args( int argc , char ** argv ) {
   }
 
   switch( opt ) {
+   case 'a':
+    solver_state_output_filename = std::string( optarg );
+    break;
    case 'B':
     block_config_filename = std::string( optarg );
+    break;
+   case 'b':
+    solver_state_input_filename = std::string( optarg );
     break;
    case 'c':
     config_filename_prefix = std::string( optarg );
@@ -717,6 +736,36 @@ void invest( InvestmentBlock * investment_block ) {
   // Output the variable and function values at each iteration
   investment_function->set_par( InvestmentFunction::strOutputFilename ,
                                 "investment_candidates.txt" );
+
+  if( ! solver_state_input_filename.empty() ) {
+
+   netCDF::NcFile file;
+   try {
+    file.open( solver_state_input_filename , netCDF::NcFile::read );
+   } catch( netCDF::exceptions::NcException & e ) {
+    std::cerr << "Cannot open State file " << solver_state_input_filename
+              << std::endl;
+    exit( 1 );
+   }
+
+   auto state = State::new_State( file );
+   investment_solver->put_State( *state );
+   delete state;
+  }
+
+  if( ! solver_state_output_filename.empty() ) {
+   investment_solver->set_par( ThinComputeInterface::intEverykIt , 1 );
+   investment_solver->set_event_handler
+    ( ThinComputeInterface::eEverykIteration ,
+      [ investment_solver ]() {
+       static int i = 0;
+       std::string filename =
+        solver_state_output_filename + std::to_string( i++ ) + ".nc4";
+       netCDF::NcFile file( filename , netCDF::NcFile::replace );
+       investment_solver->serialize_State( file );
+       return ThinComputeInterface::eContinue;
+      } );
+  }
 
   auto status = investment_solver->compute();
 
