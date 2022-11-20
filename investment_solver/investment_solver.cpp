@@ -181,9 +181,9 @@ void print_help() {
            << "  " << exe << " -h | --help\n"
            << std::endl
            << "Options:\n"
-           << "  -a, --output-state <name>       InvestmentBlock Solver state output filename prefix.\n"
+           << "  -a, --save-state <prefix>       Save states of the InvestmentBlock solver.\n"
            << "  -B, --blockcfg <file>           Block configuration.\n"
-           << "  -b, --input-state <file>        Input state for the InvestmentBlock Solver.\n"
+           << "  -b, --load-state <file>         Load a state for the InvestmentBlock solver.\n"
            << "  -c, --configdir <path>          The prefix for all config filenames.\n"
            << "  -e, --eliminate-redundant-cuts  Eliminate given redundant cuts.\n"
            << "  -h, --help                      Print this help.\n"
@@ -223,9 +223,9 @@ void process_args( int argc , char ** argv ) {
 
  const char * const short_opts = "a:B:b:c:hel:n:op:rS:sx:";
  const option long_opts[] = {
-  { "output-state" ,             required_argument , nullptr , 'a' } ,
+  { "save-state" ,               required_argument , nullptr , 'a' } ,
   { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
-  { "input-state" ,              required_argument , nullptr , 'b' } ,
+  { "load-state" ,               required_argument , nullptr , 'b' } ,
   { "configdir" ,                required_argument , nullptr , 'c' } ,
   { "help" ,                     no_argument ,       nullptr , 'h' } ,
   { "eliminate-redundant-cuts" , no_argument ,       nullptr , 'e' } ,
