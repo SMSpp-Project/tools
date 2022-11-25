@@ -156,7 +156,7 @@ const double epsilon_max_power = 1.0e-16;
 const double feasibility_tolerance = 1.0e-6;
 
 /// Type of violation to be considered in Block::is_feasible()
-const bool relative_violation = false;
+const bool relative_violation = true;
 
 // Name of Configuration files for each component of the Lagrangian dual of
 // the UCBlock
