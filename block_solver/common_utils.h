@@ -156,9 +156,8 @@ BlockSolverConfig * default_configure_solver( int verbose ) {
  auto s_config = new BlockSolverConfig;
  auto c_config = new ComputeConfig;
 
- if( verbose ) {
+ if( verbose )
   c_config->set_par( "intLogVerb", 1 );
- }
 
  s_config->add_ComputeConfig( "CPXMILPSolver", c_config );
  return( s_config );
@@ -205,7 +204,7 @@ void solve_all( Block * block ) {
   start = std::chrono::system_clock::now();
   auto status = solver->compute();
   end = std::chrono::system_clock::now();
-  std::chrono::duration<double> compute_time = end - start;
+  std::chrono::duration< double > compute_time = end - start;
   std::cout << "Elapsed time: " << compute_time.count() << " s" << std::endl;
 
   auto ub = solver->get_ub();
@@ -215,32 +214,8 @@ void solve_all( Block * block ) {
   std::cout << "Lower bound = " << lb << std::endl;
 
 #ifndef NDEBUG
-  /*
-   * We get the OF value from the block,
-   * with the summation of all subblocks' OFs.
-   */
   solver->get_var_solution();
-  double of_value = 0;
-
-  std::queue< Block * > Q;
-  Q.push( block );
-
-  while( ! Q.empty() ) {
-   Block * q_Block = Q.front();
-   Q.pop();
-
-   for( auto * i : q_Block->get_nested_Blocks() ) {
-    Q.push( i );
-   }
-
-   auto of = dynamic_cast<FRealObjective *>(q_Block->get_objective());
-   if (of) {
-    of->compute();
-    of_value += of->value();
-   }
-  }
-
-  std::cout << "O.F. value  = " << of_value << std::endl;
+  std::cout << "O.F. value  = " << solver->get_var_value() << std::endl;
 #endif
  }
 }
@@ -253,17 +228,15 @@ BlockConfig * get_blockconfig( const std::string & conf_file ) {
  std::ifstream bcf;
 
  bcf.open( conf_file, std::ifstream::in );
- if( ! bcf.is_open() ) {
+ if( ! bcf.is_open() )
   return( nullptr );
- }
 
  std::string name;
  bcf >> eatcomments >> name;
  b_config = dynamic_cast<BlockConfig *> ( Configuration::new_Configuration( name ) );
 
- if( ! b_config ) {
+ if( ! b_config )
   return( nullptr );
- }
 
  try {
   bcf >> *b_config;
@@ -279,21 +252,19 @@ BlockConfig * get_blockconfig( const std::string & conf_file ) {
 /// Gets a BlockSolverConfig from a BlockSolverConfig file
 BlockSolverConfig *
 get_blocksolverconfig( const std::string & conf_file ) {
- BlockSolverConfig * s_config = nullptr;
+ BlockSolverConfig * s_config;
  std::ifstream scf;
 
  scf.open( conf_file, std::ifstream::in );
- if( ! scf.is_open() ) {
+ if( ! scf.is_open() )
   return( nullptr );
- }
 
  std::string name;
  scf >> eatcomments >> name;
  s_config = dynamic_cast<BlockSolverConfig *> ( Configuration::new_Configuration( name ) );
 
- if( ! s_config ) {
+ if( ! s_config )
   return( nullptr );
- }
 
  try {
   scf >> *s_config;

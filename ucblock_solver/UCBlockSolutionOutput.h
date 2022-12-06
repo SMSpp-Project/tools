@@ -224,7 +224,7 @@ class UCBlockSolutionOutput
 
   auto get_power_flow =
    []( NetworkBlock * block , Index line ) -> double {
-    if( auto dc = dynamic_cast<DCNetworkBlock *>( block ) ) {
+    if( auto dc = dynamic_cast< DCNetworkBlock * >( block ) ) {
      const auto & power_flow = dc->get_power_flow();
      if( line < power_flow.size() )
       return( power_flow[ line ].get_value() );
@@ -246,7 +246,7 @@ class UCBlockSolutionOutput
 
   auto get_node_injection =
    []( NetworkBlock * block , Index node ) -> double {
-    if( auto dc = dynamic_cast<DCNetworkBlock *>( block ) ) {
+    if( auto dc = dynamic_cast< DCNetworkBlock * >( block ) ) {
      const auto & node_injection = dc->get_node_injection();
      if( node < dc->get_number_nodes() )
       return( node_injection[ node ].get_value() );
@@ -380,9 +380,9 @@ class UCBlockSolutionOutput
 
   auto get_power_flow_limit_dual =
    []( NetworkBlock * block , Index line ) -> double {
-    if( auto dc = dynamic_cast<DCNetworkBlock *>( block ) ) {
+    if( auto dc = dynamic_cast< DCNetworkBlock * >( block ) ) {
      if( auto network_data = dc->get_NetworkData() ) {
-      if( static_cast<DCNetworkBlock::DCNetworkData *>(network_data)
+      if( static_cast< DCNetworkBlock::DCNetworkData * >(network_data)
            ->get_lines_type() == DCNetworkBlock::kHVDC ) {
        const auto & constraints = dc->get_power_flow_limit_HVDC_bounds();
        if( line < constraints.size() )
@@ -464,27 +464,27 @@ class UCBlockSolutionOutput
 
   auto get_max_power =
    []( UnitBlock * block , Index g , Index t ) {
-    if( auto b = dynamic_cast<HydroUnitBlock *>( block ) ) {
+    if( auto b = dynamic_cast< HydroUnitBlock * >( block ) ) {
      const auto & max_power = b->get_maximum_power();
      if( t < max_power.size() && g < max_power[ t ].size() )
       return( max_power[ t ][ g ] );
     }
-    if( auto b = dynamic_cast<ThermalUnitBlock *>( block ) ) {
+    if( auto b = dynamic_cast< ThermalUnitBlock * >( block ) ) {
      const auto & max_power = b->get_max_power();
      if( t < max_power.size() )
       return( max_power[ t ] );
     }
-    if( auto b = dynamic_cast<SlackUnitBlock *>( block ) ) {
+    if( auto b = dynamic_cast< SlackUnitBlock * >( block ) ) {
      const auto & max_power = b->get_max_power();
      if( t < max_power.size() )
       return( max_power[ t ] );
     }
-    if( auto b = dynamic_cast<IntermittentUnitBlock *>( block ) ) {
+    if( auto b = dynamic_cast< IntermittentUnitBlock * >( block ) ) {
      const auto & max_power = b->get_maximum_power();
      if( t < max_power.size() )
       return max_power[ t ];
     }
-    if( auto b = dynamic_cast<BatteryUnitBlock *>( block ) ) {
+    if( auto b = dynamic_cast< BatteryUnitBlock * >( block ) ) {
      const auto & max_power = b->get_maximum_power();
      if( t < max_power.size() )
       return b->get_maximum_power()[ t ];
@@ -606,11 +606,11 @@ class UCBlockSolutionOutput
 
   auto get_storage =
    []( UnitBlock * block , Index r , Index t ) -> double {
-    if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) ) {
+    if( auto hydro = dynamic_cast< HydroUnitBlock * >( block ) ) {
      if( auto volume = hydro->get_volume( r , t ) )
       return( volume->get_value() );
      return( 0 );
-    } else if( auto battery = dynamic_cast<BatteryUnitBlock *>( block ) ) {
+    } else if( auto battery = dynamic_cast< BatteryUnitBlock * >( block ) ) {
      const auto & storage = battery->get_storage_level();
      if( t < storage.size() )
       return( storage[ t ].get_value() );
@@ -693,7 +693,8 @@ class UCBlockSolutionOutput
 
  Index get_number_lines( const NetworkBlock * block ) const {
   if( ! block ) return( 0 );
-  auto network_data = block->get_NetworkData();
+  auto network_data = static_cast< DCNetworkBlock::DCNetworkData * >(
+   block->get_NetworkData() );
   return( network_data ? network_data->get_number_lines() : 0 );
  }
 
@@ -839,7 +840,7 @@ class UCBlockSolutionOutput
   for( Index i = 0 ; i < uc_block->get_number_units() ; ++i ) {
 
    auto block = uc_block->get_unit_block( i );
-   if( auto hydro_system = dynamic_cast<HydroSystemUnitBlock *>( block ) )
+   if( auto hydro_system = dynamic_cast< HydroSystemUnitBlock * >( block ) )
     for( Index h = 0 ; h < hydro_system->get_number_hydro_units() ; ++h )
      unit_blocks.push_back( hydro_system->get_hydro_unit_block( h ) );
    else
@@ -858,10 +859,10 @@ class UCBlockSolutionOutput
 
   for( Index i = 0 ; i < uc_block->get_number_units() ; ++i ) {
    auto block = uc_block->get_unit_block( i );
-   if( auto hydro_system = dynamic_cast<HydroSystemUnitBlock *>( block ) )
+   if( auto hydro_system = dynamic_cast< HydroSystemUnitBlock * >( block ) )
     for( Index h = 0 ; h < hydro_system->get_number_hydro_units() ; ++h )
      hydro_unit_blocks.push_back( hydro_system->get_hydro_unit_block( h ) );
-   else if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) )
+   else if( auto hydro = dynamic_cast< HydroUnitBlock * >( block ) )
     hydro_unit_blocks.push_back( hydro );
   }
 
@@ -877,12 +878,12 @@ class UCBlockSolutionOutput
 
   for( Index i = 0 ; i < uc_block->get_number_units() ; ++i ) {
    auto block = uc_block->get_unit_block( i );
-   if( auto battery = dynamic_cast<BatteryUnitBlock *>( block ) )
+   if( auto battery = dynamic_cast< BatteryUnitBlock * >( block ) )
     unit_blocks.push_back( battery );
-   else if( auto hydro_system = dynamic_cast<HydroSystemUnitBlock *>( block ) )
+   else if( auto hydro_system = dynamic_cast< HydroSystemUnitBlock * >( block ) )
     for( Index h = 0 ; h < hydro_system->get_number_hydro_units() ; ++h )
      unit_blocks.push_back( hydro_system->get_hydro_unit_block( h ) );
-   else if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) )
+   else if( auto hydro = dynamic_cast< HydroUnitBlock * >( block ) )
     unit_blocks.push_back( hydro );
   }
 
@@ -997,14 +998,14 @@ class UCBlockSolutionOutput
    output << "Timestep";
    for( auto block : blocks ) {
     auto block_name = get_name( block );
-    if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) ) {
+    if( auto hydro = dynamic_cast< HydroUnitBlock * >( block ) ) {
      const auto number_reservoirs = hydro->get_number_reservoirs();
      if( number_reservoirs <= 1 )
       output << separator_character << block_name;
      else
       for( Index r = 0 ; r < number_reservoirs ; ++r )
        output << separator_character << block_name << "_" << r;
-    } else if( auto battery = dynamic_cast<BatteryUnitBlock *>( block ) )
+    } else if( auto battery = dynamic_cast< BatteryUnitBlock * >( block ) )
      output << separator_character << block_name;
     else
      throw( "UCBlockSolutionOutput::print_storage_data: invalid type of "
@@ -1026,12 +1027,12 @@ class UCBlockSolutionOutput
    output << time;
    for( auto block : blocks ) {
 
-    if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) ) {
+    if( auto hydro = dynamic_cast< HydroUnitBlock * >( block ) ) {
      const auto number_reservoirs = hydro->get_number_reservoirs();
      for( Index r = 0 ; r < number_reservoirs ; ++r )
       output << separator_character << std::setprecision( precision )
              << get_data( hydro , r , t );
-    } else if( auto battery = dynamic_cast<BatteryUnitBlock *>( block ) )
+    } else if( auto battery = dynamic_cast< BatteryUnitBlock * >( block ) )
      output << separator_character << std::setprecision( precision )
             << get_data( battery , t , t );
     else
