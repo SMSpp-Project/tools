@@ -148,6 +148,23 @@ const bool negative_prices = false;
 std::string exe{};         ///< Name of the executable file
 std::string docopt_desc{}; ///< Tool description
 
+// It replaces any zero value that the IntermittentUnitBlock maximum power may
+// assume
+const double epsilon_max_power = 1.0e-16;
+
+/// Tolerance to be considered in Block::is_feasible()
+const double feasibility_tolerance = 1.0e-6;
+
+/// Type of violation to be considered in Block::is_feasible()
+const bool relative_violation = true;
+
+// Name of Configuration files for each component of the Lagrangian dual of
+// the UCBlock
+const std::string thermal_config_filename = "TUBSCfg.txt";
+const std::string hydro_config_filename = "HSUBSCfg.txt";
+const std::string other_unit_config_filename = "OUBSCfg.txt";
+const std::string default_config_filename = "LPBSCfg.txt";
+
 /*--------------------------------------------------------------------------*/
 
 // Gets the name of the executable from its full path
@@ -815,8 +832,60 @@ void load_cuts( SDDPBlock * sddp_block ) {
 
 /*--------------------------------------------------------------------------*/
 
+bool using_thermal_dp_solver( const std::string & config_filename ) {
+ std::ifstream stream( config_filename );
+
+ if( ! stream.is_open() ) {
+  std::cerr << "Solver configuration " + config_filename +
+   " was not found." << std::endl;
+  exit( 1 );
+ }
+
+ std::string config_name;
+ stream >> eatcomments >> config_name;
+ auto config = Configuration::new_Configuration( config_name );
+ auto solver_config = dynamic_cast< BlockSolverConfig * >( config );
+
+ if( ! solver_config ) {
+  std::cerr << "Solver configuration is not valid: "
+            << config_name << std::endl;
+  delete config;
+  exit( 1 );
+ }
+
+ try {
+  stream >> *solver_config;
+ }
+ catch( ... ) {
+  std::cout << "Error while loading Solver configuration: "
+            << config_name << std::endl;
+  delete config;
+  exit( 1 );
+ }
+
+ for( const auto & solver_name : solver_config->get_SolverNames() )
+  if( solver_name == "ThermalUnitDPSolver" ) {
+   delete config;
+   return true;
+  }
+
+ delete config;
+ return false;
+}
+
+/*--------------------------------------------------------------------------*/
+
 void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
-                       bool add_reserve_variables_to_objective ) {
+                       bool add_reserve_variables_to_objective ,
+                       double feasibility_tolerance , bool relative_violation ,
+                       bool is_using_lagrangian_dual_solver ) {
+
+ const SimpleConfiguration< std::pair< double , int > >
+  is_feasible_config( { feasibility_tolerance , relative_violation } );
+
+ const int var_type = relax_binary_variables;
+ const int cons_type = 1; // generate OneVarConstraints
+
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
   auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
@@ -839,14 +908,11 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
     blocks.push( block->get_nested_Block( i ) );
    }
 
-   int var_type = 0;
-   if( relax_binary_variables ) var_type = 1;
-   int cons_type = 1; // generate OneVarConstraints
-
    // Configure PolyhedralFunctionBlock
    if( auto polyhedral = dynamic_cast< PolyhedralFunctionBlock * >( block ) ) {
     auto config = new BlockConfig;
     config->f_static_variables_Configuration = new SimpleConfiguration<int>(1);
+    config->f_is_feasible_Configuration = is_feasible_config.clone();
     polyhedral->set_BlockConfig( config );
    }
 
@@ -856,6 +922,7 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
      new SimpleConfiguration<int>( var_type );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration<int>( cons_type );
+    config->f_is_feasible_Configuration = is_feasible_config.clone();
     unit->set_BlockConfig( config );
    }
 
@@ -865,6 +932,7 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
      std::pair< int , int > >( { negative_prices , var_type } );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration<int>( cons_type );
+    config->f_is_feasible_Configuration = is_feasible_config.clone();
     unit->set_BlockConfig( config );
    }
 
@@ -878,7 +946,23 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
     if( add_reserve_variables_to_objective )
      config->f_objective_Configuration = new SimpleConfiguration<int>( 3 );
 
+    config->f_is_feasible_Configuration = is_feasible_config.clone();
+
     unit->set_BlockConfig( config );
+   }
+   else if( auto unit = dynamic_cast< IntermittentUnitBlock * >( block ) ;
+            unit && is_using_lagrangian_dual_solver ) {
+    auto config = new BlockConfig;
+    config->f_is_feasible_Configuration = is_feasible_config.clone();
+    config->f_extra_Configuration =
+     new SimpleConfiguration< double >( epsilon_max_power );
+    unit->set_BlockConfig( config );
+   }
+
+   else {
+    auto config = new BlockConfig;
+    config->f_is_feasible_Configuration = is_feasible_config.clone();
+    block->set_BlockConfig( config );
    }
 
   }
@@ -1144,6 +1228,9 @@ int get_int_par( ComputeConfig * compute_config , std::string par_name ) {
 
 bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
 
+ if( ! sddp_solver_config )
+  return false;
+
  BlockSolverConfig * inner_solver_config = nullptr;
  ComputeConfig * compute_config = nullptr;
 
@@ -1331,11 +1418,6 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
  // The Configuration to be passed to get_dual_solution() of the inner Solver.
  Configuration * get_dual_solution_config = nullptr;
-
- const std::string thermal_config_filename = "TUBSCfg.txt";
- const std::string hydro_config_filename = "HSUBSCfg.txt";
- const std::string other_unit_config_filename = "OUBSCfg.txt";
- const std::string default_config_filename = "LPBSCfg.txt";
 
  enum ConfigIndex { thermal = 0 , hydro , other_unit , default_config };
 
@@ -1629,6 +1711,15 @@ void process_block_file( const netCDF::NcFile & file ) {
  auto cleared_solver_config = solver_config->clone();
  cleared_solver_config->clear();
 
+ const auto is_using_lagrangian_dual_solver =
+  using_lagrangian_dual_solver( solver_config );
+
+ if( is_using_lagrangian_dual_solver && using_thermal_dp_solver
+     ( config_filename_prefix + thermal_config_filename ) )
+  // The ThermalUnitDPSolver cannot currently deal with spinning
+  // reserves. Thus, any reserve that is provided must be ignored.
+  ThermalUnitBlock::ignore_reserve();
+
  // For each Block descriptor
  for( auto block_description : blocks ) {
 
@@ -1640,15 +1731,12 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Configure the SDDPBlock
 
-  bool is_using_lagrangian_dual_solver = false;
-
   if( given_block_config )
    given_block_config->apply( sddp_block );
   else {
-   is_using_lagrangian_dual_solver =
-    using_lagrangian_dual_solver( solver_config );
-
    configure_Blocks( sddp_block , relax_integrality ,
+                     is_using_lagrangian_dual_solver ,
+                     feasibility_tolerance , relative_violation ,
                      is_using_lagrangian_dual_solver );
 
    if( ! block_solver_config_provided ) {
@@ -1762,6 +1850,15 @@ void multiple_simulations( const netCDF::NcFile & file ) {
  auto cleared_solver_config = solver_config->clone();
  cleared_solver_config->clear();
 
+ const auto is_using_lagrangian_dual_solver =
+  using_lagrangian_dual_solver( solver_config );
+
+ if( is_using_lagrangian_dual_solver && using_thermal_dp_solver
+     ( config_filename_prefix + thermal_config_filename ) )
+  // The ThermalUnitDPSolver cannot currently deal with spinning
+  // reserves. Thus, any reserve that is provided must be ignored.
+  ThermalUnitBlock::ignore_reserve();
+
  // For each Block descriptor
  for( auto block_description : blocks ) {
 
@@ -1810,15 +1907,12 @@ void multiple_simulations( const netCDF::NcFile & file ) {
 
    // Configure the SDDPBlock
 
-   bool is_using_lagrangian_dual_solver = false;
-
    if( given_block_config )
     given_block_config->apply( sddp_block );
    else {
-    is_using_lagrangian_dual_solver =
-     using_lagrangian_dual_solver( solver_config );
-
     configure_Blocks( sddp_block , relax_integrality ,
+                      is_using_lagrangian_dual_solver ,
+                      feasibility_tolerance , relative_violation ,
                       is_using_lagrangian_dual_solver );
 
     if( ! block_solver_config_provided ) {
