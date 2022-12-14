@@ -132,7 +132,16 @@ std::string solver_config_filename{};
 std::string config_filename_prefix{};
 std::string cuts_filename{};
 std::string initial_point_filename{};
+
+// State to be loaded into the InvestmentBlock Solver
+std::string solver_state_input_filename{};
+
+// Prefix to the name of the file that will store the State of the
+// InvestmentBlock Solver
+std::string solver_state_output_filename{};
+
 long num_sub_blocks_per_stage = 1;
+
 bool relax_integrality = false;
 bool eliminate_reduntant_cuts = false;
 bool simulate_investment = false;
@@ -145,6 +154,9 @@ const bool continuous_relaxation = true;
 // of the form l <= x <= u, these constraints must be reformulated by
 // replacing them by 0 <= x <= u - l.
 const bool reformulate_variable_bounds = true;
+
+// This variable indicates whether negative prices may occur
+const bool negative_prices = false;
 
 std::string exe{};         ///< Name of the executable file
 std::string docopt_desc{}; ///< Tool description
@@ -169,7 +181,9 @@ void print_help() {
            << "  " << exe << " -h | --help\n"
            << std::endl
            << "Options:\n"
+           << "  -a, --save-state <prefix>       Save states of the InvestmentBlock solver.\n"
            << "  -B, --blockcfg <file>           Block configuration.\n"
+           << "  -b, --load-state <file>         Load a state for the InvestmentBlock solver.\n"
            << "  -c, --configdir <path>          The prefix for all config filenames.\n"
            << "  -e, --eliminate-redundant-cuts  Eliminate given redundant cuts.\n"
            << "  -h, --help                      Print this help.\n"
@@ -207,9 +221,11 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:c:hel:n:op:rS:sx:";
+ const char * const short_opts = "a:B:b:c:hel:n:op:rS:sx:";
  const option long_opts[] = {
+  { "save-state" ,               required_argument , nullptr , 'a' } ,
   { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
+  { "load-state" ,               required_argument , nullptr , 'b' } ,
   { "configdir" ,                required_argument , nullptr , 'c' } ,
   { "help" ,                     no_argument ,       nullptr , 'h' } ,
   { "eliminate-redundant-cuts" , no_argument ,       nullptr , 'e' } ,
@@ -234,8 +250,14 @@ void process_args( int argc , char ** argv ) {
   }
 
   switch( opt ) {
+   case 'a':
+    solver_state_output_filename = std::string( optarg );
+    break;
    case 'B':
     block_config_filename = std::string( optarg );
+    break;
+   case 'b':
+    solver_state_input_filename = std::string( optarg );
     break;
    case 'c':
     config_filename_prefix = std::string( optarg );
@@ -711,6 +733,40 @@ void invest( InvestmentBlock * investment_block ) {
 
   investment_solver->set_log( &std::cout );
 
+  // Output the variable and function values at each iteration
+  investment_function->set_par( InvestmentFunction::strOutputFilename ,
+                                "investment_candidates.txt" );
+
+  if( ! solver_state_input_filename.empty() ) {
+
+   netCDF::NcFile file;
+   try {
+    file.open( solver_state_input_filename , netCDF::NcFile::read );
+   } catch( netCDF::exceptions::NcException & e ) {
+    std::cerr << "Cannot open State file " << solver_state_input_filename
+              << std::endl;
+    exit( 1 );
+   }
+
+   auto state = State::new_State( file );
+   investment_solver->put_State( *state );
+   delete state;
+  }
+
+  if( ! solver_state_output_filename.empty() ) {
+   investment_solver->set_par( ThinComputeInterface::intEverykIt , 1 );
+   investment_solver->set_event_handler
+    ( ThinComputeInterface::eEverykIteration ,
+      [ investment_solver ]() {
+       static int i = 0;
+       std::string filename =
+        solver_state_output_filename + std::to_string( i++ ) + ".nc4";
+       netCDF::NcFile file( filename , netCDF::NcFile::replace );
+       investment_solver->serialize_State( file );
+       return ThinComputeInterface::eContinue;
+      } );
+  }
+
   auto status = investment_solver->compute();
 
 #ifdef USE_MPI
@@ -793,8 +849,8 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
    else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration =
-     new SimpleConfiguration<int>( var_type );
+    config->f_static_variables_Configuration = new SimpleConfiguration<
+     std::pair< int , int > >( { negative_prices , var_type } );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration<int>( cons_type );
     unit->set_BlockConfig( config );

@@ -77,6 +77,12 @@ class InvestmentFunction : public C05Function , public Block {
  public:
 
 /*--------------------------------------------------------------------------*/
+/*-------------------------------- FRIENDS ---------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+ friend class InvestmentFunctionState;
+
+/*--------------------------------------------------------------------------*/
 /*---------------------- PUBLIC TYPES OF THE CLASS -------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @name Public Types
@@ -86,6 +92,11 @@ class InvestmentFunction : public C05Function , public Block {
  /** Public enum representing the types of assets. */
 
  enum AssetType { eUnitBlock = 0 , eLine = 1 };
+
+ /// public enum representing the sides of the linear constraints
+ /** Public enum representing the sides of the linear constraints. */
+
+ enum ConstraintSide { eLHS = 0 , eRHS = 1 };
 
  /* Since InvestmentFunction is both a ThinVarDepInterface and a Block, it
   * "sees" two definitions of "Index", "Range", and "Subset". These are
@@ -104,10 +115,13 @@ class InvestmentFunction : public C05Function , public Block {
 
  using IndexVector = std::vector< Index >;
  using RealVector = std::vector< double >;
+ using MultiVector = std::vector< RealVector >;
  using AssetTypeVector = std::vector< AssetType >;
 
  using VarVector = std::vector< ColVariable * >;
  ///< representing the x variables upon which the function depends
+
+ using ViolatedConstraint = std::pair< Index , ConstraintSide >;
 
 /*--------------------------------------------------------------------------*/
  /// virtualized concrete iterator
@@ -219,7 +233,7 @@ class InvestmentFunction : public C05Function , public Block {
  /// public enum for the int algorithmic parameters
  /** Public enum describing the different algorithmic parameters of int type
   * that InvestmentFunction has in addition to those of C05Function. The value
-  * intLastInvestmentFPar is provided so that the list can be easily further
+  * intLastParInvestmentF is provided so that the list can be easily further
   * extended by derived classes. */
 
  enum int_par_type_InvestmentF {
@@ -234,12 +248,35 @@ class InvestmentFunction : public C05Function , public Block {
    * while this InvestmentFunction is being compute()-ed. The default value of
    * this parameter is 0, which means that no solution is output. */
 
-  intLastInvestmentFPar
+  intLastParInvestmentF
   ///< first allowed new int parameter for derived classes
   /**< Convenience value for easily allow derived classes to extend the set of
    * int algorithmic parameters. */
 
  };  // end( int_par_type_InvestmentF )
+
+/*--------------------------------------------------------------------------*/
+ /// public enum for the string algorithmic parameters
+ /** Public enum describing the different algorithmic parameters of "string"
+  * type that InvestmentFunction has in addition to those of C05Function. The
+  * value strLastInvestmentFPar is provided so that the list can be easily
+  * further extended by derived classes. */
+
+ enum str_par_type_InvestmentF {
+
+  strOutputFilename = str_par_type_C05F::strLastParC05F ,
+  ///< name of the file into which the variable and function values are output
+  /**< This is the name of the file into which the variable and function
+   * values are output (appended) every time this InvestmentFunction is
+   * compute()-ed. If it is empty, then the variable and function values are
+   * not output. The default value for this parameter is the empty string. */
+
+  strLastParInvestmentF
+  ///< first allowed new string parameter for derived classes
+  /**< Convenience value for easily allow derived classes to extend the set of
+   * string algorithmic parameters. */
+
+ };  // end( str_par_type_InvestmentF )
 
 /**@} ----------------------------------------------------------------------*/
 /*------------- CONSTRUCTING AND DESTRUCTING InvestmentFunction ------------*/
@@ -567,23 +604,24 @@ class InvestmentFunction : public C05Function , public Block {
  /** Set a given integer (int) numerical parameter. InvestmentFunctiontakes
   * care of the following parameters:
   *
-  * - intGPMaxSz: This parameter specifies the maximum number of
-  *               linearizations that can be stored in the global pool. The
-  *               default value for this parameter is defined by the
-  *               C05Function.
+  * - #intGPMaxSz: This parameter specifies the maximum number of
+  *                linearizations that can be stored in the global pool. The
+  *                default value for this parameter is defined by the
+  *                C05Function.
   *
-  * - intComputeLinearization: This parameter indicates whether linearizations
-  *                            must be computed. The default value is 1, which
-  *                            means that linearizations are computed.
+  * - #intComputeLinearization: This parameter indicates whether
+  *                             linearizations must be computed. The default
+  *                             value is 1, which means that linearizations
+  *                             are computed.
   *
-  * - intOutputSolution: This parameter indicates whether the solution of each
-  *                      UCBlock must be output. If the value for this
-  *                      parameter is nonzero, then part of the primal and
-  *                      dual solutions obtained for each UCBlock for each
-  *                      scenario is output while this InvestmentFunction is
-  *                      being compute()-ed. The default value of this
-  *                      parameter is 0, which means that no solution is
-  *                      output.
+  * - #intOutputSolution: This parameter indicates whether the solution of
+  *                       each UCBlock must be output. If the value for this
+  *                       parameter is nonzero, then part of the primal and
+  *                       dual solutions obtained for each UCBlock for each
+  *                       scenario is output while this InvestmentFunction is
+  *                       being compute()-ed. The default value of this
+  *                       parameter is 0, which means that no solution is
+  *                       output.
   *
   * Any other parameter is handled by the C05Function.
   *
@@ -599,7 +637,7 @@ class InvestmentFunction : public C05Function , public Block {
   * care of the following parameters. Any other parameter is handled by the
   * C05Function.
   *
-  * - dblAAccMlt
+  * - #dblAAccMlt
   *
   * @param par The parameter to be set.
   *
@@ -615,14 +653,51 @@ class InvestmentFunction : public C05Function , public Block {
   }
  }
 
+/*--------------------------------------------------------------------------*/
+ /// set a given string parameter
+ /** Set a given string parameter. InvestmentFunction takes care of the
+  * following parameters. Any other parameter is handled by the C05Function.
+  *
+  * - #strOutputFilename
+  *
+  * @param par The parameter to be set.
+  *
+  * @return The value of the parameter. */
+
+ void set_par( idx_type par , std::string && value ) override {
+  switch( par ) {
+   case( strOutputFilename ):
+    f_output_filename = std::move( value );
+    break;
+   default: C05Function::set_par( par , value );
+  }
+ }
+
 /** @} ---------------------------------------------------------------------*/
 /*------------------- METHODS FOR HANDLING THE PARAMETERS ------------------*/
 /*--------------------------------------------------------------------------*/
 /** @name Handling the parameters of the InvestmentFunction
  *  @{ */
 
+ /// get the number of int parameters
+ /** Get the number of int parameters.
+  *
+  * @return The number of int parameters.
+  */
+
  [[nodiscard]] idx_type get_num_int_par() const override {
-  return( intLastInvestmentFPar );
+  return( intLastParInvestmentF );
+ }
+
+/*--------------------------------------------------------------------------*/
+ /// get the number of string parameters
+ /** Get the number of string parameters.
+  *
+  * @return The number of string parameters.
+  */
+
+ idx_type get_num_str_par( void ) const override {
+  return( idx_type( strLastParInvestmentF ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -631,11 +706,11 @@ class InvestmentFunction : public C05Function , public Block {
  /** Get a specific integer (int) numerical parameter. InvestmentFunction
   * takes care of the following parameters:
   *
-  * - intGPMaxSz
+  * - #intGPMaxSz
   *
-  * - intComputeLinearization
+  * - #intComputeLinearization
   *
-  * - intOutputSolution
+  * - #intOutputSolution
   *
   * Any other parameter is handled by the C05Function.
   *
@@ -657,7 +732,7 @@ class InvestmentFunction : public C05Function , public Block {
  /** Get a specific float (double) numerical parameter. InvestmentFunction
   * takes care of the following parameters:
   *
-  * - dblAAccMlt
+  * - #dblAAccMlt
   *
   * Any other parameter is handled by the C05Function.
   *
@@ -675,12 +750,53 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
+ /// get a specific string numerical parameter
+ /** Get a specific string numerical parameter. Please see the
+  * #str_par_type_InvestmentF and #str_par_type_C05F enumerations for a
+  * detailed explanation of the possible parameters.
+  *
+  * @param par The parameter whose value is desired.
+  *
+  * @return The value of the given parameter. */
+
+ const std::string & get_str_par( const idx_type par ) const override {
+  switch( par ) {
+   case( strOutputFilename ): return f_output_filename;
+  }
+  return C05Function::get_str_par( par );
+ }
+
+/*--------------------------------------------------------------------------*/
+
  [[nodiscard]] int get_dflt_int_par( idx_type par ) const override {
   if( par == intComputeLinearization )
    return( 1 );
   if( par == intOutputSolution )
    return( 0 );
   return( C05Function::get_dflt_int_par( par ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ /// get the default value of a string parameter
+ /** Get the default value of the string parameter with given index. Please
+  * see #str_par_type_InvestmentF and #str_par_type_C05F enumerations for a
+  * detailed explanation of the possible parameters.
+  *
+  * @param par The parameter whose default value is desired.
+  *
+  * @return The default value of the given parameter. */
+
+ [[nodiscard]] const std::string & get_dflt_str_par( const idx_type par )
+  const override {
+
+  static const std::vector< std::string > default_values = { "" };
+
+  if( par >= str_par_type_C05F::strLastParC05F &&
+      par < str_par_type_InvestmentF::strLastParInvestmentF )
+   return default_values[ par - str_par_type_C05F::strLastParC05F ];
+
+  return C05Function::get_dflt_str_par( par );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -696,14 +812,76 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
+ /// returns the index of the string parameter with given string name
+ /** This method takes a string, which is assumed to be the name of a string
+  * parameter, and returns its index, i.e., the integer value that can be
+  * used in [set/get]_par() to set/get it.
+  *
+  * @param name The name of the parameter.
+  *
+  * @return The index of the parameter with the given \p name. */
+
+ [[nodiscard]] idx_type str_par_str2idx( const std::string & name )
+  const override {
+  if( name == "strOutputFilename" ) return strOutputFilename;
+  return C05Function::str_par_str2idx( name );
+ }
+
+/*--------------------------------------------------------------------------*/
+
  [[nodiscard]] const std::string & int_par_idx2str( idx_type idx )
   const override {
   static const std::vector< std::string > pars = { "intComputeLinearization" ,
                                                    "intOutputSolution" };
-  if( ( idx >= intComputeLinearization ) && ( idx < intLastInvestmentFPar ) )
+  if( ( idx >= intComputeLinearization ) && ( idx < intLastParInvestmentF ) )
    return( pars[ idx - intComputeLinearization ] );
   return( C05Function::int_par_idx2str( idx ) );
  }
+
+/*--------------------------------------------------------------------------*/
+
+ /// returns the string name of the string parameter with given index
+ /** This method takes a string parameter index, i.e., the integer value that
+  * can be used in [set/get]_par() [see above] to set/get it, and returns its
+  * "string name".
+  *
+  * @param idx The index of the parameter.
+  *
+  * @return The name of the parameter with the given index \p idx. */
+
+ const std::string & str_par_idx2str( const idx_type idx ) const override {
+
+  static const std::vector<std::string> parameter_names =
+   { "strOutputFilename" };
+
+  if( idx >= str_par_type_C05F::strLastParC05F &&
+      idx < str_par_type_InvestmentF::strLastParInvestmentF )
+   return parameter_names[ idx - str_par_type_C05F::strLastParC05F ];
+
+  return C05Function::str_par_idx2str( idx );
+ }
+
+/** @} ---------------------------------------------------------------------*/
+/*-------- METHODS FOR HANDLING THE State OF THE InvestmentFunction --------*/
+/*--------------------------------------------------------------------------*/
+/** @name Handling the State of the InvestmentFunction
+ */
+
+ State * get_State( void ) const override;
+
+/*--------------------------------------------------------------------------*/
+
+ void put_State( const State & state ) override;
+
+/*--------------------------------------------------------------------------*/
+
+ void put_State( State && state ) override;
+
+/*--------------------------------------------------------------------------*/
+
+ void serialize_State( netCDF::NcGroup & group ,
+		       const std::string & sub_group_name = "" )
+  const override;
 
 /**@} ----------------------------------------------------------------------*/
 /*----------------- METHODS FOR MANAGING THE "IDENTITY" --------------------*/
@@ -1077,6 +1255,11 @@ class InvestmentFunction : public C05Function , public Block {
  bool has_linearization( bool diagonal = true ) override final;
 
 /*--------------------------------------------------------------------------*/
+ /// compute a new linearization for this InvestmentFunction
+
+ bool compute_new_linearization( bool diagonal = true ) override;
+
+/*--------------------------------------------------------------------------*/
  /// store a linearization in the global pool
 
  void store_linearization( Index name , ModParam issueMod = eModBlck )
@@ -1339,7 +1522,7 @@ class InvestmentFunction : public C05Function , public Block {
 
  void * f_id; ///< the "identity" of the InvestmentFunction
 
- double f_value;
+ FunctionValue f_value;
  ///< the value of this InvestmentFunction after compute() is called
 
  std::vector< Index > v_block_indices_map;
@@ -1375,6 +1558,21 @@ class InvestmentFunction : public C05Function , public Block {
  std::vector< double > v_lower_bound;
  ///< lower bound on the value of the active variables
 
+ MultiVector v_A;
+ ///< the coefficient matrix of the linear constraints
+
+ RealVector v_constraints_lower_bound;
+ ///< the lower bound of the linear constraints
+
+ RealVector v_constraints_upper_bound;
+ ///< the upper bound of the linear constraints
+
+ ViolatedConstraint f_violated_constraint;
+ ///< it indicates which linear constraint has been violated
+
+ std::string f_output_filename;
+ ///< name of the file into which the variable and function values are output
+
 /*--------------------------------------------------------------------------*/
 /*--------------------- PRIVATE PART OF THE CLASS --------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -1401,6 +1599,90 @@ class InvestmentFunction : public C05Function , public Block {
   virtual ~GlobalPool() {}
 
 /*--------------------------------------------------------------------------*/
+  /// de-serialize a GlobalPool out of the given netCDF::NcGroup
+  /** De-serialize a GlobalPool out of the given netCDF::NcGroup; see
+   * GlobalPool::serialize() for a description of the format.
+   *
+   * @param group a netCDF::NcGroup out of which the GlobalPool will be
+   *        de-serialized. */
+
+  void deserialize( const netCDF::NcGroup & group );
+
+/*--------------------------------------------------------------------------*/
+  /// serialize this GlobalPool into the given netCDF::NcGroup
+  /** This function serializes this GlobalPool into the given
+   * netCDF::NcGroup. The netCDF::NcGroup \p group will contain the following
+   * data:
+   *
+   * - The dimension "InvestmentFunction_MaxGlob" containing 1 + the maximum
+   *   active name in the global pool; this means that there can be only
+   *   InvestmentFunction_MaxGlob nonempty entries in the global pool, and the
+   *   largest possible name of an active entry is InvestmentFunction_MaxGlob -
+   *   1. This variable is optional. If it is not present then 0 (empty
+   *   global pool) is assumed.
+   *
+   * - The variable "InvestmentFunction_Type", of type netCDF::NcByte and
+   *   indexed over the dimension InvestmentFunction_MaxGlob, which contains
+   *   the vector of booleans specifying the type (diagonal/vertical) of each
+   *   linearization in the global pool. The i-th element of this vector
+   *   indicates the type of the i-th linearization: if it is zero, then the
+   *   linearization is vertical; otherwise, the linearization is
+   *   diagonal. This variable is optional only if InvestmentFunction_MaxGlob
+   *   == 0.
+   *
+   * - The variable "InvestmentFunction_Constants", of type netCDF::NcDouble
+   *   and indexed over the dimension InvestmentFunction_MaxGlob, which
+   *   contains the constants of the linearizations. This variable is optional
+   *   only if InvestmentFunction_MaxGlob == 0.
+   *
+   * - The variable "InvestmentFunction_Coefficients", of type
+   *   netCDF::NcDouble and indexed over the dimension
+   *   "InvestmentFunction_Coefficients_Dim", which contains the coefficients
+   *   of the linearizations whose constants (see the netCDF
+   *   "InvestmentFunction_Constants" variable) are not NaN. This variable is
+   *   optional only if InvestmentFunction_MaxGlob == 0 or there is no i such
+   *   that InvestmentFunction_Constants[ i ] != NaN. Let I = {i_0, i_1, ...,
+   *   i_k} be the set of indices such that InvestmentFunction_Constants[ i ]
+   *   != NaN if and only if i in I and i_j < i_{j+1} for all j in {0, ...,
+   *   k-1}. Then, the linearization coefficients associated with the
+   *   linearization i_j in I is given by
+   *
+   *   ( InvestmentFunction_Coefficients[j*NumVar], ...,
+   *     InvestmentFunction_Coefficients[(j+1)*NumVar - 1] ).
+   *
+   * - The dimension "InvestmentFunction_ImpCoeffNum" containing the number of
+   *   coefficients of the important combination of linearizations. This
+   *   dimension is optional. If it is not provided then 0 (no important
+   *   linearization) is assumed.
+   *
+   * - The variable "InvestmentFunction_ImpCoeffInd", of type netCDF::NcInt
+   *   and indexed over the dimension InvestmentFunction_ImpCoeffNum, which
+   *   contains indices of the linearizations that are part of the important
+   *   combination. This variable is optional only if
+   *   InvestmentFunction_ImpCoeffNum == 0.
+   *
+   * - The variable "InvestmentFunction_ImpCoeffVal", of type netCDF::NcDouble
+   *   and indexed over the dimension InvestmentFunction_ImpCoeffNum, which
+   *   contains the coefficients of the important combination of
+   *   linearizations. The variable is optional only if
+   *   InvestmentFunction_ImpCoeffNum == 0.
+   *
+   * @param group a netCDF::NcGroup into which this GlobalPool will be
+   *        serialized. */
+
+  void serialize( netCDF::NcGroup & group ) const;
+
+/*--------------------------------------------------------------------------*/
+  /// clone the given GlobalPool into this one
+
+  void clone( const GlobalPool & global_pool );
+
+/*--------------------------------------------------------------------------*/
+  /// clone the given GlobalPool into this one
+
+  void clone( GlobalPool && global_pool );
+
+/*--------------------------------------------------------------------------*/
   // resizes the global pool
   /** Resize the global pool to have the given \p size. It is important to
    * notice that
@@ -1418,6 +1700,15 @@ class InvestmentFunction : public C05Function , public Block {
   /// returns the size of the global pool
 
   Index size() const { return( linearization_constants.size() ); }
+
+/*--------------------------------------------------------------------------*/
+  /// returns true if and only if this GlobalPool contains no linearization
+
+  bool empty() const {
+   return std::all_of( linearization_constants.cbegin() ,
+                       linearization_constants.cend() ,
+                       []( const auto v ) { return std::isnan( v ); } );
+  }
 
 /*--------------------------------------------------------------------------*/
   /// stores the given linearization constant and solution in the global pool
@@ -1557,6 +1848,26 @@ class InvestmentFunction : public C05Function , public Block {
    * @param which the names of the linearizations that must be deleted.
    */
   void delete_linearizations( Subset & which , bool ordered );
+
+/*--------------------------------------------------------------------------*/
+
+  void get_linearization_coefficients( FunctionValue * g , Range range ,
+                                       Index name ) const;
+
+/*--------------------------------------------------------------------------*/
+
+  void get_linearization_coefficients( SparseVector & g , Range range ,
+                                       Index name ) const;
+
+/*--------------------------------------------------------------------------*/
+
+  void get_linearization_coefficients( FunctionValue * g , c_Subset & subset ,
+                                       const bool ordered , Index name ) const;
+
+/*--------------------------------------------------------------------------*/
+
+  void get_linearization_coefficients( SparseVector & g , c_Subset & subset ,
+                                       const bool ordered , Index name ) const;
 
 /*--------------------------------------------------------------------------*/
 
@@ -1917,7 +2228,164 @@ class InvestmentFunction : public C05Function , public Block {
  /// Name of the netCDF sub-group containing the description of the inner Block
  inline static const std::string BLOCK_NAME = "SDDPBlock";
 
+/*--------------------------------------------------------------------------*/
+/*---------------------------- PRIVATE METHODS  ----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+ /// returns the value of the i-th linear constraint
+ /** This function returns the value of the i-th linear constraints, i.e.,
+  * a_i'x.
+  *
+  * @param i The index of a linear constraint.
+  *
+  * @return the value of the i-th constraint. */
+
+ double compute_linear_constraint_value( Index i ) const;
+
+/*--------------------------------------------------------------------------*/
+
+ /// returns true if and only if the unverified constraints are satisfied
+ /** This function returns true if and only if the linear constraints that
+  * have not been verified by a previous call to this function are satisfied,
+  * considering the current values of the active Variable of this
+  * InvestmentFunction.
+  *
+  * The linear constraints are verified in order, from the first one to the
+  * last one. Whenever a violated constraint is found, this function returns
+  * false and the remaining constraints are not verified. If this function is
+  * invoked again (before a new call to compute() is made), then only the
+  * remaining (unverified) constraints are verified and, again, up until the
+  * first violated constraints is found.
+  *
+  * @return true if and only if the unverified linear constraints are
+  *         satisfied. */
+
+ bool is_feasible();
+
+/*--------------------------------------------------------------------------*/
+
+ /// returns the worst possible value for this InvestmentFunction
+ /** Thus function returns the worst possible value for this
+  * InvestmentFunction, which is +Inf if the sense of the Objective of the
+  * inner Block is minimization (Objective::eMin) and -Inf otherwise.
+  *
+  * @return +Inf if the sense of the Objective of the inner Block is
+  *         Objective::eMin and -Inf otherwise. */
+
+ FunctionValue worst_value() const {
+  if( get_inner_block_objective_sense() == Objective::eMin )
+   return Inf< FunctionValue >();
+  return -Inf< FunctionValue >();
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ /// output the values of the active Variable of this InvestmentFunction
+ /** This function appends the current values of the active Variable of this
+  * InvestmentFunction into the file whose name is given by the parameter
+  * #strOutputFile (if this name is not empty). */
+
+ void output_variable_values() const;
+
+/*--------------------------------------------------------------------------*/
+
+ /// output the current value of this InvestmentFunction
+ /** This function appends the value of this InvestmentFunction into the file
+  * whose name is given by the parameter #strOutputFile (if this name is not
+  * empty). */
+
+ void output_function_value() const;
+
 };  // end( class( InvestmentFunction ) )
+
+/*--------------------------------------------------------------------------*/
+/*---------------------- CLASS InvestmentFunctionState ---------------------*/
+/*--------------------------------------------------------------------------*/
+/// class to describe the "internal state" of an InvestmentFunction
+/** Derived class from State to describe the "internal state" of an
+ * InvestmentFunction, i.e., its global pool. This means saving the
+ * linearization constants, the types of the linearizations, the associated
+ * Solution, and the coefficients of the important combination of
+ * linearizations. */
+
+class InvestmentFunctionState : public State {
+
+/*----------------------- PUBLIC PART OF THE CLASS -------------------------*/
+
+public:
+
+/*-------------------------------- FRIENDS ---------------------------------*/
+
+ friend InvestmentFunction;
+
+/*---------- CONSTRUCTING AND DESTRUCTING InvestmentFunctionState ----------*/
+
+ /// constructor, doing everything or nothing.
+ /** Constructor of InvestmentFunctionState. If provided with a pointer to a
+  * InvestmentFunction, it immediately copies its "internal state", which is
+  * the only way in which the InvestmentFunctionState can be initialised out
+  * of an existing InvestmentFunction. If nullptr is passed (as by default),
+  * then an "empty" InvestmentFunctionState is constructed that can only be
+  * filled by calling deserialize(). */
+
+ InvestmentFunctionState( const InvestmentFunction * function = nullptr );
+
+/*--------------------------------------------------------------------------*/
+ /// de-serialize a InvestmentFunctionState out of netCDF::NcGroup
+ /** De-serialize a InvestmentFunctionState out of netCDF::NcGroup; see
+  * InvestmentFunctionState::serialize() for a description of the format.
+  *
+  * @param group The netCDF::NcGroup containing the
+  *        InvestmentFunctionState. */
+
+ void deserialize( const netCDF::NcGroup & group ) override;
+
+/*--------------------------------------------------------------------------*/
+ /// destructor
+
+ virtual ~InvestmentFunctionState() {}
+
+/*------ METHODS DESCRIBING THE BEHAVIOR OF A InvestmentFunctionState ------*/
+
+ /// serialize a InvestmentFunctionState into a netCDF::NcGroup
+ /** This method serializes this InvestmentFunctionState into the provided
+  * netCDF::NcGroup, so that it can later be read back by deserialize(). After
+  * the call, \p group will contain the attribute "type", common to all State,
+  * and everything necessary to describe a GlobalPool (see
+  * InvestmentFunction::GlobalPool::serialize()).
+  *
+  * @param group The netCDF::NcGroup into which into which this
+  *        InvestmentFunctionState will be serialized. */
+
+ void serialize( netCDF::NcGroup & group ) const override;
+
+/*-------------------- PROTECTED PART OF THE CLASS -------------------------*/
+
+protected:
+
+/*-------------------------- PROTECTED METHODS -----------------------------*/
+
+ void print( std::ostream &output ) const override {
+  output << "InvestmentFunctionState [" << this
+         << "] with max global pool element " << global_pool.size();
+ }
+
+/*--------------------------- PROTECTED FIELDS -----------------------------*/
+
+ /// global pool of linearizations
+ InvestmentFunction::GlobalPool global_pool;
+
+/*---------------------- PRIVATE PART OF THE CLASS -------------------------*/
+
+private:
+
+/*---------------------------- PRIVATE FIELDS ------------------------------*/
+
+ SMSpp_insert_in_factory_h;
+
+/*--------------------------------------------------------------------------*/
+
+};  // end( class( InvestmentFunctionState ) )
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/

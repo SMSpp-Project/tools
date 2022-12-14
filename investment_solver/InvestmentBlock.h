@@ -7,6 +7,14 @@
  * FRealObjective whose Function is a InvestmentFunction whose active Variable
  * are the ones defined in this InvestmentBlock.
  *
+ * The InvestmentBlock can have explicit box constraints and "implicit" linear
+ * constraints. The box constraints, if present, are a vector of
+ * BoxConstraint, whose size is the number of active Variable and its i-th
+ * element is the box constraint associated with the i-th active Variable.
+ *
+ * Linear constraints are not part of the InvestmentBlock itself, but are
+ * handled by the InvestmentFunction associated with the InvestmentBlock.
+ *
  * \author Rafael Durbano Lobato \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
@@ -129,6 +137,41 @@ public:
   *   InvestmentFunction.
   *
   * - A description of the InvestmentFunction.
+  *
+  * The linear constraints are assumed to have the following form:
+  *
+  *     l_i <= a_i ' x <= u_i, for i in {0, ..., NumConstraints - 1},
+  *
+  * where x denotes the variables of this InvestmentBlock, a_i is the vector
+  * of coefficients of the i-th constraint, a_i'x is the inner product between
+  * a_i and x, and l_i and u_i are the lower and upper bounds determining the
+  * i-th linear constraint. We denote by A the matrix of coefficients, whose
+  * i-th row is a_i. The following dimension and variables describe the
+  * constraints:
+  *
+  * - The dimension "NumConstraints", containing the number of linear
+  *   constraints. This variable is optional. If it is not provided, then it
+  *   is assumed that NumConstraints = 0, i.e., there is no linear constraint
+  *   (except, of course, the box constraints possibly defined by the
+  *   variables LowerBound and UpperBound).
+  *
+  * - The variable "Constraints_A", of type netCDF::NcDouble() and indexed
+  *   over the dimensions "NumConstraints" and "NumAssets" (in this order),
+  *   containing the coefficients of the linear constraints. This variable is
+  *   mandatory if NumConstraints > 0. If NumConstraints = 0, this variable is
+  *   ignored.
+  *
+  * - The variable "Constraints_LowerBound", of type netCDF::NcDouble() and
+  *   indexed over the dimension "NumConstraints", containing the lower bound
+  *   of the linear constraints. This variable is optional. If it is not
+  *   provided, then it is assumed that Constraints_LowerBound[i] = -inf for
+  *   each i in {0, ..., NumConstraints - 1}.
+  *
+  * - The variable "Constraints_UpperBound", of type netCDF::NcDouble() and
+  *   indexed over the dimension "NumConstraints", containing the upper bound
+  *   of the linear constraints. This variable is optional. If it is not
+  *   provided, then it is assumed that Constraints_UpperBound[i] = +inf for
+  *   each i in {0, ..., NumConstraints - 1}.
   *
   * @param group A netCDF::NcGroup holding the required data. */
 
