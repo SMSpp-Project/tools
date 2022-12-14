@@ -31,7 +31,6 @@
 #include "SDDPBlockSolutionOutput.h"
 #include "SDDPGreedySolver.h"
 #include "SMSTypedefs.h"
-#include "StochasticBlock.h"
 #include "ThermalUnitBlock.h"
 #include "UCBlock.h"
 
@@ -1607,8 +1606,6 @@ double InvestmentFunction::compute_kappa_linearization
  double linearization = 0;
 
  const auto gamma = intermittent_unit->get_gamma();
- const auto & max_power = intermittent_unit->get_maximum_power();
- const auto & min_power = intermittent_unit->get_minimum_power();
 
  // Minimum and maximum total power constraints
 
@@ -1647,10 +1644,10 @@ double InvestmentFunction::compute_kappa_linearization
    double bound = 0;
    if( obj_sign * dual > 0 )
     // The dual is associated with the lower bound constraint
-    bound = min_power[ t ];
+    bound = intermittent_unit->get_min_power( t );
    else
     // The dual is associated with the upper bound constraint
-    bound = max_power[ t ];
+    bound = intermittent_unit->get_max_power( t );
 
    linearization += - dual * bound;
   } // end( ! active_power_bound_constraints.empty() )
@@ -1669,8 +1666,9 @@ double InvestmentFunction::compute_kappa_linearization
 
   // Update the linearization coefficient
 
-  linearization +=
-   min_power[ t ] * ( alpha_min ) - max_power[ t ] * ( gamma * alpha_max );
+  linearization += intermittent_unit->get_min_power( t ) * ( alpha_min ) -
+                   intermittent_unit->get_max_power( t ) *
+                   ( gamma * alpha_max );
  }
 
  return linearization;
@@ -1730,7 +1728,9 @@ double InvestmentFunction::compute_kappa_linearization
 
  // Intake and outtake level bounds
 
- const auto & intake_bound_constraints = unit->get_max_intake_constraints();
+ const auto & intake_bounds = unit->get_max_intake_bounds();
+
+ const auto & outtake_bounds = unit->get_max_outtake_bounds();
 
  const auto & max_intake_binary_constraints =
   unit->get_max_intake_binary_constraints();
@@ -1742,8 +1742,7 @@ double InvestmentFunction::compute_kappa_linearization
 
  // Storage level bounds
 
- const auto & storage_level_bound_constraints =
-  unit->get_storage_level_bound_constraints();
+ const auto & storage_level_bounds = unit->get_storage_level_bounds();
 
  // Primary and secondary reserves bounds
 
@@ -1762,10 +1761,10 @@ double InvestmentFunction::compute_kappa_linearization
 
  for( Index t = 0 ; t < time_horizon ; ++t ) {
 
-  const auto min_power = unit->get_minimum_power( t );
-  const auto max_power = unit->get_maximum_power( t );
-  const auto min_storage = unit->get_minimum_storage( t );
-  const auto max_storage = unit->get_maximum_storage( t );
+  const auto min_power = unit->get_min_power( t );
+  const auto max_power = unit->get_max_power( t );
+  const auto min_storage = unit->get_min_storage()[ t ];
+  const auto max_storage = unit->get_max_storage()[ t ];
 
   // Minimum and maximum power output constraint
 
@@ -1776,10 +1775,10 @@ double InvestmentFunction::compute_kappa_linearization
 
   // Intake and outtake level bounds
 
-  if( ! intake_bound_constraints.empty() ) {
+  if( intake_bounds ) {
    double alpha_max = 0;
 
-   const auto dual = intake_bound_constraints[ t ].get_dual();
+   const auto dual = intake_bounds[ t ].get_dual();
 
    // Now determine which bound is associated with the dual value
 
@@ -1791,13 +1790,19 @@ double InvestmentFunction::compute_kappa_linearization
    linearization += - dual * bound;
   }
 
-  if( ! max_intake_binary_constraints.empty() ) {
+  if( outtake_bounds ) {
+
+   // TODO
+
+  }
+
+  if( max_intake_binary_constraints ) {
    const auto alpha_max_u =
     std::abs( max_intake_binary_constraints[ t ].get_dual() );
    linearization += - alpha_max_u * u[ t ].get_value() * max_power;
   }
 
-  if( ! max_outtake_binary_constraints.empty() ) {
+  if( max_outtake_binary_constraints ) {
    const auto alpha_min_u =
     std::abs( max_outtake_binary_constraints[ t ].get_dual() );
    linearization += ( 1.0 - u[ t ].get_value() ) * alpha_min_u * min_power;
@@ -1805,12 +1810,11 @@ double InvestmentFunction::compute_kappa_linearization
 
   // Storage level bounds
 
-  const auto dual = storage_level_bound_constraints[ t ].get_dual();
+  const auto dual = storage_level_bounds[ t ].get_dual();
   auto bound = max_storage;
-  if( obj_sign * dual > 0 ) {
+  if( obj_sign * dual > 0 )
    // The bound is associated with the lower bound constraint
    bound = min_storage;
-  }
 
   // The bound is associated with the upper bound constraint.
   linearization += - dual * bound;
@@ -1819,12 +1823,12 @@ double InvestmentFunction::compute_kappa_linearization
 
   if( ! primary_reserve_bounds.empty() ) {
    const auto gamma_pr = std::abs( primary_reserve_bounds[ t ].get_dual() );
-   linearization += - unit->get_maximum_primary_power( t ) * gamma_pr;
+   linearization += - unit->get_max_primary_power()[ t ] * gamma_pr;
   }
 
   if( ! secondary_reserve_bounds.empty() ) {
    const auto gamma_sc = std::abs( secondary_reserve_bounds[ t ].get_dual() );
-   linearization += - unit->get_maximum_secondary_power( t ) * gamma_sc;
+   linearization += - unit->get_max_secondary_power()[ t ] * gamma_sc;
   }
 
  }

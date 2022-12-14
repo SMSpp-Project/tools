@@ -653,10 +653,10 @@ void print_UCBlock_solver_results( Block * block ) {
 //    }
 //    std::cout << " ]" << std::endl;
 
-    auto max_power = ec_network_block->get_max_power();
-    if( ! max_power.empty() ) {
-     std::cout << "Max power     = [";
-     for( auto & n : max_power )
+    auto peak_power = ec_network_block->get_peak_power();
+    if( ! peak_power.empty() ) {
+     std::cout << "Peak power       = [";
+     for( auto & n : peak_power )
       std::cout << std::setw( 20 ) << n.get_value();
      std::cout << " ]" << std::endl;
     }

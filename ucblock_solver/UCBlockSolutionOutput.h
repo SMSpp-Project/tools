@@ -462,35 +462,9 @@ class UCBlockSolutionOutput
 
   std::ofstream output( filenames[ max_power ].name() , open_mode() );
 
-  auto get_max_power =
-   []( UnitBlock * block , Index g , Index t ) {
-    if( auto b = dynamic_cast< HydroUnitBlock * >( block ) ) {
-     const auto & max_power = b->get_maximum_power();
-     if( t < max_power.size() && g < max_power[ t ].size() )
-      return( max_power[ t ][ g ] );
-    }
-    if( auto b = dynamic_cast< ThermalUnitBlock * >( block ) ) {
-     const auto & max_power = b->get_max_power();
-     if( t < max_power.size() )
-      return( max_power[ t ] );
-    }
-    if( auto b = dynamic_cast< SlackUnitBlock * >( block ) ) {
-     const auto & max_power = b->get_max_power();
-     if( t < max_power.size() )
-      return( max_power[ t ] );
-    }
-    if( auto b = dynamic_cast< IntermittentUnitBlock * >( block ) ) {
-     const auto & max_power = b->get_maximum_power();
-     if( t < max_power.size() )
-      return max_power[ t ];
-    }
-    if( auto b = dynamic_cast< BatteryUnitBlock * >( block ) ) {
-     const auto & max_power = b->get_maximum_power();
-     if( t < max_power.size() )
-      return b->get_maximum_power()[ t ];
-    }
-    return( Inf< double >() );
-   };
+  auto get_max_power = []( UnitBlock * block , Index g , Index t ) {
+   return( block->get_max_power( t , g ) );
+  };
 
   print_generator_data( output , blocks , get_max_power );
 
