@@ -761,6 +761,7 @@ void invest( InvestmentBlock * investment_block ) {
        static int i = 0;
        std::string filename =
         solver_state_output_filename + std::to_string( i++ ) + ".nc4";
+       i %= 2;
        netCDF::NcFile file( filename , netCDF::NcFile::replace );
        investment_solver->serialize_State( file );
        return ThinComputeInterface::eContinue;
