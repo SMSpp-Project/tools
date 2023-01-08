@@ -234,13 +234,18 @@ public:
     return 0;
    };
 
-  const auto & line_names = uc_block->get_line_names();
-  const auto get_line_name = [ &line_names ]( Index line ) {
-   if( line_names.empty() )
-    return "Line_" + std::to_string( line );
-   assert( line < line_names.size() );
-   return line_names[ line ];
+  std::function< std::string( Index ) > get_line_name = []( Index line ) {
+   return "Line_" + std::to_string( line );
   };
+
+  if( auto network_data = uc_block->get_NetworkData() ) {
+   const auto & line_names = network_data->get_line_names();
+   if( ! line_names.empty() )
+    get_line_name = [ &line_names ]( Index line ) {
+     assert( line < line_names.size() );
+     return line_names[ line ];
+    };
+  }
 
   print_line_data( output , blocks , get_power_flow , get_line_name );
 
@@ -409,13 +414,18 @@ public:
     return 0;
    };
 
-  const auto & line_names = uc_block->get_line_names();
-  const auto get_line_name = [ &line_names ]( Index line ) {
-   if( line_names.empty() )
-    return "Line_" + std::to_string( line );
-   assert( line < line_names.size() );
-   return line_names[ line ];
+  std::function< std::string( Index ) > get_line_name = []( Index line ) {
+   return "Line_" + std::to_string( line );
   };
+
+  if( auto network_data = uc_block->get_NetworkData() ) {
+   const auto & line_names = network_data->get_line_names();
+   if( ! line_names.empty() )
+    get_line_name = [ &line_names ]( Index line ) {
+     assert( line < line_names.size() );
+     return line_names[ line ];
+    };
+  }
 
   print_line_data( output , uc_block->get_network_blocks() ,
                    get_power_flow_limit_dual , get_line_name );
@@ -784,13 +794,18 @@ private:
 
   // Header
 
-  const auto & node_names = uc_block->get_node_names();
-  const auto get_node_name = [ &node_names ]( Index node ) {
-   if( node_names.empty() )
-    return "Node_" + std::to_string( node );
-   assert( node < node_names.size() );
-   return node_names[ node ];
-   };
+  std::function< std::string( Index ) > get_node_name = []( Index node ) {
+   return "Node_" + std::to_string( node );
+  };
+
+  if( auto network_data = uc_block->get_NetworkData() ) {
+   const auto & node_names = network_data->get_node_names();
+   if( ! node_names.empty() )
+    get_node_name = [ &node_names ]( Index node ) {
+     assert( node < node_names.size() );
+     return node_names[ node ];
+    };
+  }
 
   if( ! append ) {
    output << "Timestep";
@@ -848,15 +863,20 @@ private:
  template<class F>
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
                   const Index columns , const int precision = 20 ) const {
-  const auto & node_names = block->get_node_names();
-  const auto get_column_name = [ &node_names ]( Index i ) {
-   if( node_names.empty() )
-    return "Node_" + std::to_string( i );
-   assert( i < node_names.size() );
-   return node_names[ i ];
+  std::function< std::string( Index ) > get_node_name = []( Index node ) {
+   return "Node_" + std::to_string( node );
   };
 
-  print_data( output , block , get_data , columns , get_column_name ,
+  if( auto network_data = block->get_NetworkData() ) {
+   const auto & node_names = network_data->get_node_names();
+   if( ! node_names.empty() )
+    get_node_name = [ &node_names ]( Index node ) {
+     assert( node < node_names.size() );
+     return node_names[ node ];
+    };
+  }
+
+  print_data( output , block , get_data , columns , get_node_name ,
               "Timestep" , block->get_time_horizon() , initial_time ,
               precision );
  }
