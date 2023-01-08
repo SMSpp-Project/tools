@@ -218,7 +218,9 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- void print_flow( const std::vector< NetworkBlock * > & blocks ) const {
+ void print_flow( const UCBlock * uc_block ) const {
+
+  const auto & blocks = uc_block->get_network_blocks();
 
   std::ofstream output( filenames[ flow ].name() , open_mode() );
 
@@ -232,15 +234,22 @@ public:
     return 0;
    };
 
-  print_line_data( output , blocks , get_power_flow );
+  const auto & line_names = uc_block->get_line_names();
+  const auto get_line_name = [ &line_names ]( Index line ) {
+   if( line_names.empty() )
+    return "Line_" + std::to_string( line );
+   assert( line < line_names.size() );
+   return line_names[ line ];
+  };
+
+  print_line_data( output , blocks , get_power_flow , get_line_name );
 
   output.close();
  }
 
 /*--------------------------------------------------------------------------*/
 
- void print_node_injection( const std::vector< NetworkBlock * > & blocks )
-  const {
+ void print_node_injection( const UCBlock * uc_block ) const {
 
   std::ofstream output( filenames[ node_injection ].name() , open_mode() );
 
@@ -254,7 +263,7 @@ public:
     return 0;
    };
 
-  print_node_data( output , blocks , get_node_injection );
+  print_node_data( output , uc_block , get_node_injection );
 
   output.close();
  }
@@ -297,7 +306,8 @@ public:
    };
 
   print_data( output , uc_block , get_primary_demand_dual ,
-              uc_block->get_number_primary_zones() , "Zone_" );
+              uc_block->get_number_primary_zones() ,
+              []( Index i ) { return "Zone_" + std::to_string( i ); } );
 
   output.close();
  }
@@ -318,7 +328,8 @@ public:
    };
 
   print_data( output , uc_block , get_secondary_demand_dual ,
-              uc_block->get_number_secondary_zones() , "Zone_" );
+              uc_block->get_number_secondary_zones() ,
+              []( Index i ) { return "Zone_" + std::to_string( i ); } );
 
   output.close();
  }
@@ -339,7 +350,8 @@ public:
    };
 
   print_data( output , uc_block , get_inertia_demand_dual ,
-              uc_block->get_number_inertia_zones() , "Zone_" );
+              uc_block->get_number_inertia_zones() ,
+              []( Index i ) { return "Zone_" + std::to_string( i ); } );
 
   output.close();
  }
@@ -397,8 +409,16 @@ public:
     return 0;
    };
 
+  const auto & line_names = uc_block->get_line_names();
+  const auto get_line_name = [ &line_names ]( Index line ) {
+   if( line_names.empty() )
+    return "Line_" + std::to_string( line );
+   assert( line < line_names.size() );
+   return line_names[ line ];
+  };
+
   print_line_data( output , uc_block->get_network_blocks() ,
-                   get_power_flow_limit_dual );
+                   get_power_flow_limit_dual , get_line_name );
 
   output.close();
  }
@@ -635,7 +655,7 @@ public:
   print_primary_spinning_reserve( unit_blocks );
   print_secondary_spinning_reserve( unit_blocks );
   print_storage( get_unit_blocks_with_storage( uc_block ) );
-  print_flow( uc_block->get_network_blocks() );
+  print_flow( uc_block );
   print_duals( uc_block );
   print_demand( uc_block );
   print_max_power( unit_blocks );
@@ -716,10 +736,11 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- template<class F>
+ template<class F , class G>
  void print_line_data( std::ostream & output ,
                        const std::vector< NetworkBlock * > & blocks ,
-                       const F & get_data , const int precision = 20 ) const {
+                       const F & get_data , const G & get_line_name ,
+                       const int precision = 20 ) const {
   if( blocks.empty() ) return;
 
   auto number_lines = get_number_lines( blocks.front() );
@@ -729,7 +750,7 @@ private:
   if( ! append ) {
    output << "Timestep";
    for( Index line = 0 ; line < number_lines ; ++line )
-    output << separator_character << "Line_" << line;
+    output << separator_character << get_line_name( line );
    output << std::endl;
   }
 
@@ -752,19 +773,29 @@ private:
 /*--------------------------------------------------------------------------*/
 
  template<class F>
- void print_node_data( std::ostream & output ,
-                       const std::vector< NetworkBlock * > & blocks ,
+ void print_node_data( std::ostream & output , const UCBlock * uc_block ,
                        const F & get_data , const int precision = 20 ) const {
+
+  const auto & blocks = uc_block->get_network_blocks();
+
   if( blocks.empty() ) return;
 
   auto number_nodes = get_number_nodes( blocks.front() );
 
   // Header
 
+  const auto & node_names = uc_block->get_node_names();
+  const auto get_node_name = [ &node_names ]( Index node ) {
+   if( node_names.empty() )
+    return "Node_" + std::to_string( node );
+   assert( node < node_names.size() );
+   return node_names[ node ];
+   };
+
   if( ! append ) {
    output << "Timestep";
-   for( Index line = 0 ; line < number_nodes ; ++line )
-    output << separator_character << "Node_" << line;
+   for( Index node = 0 ; node < number_nodes ; ++node )
+    output << separator_character << get_node_name( node ) << node;
    output << std::endl;
   }
 
@@ -786,9 +817,9 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- template<class F>
+ template<class F , class G>
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
-                  const Index columns , const std::string header_prefix ,
+                  const Index columns , const G & get_column_name ,
                   const std::string first_column_header ,
                   const Index rows , const Index initial_row = 0 ,
                   const int precision = 20 ) const {
@@ -797,7 +828,7 @@ private:
   if( ! append ) {
    output << first_column_header;
    for( Index i = 0 ; i < columns ; ++i )
-    output << separator_character << header_prefix << i;
+    output << separator_character << get_column_name( i );
    output << std::endl;
   }
 
@@ -817,18 +848,28 @@ private:
  template<class F>
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
                   const Index columns , const int precision = 20 ) const {
-  print_data( output , block , get_data , columns , "Node_" , "Timestep" ,
-              block->get_time_horizon() , initial_time , precision );
+  const auto & node_names = block->get_node_names();
+  const auto get_column_name = [ &node_names ]( Index i ) {
+   if( node_names.empty() )
+    return "Node_" + std::to_string( i );
+   assert( i < node_names.size() );
+   return node_names[ i ];
+  };
+
+  print_data( output , block , get_data , columns , get_column_name ,
+              "Timestep" , block->get_time_horizon() , initial_time ,
+              precision );
  }
 
 /*--------------------------------------------------------------------------*/
 
- template<class F>
+ template<class F , class G>
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
-                  const Index columns , const std::string header_prefix ,
+                  const Index columns , const G & get_column_name ,
                   const int precision = 20 ) const {
-  print_data( output , block , get_data , columns , header_prefix , "Timestep" ,
-              block->get_time_horizon() , initial_time , precision );
+  print_data( output , block , get_data , columns , get_column_name ,
+              "Timestep" , block->get_time_horizon() , initial_time ,
+              precision );
  }
 
 /*--------------------------------------------------------------------------*/
