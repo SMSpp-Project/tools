@@ -143,7 +143,7 @@ std::string solver_state_output_filename{};
 long num_sub_blocks_per_stage = 1;
 
 bool relax_integrality = false;
-bool eliminate_reduntant_cuts = false;
+bool eliminate_redundant_cuts = false;
 bool simulate_investment = false;
 bool single_scenario = false;
 bool output_solution = false;
@@ -264,7 +264,7 @@ void process_args( int argc , char ** argv ) {
     Configuration::set_filename_prefix( std::string( optarg ) );
     break;
    case 'e':
-    eliminate_reduntant_cuts = true;
+    eliminate_redundant_cuts = true;
     break;
    case 'l':
     cuts_filename = std::string( optarg );
@@ -680,7 +680,7 @@ void invest( InvestmentBlock * investment_block ) {
 
   // Eliminate redundant cuts if it is desired
 
-  if( eliminate_reduntant_cuts )
+  if( eliminate_redundant_cuts )
    CutProcessing().remove_redundant_cuts( sddp_block );
  }
 
@@ -944,7 +944,7 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
    // Eliminate redundant cuts if it is desired
 
-   if( eliminate_reduntant_cuts )
+   if( eliminate_redundant_cuts )
     CutProcessing().remove_redundant_cuts( sddp_block );
   }
 
@@ -1394,7 +1394,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   }
   else if( dynamic_cast< NetworkBlock * >( inner_sub_block ) ) {
    /* TODO Dual solutions of the NetworkBlocks are necessary only if there are
-    * transmission lines that are subject to invesment. Since BundleSolver
+    * transmission lines that are subject to investment. Since BundleSolver
     * currently does not provide solutions for easy components, the
     * NetworkBlock must be treated as a hard component. Once this feature is
     * implemented by BundleSolver, the NetworkBlock can become an easy
@@ -1645,7 +1645,7 @@ void process_block_file( const netCDF::NcFile & file ) {
 
    // Eliminate redundant cuts if it is desired
 
-   if( eliminate_reduntant_cuts )
+   if( eliminate_redundant_cuts )
     CutProcessing().remove_redundant_cuts( sddp_block );
   }
 
