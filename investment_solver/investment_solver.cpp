@@ -742,15 +742,17 @@ void invest( InvestmentBlock * investment_block ) {
    netCDF::NcFile file;
    try {
     file.open( solver_state_input_filename , netCDF::NcFile::read );
+    auto state = State::new_State( file );
+    investment_solver->put_State( *state );
+    delete state;
    } catch( netCDF::exceptions::NcException & e ) {
-    std::cerr << "Cannot open State file " << solver_state_input_filename
-              << std::endl;
-    exit( 1 );
+    std::cout << "Warning: It was not possible to open the State file '"
+              << solver_state_input_filename << "'. The State of the Solver "
+              << "will not be loaded." << std::endl;
+   } catch( const std::exception& e ) {
+    std::cout << "Warning: An error occurred while loading the Solver State: '"
+              << e.what() << "'." << std::endl;
    }
-
-   auto state = State::new_State( file );
-   investment_solver->put_State( *state );
-   delete state;
   }
 
   if( ! solver_state_output_filename.empty() ) {
@@ -761,6 +763,7 @@ void invest( InvestmentBlock * investment_block ) {
        static int i = 0;
        std::string filename =
         solver_state_output_filename + std::to_string( i++ ) + ".nc4";
+       i %= 2;
        netCDF::NcFile file( filename , netCDF::NcFile::replace );
        investment_solver->serialize_State( file );
        return ThinComputeInterface::eContinue;
