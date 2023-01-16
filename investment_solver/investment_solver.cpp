@@ -490,9 +490,10 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
            " and " + std::to_string( stage ) +
            " do not have the same structure." ) );
 
- if( single_scenario ) {
-  // The only way to update the initial up and down time is when there is a
-  // single scenario.
+ if( simulate_investment && single_scenario ) {
+  // One case where we can safely update the initial up and downtime is when
+  // we are simulating a single scenario considering the simulation-based
+  // investment function.
   auto init_up_down_time = compute_init_up_down_time
    ( sddp_block , previous_unit , unit , stage );
 
