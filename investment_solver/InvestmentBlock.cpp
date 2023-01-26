@@ -236,7 +236,7 @@ void InvestmentBlock::serialize( netCDF::NcGroup & group ) const {
 
 bool InvestmentBlock::is_feasible( bool useabstract , Configuration * fsbc ) {
  if( v_variables.empty() )
-  return true;
+  return( true );
 
  // Retrieve the tolerance.
 
@@ -257,10 +257,10 @@ bool InvestmentBlock::is_feasible( bool useabstract , Configuration * fsbc ) {
     continue;
    constraint.compute();
    if( constraint.abs_viol() > tolerance )
-    return false;
+    return( false );
   }
 
-  return true;
+  return( true );
  }
 
  // Check the "physical representation"
@@ -268,14 +268,14 @@ bool InvestmentBlock::is_feasible( bool useabstract , Configuration * fsbc ) {
  for( Index i = 0 ; i < v_lower_bound.size() ; ++i )
   if( v_lower_bound[ i ] > -Inf< double >() )
    if( v_variables[ i ].get_value() < v_lower_bound[ i ] - tolerance )
-    return false;
+    return( false );
 
  for( Index i = 0 ; i < v_upper_bound.size() ; ++i )
   if( v_upper_bound[ i ] < Inf< double >() )
    if( v_variables[ i ].get_value() > v_upper_bound[ i ] + tolerance )
-    return false;
+    return( false );
 
- return true;
+ return( true );
 }
 
 /*--------------------------------------------------------------------------*/

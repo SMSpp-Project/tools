@@ -279,7 +279,7 @@ public:
   * @return The number of Variable of this InvestmentBlock. */
 
  Index get_number_variables() const {
-  return v_variables.size();
+  return( v_variables.size() );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -292,7 +292,7 @@ public:
   *         this InvestmentBlock. */
 
  const std::vector< ColVariable > & get_variables() const {
-  return v_variables;
+  return( v_variables );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -309,27 +309,27 @@ public:
   variable_values.reserve( v_variables.size() );
   for( const auto & variable : v_variables )
    variable_values.push_back( variable.get_value() );
-  return variable_values;
+  return( variable_values );
  }
 
 /*--------------------------------------------------------------------------*/
 
  Function * get_function() const {
-  return objective.get_function();
+  return( objective.get_function() );
  }
 
 /*--------------------------------------------------------------------------*/
 
  /// returns the lower bound on each Variable
  const std::vector< double > & get_variable_lower_bound() const {
-  return v_lower_bound;
+  return( v_lower_bound );
  }
 
 /*--------------------------------------------------------------------------*/
 
  /// returns the box constraints on the Variable
  const std::vector< BoxConstraint > & get_constraints() const {
-  return v_constraints;
+  return( v_constraints );
  }
 
 /**@} ----------------------------------------------------------------------*/

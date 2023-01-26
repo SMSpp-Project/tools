@@ -235,7 +235,7 @@ class UCBlockSolutionOutput
    };
 
   std::function< std::string( Index ) > get_line_name = []( Index line ) {
-   return "Line_" + std::to_string( line );
+   return( "Line_" + std::to_string( line ) );
   };
 
   if( auto network_data = dynamic_cast< DCNetworkBlock::DCNetworkData * >(
@@ -244,7 +244,7 @@ class UCBlockSolutionOutput
    if( ! line_names.empty() )
     get_line_name = [ &line_names ]( Index line ) {
      assert( line < line_names.size() );
-     return line_names[ line ];
+     return( line_names[ line ] );
     };
   }
 
@@ -313,7 +313,7 @@ class UCBlockSolutionOutput
 
   print_data( output , uc_block , get_primary_demand_dual ,
               uc_block->get_number_primary_zones() ,
-              []( Index i ) { return "Zone_" + std::to_string( i ); } );
+              []( Index i ) { return( "Zone_" + std::to_string( i ) ); } );
 
   output.close();
  }
@@ -335,7 +335,7 @@ class UCBlockSolutionOutput
 
   print_data( output , uc_block , get_secondary_demand_dual ,
               uc_block->get_number_secondary_zones() ,
-              []( Index i ) { return "Zone_" + std::to_string( i ); } );
+              []( Index i ) { return( "Zone_" + std::to_string( i ) ); } );
 
   output.close();
  }
@@ -357,7 +357,7 @@ class UCBlockSolutionOutput
 
   print_data( output , uc_block , get_inertia_demand_dual ,
               uc_block->get_number_inertia_zones() ,
-              []( Index i ) { return "Zone_" + std::to_string( i ); } );
+              []( Index i ) { return( "Zone_" + std::to_string( i ) ); } );
 
   output.close();
  }
@@ -416,7 +416,7 @@ class UCBlockSolutionOutput
    };
 
   std::function< std::string( Index ) > get_line_name = []( Index line ) {
-   return "Line_" + std::to_string( line );
+   return( "Line_" + std::to_string( line ) );
   };
 
   if( auto network_data = dynamic_cast< DCNetworkBlock::DCNetworkData * >(
@@ -425,7 +425,7 @@ class UCBlockSolutionOutput
    if( ! line_names.empty() )
     get_line_name = [ &line_names ]( Index line ) {
      assert( line < line_names.size() );
-     return line_names[ line ];
+     return( line_names[ line ] );
     };
   }
 
@@ -771,7 +771,7 @@ class UCBlockSolutionOutput
   // Header
 
   std::function< std::string( Index ) > get_node_name = []( Index node ) {
-   return "Node_" + std::to_string( node );
+   return( "Node_" + std::to_string( node ) );
   };
 
   if( auto network_data = dynamic_cast< DCNetworkBlock::DCNetworkData * >(
@@ -780,7 +780,7 @@ class UCBlockSolutionOutput
    if( ! node_names.empty() )
     get_node_name = [ &node_names ]( Index node ) {
      assert( node < node_names.size() );
-     return node_names[ node ];
+     return( node_names[ node ] );
     };
   }
 
@@ -841,7 +841,7 @@ class UCBlockSolutionOutput
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
                   const Index columns , const int precision = 20 ) const {
   std::function< std::string( Index ) > get_node_name = []( Index node ) {
-   return "Node_" + std::to_string( node );
+   return( "Node_" + std::to_string( node ) );
   };
 
   if( auto network_data = dynamic_cast< DCNetworkBlock::DCNetworkData * >(
@@ -850,7 +850,7 @@ class UCBlockSolutionOutput
    if( ! node_names.empty() )
     get_node_name = [ &node_names ]( Index node ) {
      assert( node < node_names.size() );
-     return node_names[ node ];
+     return( node_names[ node ] );
     };
   }
 

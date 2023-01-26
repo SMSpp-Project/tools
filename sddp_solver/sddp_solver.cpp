@@ -866,11 +866,11 @@ bool using_thermal_dp_solver( const std::string & config_filename ) {
  for( const auto & solver_name : solver_config->get_SolverNames() )
   if( solver_name == "ThermalUnitDPSolver" ) {
    delete config;
-   return true;
+   return( true );
   }
 
  delete config;
- return false;
+ return( false );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1229,7 +1229,7 @@ int get_int_par( ComputeConfig * compute_config , std::string par_name ) {
 bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
 
  if( ! sddp_solver_config )
-  return false;
+  return( false );
 
  BlockSolverConfig * inner_solver_config = nullptr;
  ComputeConfig * compute_config = nullptr;

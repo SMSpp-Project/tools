@@ -358,7 +358,7 @@ void InvestmentFunction::set_ComputeConfig( ComputeConfig * scfg ) {
 
  if( v_Block.empty() ||
      std::any_of( v_Block.cbegin() , v_Block.cend() ,
-                  []( Block * b ) { return b == nullptr ; } ) )
+                  []( Block * b ) { return( b == nullptr ); } ) )
   throw( std::logic_error( "InvestmentFunction::set_ComputeConfig: the inner "
                            "Block is not present." ) );
 
@@ -501,7 +501,7 @@ void InvestmentFunction::set_par( const idx_type par , const int value ) {
 /*--------------------------------------------------------------------------*/
 
 State * InvestmentFunction::get_State( void ) const {
- return new InvestmentFunctionState( this );
+ return( new InvestmentFunctionState( this ) );
 }  // end( InvestmentFunction::get_State )
 
 /*--------------------------------------------------------------------------*/
@@ -1167,13 +1167,13 @@ Function::FunctionValue InvestmentFunction::get_constant_term( void ) const {
 /*--------------------------------------------------------------------------*/
 
 bool InvestmentFunction::is_convex( void ) const {
- return true;
+ return( true );
 }
 
 /*--------------------------------------------------------------------------*/
 
 bool InvestmentFunction::is_concave( void ) const {
- return false;
+ return( false );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1181,11 +1181,11 @@ bool InvestmentFunction::is_concave( void ) const {
 bool InvestmentFunction::has_linearization( const bool diagonal ) {
  if( diagonal ) {
   f_diagonal_linearization_required = true;
-  return f_has_diagonal_linearization;
+  return( f_has_diagonal_linearization );
  }
  else {
   f_diagonal_linearization_required = false;
-  return f_violated_constraint.first < Inf< Index >();
+  return( f_violated_constraint.first < Inf< Index >() );
  }
 }  // end( InvestmentFunction::has_linearization )
 
@@ -1194,8 +1194,8 @@ bool InvestmentFunction::has_linearization( const bool diagonal ) {
 
 bool InvestmentFunction::compute_new_linearization( bool diagonal ) {
  if( diagonal )
-  return false;
- return ! is_feasible();
+  return( false );
+ return( ! is_feasible() );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1400,7 +1400,7 @@ InvestmentFunction::get_linearization_constant( Index name ) {
     alpha -= v_linearization[ i ] * get_var_value( i );
    }
 
-   return alpha;
+   return( alpha );
   }
   else {
    // Vertical linearization
@@ -1419,23 +1419,23 @@ InvestmentFunction::get_linearization_constant( Index name ) {
    else
     alpha = alpha - v_constraints_upper_bound[ i ];
 
-   return alpha;
+   return( alpha );
   }
  }
  else {
   // Linearization from the global pool
-  return global_pool.get_linearization_constant( name );
+  return( global_pool.get_linearization_constant( name ) );
  }
 
- return 0;
+ return( 0 );
 }  // end( InvestmentFunction::get_linearization_constant )
 
 /*--------------------------------------------------------------------------*/
 
 Function::FunctionValue InvestmentFunction::get_value( void ) const {
  if( f_has_value )
-  return f_value;
- return worst_value();
+  return( f_value );
+ return( worst_value() );
 } // end ( InvestmentFunction::get_value )
 
 /*--------------------------------------------------------------------------*/
@@ -1444,7 +1444,7 @@ double InvestmentFunction::compute_linear_constraint_value( Index i ) const {
  double value = 0;
  for( Index j = 0 ; j < v_A[ i ].size() ; ++j )
   value += v_A[ i ][ j ] * get_var_value( j , false );
- return value;
+ return( value );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1459,16 +1459,16 @@ bool InvestmentFunction::is_feasible( void ) {
   auto constraint_value = compute_linear_constraint_value( i );
   if( constraint_value < v_constraints_lower_bound[ i ] ) {
    f_violated_constraint = { i , eLHS };
-   return false;
+   return( false );
   }
 
   if( constraint_value > v_constraints_upper_bound[ i ] ) {
    f_violated_constraint = { i , eRHS };
-   return false;
+   return( false );
   }
  }
 
- return true;
+ return( true );
 } // end ( InvestmentFunction::is_feasible )
 
 /*--------------------------------------------------------------------------*/
@@ -1490,7 +1490,7 @@ void InvestmentFunction::add_Modification( sp_Mod mod ,
 int InvestmentFunction::get_inner_block_objective_sense() const {
  auto inner_block = get_ucblock( 0 , 0 );
  assert( inner_block );
- return inner_block->get_objective_sense();
+ return( inner_block->get_objective_sense() );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1499,14 +1499,14 @@ UCBlock * InvestmentFunction::get_ucblock( Index stage , Index i ) const {
  assert( i < v_Block.size() );
  auto benders_function = get_benders_function( stage , i );
  assert( benders_function );
- return dynamic_cast< UCBlock * >( benders_function->get_inner_block() );
+ return( dynamic_cast< UCBlock * >( benders_function->get_inner_block() ) );
 }
 
 /*--------------------------------------------------------------------------*/
 
 SDDPBlock * InvestmentFunction::get_sddp_block( Index i ) const {
  assert( i < v_Block.size() );
- return static_cast< SDDPBlock * >( v_Block[ i ] );
+ return( static_cast< SDDPBlock * >( v_Block[ i ] ) );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1517,7 +1517,7 @@ CDASolver * InvestmentFunction::get_ucblock_solver( Index stage ,
   if( ! ucblock->get_registered_solvers().empty() )
    return
     dynamic_cast< CDASolver * > ( ucblock->get_registered_solvers().front() );
- return nullptr;
+ return( nullptr );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1537,7 +1537,7 @@ InvestmentFunction::get_benders_function( Index stage , Index i ) const {
  auto objective = static_cast< FRealObjective * >
   ( benders_block->get_objective() );
 
- return static_cast< BendersBFunction * >( objective->get_function() );
+ return( static_cast< BendersBFunction * >( objective->get_function() ) );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1552,7 +1552,7 @@ Index InvestmentFunction::get_node( Index stage , Index block_index ,
                                     Index generator ) const {
  // i is between 0 and the number of UnitBlock assets - 1.
  const auto i = v_block_indices_map[ block_index ];
- return generator_node_map[ stage ][ i ][ generator ];
+ return( generator_node_map[ stage ][ i ][ generator ] );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1884,7 +1884,7 @@ double InvestmentFunction::compute_scale_linearization
   }
  }
 
- return linearization;
+ return( linearization );
 } // end( InvestmentFunction::compute_scale_linearization )
 
 /*--------------------------------------------------------------------------*/
@@ -1986,7 +1986,7 @@ double InvestmentFunction::compute_kappa_linearization
                    ( gamma * alpha_max );
  }
 
- return linearization;
+ return( linearization );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -2146,7 +2146,7 @@ double InvestmentFunction::compute_kappa_linearization
 
  }
 
- return linearization;
+ return( linearization );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -2506,18 +2506,18 @@ void InvestmentFunction::send_nuclear_modification
 
 Index InvestmentFunction::get_number_scenarios() const {
  if( v_Block.empty() )
-  return 0;
+  return( 0 );
  const auto sddp_block = static_cast< SDDPBlock * >( v_Block.front() );
- return sddp_block->get_scenario_set().size();
+ return( sddp_block->get_scenario_set().size() );
 }
 
 /*--------------------------------------------------------------------------*/
 
 Index InvestmentFunction::get_number_stages() const {
  if( v_Block.empty() )
-  return 0;
+  return( 0 );
  const auto sddp_block = static_cast< SDDPBlock * >( v_Block.front() );
- return sddp_block->get_time_horizon();
+ return( sddp_block->get_time_horizon() );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -2543,7 +2543,7 @@ Index InvestmentFunction::lock_sub_block() {
 
   if( sub_block_index < Inf< Index >() )
    // An unlocked sub-Block has been found. Return its index.
-   return sub_block_index;
+   return( sub_block_index );
   else
    // No sub-Block is available. Wait.
    std::this_thread::sleep_for
@@ -2628,8 +2628,8 @@ bool InvestmentFunction::GlobalPool::is_linearization_there( Index name )
  const {
 
  if( name >= size() || std::isnan( linearization_constants[ name ] ) )
-  return false;
- return true;
+  return( false );
+ return( true );
 }  // end( InvestmentFunction::GlobalPool::is_linearization_there )
 
 /*--------------------------------------------------------------------------*/
@@ -2638,7 +2638,7 @@ bool InvestmentFunction::GlobalPool::is_linearization_vertical( Index name )
  const {
 
  if( name >= size() || std::isnan( linearization_constants[ name ] ) )
-  return false;
+  return( false );
  return( ! is_diagonal[ name ] );
 }  // end( InvestmentFunction::GlobalPool::is_linearization_vertical )
 
@@ -2775,7 +2775,7 @@ void InvestmentFunction::GlobalPool::deserialize
   auto num_constants = std::count_if( std::cbegin( linearization_constants ) ,
                                       std::cend( linearization_constants ) ,
                                       []( FunctionValue v ) {
-                                       return ! std::isnan( v ); } );
+                                       return( ! std::isnan( v ) ); } );
 
   Index num_var = 0;
 
