@@ -575,7 +575,7 @@ std::vector< double > get_default_initial_point( InvestmentBlock * block ) {
 
 std::vector< double > load_initial_point() {
  if( initial_point_filename.empty() )
-  return( {} );
+  return{};
 
  std::ifstream file( initial_point_filename );
 
