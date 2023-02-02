@@ -270,6 +270,11 @@ void print_UCBlock_solver_results( Block * block ) {
    if( auto thermal_unit_block =
     dynamic_cast< ThermalUnitBlock * >( unit_block ) ) {
 
+    if( thermal_unit_block->get_investment_cost() != 0 )
+     std::cout << "Capacity       = " <<
+               thermal_unit_block->get_design().get_value() *
+               thermal_unit_block->get_max_capacity() << std::endl;
+
     auto commitment = thermal_unit_block->get_commitment( 0 );
     std::cout << "Commitment     = [";
     for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
@@ -599,8 +604,9 @@ void print_UCBlock_solver_results( Block * block ) {
 //   }
 //   std::cout << " ]" << std::endl;
 
-   if( auto dc_network_block = dynamic_cast< DCNetworkBlock * >(network_block)
-    ) {
+   if( auto dc_network_block =
+    dynamic_cast< DCNetworkBlock * >(network_block) ) {
+
     auto power_flow = dc_network_block->get_power_flow();
     std::cout << "Power flow       = [";
     for( auto & n : power_flow )
