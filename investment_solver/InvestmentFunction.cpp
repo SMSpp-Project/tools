@@ -1013,7 +1013,7 @@ int InvestmentFunction::compute( bool changedvars ) {
  int error_status = kError;
 
  #pragma omp parallel for reduction( + : f_value )
- for( int scenario = 0 ; scenario < num_scenarios ; ++scenario ) {
+ for( int scenario = 0 ; scenario < int( num_scenarios ) ; ++scenario ) {
 
   if( interrupt_loop )
    continue;
@@ -1458,14 +1458,33 @@ bool InvestmentFunction::is_feasible( void ) {
 
  for( Index i = start ; i < v_A.size() ; ++i ) {
   auto constraint_value = compute_linear_constraint_value( i );
-  if( constraint_value < v_constraints_lower_bound[ i ] ) {
-   f_violated_constraint = { i , eLHS };
-   return false;
+
+  // Lower bound constraint
+  {
+   auto lower_violation = v_constraints_lower_bound[ i ] - constraint_value;
+   if( lower_violation > 0 ) {
+    lower_violation /=
+     std::max( decltype( v_constraints_lower_bound )::value_type( 1 ) ,
+               std::abs( v_constraints_lower_bound[ i ] ) );
+    if( lower_violation > f_constraints_tolerance ) {
+     f_violated_constraint = { i , eLHS };
+     return false;
+    }
+   }
   }
 
-  if( constraint_value > v_constraints_upper_bound[ i ] ) {
-   f_violated_constraint = { i , eRHS };
-   return false;
+  // Upper bound constraint
+  {
+   auto upper_violation = constraint_value - v_constraints_upper_bound[ i ];
+   if( upper_violation > 0 ) {
+    upper_violation /=
+     std::max( decltype( v_constraints_upper_bound )::value_type( 1 ) ,
+               std::abs( v_constraints_upper_bound[ i ] ) );
+    if( upper_violation > f_constraints_tolerance ) {
+     f_violated_constraint = { i , eRHS };
+     return false;
+    }
+   }
   }
  }
 
@@ -1620,7 +1639,7 @@ void InvestmentFunction::build_generator_node_map() {
 
     const auto index = std::distance( block_indices.cbegin() , it );
 
-    if( index == block_indices.size() ) {
+    if( index == decltype( index)( block_indices.size() ) ) {
      // This UnitBlock is not subject to investment.
      elc_generator += num_generators;
      continue;
