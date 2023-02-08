@@ -1526,6 +1526,9 @@ class InvestmentFunction : public C05Function , public Block {
  FunctionValue f_value;
  ///< the value of this InvestmentFunction after compute() is called
 
+ double f_constraints_tolerance = 1.0e-6;
+ ///< tolerance to declare feasible a linear constraint
+
  std::vector< Index > v_block_indices_map;
  ///< map the index of an UnitBlock to the index of the asset under investment
 
