@@ -1467,7 +1467,7 @@ bool InvestmentFunction::is_feasible( void ) {
                std::abs( v_constraints_lower_bound[ i ] ) );
     if( lower_violation > f_constraints_tolerance ) {
      f_violated_constraint = { i , eLHS };
-     return false;
+     return( false );
     }
    }
   }
@@ -1481,7 +1481,7 @@ bool InvestmentFunction::is_feasible( void ) {
                std::abs( v_constraints_upper_bound[ i ] ) );
     if( upper_violation > f_constraints_tolerance ) {
      f_violated_constraint = { i , eRHS };
-     return false;
+     return( false );
     }
    }
   }
