@@ -927,6 +927,7 @@ int InvestmentFunction::compute( bool changedvars ) {
 
  output_variable_values();
 
+ reset_linearization();
  f_has_diagonal_linearization = false;
  f_has_value = false;
 
@@ -996,7 +997,6 @@ int InvestmentFunction::compute( bool changedvars ) {
 
  const auto num_scenarios = get_number_scenarios();
  f_value = 0.0;
- reset_linearization();
 
  const auto saved_f_ignore_modifications = f_ignore_modifications;
  f_ignore_modifications = true;
@@ -1185,10 +1185,20 @@ bool InvestmentFunction::has_linearization( const bool diagonal ) {
  }
  else {
   f_diagonal_linearization_required = false;
-  return( f_violated_constraint.first < Inf< Index >() );
+
+  if( f_violated_constraint.first < Inf< Index >() ) {
+   // A constraint has been violated. Compute the vertical linearization.
+   assert( f_violated_constraint.first < v_A.size() );
+   const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+   const auto i = f_violated_constraint.first;
+   for( Index j = 0 ; j < Index( v_x.size() ) ; ++j )
+    v_linearization[ j ] = sign * v_A[ i ][ j ];
+   return( true );
+  }
+
+  return( false );
  }
 }  // end( InvestmentFunction::has_linearization )
-
 
 /*--------------------------------------------------------------------------*/
 
