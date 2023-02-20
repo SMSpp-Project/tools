@@ -645,6 +645,10 @@ void invest( InvestmentBlock * investment_block ) {
  auto investment_function = static_cast< InvestmentFunction * >
   ( investment_block->get_function() );
 
+ // Possibly output the solution
+ investment_function->
+  set_par( InvestmentFunction::intOutputSolution , output_solution );
+
  for( Index i = 0 ; i < investment_function->get_number_nested_Blocks() ;
       ++i ) {
 
@@ -713,10 +717,6 @@ void invest( InvestmentBlock * investment_block ) {
   // Disable the computation of linearization
   investment_function->
    set_par( InvestmentFunction::intComputeLinearization , 0 );
-
-  // Possibly output the solution
-  investment_function->
-   set_par( InvestmentFunction::intOutputSolution , output_solution );
 
   // Simulate
   auto objective =
