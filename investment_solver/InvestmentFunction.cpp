@@ -981,8 +981,8 @@ int InvestmentFunction::compute( bool changedvars ) {
   f_has_value = true;
   f_value = worst_value();
   output_function_value();
-  handle_events( eBeforeTermination );
   f_status = kOK;
+  handle_events( eBeforeTermination );
   return( f_status );
  }
 
@@ -1002,8 +1002,8 @@ int InvestmentFunction::compute( bool changedvars ) {
   if( ( ! owned[ i ] ) && ( ! v_Block[ i ]->lock( f_id ) ) ) {
    f_value = worst_value();
    output_function_value();
-   handle_events( eBeforeTermination );
    f_status = kError; // If this does not work, this is clearly an error.
+   handle_events( eBeforeTermination );
    return( f_status );
   }
  }
@@ -1040,8 +1040,8 @@ int InvestmentFunction::compute( bool changedvars ) {
     "updating the Blocks: '" << e.what() << "'" << std::endl;
    f_value = worst_value();
    output_function_value();
-   handle_events( eBeforeTermination );
    f_status = kError;
+   handle_events( eBeforeTermination );
    return( f_status );
   }
  }
@@ -1061,9 +1061,6 @@ int InvestmentFunction::compute( bool changedvars ) {
  bool interrupt_loop = false;
 
  int error_status = kError;
-
- // The most recent status returned by the Solver of the sub-Block
- int solver_status = kUnEval;
 
  #pragma omp parallel for reduction( + : f_value )
  for( int scenario = 0 ; scenario < int( num_scenarios ) ; ++scenario ) {
@@ -1137,7 +1134,7 @@ int InvestmentFunction::compute( bool changedvars ) {
    unlock_sub_block( i );
   }
 
-  f_status = error_status;
+  f_status = kError;
   f_value = worst_value();
   output_function_value();
   handle_events( eBeforeTermination );
@@ -1194,8 +1191,8 @@ int InvestmentFunction::compute( bool changedvars ) {
  f_has_value = true;
 
  output_function_value();
+ f_status = kOK;
  handle_events( eBeforeTermination );
- f_status = f_status;
  return( f_status );
 
 }  // end( InvestmentFunction::compute )
