@@ -697,6 +697,29 @@ public:
  }
 
 /*--------------------------------------------------------------------------*/
+
+ void copy( const std::string & suffix , const UCBlock * uc_block ) {
+  for( auto filename : filenames ) {
+   if( filename.prefix == "MarginalPollutant_" ) {
+    const auto number_pollutants = uc_block->get_number_pollutants();
+    for( Index p = 0 ; p < number_pollutants ; ++p ) {
+     const auto filename = get_marginal_pollutant_filename( p );
+     if( std::filesystem::is_regular_file( filename ) ) {
+      const auto new_filename = filename + suffix;
+      std::filesystem::copy( filename , new_filename );
+     }
+    }
+   }
+   else {
+    auto new_filename = filename;
+    new_filename.suffix += suffix;
+    if( std::filesystem::is_regular_file( filename.name() ) )
+     std::filesystem::copy( filename.name() , new_filename.name() );
+   }
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
 /*--------------------- PRIVATE PART OF THE CLASS --------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -1119,7 +1142,7 @@ private:
 /*---------------------------- PRIVATE TYPES  ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
- struct filename {
+ struct Filename {
   std::string prefix;
   std::string suffix;
   std::string name() const { return prefix + suffix; };
@@ -1152,7 +1175,7 @@ private:
  char separator_character = ',';
  bool append = false;
  Index initial_time = 0;
- std::vector<filename> filenames;
+ std::vector<Filename> filenames;
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/
