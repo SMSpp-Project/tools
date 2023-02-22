@@ -209,10 +209,12 @@ public:
   UCBlockSolutionOutput solution_output;
   for( Index scenario = 0 ; scenario < num_scenarios ; ++scenario ) {
    if( append )
-    solution_output.copy( suffix , get_UCBlock( block ) );
+    solution_output.copy( get_filename_suffix( scenario ) , suffix ,
+                          get_UCBlock( block ) );
    else
     for( Index stage = 0 ; stage < block->get_time_horizon() ; ++stage )
-     solution_output.copy( suffix , get_UCBlock( block , stage ) );
+     solution_output.copy( get_filename_suffix( scenario , stage ) , suffix ,
+                           get_UCBlock( block , stage ) );
   }
  }
 
@@ -224,10 +226,12 @@ public:
   UCBlockSolutionOutput solution_output;
   for( Index scenario = 0 ; scenario < num_scenarios ; ++scenario ) {
    if( append )
-    solution_output.rename( suffix_to_remove , get_UCBlock( block ) );
+    solution_output.rename( get_filename_suffix( scenario ) ,
+                            suffix_to_remove , get_UCBlock( block ) );
    else
     for( Index stage = 0 ; stage < block->get_time_horizon() ; ++stage )
-     solution_output.copy( suffix_to_remove , get_UCBlock( block , stage ) );
+     solution_output.copy( get_filename_suffix( scenario , stage ) ,
+                           suffix_to_remove , get_UCBlock( block , stage ) );
   }
  }
 

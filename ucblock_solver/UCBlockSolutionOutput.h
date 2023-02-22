@@ -699,8 +699,10 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- void copy( const std::string & suffix , const UCBlock * uc_block ) {
-  for( auto filename : filenames ) {
+ void copy( const std::string & current_suffix , const std::string & suffix ,
+            const UCBlock * uc_block ) {
+  for( auto & filename : filenames ) {
+   filename.suffix = current_suffix;
    if( filename.prefix == filenames[ marginal_pollutant ].prefix ) {
     const auto number_pollutants = uc_block->get_number_pollutants();
     for( Index p = 0 ; p < number_pollutants ; ++p ) {
@@ -722,9 +724,11 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- void rename( const std::string & suffix_to_remove ,
+ void rename( const std::string & suffix_to_keep ,
+              const std::string & suffix_to_remove ,
               const UCBlock * uc_block ) {
-  for( auto filename : filenames ) {
+  for( auto & filename : filenames ) {
+   filename.suffix = suffix_to_keep;
    if( filename.prefix == filenames[ marginal_pollutant ].prefix ) {
     const auto number_pollutants = uc_block->get_number_pollutants();
     for( Index p = 0 ; p < number_pollutants ; ++p ) {
