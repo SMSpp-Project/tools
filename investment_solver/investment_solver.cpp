@@ -116,6 +116,7 @@
 #include "CutProcessing.h"
 #include "InvestmentBlock.h"
 #include "InvestmentFunction.h"
+#include "SDDPBlockSolutionOutput.h"
 
 #ifdef USE_MPI
 #include <boost/mpi/environment.hpp>
@@ -640,6 +641,14 @@ void set_initial_point( InvestmentBlock * investment_block ) {
 
 /*--------------------------------------------------------------------------*/
 
+int get_objective_sense( const SDDPBlock * sddp_block ) {
+ if( ! sddp_block )
+  return Objective::eUndef;
+ return sddp_block->get_objective_sense();
+}
+
+/*--------------------------------------------------------------------------*/
+
 void invest( InvestmentBlock * investment_block ) {
 
  auto investment_function = static_cast< InvestmentFunction * >
@@ -739,6 +748,7 @@ void invest( InvestmentBlock * investment_block ) {
                                 "investment_candidates.txt" );
 
   if( ! solver_state_input_filename.empty() ) {
+   // Load the given State
 
    netCDF::NcFile file;
    try {
@@ -757,6 +767,8 @@ void invest( InvestmentBlock * investment_block ) {
   }
 
   if( ! solver_state_output_filename.empty() ) {
+   // Register an event to save the State of the Solver
+
    investment_solver->set_par( ThinComputeInterface::intEverykIt , 1 );
    investment_solver->set_event_handler
     ( ThinComputeInterface::eEverykIteration ,
@@ -767,6 +779,42 @@ void invest( InvestmentBlock * investment_block ) {
        i %= 2;
        netCDF::NcFile file( filename , netCDF::NcFile::replace );
        investment_solver->serialize_State( file );
+       return ThinComputeInterface::eContinue;
+      } );
+  }
+
+  if( output_solution ) {
+   // Register an event to handle the output
+
+   auto objective_sense =
+    get_objective_sense( investment_function->get_sddp_block( 0 ) );
+
+   const auto sign = ( objective_sense == Objective::eMin ) ? 1 : -1;
+
+   auto best_solution_value =
+    sign * Inf< InvestmentFunction::FunctionValue >();
+
+   investment_function->set_par( ThinComputeInterface::eBeforeTermination , 1 );
+   investment_function->set_event_handler
+    ( ThinComputeInterface::eBeforeTermination ,
+      [ investment_function , &best_solution_value , objective_sense ]() {
+
+       auto solution_improved = [ investment_function , &best_solution_value ,
+                                  objective_sense ]() {
+        if( ( ( objective_sense == Objective::eMin ) &&
+              ( investment_function->get_value() < best_solution_value ) ) ||
+            ( ( objective_sense == Objective::eMax ) &&
+              ( investment_function->get_value() > best_solution_value ) ) ) {
+         best_solution_value = investment_function->get_value();
+         return true;
+        }
+        return false;
+       };
+
+       if( solution_improved() )
+        SDDPBlockSolutionOutput().copy
+         ( investment_function->get_sddp_block( 0 ) , ".best" , true );
+
        return ThinComputeInterface::eContinue;
       } );
   }
