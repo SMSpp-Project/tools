@@ -76,7 +76,7 @@ InvestmentFunction::InvestmentFunction
   AssetTypeVector && asset_type , RealVector && cost ,
   RealVector && disinvestment_cost , Observer * const observer )
  : C05Function( observer ) , f_blocks_are_updated( false ) ,
-   f_solver_status( kUnEval ) , f_diagonal_linearization_required( false ) ,
+   f_status( kUnEval ) , f_diagonal_linearization_required( false ) ,
    f_id( this ) {
 
  set_inner_block( inner_block );
@@ -967,7 +967,7 @@ int InvestmentFunction::compute( bool changedvars ) {
   // TODO We need another flag telling whether the sub-Block has changed since
   // the last call.
   handle_events( eBeforeTermination );
-  return( f_solver_status ); //  nothing changed since last call, nothing to do
+  return( f_status ); //  nothing changed since last call, nothing to do
  }
 
  output_variable_values();
@@ -982,7 +982,8 @@ int InvestmentFunction::compute( bool changedvars ) {
   f_value = worst_value();
   output_function_value();
   handle_events( eBeforeTermination );
-  return( kOK );
+  f_status = kOK;
+  return( f_status );
  }
 
  if( v_Block.empty() )
@@ -1002,7 +1003,8 @@ int InvestmentFunction::compute( bool changedvars ) {
    f_value = worst_value();
    output_function_value();
    handle_events( eBeforeTermination );
-   return( kError ); // If this does not work, this is clearly an error.
+   f_status = kError; // If this does not work, this is clearly an error.
+   return( f_status );
   }
  }
 
@@ -1039,7 +1041,8 @@ int InvestmentFunction::compute( bool changedvars ) {
    f_value = worst_value();
    output_function_value();
    handle_events( eBeforeTermination );
-   return( kError );
+   f_status = kError;
+   return( f_status );
   }
  }
 
@@ -1049,7 +1052,7 @@ int InvestmentFunction::compute( bool changedvars ) {
  const auto saved_f_ignore_modifications = f_ignore_modifications;
  f_ignore_modifications = true;
 
- f_solver_status = kUnEval;
+ f_status = kUnEval;
 
  // This variable indicates whether the loop over the scenarios must be
  // interrupted. The loop is interrupted when either a solution for a
@@ -1058,6 +1061,9 @@ int InvestmentFunction::compute( bool changedvars ) {
  bool interrupt_loop = false;
 
  int error_status = kError;
+
+ // The most recent status returned by the Solver of the sub-Block
+ int solver_status = kUnEval;
 
  #pragma omp parallel for reduction( + : f_value )
  for( int scenario = 0 ; scenario < int( num_scenarios ) ; ++scenario ) {
@@ -1083,7 +1089,7 @@ int InvestmentFunction::compute( bool changedvars ) {
   try {
    #pragma omp critical( InvestmentFunction )
    {
-    f_solver_status = status;
+    f_status = status;
     if( f_compute_linearization )
      update_linearization( sub_block_index );
    }
@@ -1131,11 +1137,11 @@ int InvestmentFunction::compute( bool changedvars ) {
    unlock_sub_block( i );
   }
 
-  f_solver_status = error_status;
+  f_status = error_status;
   f_value = worst_value();
   output_function_value();
   handle_events( eBeforeTermination );
-  return( f_solver_status );
+  return( f_status );
  }
 
  f_ignore_modifications = saved_f_ignore_modifications;
@@ -1189,7 +1195,8 @@ int InvestmentFunction::compute( bool changedvars ) {
 
  output_function_value();
  handle_events( eBeforeTermination );
- return( f_solver_status );
+ f_status = f_status;
+ return( f_status );
 
 }  // end( InvestmentFunction::compute )
 

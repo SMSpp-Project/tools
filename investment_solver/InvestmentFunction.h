@@ -1543,8 +1543,8 @@ class InvestmentFunction : public C05Function , public Block {
  bool f_blocks_are_updated = false;
  ///< indicates whether the sub-Blocks are updated
 
- int f_solver_status = 0;
- ///< the most recent status returned by the Solver of the sub-Block
+ int f_status = 0;
+ ///< the most recent status returned by compute()
 
  bool f_diagonal_linearization_required = false;
  ///< indicates whether a diagonal linearization is required
