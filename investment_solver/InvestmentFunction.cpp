@@ -498,6 +498,46 @@ void InvestmentFunction::set_par( const idx_type par , const int value ) {
 }  // end( InvestmentFunction::set_par )
 
 /*--------------------------------------------------------------------------*/
+/*---------------------- METHODS FOR EVENTS HANDLING -----------------------*/
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::handle_events( int type ) const {
+ for( auto & event : v_events[ type ] )
+  event();
+}
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::reset_event_handler( int type , EventID id ) {
+ if( type != eBeforeTermination )
+  throw( std::invalid_argument( "InvestmentFunction::reset_event_handler: "
+                                "unsupported event type "
+                                + std::to_string( type ) ) );
+
+ if( id >= v_events[ type ].size() )
+  throw( std::invalid_argument( "InvestmentFunction::reset_event_handler: "
+                                "incorrect event id " + std::to_string( id ) +
+                                " for type " + std::to_string( type ) ) );
+
+ static auto do_nothing = []() -> int {
+  return( ThinComputeInterface::eContinue ); };
+
+ if( id == v_events[ type ].size() - 1 ) {
+  // if the event is the last of its type, shorten the vector; moreover, if
+  // any of the previous events is a do_nothing, keep shortening
+  do
+   v_events[ type ].pop_back();
+  while( ( ! v_events[ type ].empty() ) &&
+         ( *( v_events[ type ].back().target < int( * )() > ( ) ) ==
+           do_nothing ) );
+ }
+ else
+  // the event is not the last of its type: replace it with a do_nothing to
+  // avoid messing up with the id-s, which are positions in the vector
+  v_events[ type ][ id ] = do_nothing;
+}
+
+/*--------------------------------------------------------------------------*/
 /*-------- METHODS FOR HANDLING THE State OF THE InvestmentFunction --------*/
 /*--------------------------------------------------------------------------*/
 
@@ -921,10 +961,12 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
 
 int InvestmentFunction::compute( bool changedvars ) {
 
- if( ( ! changedvars ) && f_blocks_are_updated )
+ if( ( ! changedvars ) && f_blocks_are_updated ) {
   // TODO We need another flag telling whether the sub-Block has changed since
   // the last call.
+  handle_events( eBeforeTermination );
   return( f_solver_status ); //  nothing changed since last call, nothing to do
+ }
 
  output_variable_values();
 
@@ -937,6 +979,7 @@ int InvestmentFunction::compute( bool changedvars ) {
   f_has_value = true;
   f_value = worst_value();
   output_function_value();
+  handle_events( eBeforeTermination );
   return( kOK );
  }
 
@@ -956,6 +999,7 @@ int InvestmentFunction::compute( bool changedvars ) {
   if( ( ! owned[ i ] ) && ( ! v_Block[ i ]->lock( f_id ) ) ) {
    f_value = worst_value();
    output_function_value();
+   handle_events( eBeforeTermination );
    return( kError ); // If this does not work, this is clearly an error.
   }
  }
@@ -992,6 +1036,7 @@ int InvestmentFunction::compute( bool changedvars ) {
     "updating the Blocks: '" << e.what() << "'" << std::endl;
    f_value = worst_value();
    output_function_value();
+   handle_events( eBeforeTermination );
    return( kError );
   }
  }
@@ -1087,6 +1132,7 @@ int InvestmentFunction::compute( bool changedvars ) {
   f_solver_status = error_status;
   f_value = worst_value();
   output_function_value();
+  handle_events( eBeforeTermination );
   return( f_solver_status );
  }
 
@@ -1140,6 +1186,7 @@ int InvestmentFunction::compute( bool changedvars ) {
  f_has_value = true;
 
  output_function_value();
+ handle_events( eBeforeTermination );
  return( f_solver_status );
 
 }  // end( InvestmentFunction::compute )
