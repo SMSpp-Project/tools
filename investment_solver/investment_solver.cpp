@@ -833,7 +833,7 @@ void invest( InvestmentBlock * investment_block ) {
             ( var_lower_bound[ i ] > -Inf< double >() ) )
          value += var_lower_bound[ i ];
         best_solution[ i ] = value;
-        best_solution_file << value << std::endl;
+        best_solution_file << std::setprecision( 20 ) << value << std::endl;
        }
 
        // Possibly output information associated with the solution
@@ -845,15 +845,22 @@ void invest( InvestmentBlock * investment_block ) {
       return ThinComputeInterface::eContinue;
      } );
 
-  auto status = investment_solver->compute();
+  // Solve the investment problem
+
+  investment_solver->compute();
 
 #ifdef USE_MPI
   boost::mpi::communicator world;
   if( world.rank() == 0 ) {
 #endif
 
-   SDDPBlockSolutionOutput().rename
-    ( investment_function->get_sddp_block( 0 ) , ".best" , true );
+   // Rename the output files if necessary
+
+   if( output_solution )
+    SDDPBlockSolutionOutput().rename
+     ( investment_function->get_sddp_block( 0 ) , ".best" , true );
+
+   // Output solution information
 
    if( best_solution_value == worst_value )
     std::cout << "No solution has been found." << std::endl;
