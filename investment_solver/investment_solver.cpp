@@ -116,6 +116,7 @@
 #include "CutProcessing.h"
 #include "InvestmentBlock.h"
 #include "InvestmentFunction.h"
+#include "SDDPBlockSolutionOutput.h"
 
 #ifdef USE_MPI
 #include <boost/mpi/environment.hpp>
@@ -139,6 +140,8 @@ std::string solver_state_input_filename{};
 // Prefix to the name of the file that will store the State of the
 // InvestmentBlock Solver
 std::string solver_state_output_filename{};
+
+const std::string best_solution_filename = "Solution_OUT.csv";
 
 long num_sub_blocks_per_stage = 1;
 
@@ -640,10 +643,22 @@ void set_initial_point( InvestmentBlock * investment_block ) {
 
 /*--------------------------------------------------------------------------*/
 
+int get_objective_sense( const SDDPBlock * sddp_block ) {
+ if( ! sddp_block )
+  return Objective::eUndef;
+ return sddp_block->get_objective_sense();
+}
+
+/*--------------------------------------------------------------------------*/
+
 void invest( InvestmentBlock * investment_block ) {
 
  auto investment_function = static_cast< InvestmentFunction * >
   ( investment_block->get_function() );
+
+ // Possibly output the solution
+ investment_function->
+  set_par( InvestmentFunction::intOutputSolution , output_solution );
 
  for( Index i = 0 ; i < investment_function->get_number_nested_Blocks() ;
       ++i ) {
@@ -714,10 +729,6 @@ void invest( InvestmentBlock * investment_block ) {
   investment_function->
    set_par( InvestmentFunction::intComputeLinearization , 0 );
 
-  // Possibly output the solution
-  investment_function->
-   set_par( InvestmentFunction::intOutputSolution , output_solution );
-
   // Simulate
   auto objective =
    static_cast< FRealObjective * >( investment_block->get_objective() );
@@ -739,6 +750,7 @@ void invest( InvestmentBlock * investment_block ) {
                                 "investment_candidates.txt" );
 
   if( ! solver_state_input_filename.empty() ) {
+   // Load the given State
 
    netCDF::NcFile file;
    try {
@@ -757,6 +769,8 @@ void invest( InvestmentBlock * investment_block ) {
   }
 
   if( ! solver_state_output_filename.empty() ) {
+   // Register an event to save the State of the Solver
+
    investment_solver->set_par( ThinComputeInterface::intEverykIt , 1 );
    investment_solver->set_event_handler
     ( ThinComputeInterface::eEverykIteration ,
@@ -771,32 +785,100 @@ void invest( InvestmentBlock * investment_block ) {
       } );
   }
 
-  auto status = investment_solver->compute();
+  // Register an event to keep track of the best solution and to handle the
+  // output.
+
+  std::vector< double > best_solution;
+
+  const auto objective_sense =
+   get_objective_sense( investment_function->get_sddp_block( 0 ) );
+
+  const auto sign = ( objective_sense == Objective::eMin ) ? 1 : -1;
+  const auto worst_value = sign * Inf< InvestmentFunction::FunctionValue >();
+  auto best_solution_value = worst_value;
+
+  investment_function->set_par( ThinComputeInterface::eBeforeTermination , 1 );
+  investment_function->set_event_handler
+   ( ThinComputeInterface::eBeforeTermination ,
+     [ investment_block , investment_function , &best_solution_value ,
+       &best_solution , objective_sense ]() {
+
+      auto solution_improved = [ investment_function , &best_solution_value ,
+                                 objective_sense ]() {
+       const auto function_value = investment_function->get_value();
+       if( ( ( objective_sense == Objective::eMin ) &&
+             ( function_value < best_solution_value ) ) ||
+           ( ( objective_sense == Objective::eMax ) &&
+             ( function_value > best_solution_value ) ) ) {
+        best_solution_value = function_value;
+        return true;
+       }
+       return false;
+      };
+
+      if( solution_improved() ) {
+       // Save the best solution found so far
+
+       std::ofstream best_solution_file( best_solution_filename ,
+                                         std::ios::out );
+
+       const auto & variables = investment_block->get_variables();
+       const auto & var_lower_bound =
+        investment_block->get_variable_lower_bound();
+       best_solution.resize( variables.size() );
+
+       for( Index i = 0 ; i < variables.size() ; ++i ) {
+        auto value = variables[ i ].get_value();
+        if( reformulate_variable_bounds && ( i < var_lower_bound.size() ) &&
+            ( var_lower_bound[ i ] > -Inf< double >() ) )
+         value += var_lower_bound[ i ];
+        best_solution[ i ] = value;
+        best_solution_file << std::setprecision( 20 ) << value << std::endl;
+       }
+
+       // Possibly output information associated with the solution
+       if( output_solution )
+        SDDPBlockSolutionOutput().copy
+         ( investment_function->get_sddp_block( 0 ) , ".best" , true );
+      }
+
+      return ThinComputeInterface::eContinue;
+     } );
+
+  // Solve the investment problem
+
+  investment_solver->compute();
 
 #ifdef USE_MPI
   boost::mpi::communicator world;
   if( world.rank() == 0 ) {
 #endif
 
-   if( investment_solver->has_var_solution() ) {
-    const auto solution_value = investment_solver->get_var_value();
+   // Rename the output files if necessary
+
+   if( output_solution )
+    SDDPBlockSolutionOutput().rename
+     ( investment_function->get_sddp_block( 0 ) , ".best" , true );
+
+   // Output solution information
+
+   if( best_solution_value == worst_value )
+    std::cout << "No solution has been found." << std::endl;
+   else if( best_solution_value == - worst_value )
+    std::cout << "The problem is unbounded." << std::endl;
+   else {
+    // A solution has been found
     std::cout << "Solution value: " << std::setprecision( 20 )
-              << solution_value << std::endl;
-    investment_solver->get_var_solution();
-    std::cout << "Solution: " << std::endl;
-    const auto & variables = investment_block->get_variables();
+              << best_solution_value << std::endl;
     const auto & var_lower_bound = investment_block->get_variable_lower_bound();
-    const auto width = std::to_string( variables.size() ).size();
-    for( Index i = 0 ; i < variables.size() ; ++i ) {
-     auto value = variables[ i ].get_value();
+    const auto width = std::to_string( best_solution.size() ).size();
+    for( Index i = 0 ; i < best_solution.size() ; ++i ) {
+     auto value = best_solution[ i ];
      if( reformulate_variable_bounds && ( i < var_lower_bound.size() ) &&
          ( var_lower_bound[ i ] > -Inf< double >() ) )
       value += var_lower_bound[ i ];
      std::cout << std::setw( width ) << i << " " << value << std::endl;
     }
-   }
-   else {
-    std::cout << "No solution has been found." << std::endl;
    }
 
 #ifdef USE_MPI
