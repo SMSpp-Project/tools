@@ -154,6 +154,7 @@
 #include "ThermalUnitBlock.h"
 #include "UCBlock.h"
 
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 
@@ -700,7 +701,7 @@ public:
 
  void copy( const std::string & suffix , const UCBlock * uc_block ) {
   for( auto filename : filenames ) {
-   if( filename.prefix == "MarginalPollutant_" ) {
+   if( filename.prefix == filenames[ marginal_pollutant ].prefix ) {
     const auto number_pollutants = uc_block->get_number_pollutants();
     for( Index p = 0 ; p < number_pollutants ; ++p ) {
      const auto filename = get_marginal_pollutant_filename( p );
@@ -715,6 +716,29 @@ public:
     new_filename.suffix += suffix;
     if( std::filesystem::is_regular_file( filename.name() ) )
      std::filesystem::copy( filename.name() , new_filename.name() );
+   }
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void rename( const std::string & suffix_to_remove ,
+              const UCBlock * uc_block ) {
+  for( auto filename : filenames ) {
+   if( filename.prefix == filenames[ marginal_pollutant ].prefix ) {
+    const auto number_pollutants = uc_block->get_number_pollutants();
+    for( Index p = 0 ; p < number_pollutants ; ++p ) {
+     const auto new_filename = get_marginal_pollutant_filename( p );
+     const auto old_filename = new_filename + suffix_to_remove;
+     if( std::filesystem::is_regular_file( old_filename ) )
+      std::filesystem::rename( old_filename , new_filename );
+    }
+   }
+   else {
+    const auto new_filename = filename.name();
+    const auto old_filename = new_filename + suffix_to_remove;
+    if( std::filesystem::is_regular_file( old_filename ) )
+     std::filesystem::copy( old_filename , new_filename );
    }
   }
  }

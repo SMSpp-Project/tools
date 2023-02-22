@@ -826,6 +826,9 @@ void invest( InvestmentBlock * investment_block ) {
   if( world.rank() == 0 ) {
 #endif
 
+   SDDPBlockSolutionOutput().rename
+    ( investment_function->get_sddp_block( 0 ) , ".best" , true );
+
    if( investment_solver->has_var_solution() ) {
     const auto solution_value = investment_solver->get_var_value();
     std::cout << "Solution value: " << std::setprecision( 20 )

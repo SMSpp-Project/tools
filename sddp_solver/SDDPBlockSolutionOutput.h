@@ -217,6 +217,21 @@ public:
  }
 
 /*--------------------------------------------------------------------------*/
+
+ static void rename( const SDDPBlock * block , std::string suffix_to_remove ,
+                     bool append = true ) {
+  const auto num_scenarios = block->get_scenario_set().size();
+  UCBlockSolutionOutput solution_output;
+  for( Index scenario = 0 ; scenario < num_scenarios ; ++scenario ) {
+   if( append )
+    solution_output.rename( suffix_to_remove , get_UCBlock( block ) );
+   else
+    for( Index stage = 0 ; stage < block->get_time_horizon() ; ++stage )
+     solution_output.copy( suffix_to_remove , get_UCBlock( block , stage ) );
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
 /*--------------------- PRIVATE PART OF THE CLASS --------------------------*/
 /*--------------------------------------------------------------------------*/
 
