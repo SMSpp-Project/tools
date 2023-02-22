@@ -701,6 +701,7 @@ public:
 
  void copy( const std::string & current_suffix , const std::string & suffix ,
             const UCBlock * uc_block ) {
+  const auto copy_options = std::filesystem::copy_options::overwrite_existing;
   for( auto & filename : filenames ) {
    filename.suffix = current_suffix;
    if( filename.prefix == filenames[ marginal_pollutant ].prefix ) {
@@ -709,7 +710,7 @@ public:
      const auto filename = get_marginal_pollutant_filename( p );
      if( std::filesystem::is_regular_file( filename ) ) {
       const auto new_filename = filename + suffix;
-      std::filesystem::copy( filename , new_filename );
+      std::filesystem::copy( filename , new_filename , copy_options );
      }
     }
    }
@@ -717,7 +718,8 @@ public:
     auto new_filename = filename;
     new_filename.suffix += suffix;
     if( std::filesystem::is_regular_file( filename.name() ) )
-     std::filesystem::copy( filename.name() , new_filename.name() );
+     std::filesystem::copy( filename.name() , new_filename.name() ,
+                            copy_options );
    }
   }
  }
@@ -742,7 +744,7 @@ public:
     const auto new_filename = filename.name();
     const auto old_filename = new_filename + suffix_to_remove;
     if( std::filesystem::is_regular_file( old_filename ) )
-     std::filesystem::copy( old_filename , new_filename );
+     std::filesystem::rename( old_filename , new_filename );
    }
   }
  }
