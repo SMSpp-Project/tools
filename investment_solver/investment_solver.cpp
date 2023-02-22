@@ -141,7 +141,7 @@ std::string solver_state_input_filename{};
 // InvestmentBlock Solver
 std::string solver_state_output_filename{};
 
-const std::string best_solution_filename = "best_solution_OUT.csv";
+const std::string best_solution_filename = "Solution_OUT.csv";
 
 long num_sub_blocks_per_stage = 1;
 
