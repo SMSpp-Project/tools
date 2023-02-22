@@ -89,6 +89,8 @@ InvestmentFunction::InvestmentFunction
 
  f_violated_constraint = { Inf< Index >() , eLHS };
 
+ v_events.resize( max_event_number() );
+
  // default parameter values
 
  f_compute_linearization = get_dflt_int_par( intComputeLinearization );
