@@ -136,10 +136,10 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
 
  if( ! v_x.empty() ) {
   if( num_assets != v_x.size() )
-   throw std::logic_error( "InvestmentFunction::deserialize: the number of "
-                           "assets to invest (" + std::to_string( num_assets ) +
-                           ") is different from the number of active variables "
-                           "(" + std::to_string( v_x.size() ) + ")." );
+   throw( std::logic_error( "InvestmentFunction::deserialize: the number of "
+                            "assets to invest (" + std::to_string( num_assets ) +
+                            ") is different from the number of active variables "
+                            "(" + std::to_string( v_x.size() ) + ")." ) );
  }
 
  // Number of linear constraints
@@ -302,20 +302,20 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
 
  auto inner_block_group = group.getGroup( BLOCK_NAME );
  if( inner_block_group.isNull() )
-  throw std::logic_error( "InvestmentFunction::deserialize: the '" +
-                          BLOCK_NAME + "' group must be present." );
+  throw( std::logic_error( "InvestmentFunction::deserialize: the '" +
+                           BLOCK_NAME + "' group must be present." ) );
 
  std::vector< Block * > blocks;
  for( Index i = 0 ; i < f_num_sub_blocks ; ++i ) {
 
   auto inner_block = new_Block( inner_block_group , this );
   if( ! inner_block )
-   throw std::logic_error( "InvestmentFunction::deserialize: the '" +
-                           BLOCK_NAME + "' group is present "
-                           "but its description is incomplete." );
+   throw( std::logic_error( "InvestmentFunction::deserialize: the '" +
+                            BLOCK_NAME + "' group is present "
+                            "but its description is incomplete." ) );
   if( ! dynamic_cast< SDDPBlock * >( inner_block ) )
-   throw std::logic_error( "InvestmentFunction::deserialize: the inner "
-                           "Block is not an SDDPBlock." );
+   throw( std::logic_error( "InvestmentFunction::deserialize: the inner "
+                            "Block is not an SDDPBlock." ) );
 
   blocks.push_back( inner_block );
  }

@@ -900,7 +900,7 @@ class InvestmentFunction : public C05Function , public Block {
   EventID id = v_events[ type ].size();
   v_events[ type ].push_back( std::move( event ) );
 
-  return id ;
+  return( id );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -915,7 +915,7 @@ class InvestmentFunction : public C05Function , public Block {
 
  /// returns the maximum number of event types supported by the SDDPSolver
  [[nodiscard]] virtual EventID max_event_number() const {
-  return e_last_event_type;
+  return( e_last_event_type );
  }
 
 /** @} ---------------------------------------------------------------------*/

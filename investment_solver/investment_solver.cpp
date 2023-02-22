@@ -645,8 +645,8 @@ void set_initial_point( InvestmentBlock * investment_block ) {
 
 int get_objective_sense( const SDDPBlock * sddp_block ) {
  if( ! sddp_block )
-  return Objective::eUndef;
- return sddp_block->get_objective_sense();
+  return( Objective::eUndef );
+ return( sddp_block->get_objective_sense() );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -811,9 +811,9 @@ void invest( InvestmentBlock * investment_block ) {
            ( ( objective_sense == Objective::eMax ) &&
              ( function_value > best_solution_value ) ) ) {
         best_solution_value = function_value;
-        return true;
+        return( true );
        }
-       return false;
+       return( false );
       };
 
       if( solution_improved() ) {
@@ -842,7 +842,7 @@ void invest( InvestmentBlock * investment_block ) {
          ( investment_function->get_sddp_block( 0 ) , ".best" , true );
       }
 
-      return ThinComputeInterface::eContinue;
+      return( ThinComputeInterface::eContinue );
      } );
 
   // Solve the investment problem
