@@ -141,6 +141,8 @@ std::string solver_state_input_filename{};
 // InvestmentBlock Solver
 std::string solver_state_output_filename{};
 
+const std::string best_solution_filename = "best_solution_OUT.csv";
+
 long num_sub_blocks_per_stage = 1;
 
 bool relax_integrality = false;
@@ -817,6 +819,9 @@ void invest( InvestmentBlock * investment_block ) {
       if( solution_improved() ) {
        // Save the best solution found so far
 
+       std::ofstream best_solution_file( best_solution_filename ,
+                                         std::ios::out );
+
        const auto & variables = investment_block->get_variables();
        const auto & var_lower_bound =
         investment_block->get_variable_lower_bound();
@@ -828,6 +833,7 @@ void invest( InvestmentBlock * investment_block ) {
             ( var_lower_bound[ i ] > -Inf< double >() ) )
          value += var_lower_bound[ i ];
         best_solution[ i ] = value;
+        best_solution_file << value << std::endl;
        }
 
        // Possibly output information associated with the solution
