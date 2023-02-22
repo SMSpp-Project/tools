@@ -134,6 +134,23 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
+ static UCBlock * get_UCBlock( const SDDPBlock * sddp_block ,
+                               Index stage = 0 ) {
+  auto benders_block = static_cast< BendersBlock * >
+   ( static_cast< StochasticBlock * >( sddp_block->get_sub_Block( stage ) )->
+     get_nested_Blocks().front() );
+
+  auto objective = static_cast< FRealObjective * >
+   ( benders_block->get_objective() );
+
+  auto benders_function = static_cast< BendersBFunction * >
+   ( objective->get_function() );
+
+  return static_cast< UCBlock * >( benders_function->get_inner_block() );
+ }
+
+/*--------------------------------------------------------------------------*/
+
  void print( SDDPBlock * block , Index scenario , bool append ) const {
 
   UCBlockSolutionOutput solution_output;
@@ -143,28 +160,15 @@ public:
 
   for( Index stage = 0 ; stage < block->get_time_horizon() ; ++stage ) {
 
-   auto benders_block = static_cast< BendersBlock * >
-    ( static_cast< StochasticBlock * >( block->get_sub_Block( stage ) )->
-      get_nested_Blocks().front() );
-
-   auto objective = static_cast< FRealObjective * >
-    ( benders_block->get_objective() );
-
-   auto benders_function = static_cast< BendersBFunction * >
-    ( objective->get_function() );
-
-   auto uc_block = static_cast< UCBlock * >
-    ( benders_function->get_inner_block() );
+   auto uc_block = get_UCBlock( block , stage );
 
    if( ! append ) {
     solution_output.set_append( false );
     solution_output.set_filenames_suffix
-     ( "_Scen" + std::to_string( scenario ) + "_" + std::to_string( stage )
-       + "_OUT.csv" );
+     ( get_filename_suffix( scenario , stage ) );
    }
    else if( append ) {
-    solution_output.set_filenames_suffix( "_Scen" + std::to_string( scenario ) +
-                                          "_OUT.csv" );
+    solution_output.set_filenames_suffix( get_filename_suffix( scenario ) );
     if( stage == 0 )
      solution_output.set_append( false );
     else
@@ -182,6 +186,53 @@ public:
 
  void set_separator_character( char separator_character ) {
   this->separator_character = separator_character;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ static std::string get_filename_suffix( Index scenario ) {
+   return "_Scen" + std::to_string( scenario ) + "_OUT.csv";
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ static std::string get_filename_suffix( Index scenario , Index stage ) {
+  return "_Scen" + std::to_string( scenario ) + "_" +
+   std::to_string( stage ) + "_OUT.csv";
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ static void copy( const SDDPBlock * block , std::string suffix ,
+                   bool append = true ) {
+  const auto num_scenarios = block->get_scenario_set().size();
+  UCBlockSolutionOutput solution_output;
+  for( Index scenario = 0 ; scenario < num_scenarios ; ++scenario ) {
+   if( append )
+    solution_output.copy( get_filename_suffix( scenario ) , suffix ,
+                          get_UCBlock( block ) );
+   else
+    for( Index stage = 0 ; stage < block->get_time_horizon() ; ++stage )
+     solution_output.copy( get_filename_suffix( scenario , stage ) , suffix ,
+                           get_UCBlock( block , stage ) );
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ static void rename( const SDDPBlock * block , std::string suffix_to_remove ,
+                     bool append = true ) {
+  const auto num_scenarios = block->get_scenario_set().size();
+  UCBlockSolutionOutput solution_output;
+  for( Index scenario = 0 ; scenario < num_scenarios ; ++scenario ) {
+   if( append )
+    solution_output.rename( get_filename_suffix( scenario ) ,
+                            suffix_to_remove , get_UCBlock( block ) );
+   else
+    for( Index stage = 0 ; stage < block->get_time_horizon() ; ++stage )
+     solution_output.copy( get_filename_suffix( scenario , stage ) ,
+                           suffix_to_remove , get_UCBlock( block , stage ) );
+  }
  }
 
 /*--------------------------------------------------------------------------*/

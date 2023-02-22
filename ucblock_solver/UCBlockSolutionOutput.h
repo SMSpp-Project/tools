@@ -154,6 +154,7 @@
 #include "ThermalUnitBlock.h"
 #include "UCBlock.h"
 
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 
@@ -697,6 +698,58 @@ public:
  }
 
 /*--------------------------------------------------------------------------*/
+
+ void copy( const std::string & current_suffix , const std::string & suffix ,
+            const UCBlock * uc_block ) {
+  const auto copy_options = std::filesystem::copy_options::overwrite_existing;
+  for( auto & filename : filenames ) {
+   filename.suffix = current_suffix;
+   if( filename.prefix == filenames[ marginal_pollutant ].prefix ) {
+    const auto number_pollutants = uc_block->get_number_pollutants();
+    for( Index p = 0 ; p < number_pollutants ; ++p ) {
+     const auto filename = get_marginal_pollutant_filename( p );
+     if( std::filesystem::is_regular_file( filename ) ) {
+      const auto new_filename = filename + suffix;
+      std::filesystem::copy( filename , new_filename , copy_options );
+     }
+    }
+   }
+   else {
+    auto new_filename = filename;
+    new_filename.suffix += suffix;
+    if( std::filesystem::is_regular_file( filename.name() ) )
+     std::filesystem::copy( filename.name() , new_filename.name() ,
+                            copy_options );
+   }
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void rename( const std::string & suffix_to_keep ,
+              const std::string & suffix_to_remove ,
+              const UCBlock * uc_block ) {
+  for( auto & filename : filenames ) {
+   filename.suffix = suffix_to_keep;
+   if( filename.prefix == filenames[ marginal_pollutant ].prefix ) {
+    const auto number_pollutants = uc_block->get_number_pollutants();
+    for( Index p = 0 ; p < number_pollutants ; ++p ) {
+     const auto new_filename = get_marginal_pollutant_filename( p );
+     const auto old_filename = new_filename + suffix_to_remove;
+     if( std::filesystem::is_regular_file( old_filename ) )
+      std::filesystem::rename( old_filename , new_filename );
+    }
+   }
+   else {
+    const auto new_filename = filename.name();
+    const auto old_filename = new_filename + suffix_to_remove;
+    if( std::filesystem::is_regular_file( old_filename ) )
+     std::filesystem::rename( old_filename , new_filename );
+   }
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
 /*--------------------- PRIVATE PART OF THE CLASS --------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -1119,7 +1172,7 @@ private:
 /*---------------------------- PRIVATE TYPES  ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
- struct filename {
+ struct Filename {
   std::string prefix;
   std::string suffix;
   std::string name() const { return prefix + suffix; };
@@ -1152,7 +1205,7 @@ private:
  char separator_character = ',';
  bool append = false;
  Index initial_time = 0;
- std::vector<filename> filenames;
+ std::vector<Filename> filenames;
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/

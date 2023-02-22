@@ -861,6 +861,63 @@ class InvestmentFunction : public C05Function , public Block {
   return C05Function::str_par_idx2str( idx );
  }
 
+/**@} ----------------------------------------------------------------------*/
+/*---------------------- METHODS FOR EVENTS HANDLING -----------------------*/
+/*--------------------------------------------------------------------------*/
+/** @name Set event handlers
+ *
+ *  InvestmentFunction manages the following events:
+ *
+ * - eBeforeTermination, called just before compute() terminates.
+ *
+ * Events have to be set with set_event_handler() for them to be called.
+ * @{ */
+
+ /// register a new event handler, returning its id
+ /** The new event handler is added at the back of v_events[ type ]. As the &&
+  * tells, the event handler becomes property of the InvestmentFunction, which
+  * is completely OK if, as one expects, it is defined via a lambda
+  * function. The method returns a unique id for the handler, which can (and
+  * must) be later used to remove the handler before it becomes invalid. Note
+  * that the handler is type-specific, i.e., two event handlers of different
+  * types can have the same id; in other words, the "real" id is the pair (
+  * type , id ). An exception is thrown if the InvestmentFunction is not
+  * capable of handling this type or event for whatever reason, among which
+  * that it has exhausted the available maximum number of event handlers slots
+  * for the given type. */
+
+ EventID set_event_handler( int type , EventHandler && event ) override {
+  if( type != eBeforeTermination )
+   throw( std::invalid_argument( "InvestmentFunction::set_event_handler: "
+                                 "unsupported event type " +
+                                 std::to_string( type ) ) );
+
+  if( v_events[ type ].size() > std::numeric_limits< EventID >::max() )
+   throw( std::invalid_argument( "InvestmentFunction::set_event_handler: too "
+                                 "many event handlers for type" +
+                                 std::to_string( type ) ) );
+
+  EventID id = v_events[ type ].size();
+  v_events[ type ].push_back( std::move( event ) );
+
+  return id ;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ /// unregister an existing event handler
+ /** Removes the event handler with the given id from the list of those
+  * registered for the given type. If there is no event handler with the given
+  * id for the given type, exception will be thrown. */
+ void reset_event_handler( int type , EventID id ) override;
+
+/*--------------------------------------------------------------------------*/
+
+ /// returns the maximum number of event types supported by the SDDPSolver
+ [[nodiscard]] virtual EventID max_event_number() const {
+  return e_last_event_type;
+ }
+
 /** @} ---------------------------------------------------------------------*/
 /*-------- METHODS FOR HANDLING THE State OF THE InvestmentFunction --------*/
 /*--------------------------------------------------------------------------*/
@@ -1431,6 +1488,17 @@ class InvestmentFunction : public C05Function , public Block {
   return v_installed_quantity[ asset ];
  }
 
+/*--------------------------------------------------------------------------*/
+
+ /// returns a pointer to the i-th SDDPBlock
+ /** This function returns a pointer to the i-th SDDPBlock.
+  *
+  * @param i The index of a sub-Block of this InvestmentFunction.
+  *
+  * @return A pointer to the i-th SDDPBlock of this InvestmentFunction. */
+
+ SDDPBlock * get_sddp_block( Index i ) const;
+
 /** @} ---------------------------------------------------------------------*/
 /*-------------------- Methods for handling Modification -------------------*/
 /*--------------------------------------------------------------------------*/
@@ -1475,8 +1543,8 @@ class InvestmentFunction : public C05Function , public Block {
  bool f_blocks_are_updated = false;
  ///< indicates whether the sub-Blocks are updated
 
- int f_solver_status = 0;
- ///< the most recent status returned by the Solver of the sub-Block
+ int f_status = 0;
+ ///< the most recent status returned by compute()
 
  bool f_diagonal_linearization_required = false;
  ///< indicates whether a diagonal linearization is required
@@ -1575,6 +1643,11 @@ class InvestmentFunction : public C05Function , public Block {
 
  std::string f_output_filename;
  ///< name of the file into which the variable and function values are output
+
+ std::vector< std::vector< EventHandler > > v_events;
+ ///< container of event handlers
+ /**< v_events[ h ][ i ] contains the event handler of ID i for the event type
+  * h. */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- PRIVATE PART OF THE CLASS --------------------------*/
@@ -1991,17 +2064,6 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*--------------------------------------------------------------------------*/
 
- /// returns a pointer to the i-th SDDPBlock
- /** This function returns a pointer to the i-th SDDPBlock.
-  *
-  * @param i The index of a sub-Block of this InvestmentFunction.
-  *
-  * @return A pointer to the i-th SDDPBlock of this InvestmentFunction. */
-
- SDDPBlock * get_sddp_block( Index i ) const;
-
-/*--------------------------------------------------------------------------*/
-
  /// reset the BlockConfig of the inner Block to the default one
  void set_default_inner_Block_BlockConfig();
 
@@ -2210,6 +2272,10 @@ class InvestmentFunction : public C05Function , public Block {
 
  /// unlocks the i-th sub-Block
  void unlock_sub_block( Index i );
+
+/*--------------------------------------------------------------------------*/
+
+ void handle_events( int type ) const;
 
 /*--------------------------------------------------------------------------*/
 
