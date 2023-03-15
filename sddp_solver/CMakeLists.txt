@@ -22,6 +22,10 @@ if (TARGET SMS++::UCBlock AND
                           SMS++::SDDPBlock
                           SMS++::MILPSolver)
 
+    if (UNIX AND (NOT APPLE))
+        target_link_libraries(sddp_solver PRIVATE stdc++fs)
+    endif ()
+
     if (TARGET SMS++::BundleSolver)
         target_link_libraries(sddp_solver PRIVATE SMS++::BundleSolver)
     endif ()

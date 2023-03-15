@@ -26,6 +26,10 @@ if (TARGET SMS++::UCBlock)
         target_link_libraries(ucblock_solver PRIVATE SMS++::LagrangianDualSolver)
     endif ()
 
+    if (UNIX AND (NOT APPLE))
+        target_link_libraries(ucblock_solver PRIVATE stdc++fs)
+    endif ()
+
     # Install
     install(TARGETS ucblock_solver
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
