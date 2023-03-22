@@ -91,7 +91,6 @@
  * \copyright &copy; by Rafael Durbano Lobato
  */
 
-#include <filesystem>
 #include <getopt.h>
 #include <iomanip>
 #include <iostream>
@@ -100,7 +99,6 @@
 #include <BatteryUnitBlock.h>
 #include <BendersBlock.h>
 #include <BlockSolverConfig.h>
-#include <CPXMILPSolver.h>
 #include <HydroSystemUnitBlock.h>
 #include <IntermittentUnitBlock.h>
 #include <NetworkBlock.h>
@@ -893,12 +891,12 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
                        bool add_reserve_variables_to_objective ) {
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
-  auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
-  auto benders_block = static_cast<BendersBlock *>
+  auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
+  auto benders_block = static_cast< BendersBlock * >
    ( stochastic_block-> get_nested_Blocks().front() );
-  auto objective = static_cast<FRealObjective *>
+  auto objective = static_cast< FRealObjective * >
    ( benders_block->get_objective() );
-  auto benders_function = static_cast<BendersBFunction *>
+  auto benders_function = static_cast< BendersBFunction * >
    ( objective->get_function() );
   auto inner_block = benders_function->get_inner_block();
 
@@ -920,16 +918,17 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
    // Configure PolyhedralFunctionBlock
    if( auto polyhedral = dynamic_cast< PolyhedralFunctionBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration = new SimpleConfiguration<int>(1);
+    config->f_static_variables_Configuration =
+     new SimpleConfiguration< int >( 1 );
     polyhedral->set_BlockConfig( config );
    }
 
    else if( auto unit = dynamic_cast< SlackUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
     config->f_static_variables_Configuration =
-     new SimpleConfiguration<int>( var_type );
+     new SimpleConfiguration< int >( var_type );
     config->f_static_constraints_Configuration =
-     new SimpleConfiguration<int>( cons_type );
+     new SimpleConfiguration< int >( cons_type );
     unit->set_BlockConfig( config );
    }
 
@@ -938,19 +937,19 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
     config->f_static_variables_Configuration = new SimpleConfiguration<
      std::pair< int , int > >( { negative_prices , var_type } );
     config->f_static_constraints_Configuration =
-     new SimpleConfiguration<int>( cons_type );
+     new SimpleConfiguration< int >( cons_type );
     unit->set_BlockConfig( config );
    }
 
    else if( auto unit = dynamic_cast< ThermalUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
     config->f_static_variables_Configuration =
-     new SimpleConfiguration<int>( var_type );
+     new SimpleConfiguration< int >( var_type );
     config->f_static_constraints_Configuration =
-     new SimpleConfiguration<int>( cons_type );
+     new SimpleConfiguration< int >( cons_type );
 
     if( add_reserve_variables_to_objective )
-     config->f_objective_Configuration = new SimpleConfiguration<int>( 3 );
+     config->f_objective_Configuration = new SimpleConfiguration< int >( 3 );
 
     unit->set_BlockConfig( config );
    }
@@ -963,12 +962,12 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
 void set_log( SDDPBlock * sddp_block , std::ostream * output_stream ) {
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
-  auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
-  auto benders_block = static_cast<BendersBlock *>
+  auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
+  auto benders_block = static_cast< BendersBlock * >
    ( stochastic_block-> get_nested_Blocks().front() );
-  auto objective = static_cast<FRealObjective *>
+  auto objective = static_cast< FRealObjective * >
    ( benders_block->get_objective() );
-  auto benders_function = static_cast<BendersBFunction *>
+  auto benders_function = static_cast< BendersBFunction * >
    ( objective->get_function() );
   auto inner_block = benders_function->get_inner_block();
   for( auto solver : inner_block->get_registered_solvers() )
@@ -1036,7 +1035,7 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Configure block
   auto block_config_group = problem_group.getGroup( "BlockConfig" );
-  auto block_config = static_cast<BlockConfig *>
+  auto block_config = static_cast< BlockConfig * >
    ( BlockConfig::new_Configuration( block_config_group ) );
   if( ! block_config )
    throw( std::logic_error( "BlockConfig group was not properly provided." ) );
@@ -1048,7 +1047,7 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Configure solver
   auto solver_config_group = problem_group.getGroup( "BlockSolver" );
-  auto block_solver_config = static_cast<BlockSolverConfig *>
+  auto block_solver_config = static_cast< BlockSolverConfig * >
    ( BlockSolverConfig::new_Configuration( solver_config_group ) );
   if( ! block_solver_config )
    throw( std::logic_error( "BlockSolver group was not properly provided." ) );
@@ -1395,12 +1394,12 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
  const auto sub_block = sddp_block->get_nested_Block( 0 );
 
- auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
- auto benders_block = static_cast<BendersBlock *>
+ auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
+ auto benders_block = static_cast< BendersBlock * >
   ( stochastic_block-> get_nested_Blocks().front() );
- auto objective = static_cast<FRealObjective *>
+ auto objective = static_cast< FRealObjective * >
   ( benders_block->get_objective() );
- auto benders_function = static_cast<BendersBFunction *>
+ auto benders_function = static_cast< BendersBFunction * >
   ( objective->get_function() );
  auto inner_block = benders_function->get_inner_block();
 
@@ -1760,7 +1759,7 @@ void process_block_file( const netCDF::NcFile & file ) {
     // l <= x <= u by 0 <= x <= u - l.
     auto config = new BlockConfig;
     config->f_static_constraints_Configuration =
-     new SimpleConfiguration<int>( 1 );
+     new SimpleConfiguration< int >( 1 );
 
     investment_block->set_BlockConfig( config );
    }
@@ -1826,7 +1825,7 @@ void process_block_file( const netCDF::NcFile & file ) {
 /*--------------------------------------------------------------------------*/
 
 /// returns the final state (solution) of the system at the given \p stage
-std::vector<double> get_final_state( SDDPBlock * block , Index stage ) {
+std::vector< double > get_final_state( SDDPBlock * block , Index stage ) {
 
  Index state_size = 0;
  for( Index i = 0 ; i < block->get_num_polyhedral_function_per_sub_block() ;
@@ -1835,7 +1834,7 @@ std::vector<double> get_final_state( SDDPBlock * block , Index stage ) {
    block->get_polyhedral_function( stage , i )->get_num_active_var();
  }
 
- std::vector<double> state;
+ std::vector< double > state;
  state.reserve( state_size );
 
  for( Index i = 0 ; i < block->get_num_polyhedral_function_per_sub_block() ;
@@ -1854,7 +1853,7 @@ std::vector<double> get_final_state( SDDPBlock * block , Index stage ) {
 int main( int argc , char ** argv ) {
 
 #ifdef USE_MPI
- boost::mpi::environment env(argc, argv);
+ boost::mpi::environment env( argc , argv );
 #endif
 
  docopt_desc = "SMS++ investment solver.\n";
