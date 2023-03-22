@@ -34,9 +34,8 @@ BlockConfig * default_configure_UCBlock( Block * uc_block ) {
  auto b_config = new RBlockConfig;
 
  for( auto sb : uc_block->get_nested_Blocks() ) {
-  if( ! dynamic_cast< UnitBlock * >( sb ) ) {
+  if( ! dynamic_cast< UnitBlock * >( sb ) )
    continue;
-  }
 
   auto sbc = new RBlockConfig;
 
