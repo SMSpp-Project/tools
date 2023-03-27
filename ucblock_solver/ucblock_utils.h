@@ -282,16 +282,16 @@ void print_UCBlock_solver_results( Block * block ) {
     std::cout << " ]" << std::endl;
 
     // Generate init_t
-    int init_t;
+    Index init_t;
     auto init_up_down_time = thermal_unit_block->get_init_up_down_time();
     auto min_up_time = thermal_unit_block->get_min_up_time();
     auto min_down_time = thermal_unit_block->get_min_down_time();
     if( init_up_down_time > 0 )
      init_t = init_up_down_time >= min_up_time ?
-              0 : ( int ) min_up_time - init_up_down_time;
+              0 : min_up_time - init_up_down_time;
     else
-     init_t = -init_up_down_time >= min_down_time ?
-              0 : ( int ) min_down_time + init_up_down_time;
+     init_t = - init_up_down_time >= min_down_time ?
+              0 : min_down_time + init_up_down_time;
 
     auto startup = thermal_unit_block->get_start_up();
     std::cout << "Start up       = [";

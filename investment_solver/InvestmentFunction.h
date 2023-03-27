@@ -415,7 +415,7 @@ class InvestmentFunction : public C05Function , public Block {
  /// clear method: clears the #v_x vector
  /** Method to "clear" the InvestmentFunction: it clear() the vector
   * #v_x. This destroys the list of "active" Variable without unregistering
-  * from them.  Not that the InvestmentFunction would have to, but an Observer
+  * from them. Not that the InvestmentFunction would have to, but an Observer
   * using it to "implement itself" should. By not having any Variable, the
   * Observer can no longer do that. */
 
@@ -1260,7 +1260,7 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
  /// returns a lower estimate of the InvestmentFunction
- /** This method simply returns get_value().  */
+ /** This method simply returns get_value(). */
 
  FunctionValue get_lower_estimate() const override {
   return( get_value() );
@@ -1268,7 +1268,7 @@ class InvestmentFunction : public C05Function , public Block {
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
  /// returns an upper estimate of the InvestmentFunction
- /** This method simply returns get_value().  */
+ /** This method simply returns get_value(). */
 
  FunctionValue get_upper_estimate() const override {
   return( get_value() );
