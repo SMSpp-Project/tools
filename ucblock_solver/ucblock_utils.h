@@ -272,7 +272,7 @@ void print_UCBlock_solver_results( Block * block ) {
     if( thermal_unit_block->get_investment_cost() != 0 )
      std::cout << "Capacity       = " <<
                thermal_unit_block->get_design().get_value() *
-               thermal_unit_block->get_max_capacity() << std::endl;
+               thermal_unit_block->get_capacity() << std::endl;
 
     auto commitment = thermal_unit_block->get_commitment( 0 );
     std::cout << "Commitment     = [";
@@ -287,11 +287,11 @@ void print_UCBlock_solver_results( Block * block ) {
     auto min_up_time = thermal_unit_block->get_min_up_time();
     auto min_down_time = thermal_unit_block->get_min_down_time();
     if( init_up_down_time > 0 )
-     init_t = init_up_down_time >= min_up_time ?
-              0 : min_up_time - init_up_down_time;
+     init_t = ( init_up_down_time >= min_up_time ?
+                0 : min_up_time - init_up_down_time );
     else
-     init_t = - init_up_down_time >= min_down_time ?
-              0 : min_down_time + init_up_down_time;
+     init_t = ( - init_up_down_time >= min_down_time ?
+                0 : min_down_time + init_up_down_time );
 
     auto startup = thermal_unit_block->get_start_up();
     std::cout << "Start up       = [";
