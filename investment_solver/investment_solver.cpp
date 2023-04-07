@@ -521,10 +521,10 @@ void callback( SDDPBlock * sddp_block , Block::Index stage ) {
  auto previous_uc_block = get_uc_block( sddp_block , stage - 1 );
  auto uc_block = get_uc_block( sddp_block , stage );
 
- std::queue< Block *> blocks;
+ std::queue< Block * > blocks;
  blocks.push( uc_block );
 
- std::queue< Block *> previous_blocks;
+ std::queue< Block * > previous_blocks;
  previous_blocks.push( previous_uc_block );
 
  while( ! blocks.empty() ) {
@@ -900,7 +900,7 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
    ( objective->get_function() );
   auto inner_block = benders_function->get_inner_block();
 
-  std::queue< Block *> blocks;
+  std::queue< Block * > blocks;
   blocks.push( inner_block );
 
   while( ! blocks.empty() ) {

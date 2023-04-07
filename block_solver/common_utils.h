@@ -233,7 +233,7 @@ BlockConfig * get_blockconfig( const std::string & conf_file ) {
 
  std::string name;
  bcf >> eatcomments >> name;
- b_config = dynamic_cast<BlockConfig *> ( Configuration::new_Configuration( name ) );
+ b_config = dynamic_cast< BlockConfig * > ( Configuration::new_Configuration( name ) );
 
  if( ! b_config )
   return( nullptr );
@@ -261,7 +261,7 @@ get_blocksolverconfig( const std::string & conf_file ) {
 
  std::string name;
  scf >> eatcomments >> name;
- s_config = dynamic_cast<BlockSolverConfig *> ( Configuration::new_Configuration( name ) );
+ s_config = dynamic_cast< BlockSolverConfig * > ( Configuration::new_Configuration( name ) );
 
  if( ! s_config )
   return( nullptr );

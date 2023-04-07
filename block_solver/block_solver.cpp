@@ -129,14 +129,14 @@ int main( int argc, char ** argv ) {
 
     // Configure block
     auto bgc = p.second.getGroup( "BlockConfig" );
-    auto b_config = static_cast<BlockConfig *>(BlockConfig::new_Configuration( bgc ));
+    auto b_config = static_cast< BlockConfig * >(BlockConfig::new_Configuration( bgc ));
     if( b_config ) {
      b_config->apply( block );
     }
 
     // Configure solver
     auto bgs = p.second.getGroup( "BlockSolver" );
-    auto s_config = static_cast<BlockSolverConfig *>(BlockSolverConfig::new_Configuration( bgs ));
+    auto s_config = static_cast< BlockSolverConfig * >(BlockSolverConfig::new_Configuration( bgs ));
     if( s_config ) {
 #ifdef USE_DL
      for( const auto & solvername : s_config->get_SolverNames() ) {

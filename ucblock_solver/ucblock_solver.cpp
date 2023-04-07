@@ -20,7 +20,6 @@
 
 #include <Block.h>
 #include <BlockSolverConfig.h>
-
 #include <UCBlock.h>
 
 #include "common_utils.h"
@@ -72,7 +71,7 @@ int main( int argc, char ** argv ) {
  }
 
  // Deserialize block
- auto block = dynamic_cast<UCBlock *>(Block::new_Block( "UCBlock" ));
+ auto block = dynamic_cast< UCBlock * >(Block::new_Block( "UCBlock" ));
  block->deserialize( bg );
 
  //check_UCBlock_data(block);

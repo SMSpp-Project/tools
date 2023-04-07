@@ -572,10 +572,10 @@ void callback( SDDPBlock * sddp_block , Block::Index stage ) {
  auto previous_uc_block = get_uc_block( sddp_block , stage - 1 );
  auto uc_block = get_uc_block( sddp_block , stage );
 
- std::queue< Block *> blocks;
+ std::queue< Block * > blocks;
  blocks.push( uc_block );
 
- std::queue< Block *> previous_blocks;
+ std::queue< Block * > previous_blocks;
  previous_blocks.push( previous_uc_block );
 
  while( ! blocks.empty() ) {
@@ -888,16 +888,16 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
-  auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
-  auto benders_block = static_cast<BendersBlock *>
+  auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
+  auto benders_block = static_cast< BendersBlock * >
    ( stochastic_block-> get_nested_Blocks().front() );
-  auto objective = static_cast<FRealObjective *>
+  auto objective = static_cast< FRealObjective * >
    ( benders_block->get_objective() );
-  auto benders_function = static_cast<BendersBFunction *>
+  auto benders_function = static_cast< BendersBFunction * >
    ( objective->get_function() );
   auto inner_block = benders_function->get_inner_block();
 
-  std::queue< Block *> blocks;
+  std::queue< Block * > blocks;
   blocks.push( inner_block );
 
   while( ! blocks.empty() ) {
@@ -973,12 +973,12 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
 void set_log( SDDPBlock * sddp_block , std::ostream * output_stream ) {
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
-  auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
-  auto benders_block = static_cast<BendersBlock *>
+  auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
+  auto benders_block = static_cast< BendersBlock * >
    ( stochastic_block-> get_nested_Blocks().front() );
-  auto objective = static_cast<FRealObjective *>
+  auto objective = static_cast< FRealObjective * >
    ( benders_block->get_objective() );
-  auto benders_function = static_cast<BendersBFunction *>
+  auto benders_function = static_cast< BendersBFunction * >
    ( objective->get_function() );
   auto inner_block = benders_function->get_inner_block();
   for( auto solver : inner_block->get_registered_solvers() )
@@ -1004,7 +1004,7 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Configure block
   auto block_config_group = problem_group.getGroup( "BlockConfig" );
-  auto block_config = static_cast<BlockConfig *>
+  auto block_config = static_cast< BlockConfig * >
    ( BlockConfig::new_Configuration( block_config_group ) );
   if( ! block_config )
    throw( std::logic_error("BlockConfig group was not properly provided.") );
@@ -1013,7 +1013,7 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Configure solver
   auto solver_config_group = problem_group.getGroup( "BlockSolver" );
-  auto block_solver_config = static_cast<BlockSolverConfig *>
+  auto block_solver_config = static_cast< BlockSolverConfig * >
    ( BlockSolverConfig::new_Configuration( solver_config_group ) );
   if( ! block_solver_config )
    throw( std::logic_error("BlockSolver group was not properly provided.") );
@@ -1431,12 +1431,12 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
  const auto sub_block = sddp_block->get_nested_Block( 0 );
 
- auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
- auto benders_block = static_cast<BendersBlock *>
+ auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
+ auto benders_block = static_cast< BendersBlock * >
   ( stochastic_block-> get_nested_Blocks().front() );
- auto objective = static_cast<FRealObjective *>
+ auto objective = static_cast< FRealObjective * >
   ( benders_block->get_objective() );
- auto benders_function = static_cast<BendersBFunction *>
+ auto benders_function = static_cast< BendersBFunction * >
   ( objective->get_function() );
  auto inner_block = benders_function->get_inner_block();
 
@@ -1660,12 +1660,12 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
        { "get_dual_partial" , get_dual_config->clone() } } );
 
   for( auto sub_block : sddp_block->get_nested_Blocks() ) {
-   auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
-   auto benders_block = static_cast<BendersBlock *>
+   auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
+   auto benders_block = static_cast< BendersBlock * >
     ( stochastic_block-> get_nested_Blocks().front() );
-   auto objective = static_cast<FRealObjective *>
+   auto objective = static_cast< FRealObjective * >
     ( benders_block->get_objective() );
-   auto benders_function = static_cast<BendersBFunction *>
+   auto benders_function = static_cast< BendersBFunction * >
     ( objective->get_function() );
    benders_function->set_ComputeConfig( benders_function_config );
   }

@@ -153,20 +153,20 @@ class InvestmentFunction : public C05Function , public Block {
   bool operator==( const ThinVarDepInterface::v_iterator & rhs )
    const override final {
    #ifdef NDEBUG
-    auto tmp = static_cast<const InvestmentFunction::v_iterator *>( & rhs );
+    auto tmp = static_cast< const InvestmentFunction::v_iterator * >( & rhs );
     return( itr_ == tmp->itr_ );
    #else
-    auto tmp = dynamic_cast<const InvestmentFunction::v_iterator *>( & rhs );
+    auto tmp = dynamic_cast< const InvestmentFunction::v_iterator * >( & rhs );
     return( tmp ? itr_ == tmp->itr_ : false );
    #endif
    }
   bool operator!=( const ThinVarDepInterface::v_iterator & rhs )
    const override final {
    #ifdef NDEBUG
-    auto tmp = static_cast<const InvestmentFunction::v_iterator *>( & rhs );
+    auto tmp = static_cast< const InvestmentFunction::v_iterator * >( & rhs );
     return( itr_ != tmp->itr_ );
    #else
-    auto tmp = dynamic_cast<const InvestmentFunction::v_iterator *>( & rhs );
+    auto tmp = dynamic_cast< const InvestmentFunction::v_iterator * >( & rhs );
     return( tmp ? itr_ != tmp->itr_ : true );
    #endif
    }
@@ -202,11 +202,11 @@ class InvestmentFunction : public C05Function , public Block {
   bool operator==( const ThinVarDepInterface::v_const_iterator & rhs )
    const override final {
    #ifdef NDEBUG
-    auto tmp = static_cast<const InvestmentFunction::v_const_iterator *>(
+    auto tmp = static_cast< const InvestmentFunction::v_const_iterator * >(
 								      & rhs );
     return( itr_ == tmp->itr_ );
    #else
-    auto tmp = dynamic_cast<const InvestmentFunction::v_const_iterator *>(
+    auto tmp = dynamic_cast< const InvestmentFunction::v_const_iterator * >(
 								      & rhs );
     return( tmp ? itr_ == tmp->itr_ : false );
    #endif
@@ -214,11 +214,11 @@ class InvestmentFunction : public C05Function , public Block {
   bool operator!=( const ThinVarDepInterface::v_const_iterator & rhs )
    const override final {
    #ifdef NDEBUG
-    auto tmp = static_cast<const InvestmentFunction::v_const_iterator *>(
+    auto tmp = static_cast< const InvestmentFunction::v_const_iterator * >(
 								      & rhs );
     return( itr_ != tmp->itr_ );
    #else
-    auto tmp = dynamic_cast<const InvestmentFunction::v_const_iterator *>(
+    auto tmp = dynamic_cast< const InvestmentFunction::v_const_iterator * >(
 								      & rhs );
     return( tmp ? itr_ != tmp->itr_ : true );
    #endif

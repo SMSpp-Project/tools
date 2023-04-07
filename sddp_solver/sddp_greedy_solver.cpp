@@ -220,16 +220,16 @@ void solve( SDDPBlock * sddp_block ) {
 void configure_PolyhedralFunctionBlock( SDDPBlock * sddp_block ) {
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
-  auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
-  auto benders_block = static_cast<BendersBlock *>
+  auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
+  auto benders_block = static_cast< BendersBlock * >
    ( stochastic_block-> get_nested_Blocks().front() );
-  auto objective = static_cast<FRealObjective *>
+  auto objective = static_cast< FRealObjective * >
    ( benders_block->get_objective() );
-  auto benders_function = static_cast<BendersBFunction *>
+  auto benders_function = static_cast< BendersBFunction * >
    ( objective->get_function() );
   auto inner_block = benders_function->get_inner_block();
 
-  std::queue< Block *> blocks;
+  std::queue< Block * > blocks;
   blocks.push( inner_block );
 
   while( ! blocks.empty() ) {
@@ -260,13 +260,13 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Deserialize block
   auto block_group = problem_group.getGroup( "Block" );
-  auto sddp_block = dynamic_cast<SDDPBlock *>( Block::new_Block( block_group ) );
+  auto sddp_block = dynamic_cast< SDDPBlock * >( Block::new_Block( block_group ) );
   if( ! sddp_block )
    throw( std::logic_error( "Error while deserializing the SDDPBlock." ) );
 
   // Configure block
   auto block_config_group = problem_group.getGroup( "BlockConfig" );
-  auto block_config = static_cast<BlockConfig *>
+  auto block_config = static_cast< BlockConfig * >
    ( BlockConfig::new_Configuration( block_config_group ) );
   if( ! block_config )
    throw( std::logic_error("BlockConfig group was not properly provided.") );
@@ -275,7 +275,7 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Configure solver
   auto solver_config_group = problem_group.getGroup( "BlockSolver" );
-  auto block_solver_config = static_cast<BlockSolverConfig *>
+  auto block_solver_config = static_cast< BlockSolverConfig * >
    ( BlockSolverConfig::new_Configuration( solver_config_group ) );
   if( ! block_solver_config )
    throw( std::logic_error("BlockSolver group was not properly provided.") );
@@ -351,7 +351,7 @@ BlockConfig * load_BlockConfig() {
 
   std::string config_name;
   block_config_file >> eatcomments >> config_name;
-  block_config = dynamic_cast<BlockConfig *>
+  block_config = dynamic_cast< BlockConfig * >
    ( Configuration::new_Configuration( config_name ) );
 
   if( ! block_config ) {
@@ -388,7 +388,7 @@ BlockSolverConfig * load_BlockSolverConfig() {
 
   std::string config_name;
   solver_config_file >> eatcomments >> config_name;
-  solver_config = dynamic_cast<BlockSolverConfig *>
+  solver_config = dynamic_cast< BlockSolverConfig * >
    ( Configuration::new_Configuration( config_name ) );
 
   if( ! solver_config ) {
@@ -438,7 +438,7 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Deserialize the SDDPBlock
 
-  auto sddp_block = dynamic_cast<SDDPBlock *>
+  auto sddp_block = dynamic_cast< SDDPBlock * >
    ( Block::new_Block( block_description.second ) );
 
   if( ! sddp_block )
