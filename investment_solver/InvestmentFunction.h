@@ -144,7 +144,7 @@ class InvestmentFunction : public C05Function , public Block {
   void operator++( void ) override final { ++(itr_); }
 
   reference operator*( void ) const override final {
-   return( *((*itr_)) );
+   return( *( ( *itr_ ) ) );
    }
   pointer operator->( void ) const override final {
    return( (*itr_) );
@@ -196,7 +196,7 @@ class InvestmentFunction : public C05Function , public Block {
 
   void operator++( void ) override final { ++(itr_); }
 
-  reference operator*( void ) const override final { return( *((*itr_)) ); }
+  reference operator*( void ) const override final { return( *( ( *itr_ ) ) ); }
   pointer operator->( void ) const override final { return( (*itr_) ); }
 
   bool operator==( const ThinVarDepInterface::v_const_iterator & rhs )

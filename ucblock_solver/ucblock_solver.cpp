@@ -12,6 +12,10 @@
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
  * Copyright &copy; by Niccolo' Iardella
  */
 
@@ -71,7 +75,7 @@ int main( int argc, char ** argv ) {
  }
 
  // Deserialize block
- auto block = dynamic_cast< UCBlock * >(Block::new_Block( "UCBlock" ));
+ auto block = dynamic_cast< UCBlock * >( Block::new_Block( "UCBlock" ) );
  block->deserialize( bg );
 
  //check_UCBlock_data(block);

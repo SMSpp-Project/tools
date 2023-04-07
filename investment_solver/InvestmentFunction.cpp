@@ -804,7 +804,7 @@ static void compact( std::vector< T > & x ,
 
  InvestmentFunction::Index i = indices.front();
  auto xit = x.begin() + (i++);
- for( auto nit = ++(indices.begin()) ; nit != indices.end() ; ++i )
+ for( auto nit = ++( indices.begin() ) ; nit != indices.end() ; ++i )
   if( *nit == i )
    ++nit;
   else

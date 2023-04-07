@@ -71,7 +71,7 @@ int main( int argc, char ** argv ) {
  }
 
  // Deserialize block
- auto block = dynamic_cast< ThermalUnitBlock * >(Block::new_Block( "ThermalUnitBlock" ));
+ auto block = dynamic_cast< ThermalUnitBlock * >( Block::new_Block( "ThermalUnitBlock" ) );
  block->deserialize( bg );
 
  // Configure block

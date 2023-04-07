@@ -9,6 +9,10 @@
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
  * Copyright &copy; by Ali Ghezelsoflu, Niccolo' Iardella
  */
 
