@@ -107,7 +107,7 @@ BlockConfig * default_configure_UCBlock( Block * uc_block ) {
 /*--------------------------------------------------------------------------*/
 /*
 void check_UCBlock_data( Block * block ) {
- auto uc_block = dynamic_cast< UCBlock * >(block);
+ auto uc_block = dynamic_cast< UCBlock * >( block );
 
  if( uc_block == nullptr )
   return;
@@ -253,7 +253,7 @@ void print_UCBlock_solver_results( Block * block ) {
 
  for( auto i : block->get_nested_Blocks() ) {
 
-  auto uc_block = dynamic_cast< UCBlock * >(block);
+  auto uc_block = dynamic_cast< UCBlock * >( block );
 
   Index number_primary_zones = uc_block->get_number_primary_zones();
   Index number_secondary_zones = uc_block->get_number_secondary_zones();
@@ -608,7 +608,7 @@ void print_UCBlock_solver_results( Block * block ) {
 //   std::cout << " ]" << std::endl;
 
    if( auto dc_network_block =
-    dynamic_cast< DCNetworkBlock * >(network_block) ) {
+    dynamic_cast< DCNetworkBlock * >( network_block ) ) {
 
     auto power_flow = dc_network_block->get_power_flow();
     std::cout << "Power flow       = [";
@@ -624,7 +624,7 @@ void print_UCBlock_solver_results( Block * block ) {
      std::cout << " ]" << std::endl;
     }
    } else if( auto ec_network_block =
-    dynamic_cast< ECNetworkBlock * >(network_block) ) {
+    dynamic_cast< ECNetworkBlock * >( network_block ) ) {
 
     if( ec_network_block->is_cooperative() ) {
      std::cout << "Micro power injection   = [" << std::endl;
