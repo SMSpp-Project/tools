@@ -9,10 +9,6 @@
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
- * \author Donato Meoli \n
- *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
- *
  * Copyright &copy; by Ali Ghezelsoflu, Niccolo' Iardella
  */
 
@@ -588,15 +584,6 @@ void print_UCBlock_solver_results( Block * block ) {
     fun->compute();
     std::cout << "Function value   = " << fun->get_value() << std::endl;
    }
-
-//   std::cout << "Power demand     = [" << std::endl;
-//   for( Index t = 0 ; t < network_block->get_number_intervals() ; ++t ) {
-//    auto demand = network_block->get_active_demand( t );
-//    for( Index j = 0 ; j < network_block->get_number_nodes() ; ++j )
-//     std::cout << std::setw( 20 ) << demand[ j ];
-//    std::cout << std::endl;
-//   }
-//   std::cout << " ]" << std::endl;
 
 //   std::cout << "Node injection   = [" << std::endl;
 //   for( Index t = 0 ; t < network_block->get_number_intervals() ; ++t ) {
