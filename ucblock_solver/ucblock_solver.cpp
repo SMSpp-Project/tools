@@ -12,8 +12,16 @@
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
  * Copyright &copy; by Niccolo' Iardella
  */
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
 
 #include <iostream>
 #include <iomanip>
@@ -118,4 +126,8 @@ int main( int argc, char ** argv ) {
  print_UCBlock_solver_results( block , solution_output_type );
 
  return( 0 );
-}
+}  // end( main )
+
+/*--------------------------------------------------------------------------*/
+/*---------------------- End File ucblock_solver.cpp -----------------------*/
+/*--------------------------------------------------------------------------*/
