@@ -5,10 +5,6 @@
  * Header file of CutProcessing, a class for processing the cuts of an
  * SDDPBlock.
  *
- * \version 0.1
- *
- * \date 28 - 01 - 2021
- *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
  *         Dipartimento di Informatica \n

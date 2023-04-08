@@ -4,10 +4,6 @@
 /** @file
  * Implementation of CutProcessing.
  *
- * \version 0.10
- *
- * \date 28 - 01 - 2021
- *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
  *         Dipartimento di Informatica \n

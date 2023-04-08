@@ -3,11 +3,11 @@
  *
  * A tool that loads a SMS++ nc4 Block or Problem file and solves it.
  *
- * In case of a Block file, i.e. a file that contains one or more Blocks,
+ * In case of a Block file, i.e., a file that contains one or more Blocks,
  * it optionally configures all the Blocks with a BlockConfig and/or a
  * BlockSolverConfig, then it solves it with all the loaded solvers.
  *
- * In case of a Problem file, i.e. one that contains one or more Problems
+ * In case of a Problem file, i.e., one that contains one or more Problems
  * (with a problem being a Block/BlockConfig/BlockSolverConfig tuple),
  * it solves each problem with all the loaded solvers.
  *

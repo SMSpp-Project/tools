@@ -28,10 +28,6 @@
  * every SDDPBlock. If each of these options is not provided when the given
  * netCDF file is a BlockFile, then default configurations are considered.
  *
- * \version 0.1
- *
- * \date 10 - 11 - 2020
- *
  * \author Rafael Durbano Lobato \n
  *         Operations Research Group \n
  *         Dipartimento di Informatica \n
