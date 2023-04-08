@@ -22,7 +22,7 @@
 #include <RBlockConfig.h>
 
 #ifndef NDEBUG
-#include <queue>    // For scanning the subblocks
+#include <queue>    // For scanning the sub-Blocks
 #include <FRealObjective.h>
 #endif
 
@@ -228,7 +228,7 @@ void solve_all( Block * block ) {
 
 /// Gets a BlockConfig from a BlockConfig file
 BlockConfig * get_blockconfig( const std::string & conf_file ) {
- BlockConfig * b_config = nullptr;
+ BlockConfig * b_config;
  std::ifstream bcf;
 
  bcf.open( conf_file, std::ifstream::in );
