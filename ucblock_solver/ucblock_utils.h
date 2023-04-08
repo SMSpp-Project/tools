@@ -44,9 +44,9 @@ BlockConfig * default_configure_UCBlock( Block * uc_block ) {
   auto sbc = new RBlockConfig;
 
   // If HydroSystemUnitBlock, we configure its PolyhedralFunctionBlocks
-  if( auto hsu_block = dynamic_cast< HydroSystemUnitBlock * >( sb ) ) {
+  if( auto hsub = dynamic_cast< HydroSystemUnitBlock * >( sb ) ) {
 
-   for( auto ssb : hsu_block->get_nested_Blocks() ) {
+   for( auto ssb : hsub->get_nested_Blocks() ) {
 
     if( auto pf_block = dynamic_cast< PolyhedralFunctionBlock * >( ssb ) ) {
 

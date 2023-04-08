@@ -11,6 +11,9 @@
  *
  * Copyright &copy; by Niccolo' Iardella
  */
+/*--------------------------------------------------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
 
 #ifndef __COMMON_UTILS
 #define __COMMON_UTILS
@@ -26,7 +29,15 @@
 #include <FRealObjective.h>
 #endif
 
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- USING -----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
 using namespace SMSpp_di_unipi_it;
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------- GLOBALS ----------------------------------*/
+/*--------------------------------------------------------------------------*/
 
 /**
  * @name Global variables used by every tool
@@ -54,6 +65,8 @@ int solution_output_type = 1;
  */
 /// @}
 
+/*--------------------------------------------------------------------------*/
+/*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// Gets the name of the executable from its full path
@@ -254,8 +267,7 @@ BlockConfig * get_blockconfig( const std::string & conf_file ) {
 /*--------------------------------------------------------------------------*/
 
 /// Gets a BlockSolverConfig from a BlockSolverConfig file
-BlockSolverConfig *
-get_blocksolverconfig( const std::string & conf_file ) {
+BlockSolverConfig * get_blocksolverconfig( const std::string & conf_file ) {
  BlockSolverConfig * s_config;
  std::ifstream scf;
 
