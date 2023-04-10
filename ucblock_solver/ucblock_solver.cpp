@@ -28,7 +28,6 @@
 
 #include <Block.h>
 #include <BlockSolverConfig.h>
-#include <UCBlock.h>
 
 #include "common_utils.h"
 #include "ucblock_utils.h"
@@ -42,45 +41,15 @@ int main( int argc, char ** argv ) {
 
  // Manage options and help, see common_utils.h
  docopt_desc = "SMS++ unit commitment solver.\n";
- exe = get_filename( argv[ 0 ] );
  process_args( argc, argv );
 
- // Read nc4 file
- netCDF::NcFile f;
- try {
-  f.open( filename, netCDF::NcFile::read );
- } catch( netCDF::exceptions::NcException & e ) {
-  std::cerr << exe << ": cannot open nc4 file " << filename << std::endl;
-  exit( 1 );
- }
-
- netCDF::NcGroupAtt gtype = f.getAtt( "SMS++_file_type" );
- if( gtype.isNull() ) {
-  std::cerr << exe << ": "
-            << filename << " is not an SMS++ nc4 file" << std::endl;
-  exit( 1 );
- }
-
- // Read nc4 group
- int type;
- gtype.getValues( &type );
-
- if( type != eBlockFile ) {
-  std::cerr << exe << ": "
-            << filename << " is not an SMS++ nc4 Block file" << std::endl;
-  exit( 1 );
- }
-
- netCDF::NcGroup bg = f.getGroup( "Block_0" );
- if( bg.isNull() ) {
-  std::cerr << exe << ": "
-            << "Block_0 empty or undefined in " << filename << std::endl;
-  exit( 1 );
- }
-
  // Deserialize block
- auto block = dynamic_cast< UCBlock * >( Block::new_Block( "UCBlock" ) );
- block->deserialize( bg );
+ Block * block = Block::deserialize( filename );
+ if( ! block ) {
+  std::cerr << exe << ": "
+            << "Block::deserialize() failed!" << std::endl;
+  exit( 1 );
+ }
 
  // Configure block
  BlockConfig * b_config;

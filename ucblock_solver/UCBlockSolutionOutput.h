@@ -510,8 +510,8 @@ class UCBlockSolutionOutput
 
 /*--------------------------------------------------------------------------*/
 
- void print_primary_spinning_reserve
-  ( const std::vector< UnitBlock * > & blocks ) const {
+ void print_primary_spinning_reserve(
+  const std::vector< UnitBlock * > & blocks ) const {
 
   std::ofstream output( filenames[ primary_spinning_reserve ].name() ,
                         open_mode() );
@@ -530,8 +530,8 @@ class UCBlockSolutionOutput
 
 /*--------------------------------------------------------------------------*/
 
- void print_secondary_spinning_reserve
-  ( const std::vector< UnitBlock * > & blocks ) const {
+ void print_secondary_spinning_reserve(
+  const std::vector< UnitBlock * > & blocks ) const {
 
   std::ofstream output( filenames[ secondary_spinning_reserve ].name() ,
                         open_mode() );
@@ -627,8 +627,9 @@ class UCBlockSolutionOutput
       return( storage[ t ].get_value() );
      return( 0 );
     } else
-     throw( "UCBlockSolutionOutput::print_storage: invalid type of "
-            "UnitBlock: " + block->classname() );
+     throw( std::invalid_argument(
+      "UCBlockSolutionOutput::print_storage: invalid type of UnitBlock: " +
+      block->classname() ) );
    };
 
   print_storage_data( output , blocks , get_storage );
@@ -638,16 +639,18 @@ class UCBlockSolutionOutput
 
 /*--------------------------------------------------------------------------*/
 
- void print( UCBlock * uc_block ) const {
-  auto unit_blocks = get_unit_blocks( uc_block );
-  print_active_power( unit_blocks );
-  print_primary_spinning_reserve( unit_blocks );
-  print_secondary_spinning_reserve( unit_blocks );
-  print_storage( get_unit_blocks_with_storage( uc_block ) );
-  print_flow( uc_block );
-  print_duals( uc_block );
-  print_demand( uc_block );
-  print_max_power( unit_blocks );
+ void print( Block * block ) const {
+  if( auto uc_block = dynamic_cast< UCBlock * >( block ) ) {
+   auto unit_blocks = get_unit_blocks( uc_block );
+   print_active_power( unit_blocks );
+   print_primary_spinning_reserve( unit_blocks );
+   print_secondary_spinning_reserve( unit_blocks );
+   print_storage( get_unit_blocks_with_storage( uc_block ) );
+   print_flow( uc_block );
+   print_duals( uc_block );
+   print_demand( uc_block );
+   print_max_power( unit_blocks );
+  }
  }
 
 /*--------------------------------------------------------------------------*/
@@ -949,8 +952,8 @@ class UCBlockSolutionOutput
 
 /*--------------------------------------------------------------------------*/
 
- std::vector< HydroUnitBlock * >
- get_hydro_unit_blocks( UCBlock * uc_block ) const {
+ std::vector< HydroUnitBlock * > get_hydro_unit_blocks(
+  UCBlock * uc_block ) const {
 
   std::vector< HydroUnitBlock * > hydro_unit_blocks;
 
@@ -968,8 +971,8 @@ class UCBlockSolutionOutput
 
 /*--------------------------------------------------------------------------*/
 
- std::vector< UnitBlock * >
- get_unit_blocks_with_storage( UCBlock * uc_block ) const {
+ std::vector< UnitBlock * > get_unit_blocks_with_storage(
+  UCBlock * uc_block ) const {
 
   std::vector< UnitBlock * > unit_blocks;
 
@@ -990,9 +993,10 @@ class UCBlockSolutionOutput
 /*--------------------------------------------------------------------------*/
 
  template< class F >
- void print_generator_data
-  ( std::ostream & output , const std::vector< UnitBlock * > & blocks ,
-    const F & get_data , const int precision = 20 ) const {
+ void print_generator_data( std::ostream & output ,
+                            const std::vector< UnitBlock * > & blocks ,
+                            const F & get_data ,
+                            const int precision = 20 ) const {
 
   if( blocks.empty() ) return;
 
@@ -1037,9 +1041,10 @@ class UCBlockSolutionOutput
 /*--------------------------------------------------------------------------*/
 
  template< class F >
- void print_reservoir_data
-  ( std::ostream & output , const std::vector< HydroUnitBlock * > & blocks ,
-    const F & get_data , const int precision = 20 ) const {
+ void print_reservoir_data( std::ostream & output ,
+                            const std::vector< HydroUnitBlock * > & blocks ,
+                            const F & get_data ,
+                            const int precision = 20 ) const {
 
   if( blocks.empty() ) return;
 
@@ -1083,9 +1088,10 @@ class UCBlockSolutionOutput
 /*--------------------------------------------------------------------------*/
 
  template< class F >
- void print_storage_data
-  ( std::ostream & output , const std::vector< UnitBlock * > & blocks ,
-    const F & get_data , const int precision = 20 ) const {
+ void print_storage_data( std::ostream & output ,
+                          const std::vector< UnitBlock * > & blocks ,
+                          const F & get_data ,
+                          const int precision = 20 ) const {
 
   if( blocks.empty() ) return;
 
@@ -1105,8 +1111,9 @@ class UCBlockSolutionOutput
     } else if( auto battery = dynamic_cast< BatteryUnitBlock * >( block ) )
      output << separator_character << block_name;
     else
-     throw( "UCBlockSolutionOutput::print_storage_data: invalid type of "
-            "UnitBlock: " + block->classname() );
+     throw( std::invalid_argument(
+      "UCBlockSolutionOutput::print_storage_data: invalid type of UnitBlock: "
+      + block->classname() ) );
    }
    output << std::endl;
   }
@@ -1133,8 +1140,9 @@ class UCBlockSolutionOutput
      output << separator_character << std::setprecision( precision )
             << get_data( battery , t , t );
     else
-     throw( "UCBlockSolutionOutput::print_storage_data: invalid type of "
-            "UnitBlock: " + block->classname() );
+     throw( std::invalid_argument(
+      "UCBlockSolutionOutput::print_storage_data: invalid type of UnitBlock: "
+      + block->classname() ) );
    }
    output << std::endl;
   }

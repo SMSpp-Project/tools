@@ -52,8 +52,7 @@ make
 
 ## Usage
 
-The Block solver (`block_solver`), the Thermal Unit solver
-(`thermalunit_solver`) and the Unit Commitment solver (`ucblock_solver`)
+The Block solver (`block_solver`) and the Unit Commitment solver (`ucblock_solver`)
 share the same interface:
 
 ```sh
@@ -66,7 +65,7 @@ Usage: <solver-name> [options] <nc4-file>
   -h, --help                      Print this help.
 ```
 
-See the [`examples`](thermalunit_solver/examples) directory for sample
+See the [`examples`](ucblock_solver/examples) directory for sample
 input files and configurations.
 
 ### Block solver
@@ -79,7 +78,7 @@ The input netCDF file can be a problem file or a Block file:
 - a Block file needs a Block configuration and a Solver configuration to be
   solved.
 
-See the [`examples`](thermalunit_solver/examples) directory for sample input
+See the [`examples`](ucblock_solver/examples) directory for sample input
 files and configurations.
 
 ### InvestmentBlock Solver

@@ -498,7 +498,7 @@ void print_UCBlock_solver_results( Block * block ) {
 /*--------------------------------------------------------------------------*/
 
 /// Prints the content of a solved UCBlock
-void print_UCBlock_solver_results( UCBlock * block ,
+void print_UCBlock_solver_results( Block * block ,
                                    int solution_output_type ) {
 
  if( ! ( solution_output_type > 0 && solution_output_type < 4 ) )
