@@ -135,7 +135,7 @@
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
- * \copyright &copy; by Rafael Durbano Lobato
+ * Copyright &copy by Rafael Durbano Lobato
  */
 
 /*--------------------------------------------------------------------------*/
