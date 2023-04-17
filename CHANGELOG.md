@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- investment_solver keeps track of the best solution found.
+- If the State file is not found, investment_solver shows a warning and
+  proceeds.
+- Save the best solution and the two most recent SolverState in
+  investment_solver.
+- Implement linear constraints in InvestmentFunction.
+- InvestmentFunctionState.
+
+### Changed
+
+- Disable the computation of linearizations in InvestmentFunction in
+  simulation mode.
+
+### Fixed
+
+- The initial up and down times of thermal units are only updated in
+  investment_solver when a single scenario is being simulated.
+- Linearization of InvestmentFunction.
+
 ## [0.5.1] - 2022-07-01
 
 ### Added
