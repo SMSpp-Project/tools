@@ -248,7 +248,7 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
              "0, 1, or 'NumConstraints'." ) );
   }
   else {
-   // The lower bound is - infinity
+   // The lower bound is -INF
    v_constraints_lower_bound.resize( num_constraints , -Inf< double >() );
   }
 
@@ -1453,7 +1453,7 @@ void InvestmentFunction::get_linearization_coefficients
 Function::FunctionValue
 InvestmentFunction::get_linearization_constant( Index name ) {
 
- if( name == Inf<Index>() ) {
+ if( name == Inf< Index >() ) {
   // Linearization just computed and not in the global pool yet.
 
   if( f_diagonal_linearization_required ) {

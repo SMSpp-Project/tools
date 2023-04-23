@@ -165,7 +165,7 @@ void InvestmentBlock::generate_abstract_constraints( Configuration * stcc ) {
  // Initialize the constraints
  v_constraints.resize( v_variables.size() );
  for( Index i = 0 ; i < v_constraints.size() ; ++i ) {
-  v_constraints[ i ].set_lhs( - Inf< double > () );
+  v_constraints[ i ].set_lhs( -Inf< double > () );
   v_constraints[ i ].set_rhs( Inf< double > () );
   v_constraints[ i ].set_variable( & v_variables[ i ] );
  }

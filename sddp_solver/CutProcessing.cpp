@@ -108,7 +108,7 @@ namespace {
     function->add_variable( & ( *x )[ j ] , - sign * A[ i ][ j ] );
    }
    function->add_variable( y , sign );
-   ( * constraints_it ).set_lhs( - Inf< double >() );
+   ( * constraints_it ).set_lhs( -Inf< double >() );
    ( * constraints_it ).set_rhs( sign * b[ i ]  );
    ( * constraints_it ).set_function( function );
    constraints_it++;
@@ -155,7 +155,7 @@ namespace {
    const auto & b = function->get_b();
 
    std::list< FRowConstraint > new_constraint( 1 );
-   new_constraint.front().set_lhs( - Inf< double >() );
+   new_constraint.front().set_lhs( -Inf< double >() );
    new_constraint.front().set_rhs( sign * b[ i ]  );
 
    auto v_var = objective_function->get_v_var();
