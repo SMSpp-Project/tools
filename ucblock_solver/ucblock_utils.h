@@ -121,7 +121,7 @@ void print_UCBlock_solver_results( Block * block ) {
      init_t = ( init_up_down_time >= min_up_time ?
                 0 : min_up_time - init_up_down_time );
     else
-     init_t = ( - init_up_down_time >= min_down_time ?
+     init_t = ( -init_up_down_time >= min_down_time ?
                 0 : min_down_time + init_up_down_time );
 
     auto startup = thermal_unit_block->get_start_up();
