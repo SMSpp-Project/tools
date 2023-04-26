@@ -396,10 +396,10 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
  auto unit = dynamic_cast< HydroUnitBlock * >( block );
  auto previous_unit = dynamic_cast< HydroUnitBlock * >( previous_block );
 
- if( ! unit && ! previous_unit )
+ if( ( ! unit ) && ( ! previous_unit ) )
   return( false );
 
- if( ! unit || ! previous_unit )
+ if( ( ! unit ) || ( ! previous_unit ) )
   throw( std::logic_error
          ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
            " and " + std::to_string( stage ) +
@@ -436,10 +436,10 @@ bool update_battery_unit( Block * previous_block , Block * block ,
  auto unit = dynamic_cast< BatteryUnitBlock * >( block );
  auto previous_unit = dynamic_cast< BatteryUnitBlock * >( previous_block );
 
- if( ! unit && ! previous_unit )
+ if( ( ! unit ) && ( ! previous_unit ) )
   return( false );
 
- if( ! unit || ! previous_unit )
+ if( ( ! unit ) || ( ! previous_unit ) )
   throw( std::logic_error
          ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
            " and " + std::to_string( stage ) +
@@ -536,10 +536,10 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
  auto previous_unit = dynamic_cast< ThermalUnitBlock * >( previous_block );
  auto unit = dynamic_cast< ThermalUnitBlock * >( block );
 
- if( ! unit && ! previous_unit )
+ if( ( ! unit ) && ( ! previous_unit ) )
   return( false );
 
- if( ! unit || ! previous_unit )
+ if( ( ! unit ) || ( ! previous_unit ) )
   throw( std::logic_error
          ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
            " and " + std::to_string( stage ) +
