@@ -93,7 +93,7 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- void print( SDDPBlock * block , Index fault_stage = Inf<Index>() ) const {
+ void print( SDDPBlock * block , Index fault_stage = Inf< Index >() ) const {
 
   UCBlockSolutionOutput solution_output;
   solution_output.set_separator_character( separator_character );

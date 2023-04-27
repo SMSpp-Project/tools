@@ -990,7 +990,7 @@ class InvestmentFunction : public C05Function , public Block {
  {
   auto idx = std::find( v_x.begin() , v_x.end() , var );
   if( idx == v_x.end() )
-   return( Inf<Index>() );
+   return( Inf< Index >() );
   else
    return( std::distance( v_x.begin() , idx ) );
  }
@@ -1395,31 +1395,31 @@ class InvestmentFunction : public C05Function , public Block {
 /*--------------------------------------------------------------------------*/
 
  void get_linearization_coefficients
- ( FunctionValue * g , Range range = std::make_pair( 0 , Inf<Index>() ) ,
-   Index name = Inf<Index>() ) override;
+ ( FunctionValue * g , Range range = std::make_pair( 0 , Inf< Index >() ) ,
+   Index name = Inf< Index >() ) override;
 
 /*--------------------------------------------------------------------------*/
 
  void get_linearization_coefficients
- ( SparseVector & g , Range range = std::make_pair( 0 , Inf<Index>() ) ,
-   Index name = Inf<Index>() ) override;
+ ( SparseVector & g , Range range = std::make_pair( 0 , Inf< Index >() ) ,
+   Index name = Inf< Index >() ) override;
 
 /*--------------------------------------------------------------------------*/
 
  void get_linearization_coefficients
  ( FunctionValue * g , c_Subset & subset  , bool ordered = false ,
-   Index name = Inf<Index>() ) override;
+   Index name = Inf< Index >() ) override;
 
 /*--------------------------------------------------------------------------*/
 
  void get_linearization_coefficients
  ( SparseVector & g , c_Subset & subset , bool ordered = false ,
-   Index name = Inf<Index>() ) override;
+   Index name = Inf< Index >() ) override;
 
 /*--------------------------------------------------------------------------*/
  /// return the constant term of a linearization
 
- FunctionValue get_linearization_constant( Index name = Inf<Index>() )
+ FunctionValue get_linearization_constant( Index name = Inf< Index >() )
   override final;
 
 /*--------------------------------------------------------------------------*/
