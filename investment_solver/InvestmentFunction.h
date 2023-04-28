@@ -851,7 +851,7 @@ class InvestmentFunction : public C05Function , public Block {
 
  const std::string & str_par_idx2str( const idx_type idx ) const override {
 
-  static const std::vector<std::string> parameter_names =
+  static const std::vector< std::string > parameter_names =
    { "strOutputFilename" };
 
   if( idx >= str_par_type_C05F::strLastParC05F &&
@@ -1440,7 +1440,7 @@ class InvestmentFunction : public C05Function , public Block {
   * then a nullptr is returned. Otherwise, a pointer of type \p T is
   * returned. */
 
- template<class T = Solver>
+ template< class T = Solver >
  inline T * get_solver( Index i ) const {
   if( i >= v_Block.size() )
    return( nullptr );
@@ -1665,7 +1665,7 @@ class InvestmentFunction : public C05Function , public Block {
 
  public:
 
-  static constexpr auto NaN = std::numeric_limits<FunctionValue>::quiet_NaN();
+  static constexpr auto NaN = std::numeric_limits< FunctionValue >::quiet_NaN();
 
 /*--------------------------------------------------------------------------*/
 

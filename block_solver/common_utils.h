@@ -213,7 +213,7 @@ void print_status( int status ) {
 
 /// Solves the problem with all available solvers
 void solve_all( Block * block ) {
- std::chrono::time_point<std::chrono::system_clock> start, end;
+ std::chrono::time_point< std::chrono::system_clock > start, end;
 
  for( auto solver : block->get_registered_solvers() ) {
   std::cout << "Solver: " << solver->classname() << std::endl;

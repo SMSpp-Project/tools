@@ -487,7 +487,7 @@ void InvestmentFunction::set_par( const idx_type par , const int value ) {
     Subset which( global_pool.size() - value );
     std::iota( which.begin() , which.end() , value );
     f_Observer->add_Modification
-     ( std::make_shared<C05FunctionMod>
+     ( std::make_shared< C05FunctionMod >
        ( this , C05FunctionMod::GlobalPoolRemoved , std::move( which ) , 0 ) );
    }
 
@@ -563,7 +563,7 @@ void InvestmentFunction::put_State( const State & state ) {
  // that all previous linearizations have been removed.
 
  if( ! global_pool_was_empty )
-  f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+  f_Observer->add_Modification( std::make_shared< C05FunctionMod >
                                 ( this , C05FunctionMod::GlobalPoolRemoved ,
                                   Subset() , 0 , 0 ) );
 
@@ -577,7 +577,7 @@ void InvestmentFunction::put_State( const State & state ) {
    added.push_back( i );
 
  if( ! added.empty() )
-  f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+  f_Observer->add_Modification( std::make_shared< C05FunctionMod >
                                 ( this , C05FunctionMod::GlobalPoolAdded ,
                                   std::move( added ) , 0 , 0 ) );
 
@@ -600,7 +600,7 @@ void InvestmentFunction::put_State( State && state ) {
  // that all previous linearizations have been removed.
 
  if( ! global_pool_was_empty )
-  f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+  f_Observer->add_Modification( std::make_shared< C05FunctionMod >
                                 ( this , C05FunctionMod::GlobalPoolRemoved ,
                                   Subset() , 0 , 0 ) );
 
@@ -614,7 +614,7 @@ void InvestmentFunction::put_State( State && state ) {
    added.push_back( i );
 
  if( ! added.empty() )
-  f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+  f_Observer->add_Modification( std::make_shared< C05FunctionMod >
                                 ( this , C05FunctionMod::GlobalPoolAdded ,
                                   std::move( added ) , 0 , 0 ) );
 }  // end( InvestmentFunction::put_State )
@@ -697,7 +697,7 @@ void InvestmentFunction::remove_variable( Index i , ModParam issueMod ) {
 
  // Now issue the Modification.
  // An InvestmentFunction is strongly quasi-additive.
- f_Observer->add_Modification( std::make_shared<C05FunctionModVarsRngd>
+ f_Observer->add_Modification( std::make_shared< C05FunctionModVarsRngd >
                                ( this , Vec_p_Var( { var } ) ,
                                  Range( i , i + 1 ) , 0 ,
                                  Observer::par2concern( issueMod ) ) ,
@@ -732,7 +732,7 @@ void InvestmentFunction::remove_variables( Range range , ModParam issueMod ) {
   // Now issue the Modification.
   // An InvestmentFunction is strongly quasi-additive.
   if( f_Observer && f_Observer->issue_mod( issueMod ) )
-   f_Observer->add_Modification( std::make_shared<C05FunctionModVarsRngd>
+   f_Observer->add_Modification( std::make_shared< C05FunctionModVarsRngd >
                                  ( this , std::move( vars ) , range , 0 ,
                                    Observer::par2concern( issueMod ) ) ,
                                  Observer::par2chnl( issueMod ) );
@@ -785,7 +785,7 @@ void InvestmentFunction::remove_variables( Range range , ModParam issueMod ) {
 
   // Now issue the Modification.
   // An InvestmentFunction is strongly quasi-additive
-  f_Observer->add_Modification( std::make_shared<C05FunctionModVarsRngd>
+  f_Observer->add_Modification( std::make_shared< C05FunctionModVarsRngd >
                                 ( this , std::move( vars ) , range , 0 ,
                                   Observer::par2concern( issueMod ) ) ,
                                 Observer::par2chnl( issueMod ) );
@@ -844,7 +844,7 @@ void InvestmentFunction::remove_variables( Subset && indices , bool ordered ,
   // Now issue the Modification: note that the subset is empty.
   // An InvestmentFunction is strongly quasi-additive, and indices is ordered.
   if( f_Observer && f_Observer->issue_mod( issueMod ) )
-   f_Observer->add_Modification( std::make_shared<C05FunctionModVarsSbst>
+   f_Observer->add_Modification( std::make_shared< C05FunctionModVarsSbst >
                                  ( this , std::move( vars ) , Subset() , true ,
                                    0 , Observer::par2concern( issueMod ) ) ,
                                  Observer::par2chnl( issueMod ) );
@@ -883,7 +883,7 @@ void InvestmentFunction::remove_variables( Subset && indices , bool ordered ,
 
   // Now issue the Modification.
   // An InvestmentFunction is strongly quasi-additive, and indices is ordered.
-  f_Observer->add_Modification( std::make_shared<C05FunctionModVarsSbst>
+  f_Observer->add_Modification( std::make_shared< C05FunctionModVarsSbst >
                                 ( this , std::move( vars ) ,
                                   std::move( indices ) , true , 0 ,
                                   Observer::par2concern( issueMod ) ) ,
@@ -1275,7 +1275,7 @@ void InvestmentFunction::store_linearization( Index name , ModParam issueMod ) {
  if( ( ! f_Observer ) || ( ! f_Observer->issue_mod( issueMod ) ) )
   return;
 
- f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+ f_Observer->add_Modification( std::make_shared< C05FunctionMod >
                                ( this , C05FunctionMod::GlobalPoolAdded ,
                                  Subset( { name } ) , 0 ,
                                  Observer::par2concern( issueMod ) ) ,
@@ -1294,7 +1294,7 @@ void InvestmentFunction::store_combination_of_linearizations
  if( ( ! f_Observer ) || ( ! f_Observer->issue_mod( issueMod ) ) )
   return;
 
- f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+ f_Observer->add_Modification( std::make_shared< C05FunctionMod >
                                ( this , C05FunctionMod::GlobalPoolAdded ,
                                  Subset( { name } ) , 0 ,
                                  Observer::par2concern( issueMod ) ) ,
@@ -1311,7 +1311,7 @@ void InvestmentFunction::delete_linearization( const Index name ,
  if( ( ! f_Observer ) || ( ! f_Observer->issue_mod( issueMod ) ) )
   return;
 
- f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+ f_Observer->add_Modification( std::make_shared< C05FunctionMod >
                                ( this , C05FunctionMod::GlobalPoolRemoved ,
                                  Subset( { name } ) , 0 ,
                                  Observer::par2concern( issueMod ) ) ,
@@ -1327,7 +1327,7 @@ void InvestmentFunction::delete_linearizations( Subset && which , bool ordered ,
  if( ( ! f_Observer ) || ( ! f_Observer->issue_mod( issueMod ) ) )
   return;
 
- f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+ f_Observer->add_Modification( std::make_shared< C05FunctionMod >
                                ( this , C05FunctionMod::GlobalPoolRemoved ,
                                  std::move( which ) , 0 ,
                                  Observer::par2concern( issueMod ) ) ,
@@ -2580,7 +2580,7 @@ void InvestmentFunction::send_nuclear_modification
  generator_node_map.clear(); // the generator map must be rebuilt
  if( f_Observer )
   f_Observer->add_Modification
-   ( std::make_shared<FunctionMod>( this , FunctionMod::NaNshift ) , chnl );
+   ( std::make_shared< FunctionMod >( this , FunctionMod::NaNshift ) , chnl );
 }  // end( InvestmentFunction::send_nuclear_modification )
 
 

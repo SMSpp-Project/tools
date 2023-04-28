@@ -231,9 +231,9 @@ public:
   *
   *     0 <= x[ i ] <= upper_bound[ i ] - lower_bound[ i ].
   *
-  * If \p stcc is not nullptr and it is a SimpleConfiguration<int>, or if
+  * If \p stcc is not nullptr and it is a SimpleConfiguration< int >, or if
   * f_BlockConfig->f_static_constraints_Configuration is not nullptr and it is
-  * a SimpleConfiguration<int>, then the f_value (an int) indicates whether
+  * a SimpleConfiguration< int >, then the f_value (an int) indicates whether
   * the bounds must be reformulated. If the f_value is nonzero, then the
   * bounds are reformulated as above.
   *
@@ -350,7 +350,7 @@ public:
  template< class T >
  void set_variable_values( const std::vector< T > & values ) {
   assert( ( values.size() >= 0 ) &&
-          ( static_cast<decltype( v_variables.size() )>( values.size() ) ==
+          ( static_cast< decltype( v_variables.size() ) >( values.size() ) ==
             v_variables.size() ) );
   for( Index i = 0 ; i < v_variables.size() ; ++i )
    v_variables[ i ].set_value( values[ i ] );
@@ -369,7 +369,7 @@ public:
 
  void set_variable_values( const Eigen::ArrayXd & values ) {
   assert( ( values.size() >= 0 ) &&
-          ( static_cast<decltype( v_variables.size() )>( values.size() ) ==
+          ( static_cast< decltype( v_variables.size() ) >( values.size() ) ==
             v_variables.size() ) );
   for( Index i = 0 ; i < v_variables.size() ; ++i )
    v_variables[ i ].set_value( values( i ) );
@@ -452,7 +452,7 @@ public:
   *        constraints (if it has been generated) must be used to determine if
   *        the current solution is feasible.
   *
-  * @param fsbc If it is a pointer to a SimpleConfiguration<double>, then the
+  * @param fsbc If it is a pointer to a SimpleConfiguration< double >, then the
   *        value stored in that SimpleConfiguration will be the tolerance that
   *        determines if a solution is feasible. */
 

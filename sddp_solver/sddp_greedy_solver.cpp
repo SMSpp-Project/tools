@@ -237,7 +237,7 @@ void configure_PolyhedralFunctionBlock( SDDPBlock * sddp_block ) {
 
    if( auto polyhedral = dynamic_cast< PolyhedralFunctionBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration = new SimpleConfiguration<int>(1);
+    config->f_static_variables_Configuration = new SimpleConfiguration< int >(1);
     polyhedral->set_BlockConfig( config );
    }
   }

@@ -911,7 +911,7 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
    // Configure PolyhedralFunctionBlock
    if( auto polyhedral = dynamic_cast< PolyhedralFunctionBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration = new SimpleConfiguration<int>(1);
+    config->f_static_variables_Configuration = new SimpleConfiguration< int >( 1 );
     config->f_is_feasible_Configuration = is_feasible_config.clone();
     polyhedral->set_BlockConfig( config );
    }
@@ -919,9 +919,9 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
    else if( auto unit = dynamic_cast< SlackUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
     config->f_static_variables_Configuration =
-     new SimpleConfiguration<int>( var_type );
+     new SimpleConfiguration< int >( var_type );
     config->f_static_constraints_Configuration =
-     new SimpleConfiguration<int>( cons_type );
+     new SimpleConfiguration< int >( cons_type );
     config->f_is_feasible_Configuration = is_feasible_config.clone();
     unit->set_BlockConfig( config );
    }
@@ -931,7 +931,7 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
     config->f_static_variables_Configuration = new SimpleConfiguration<
      std::pair< int , int > >( { negative_prices , var_type } );
     config->f_static_constraints_Configuration =
-     new SimpleConfiguration<int>( cons_type );
+     new SimpleConfiguration< int >( cons_type );
     config->f_is_feasible_Configuration = is_feasible_config.clone();
     unit->set_BlockConfig( config );
    }
@@ -939,12 +939,12 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
    else if( auto unit = dynamic_cast< ThermalUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
     config->f_static_variables_Configuration =
-     new SimpleConfiguration<int>( var_type );
+     new SimpleConfiguration< int >( var_type );
     config->f_static_constraints_Configuration =
-     new SimpleConfiguration<int>( cons_type );
+     new SimpleConfiguration< int >( cons_type );
 
     if( add_reserve_variables_to_objective )
-     config->f_objective_Configuration = new SimpleConfiguration<int>( 3 );
+     config->f_objective_Configuration = new SimpleConfiguration< int >( 3 );
 
     config->f_is_feasible_Configuration = is_feasible_config.clone();
 
@@ -1802,7 +1802,7 @@ void process_block_file( const netCDF::NcFile & file ) {
 /*--------------------------------------------------------------------------*/
 
 /// returns the final state (solution) of the system at the given \p stage
-std::vector<double> get_final_state( SDDPBlock * block , Index stage ) {
+std::vector< double > get_final_state( SDDPBlock * block , Index stage ) {
 
  Index state_size = 0;
  for( Index i = 0 ; i < block->get_num_polyhedral_function_per_sub_block() ;
@@ -1811,7 +1811,7 @@ std::vector<double> get_final_state( SDDPBlock * block , Index stage ) {
    block->get_polyhedral_function( stage , i )->get_num_active_var();
  }
 
- std::vector<double> state;
+ std::vector< double > state;
  state.reserve( state_size );
 
  for( Index i = 0 ; i < block->get_num_polyhedral_function_per_sub_block() ;
