@@ -286,12 +286,12 @@ void process_prob_file( const netCDF::NcFile & file ) {
   // Destroy the Block and the Configurations
 
   block_config->apply( sddp_block );
-  delete block_config;
+  delete( block_config );
 
   block_solver_config->apply( sddp_block );
-  delete block_solver_config;
+  delete( block_solver_config );
 
-  delete sddp_block;
+  delete( sddp_block );
  }
 }
 
@@ -462,18 +462,18 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   block_config->apply( sddp_block );
   if( ! given_block_config ) {
-   delete block_config;
+   delete( block_config );
    block_config = nullptr;
   }
 
   cleared_solver_config->apply( sddp_block );
-  delete sddp_block;
+  delete( sddp_block );
  }
 
- delete block_config;
- delete given_block_config;
- delete solver_config;
- delete cleared_solver_config;
+ delete( block_config );
+ delete( given_block_config );
+ delete( solver_config );
+ delete( cleared_solver_config );
 }
 
 /*--------------------------------------------------------------------------*/

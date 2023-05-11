@@ -545,7 +545,7 @@ class InvestmentFunction : public C05Function , public Block {
 
   if( destroy_previous_block )
    for( auto block : v_Block )
-    delete block;
+    delete( block );
 
   v_Block.clear();
   v_Block.push_back( block );
@@ -587,7 +587,7 @@ class InvestmentFunction : public C05Function , public Block {
 
   if( destroy_previous_blocks )
    for( auto block : v_Block )
-    delete block;
+    delete( block );
 
   v_Block.clear();
   v_Block = blocks;

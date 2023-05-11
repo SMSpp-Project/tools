@@ -101,7 +101,7 @@ InvestmentFunction::InvestmentFunction
 
 InvestmentFunction::~InvestmentFunction() {
  for( auto block : v_Block )
-  delete block;
+  delete( block );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -336,7 +336,7 @@ void InvestmentFunction::set_default_inner_Block_BlockConfig() {
    auto config = new OCRBlockConfig( inner_block );
    config->clear();
    config->apply( inner_block );
-   delete config;
+   delete( config );
   }
  }
 }
@@ -349,7 +349,7 @@ void InvestmentFunction::set_default_inner_Block_BlockSolverConfig() {
    auto solver_config = new RBlockSolverConfig( inner_block );
    solver_config->clear();
    solver_config->apply( inner_block );
-   delete solver_config;
+   delete( solver_config );
   }
  }
 }

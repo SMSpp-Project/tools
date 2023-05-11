@@ -301,8 +301,8 @@ void CutProcessing::remove_redundant_cuts( PolyhedralFunction * function )
 
  function->delete_rows( std::move( rows_to_remove ) );
 
- delete solver;
- delete lp;
+ delete( solver );
+ delete( lp );
 }
 
 /*--------------------------------------------------------------------------*/

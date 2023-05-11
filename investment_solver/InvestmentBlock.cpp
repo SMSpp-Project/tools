@@ -41,7 +41,7 @@ SMSpp_insert_in_factory_cpp_1( InvestmentBlock );
 
 InvestmentBlock::~InvestmentBlock() {
  for( auto block : v_Block )
-  delete block;
+  delete( block );
  v_Block.clear();
 
  for( auto & constraint : v_constraints )

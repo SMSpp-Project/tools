@@ -755,7 +755,7 @@ void invest( InvestmentBlock * investment_block ) {
     file.open( solver_state_input_filename , netCDF::NcFile::read );
     auto state = State::new_State( file );
     investment_solver->put_State( *state );
-    delete state;
+    delete( state );
    } catch( netCDF::exceptions::NcException & e ) {
     std::cout << "Warning: It was not possible to open the State file '"
               << solver_state_input_filename << "'. The State of the Solver "
@@ -1063,12 +1063,12 @@ void process_prob_file( const netCDF::NcFile & file ) {
   // Destroy the Block and the Configurations
 
   block_config->apply( investment_block );
-  delete block_config;
+  delete( block_config );
 
   block_solver_config->apply( investment_block );
-  delete block_solver_config;
+  delete( block_solver_config );
 
-  delete investment_block;
+  delete( investment_block );
  }
 }
 
@@ -1102,7 +1102,7 @@ BlockConfig * load_BlockConfig() {
  if( ! block_config ) {
   std::cerr << "Block configuration is not valid: "
             << config_name << std::endl;
-  delete config;
+  delete( config );
   exit( 1 );
  }
 
@@ -1147,7 +1147,7 @@ BlockSolverConfig * load_BlockSolverConfig( const std::string & filename ) {
  if( ! solver_config ) {
   std::cerr << "Solver configuration is not valid: "
             << config_name << std::endl;
-  delete config;
+  delete( config );
   exit( 1 );
  }
 
@@ -1222,7 +1222,7 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
 
   if( ! inner_solver_config ) {
    inner_solver_config_file.close();
-   delete inner_config;
+   delete( inner_config );
    continue;
   }
 
@@ -1231,7 +1231,7 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
   }
   catch( ... ) {
    inner_solver_config_file.close();
-   delete inner_config;
+   delete( inner_config );
    continue;
   }
 
@@ -1239,11 +1239,11 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
 
   for( Index j = 0 ; j < inner_solver_config->num_ComputeConfig() ; ++j ) {
    if( inner_solver_config->get_SolverName( j ) == "LagrangianDualSolver" ) {
-    delete inner_config;
+    delete( inner_config );
     return( true );
    }
   }
-  delete inner_config;
+  delete( inner_config );
  }
  return( false );
 }
@@ -1301,7 +1301,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
   if( ! inner_solver_config ) {
    inner_solver_config_file.close();
-   delete inner_config;
+   delete( inner_config );
    return;
   }
 
@@ -1310,7 +1310,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   }
   catch( ... ) {
    inner_solver_config_file.close();
-   delete inner_config;
+   delete( inner_config );
    return;
   }
 
@@ -1807,19 +1807,19 @@ void process_block_file( const netCDF::NcFile & file ) {
   if( block_config )
    block_config->apply( investment_block );
   if( ! given_block_config ) {
-   delete block_config;
+   delete( block_config );
    block_config = nullptr;
   }
 
   cleared_solver_config->apply( investment_block );
 
-  delete investment_block;
+  delete( investment_block );
  }
 
- delete block_config;
- delete given_block_config;
- delete solver_config;
- delete cleared_solver_config;
+ delete( block_config );
+ delete( given_block_config );
+ delete( solver_config );
+ delete( cleared_solver_config );
 }
 
 /*--------------------------------------------------------------------------*/
