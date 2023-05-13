@@ -200,13 +200,13 @@ void print_UCBlock_solver_results( Block * block ) {
     auto intake_level = battery_unit_block->get_intake_level();
     std::cout << "Intake level   = [";
     for( auto & t : intake_level )
-     std::cout << std::setw( 20 ) << ( unsigned int ) round( t.get_value() );
+     std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value() );
     std::cout << " ]" << std::endl;
 
     auto outtake_level = battery_unit_block->get_outtake_level();
     std::cout << "Outtake level  = [";
     for( auto & t : outtake_level )
-     std::cout << std::setw( 20 ) << ( unsigned int ) round( t.get_value() );
+     std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value() );
     std::cout << " ]" << std::endl;
 
     auto storage_level = battery_unit_block->get_storage_level();
@@ -275,6 +275,7 @@ void print_UCBlock_solver_results( Block * block ) {
    }
 
    if( auto hsu_block = dynamic_cast< HydroSystemUnitBlock * >( unit_block ) ) {
+
     for( Index hIdx = 0 ;
          hIdx < hsu_block->get_number_hydro_units() ; ++hIdx ) {
      std::cout << "----- SubHydroBlock " << hIdx << " -----" << std::endl;
@@ -416,14 +417,14 @@ void print_UCBlock_solver_results( Block * block ) {
     std::cout << "Function value   = " << fun->get_value() << std::endl;
    }
 
-//   std::cout << "Node injection   = [" << std::endl;
-//   for( Index t = 0 ; t < network_block->get_number_intervals() ; ++t ) {
-//    auto node_inj = network_block->get_node_injection( t );
-//    for( Index j = 0 ; j < network_block->get_number_nodes() ; ++j )
-//     std::cout << std::setw( 20 ) << node_inj[ j ].get_value();
-//    std::cout << std::endl;
-//   }
-//   std::cout << " ]" << std::endl;
+   /* std::cout << "Node injection   = [" << std::endl;
+   for( Index t = 0 ; t < network_block->get_number_intervals() ; ++t ) {
+    auto node_inj = network_block->get_node_injection( t );
+    for( Index j = 0 ; j < network_block->get_number_nodes() ; ++j )
+     std::cout << std::setw( 20 ) << node_inj[ j ].get_value();
+    std::cout << std::endl;
+   }
+   std::cout << " ]" << std::endl; */
 
    if( auto dc_network_block =
     dynamic_cast< DCNetworkBlock * >( network_block ) ) {
@@ -434,61 +435,48 @@ void print_UCBlock_solver_results( Block * block ) {
      std::cout << std::setw( 20 ) << n.get_value();
     std::cout << " ]" << std::endl;
 
-    auto auxiliary_variable = dc_network_block->get_auxiliary_variable();
-    if( ! auxiliary_variable.empty() ) {
+    auto auxiliary_var = dc_network_block->get_auxiliary_variable();
+    if( ! auxiliary_var.empty() ) {
      std::cout << "Auxiliary variable     = [";
-     for( auto & n : auxiliary_variable )
+     for( auto & n : auxiliary_var )
       std::cout << std::setw( 20 ) << n.get_value();
      std::cout << " ]" << std::endl;
     }
+
    } else if( auto ec_network_block =
     dynamic_cast< ECNetworkBlock * >( network_block ) ) {
 
-    if( ec_network_block->is_cooperative() ) {
-     std::cout << "Micro power injection   = [" << std::endl;
-     for( Index t = 0 ; t < ec_network_block->get_number_intervals() ; ++t ) {
-      auto micro_inj = ec_network_block->get_micro_power_injection( t );
-      for( Index j = 0 ; j < ec_network_block->get_number_nodes() ; ++j )
-       std::cout << std::setw( 20 ) << micro_inj[ j ].get_value();
-      std::cout << std::endl;
-     }
-     std::cout << " ]" << std::endl;
-
-     std::cout << "Micro power absorption   = [" << std::endl;
-     for( Index t = 0 ; t < ec_network_block->get_number_intervals() ; ++t ) {
-      auto micro_abs = ec_network_block->get_micro_power_absorption( t );
-      for( Index j = 0 ; j < ec_network_block->get_number_nodes() ; ++j )
-       std::cout << std::setw( 20 ) << micro_abs[ j ].get_value();
-      std::cout << std::endl;
-     }
+    auto shared_power = ec_network_block->get_shared_power();
+    if( ! shared_power.empty() ) {
+     std::cout << "Shared power     = [";
+     for( auto & n : shared_power )
+      std::cout << std::setw( 20 ) << n.get_value();
      std::cout << " ]" << std::endl;
     }
 
     std::cout << "Public power injection   = [" << std::endl;
     for( Index t = 0 ; t < ec_network_block->get_number_intervals() ; ++t ) {
-     auto public_inj = ec_network_block->get_public_power_injection( t );
+     auto power_inj = ec_network_block->get_power_injection( t );
      for( Index j = 0 ; j < ec_network_block->get_number_nodes() ; ++j )
-      std::cout << std::setw( 20 ) << public_inj[ j ].get_value();
+      std::cout << std::setw( 20 ) << power_inj[ j ].get_value();
      std::cout << std::endl;
     }
     std::cout << " ]" << std::endl;
 
     std::cout << "Public power absorption   = [" << std::endl;
     for( Index t = 0 ; t < ec_network_block->get_number_intervals() ; ++t ) {
-     auto public_abs = ec_network_block->get_public_power_absorption( t );
+     auto power_abs = ec_network_block->get_power_absorption( t );
      for( Index j = 0 ; j < ec_network_block->get_number_nodes() ; ++j )
-      std::cout << std::setw( 20 ) << public_abs[ j ].get_value();
+      std::cout << std::setw( 20 ) << power_abs[ j ].get_value();
      std::cout << std::endl;
     }
     std::cout << " ]" << std::endl;
 
     auto peak_power = ec_network_block->get_peak_power();
-    if( ! peak_power.empty() ) {
-     std::cout << "Peak power       = [";
-     for( auto & n : peak_power )
-      std::cout << std::setw( 20 ) << n.get_value();
-     std::cout << " ]" << std::endl;
-    }
+    std::cout << "Peak power       = [";
+    for( auto & n : peak_power )
+     std::cout << std::setw( 20 ) << n.get_value();
+    std::cout << " ]" << std::endl;
    }
   }
   std::cout << std::endl;
