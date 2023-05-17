@@ -127,12 +127,7 @@
  * - pz+1 is the number of zones for pollutant p and v_j is the dual value of
  *   the constraint associated with zone j.
  *
- * \version 0.1
- *
- * \date 23 - 04 - 2021
- *
  * \author Rafael Durbano Lobato \n
- *         Operations Research Group \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
@@ -159,6 +154,8 @@
 #include "ThermalUnitBlock.h"
 #include "UCBlock.h"
 
+#include <filesystem>
+#include <iomanip>
 #include <iostream>
 
 /*--------------------------------------------------------------------------*/
@@ -222,7 +219,9 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- void print_flow( const std::vector< NetworkBlock * > & blocks ) const {
+ void print_flow( const UCBlock * uc_block ) const {
+
+  const auto & blocks = uc_block->get_network_blocks();
 
   std::ofstream output( filenames[ flow ].name() , open_mode() );
 
@@ -236,15 +235,27 @@ public:
     return 0;
    };
 
-  print_line_data( output , blocks , get_power_flow );
+  std::function< std::string( Index ) > get_line_name = []( Index line ) {
+   return "Line_" + std::to_string( line );
+  };
+
+  if( auto network_data = uc_block->get_NetworkData() ) {
+   const auto & line_names = network_data->get_line_names();
+   if( ! line_names.empty() )
+    get_line_name = [ &line_names ]( Index line ) {
+     assert( line < line_names.size() );
+     return line_names[ line ];
+    };
+  }
+
+  print_line_data( output , blocks , get_power_flow , get_line_name );
 
   output.close();
  }
 
 /*--------------------------------------------------------------------------*/
 
- void print_node_injection( const std::vector< NetworkBlock * > & blocks )
-  const {
+ void print_node_injection( const UCBlock * uc_block ) const {
 
   std::ofstream output( filenames[ node_injection ].name() , open_mode() );
 
@@ -258,7 +269,7 @@ public:
     return 0;
    };
 
-  print_node_data( output , blocks , get_node_injection );
+  print_node_data( output , uc_block , get_node_injection );
 
   output.close();
  }
@@ -274,7 +285,7 @@ public:
    []( UCBlock * block , Index time , Index node ) -> double {
     const auto & constraints = block->get_node_injection_constraints();
     if( time < constraints.size() && node < constraints[ time ].size() )
-     return constraints[ time ][ node ].get_dual();
+     return - constraints[ time ][ node ].get_dual();
     return 0;
    };
 
@@ -301,7 +312,8 @@ public:
    };
 
   print_data( output , uc_block , get_primary_demand_dual ,
-              uc_block->get_number_primary_zones() , "Zone_" );
+              uc_block->get_number_primary_zones() ,
+              []( Index i ) { return "Zone_" + std::to_string( i ); } );
 
   output.close();
  }
@@ -322,7 +334,8 @@ public:
    };
 
   print_data( output , uc_block , get_secondary_demand_dual ,
-              uc_block->get_number_secondary_zones() , "Zone_" );
+              uc_block->get_number_secondary_zones() ,
+              []( Index i ) { return "Zone_" + std::to_string( i ); } );
 
   output.close();
  }
@@ -343,7 +356,8 @@ public:
    };
 
   print_data( output , uc_block , get_inertia_demand_dual ,
-              uc_block->get_number_inertia_zones() , "Zone_" );
+              uc_block->get_number_inertia_zones() ,
+              []( Index i ) { return "Zone_" + std::to_string( i ); } );
 
   output.close();
  }
@@ -401,8 +415,21 @@ public:
     return 0;
    };
 
+  std::function< std::string( Index ) > get_line_name = []( Index line ) {
+   return "Line_" + std::to_string( line );
+  };
+
+  if( auto network_data = uc_block->get_NetworkData() ) {
+   const auto & line_names = network_data->get_line_names();
+   if( ! line_names.empty() )
+    get_line_name = [ &line_names ]( Index line ) {
+     assert( line < line_names.size() );
+     return line_names[ line ];
+    };
+  }
+
   print_line_data( output , uc_block->get_network_blocks() ,
-                   get_power_flow_limit_dual );
+                   get_power_flow_limit_dual , get_line_name );
 
   output.close();
  }
@@ -451,7 +478,7 @@ public:
   auto get_active_power =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( const auto active_power = block->get_active_power( g ) )
-     return ( active_power + t )->get_value();
+     return ( active_power + t )->get_value() * block->get_scale();
     return 0;
    };
 
@@ -486,12 +513,12 @@ public:
     if( auto b = dynamic_cast<IntermittentUnitBlock *>( block ) ) {
      const auto & max_power = b->get_maximum_power();
      if( t < max_power.size() )
-      return max_power[ t ];
+      return max_power[ t ] * b->get_kappa();
     }
     if( auto b = dynamic_cast<BatteryUnitBlock *>( block ) ) {
      const auto & max_power = b->get_maximum_power();
      if( t < max_power.size() )
-      return b->get_maximum_power()[ t ];
+      return max_power[ t ] * b->get_kappa();
     }
     return Inf<double>();
    };
@@ -512,7 +539,7 @@ public:
   auto get_primary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_primary_spinning_reserve( g ) )
-     return ( reserve + t )->get_value();
+     return ( reserve + t )->get_value() * block->get_scale();
     return 0;
    };
 
@@ -532,7 +559,7 @@ public:
   auto get_secondary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_secondary_spinning_reserve( g ) )
-     return ( reserve + t )->get_value();
+     return ( reserve + t )->get_value() * block->get_scale();
     return 0;
    };
 
@@ -639,7 +666,7 @@ public:
   print_primary_spinning_reserve( unit_blocks );
   print_secondary_spinning_reserve( unit_blocks );
   print_storage( get_unit_blocks_with_storage( uc_block ) );
-  print_flow( uc_block->get_network_blocks() );
+  print_flow( uc_block );
   print_duals( uc_block );
   print_demand( uc_block );
   print_max_power( unit_blocks );
@@ -668,6 +695,58 @@ public:
 
  void set_initial_time( Index initial_time = 0 ) {
   this->initial_time = initial_time;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void copy( const std::string & current_suffix , const std::string & suffix ,
+            const UCBlock * uc_block ) {
+  const auto copy_options = std::filesystem::copy_options::overwrite_existing;
+  for( auto & filename : filenames ) {
+   filename.suffix = current_suffix;
+   if( filename.prefix == filenames[ marginal_pollutant ].prefix ) {
+    const auto number_pollutants = uc_block->get_number_pollutants();
+    for( Index p = 0 ; p < number_pollutants ; ++p ) {
+     const auto filename = get_marginal_pollutant_filename( p );
+     if( std::filesystem::is_regular_file( filename ) ) {
+      const auto new_filename = filename + suffix;
+      std::filesystem::copy( filename , new_filename , copy_options );
+     }
+    }
+   }
+   else {
+    auto new_filename = filename;
+    new_filename.suffix += suffix;
+    if( std::filesystem::is_regular_file( filename.name() ) )
+     std::filesystem::copy( filename.name() , new_filename.name() ,
+                            copy_options );
+   }
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+
+ void rename( const std::string & suffix_to_keep ,
+              const std::string & suffix_to_remove ,
+              const UCBlock * uc_block ) {
+  for( auto & filename : filenames ) {
+   filename.suffix = suffix_to_keep;
+   if( filename.prefix == filenames[ marginal_pollutant ].prefix ) {
+    const auto number_pollutants = uc_block->get_number_pollutants();
+    for( Index p = 0 ; p < number_pollutants ; ++p ) {
+     const auto new_filename = get_marginal_pollutant_filename( p );
+     const auto old_filename = new_filename + suffix_to_remove;
+     if( std::filesystem::is_regular_file( old_filename ) )
+      std::filesystem::rename( old_filename , new_filename );
+    }
+   }
+   else {
+    const auto new_filename = filename.name();
+    const auto old_filename = new_filename + suffix_to_remove;
+    if( std::filesystem::is_regular_file( old_filename ) )
+     std::filesystem::rename( old_filename , new_filename );
+   }
+  }
  }
 
 /*--------------------------------------------------------------------------*/
@@ -720,10 +799,11 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- template<class F>
+ template<class F , class G>
  void print_line_data( std::ostream & output ,
                        const std::vector< NetworkBlock * > & blocks ,
-                       const F & get_data , const int precision = 20 ) const {
+                       const F & get_data , const G & get_line_name ,
+                       const int precision = 20 ) const {
   if( blocks.empty() ) return;
 
   auto number_lines = get_number_lines( blocks.front() );
@@ -733,7 +813,7 @@ private:
   if( ! append ) {
    output << "Timestep";
    for( Index line = 0 ; line < number_lines ; ++line )
-    output << separator_character << "Line_" << line;
+    output << separator_character << get_line_name( line );
    output << std::endl;
   }
 
@@ -756,19 +836,34 @@ private:
 /*--------------------------------------------------------------------------*/
 
  template<class F>
- void print_node_data( std::ostream & output ,
-                       const std::vector< NetworkBlock * > & blocks ,
+ void print_node_data( std::ostream & output , const UCBlock * uc_block ,
                        const F & get_data , const int precision = 20 ) const {
+
+  const auto & blocks = uc_block->get_network_blocks();
+
   if( blocks.empty() ) return;
 
   auto number_nodes = get_number_nodes( blocks.front() );
 
   // Header
 
+  std::function< std::string( Index ) > get_node_name = []( Index node ) {
+   return "Node_" + std::to_string( node );
+  };
+
+  if( auto network_data = uc_block->get_NetworkData() ) {
+   const auto & node_names = network_data->get_node_names();
+   if( ! node_names.empty() )
+    get_node_name = [ &node_names ]( Index node ) {
+     assert( node < node_names.size() );
+     return node_names[ node ];
+    };
+  }
+
   if( ! append ) {
    output << "Timestep";
-   for( Index line = 0 ; line < number_nodes ; ++line )
-    output << separator_character << "Node_" << line;
+   for( Index node = 0 ; node < number_nodes ; ++node )
+    output << separator_character << get_node_name( node ) << node;
    output << std::endl;
   }
 
@@ -790,9 +885,9 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- template<class F>
+ template<class F , class G>
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
-                  const Index columns , const std::string header_prefix ,
+                  const Index columns , const G & get_column_name ,
                   const std::string first_column_header ,
                   const Index rows , const Index initial_row = 0 ,
                   const int precision = 20 ) const {
@@ -801,7 +896,7 @@ private:
   if( ! append ) {
    output << first_column_header;
    for( Index i = 0 ; i < columns ; ++i )
-    output << separator_character << header_prefix << i;
+    output << separator_character << get_column_name( i );
    output << std::endl;
   }
 
@@ -821,18 +916,33 @@ private:
  template<class F>
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
                   const Index columns , const int precision = 20 ) const {
-  print_data( output , block , get_data , columns , "Node_" , "Timestep" ,
-              block->get_time_horizon() , initial_time , precision );
+  std::function< std::string( Index ) > get_node_name = []( Index node ) {
+   return "Node_" + std::to_string( node );
+  };
+
+  if( auto network_data = block->get_NetworkData() ) {
+   const auto & node_names = network_data->get_node_names();
+   if( ! node_names.empty() )
+    get_node_name = [ &node_names ]( Index node ) {
+     assert( node < node_names.size() );
+     return node_names[ node ];
+    };
+  }
+
+  print_data( output , block , get_data , columns , get_node_name ,
+              "Timestep" , block->get_time_horizon() , initial_time ,
+              precision );
  }
 
 /*--------------------------------------------------------------------------*/
 
- template<class F>
+ template<class F , class G>
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
-                  const Index columns , const std::string header_prefix ,
+                  const Index columns , const G & get_column_name ,
                   const int precision = 20 ) const {
-  print_data( output , block , get_data , columns , header_prefix , "Timestep" ,
-              block->get_time_horizon() , initial_time , precision );
+  print_data( output , block , get_data , columns , get_column_name ,
+              "Timestep" , block->get_time_horizon() , initial_time ,
+              precision );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1062,7 +1172,7 @@ private:
 /*---------------------------- PRIVATE TYPES  ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
- struct filename {
+ struct Filename {
   std::string prefix;
   std::string suffix;
   std::string name() const { return prefix + suffix; };
@@ -1095,7 +1205,7 @@ private:
  char separator_character = ',';
  bool append = false;
  Index initial_time = 0;
- std::vector<filename> filenames;
+ std::vector<Filename> filenames;
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/

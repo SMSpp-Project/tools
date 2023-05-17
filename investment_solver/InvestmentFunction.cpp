@@ -28,6 +28,7 @@
 #include "IntermittentUnitBlock.h"
 #include "InvestmentFunction.h"
 #include "SDDPBlock.h"
+#include "SDDPBlockSolutionOutput.h"
 #include "SDDPGreedySolver.h"
 #include "SMSTypedefs.h"
 #include "StochasticBlock.h"
@@ -55,6 +56,7 @@ using namespace SMSpp_di_unipi_it;
 // register InvestmentFunction to the Block factory
 
 SMSpp_insert_in_factory_cpp_1( InvestmentFunction );
+SMSpp_insert_in_factory_cpp_1( InvestmentFunctionState );
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------------TODO-------------------------------------*/
@@ -74,7 +76,7 @@ InvestmentFunction::InvestmentFunction
   AssetTypeVector && asset_type , RealVector && cost ,
   RealVector && disinvestment_cost , Observer * const observer )
  : C05Function( observer ) , f_blocks_are_updated( false ) ,
-   f_solver_status( kUnEval ) , f_diagonal_linearization_required( false ) ,
+   f_status( kUnEval ) , f_diagonal_linearization_required( false ) ,
    f_id( this ) {
 
  set_inner_block( inner_block );
@@ -85,9 +87,13 @@ InvestmentFunction::InvestmentFunction
  v_cost = std::move( cost );
  v_disinvestment_cost = std::move( disinvestment_cost );
 
- const auto num_assets = v_asset_indices.size();
+ f_violated_constraint = { Inf< Index >() , eLHS };
+
+ v_events.resize( max_event_number() );
 
  // default parameter values
+
+ f_compute_linearization = get_dflt_int_par( intComputeLinearization );
  AAccMlt = get_dflt_dbl_par( dblAAccMlt );
  set_par( intGPMaxSz , C05Function::get_dflt_int_par( intGPMaxSz ) );
 }
@@ -122,6 +128,8 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
 
  // Deserialize the dimensions
 
+ // Number of assets
+
  Index num_assets;
 
  if( ! ::deserialize_dim( group , "NumAssets" , num_assets ) )
@@ -134,6 +142,15 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
                            ") is different from the number of active variables "
                            "(" + std::to_string( v_x.size() ) + ")." );
  }
+
+ // Number of linear constraints
+
+ Index num_constraints;
+
+ if( ! ::deserialize_dim( group , "NumConstraints" , num_constraints ) )
+  num_constraints = 0;
+
+ // Deserialize the assets
 
  if( num_assets ) {
 
@@ -215,6 +232,72 @@ void InvestmentFunction::deserialize( const netCDF::NcGroup & group ,
   }
 
  } // end( if( num_assets ) )
+
+ // Deserialize the linear constraints
+
+ if( num_constraints ) {
+
+  if( ::deserialize( group , "Constraints_LowerBound" , num_constraints ,
+                     v_constraints_lower_bound , true , true ) ) {
+   if( v_constraints_lower_bound.size() == 1 )
+    v_constraints_lower_bound.resize( num_constraints ,
+                                      v_constraints_lower_bound.front() );
+   else if( v_constraints_lower_bound.size() != num_constraints )
+    throw( std::logic_error
+           ( "InvestmentFunction::deserialize: the 'Constraints_LowerBound'"
+             " netCDF variable, if provided, must have size "
+             "0, 1, or 'NumConstraints'." ) );
+  }
+  else {
+   // The lower bound is - infinity
+   v_constraints_lower_bound.resize( num_constraints , -Inf< double >() );
+  }
+
+  if( ::deserialize( group , "Constraints_UpperBound" , num_constraints ,
+                     v_constraints_upper_bound , true , true ) ) {
+   if( v_constraints_upper_bound.size() == 1 )
+    v_constraints_upper_bound.resize( num_constraints ,
+                                      v_constraints_upper_bound.front() );
+   else if( v_constraints_upper_bound.size() != num_constraints )
+    throw( std::logic_error
+           ( "InvestmentFunction::deserialize: the 'Constraints_UpperBound'"
+             " netCDF variable, if provided, must have size "
+             "0, 1, or 'NumConstraints'." ) );
+  }
+  else {
+   // The upper bound is infinity
+   v_constraints_upper_bound.resize( num_constraints , Inf< double >() );
+  }
+
+  for( Index i = 0 ; i < num_constraints ; ++i )
+   if( v_constraints_lower_bound[ i ] > v_constraints_upper_bound[ i ] )
+    throw( std::logic_error
+           ( "InvestmentFunction::deserialize: Constraints_LowerBound[" +
+             std::to_string( i ) + "] = " +
+             std::to_string( v_constraints_lower_bound[ i ] ) + " > " +
+             std::to_string( v_constraints_upper_bound[ i ] ) + " = " +
+             "Constraints_UpperBound[" + std::to_string( i ) + "]." ) );
+
+  auto A = group.getVar( "Constraints_A" );
+  if( A.isNull() )
+   throw( std::logic_error( "InvestmentFunction::deserialize: the netCDF "
+                            "variable 'Constraints_A' has not been "
+                            "provided." ) );
+
+  auto dim_A = A.getDims();
+  if( ( A.getDimCount() != 2 ) || ( dim_A[ 0 ].getSize() != num_constraints ) ||
+      ( dim_A[ 1 ].getSize() != num_assets ) )
+   throw( std::logic_error( "InvestmentFunction::deserialize: the netCDF "
+                            "variable 'Constraints_A' must have dimensions "
+                            "'NumConstraints' x 'NumAssets'" ) );
+
+  v_A.resize( num_constraints );
+  for( Index i = 0 ; i < v_A.size() ; ++i ) {
+   v_A[ i ].resize( num_assets );
+   A.getVar( { i , 0 } , { 1 , num_assets } , v_A[ i ].data() );
+  }
+
+ } // end( deserialize linear constraints )
 
  // Deserialize the inner Block
 
@@ -381,6 +464,15 @@ void InvestmentFunction::set_variables( VarVector && x ) {
 
 void InvestmentFunction::set_par( const idx_type par , const int value ) {
  switch( par ) {
+
+  case( intComputeLinearization ):
+   f_compute_linearization = value;
+   break;
+
+  case( intOutputSolution ):
+   f_output_solution = value;
+   break;
+
   case( intGPMaxSz ): {
    if( value < 0 )
     throw( std::invalid_argument( "InvestmentFunction::set_par: intGPMaxSz "
@@ -406,6 +498,143 @@ void InvestmentFunction::set_par( const idx_type par , const int value ) {
   default: C05Function::set_par( par , value );
  }
 }  // end( InvestmentFunction::set_par )
+
+/*--------------------------------------------------------------------------*/
+/*---------------------- METHODS FOR EVENTS HANDLING -----------------------*/
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::handle_events( int type ) const {
+ for( auto & event : v_events[ type ] )
+  event();
+}
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::reset_event_handler( int type , EventID id ) {
+ if( type != eBeforeTermination )
+  throw( std::invalid_argument( "InvestmentFunction::reset_event_handler: "
+                                "unsupported event type "
+                                + std::to_string( type ) ) );
+
+ if( id >= v_events[ type ].size() )
+  throw( std::invalid_argument( "InvestmentFunction::reset_event_handler: "
+                                "incorrect event id " + std::to_string( id ) +
+                                " for type " + std::to_string( type ) ) );
+
+ static auto do_nothing = []() -> int {
+  return( ThinComputeInterface::eContinue ); };
+
+ if( id == v_events[ type ].size() - 1 ) {
+  // if the event is the last of its type, shorten the vector; moreover, if
+  // any of the previous events is a do_nothing, keep shortening
+  do
+   v_events[ type ].pop_back();
+  while( ( ! v_events[ type ].empty() ) &&
+         ( *( v_events[ type ].back().target < int( * )() > ( ) ) ==
+           do_nothing ) );
+ }
+ else
+  // the event is not the last of its type: replace it with a do_nothing to
+  // avoid messing up with the id-s, which are positions in the vector
+  v_events[ type ][ id ] = do_nothing;
+}
+
+/*--------------------------------------------------------------------------*/
+/*-------- METHODS FOR HANDLING THE State OF THE InvestmentFunction --------*/
+/*--------------------------------------------------------------------------*/
+
+State * InvestmentFunction::get_State( void ) const {
+ return new InvestmentFunctionState( this );
+}  // end( InvestmentFunction::get_State )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::put_State( const State & state ) {
+
+ const auto & s = dynamic_cast< const InvestmentFunctionState & >( state );
+
+ const bool global_pool_was_empty = global_pool.empty();
+
+ global_pool.clone( s.global_pool );
+
+ if( ! f_Observer )
+  return;
+
+ // If the global pool was not initially empty, issue a Modification telling
+ // that all previous linearizations have been removed.
+
+ if( ! global_pool_was_empty )
+  f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+                                ( this , C05FunctionMod::GlobalPoolRemoved ,
+                                  Subset() , 0 , 0 ) );
+
+ // Collect the indices of all linearizations that were added and issue the
+ // Modification.
+
+ Subset added;
+ added.reserve( global_pool.size() );
+ for( Index i = 0 ; i < global_pool.size() ; ++i )
+  if( global_pool.is_linearization_there( i ) )
+   added.push_back( i );
+
+ if( ! added.empty() )
+  f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+                                ( this , C05FunctionMod::GlobalPoolAdded ,
+                                  std::move( added ) , 0 , 0 ) );
+
+}  // end( InvestmentFunction::put_State )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::put_State( State && state ) {
+
+ auto && s = dynamic_cast< InvestmentFunctionState && >( state );
+
+ const bool global_pool_was_empty = global_pool.empty();
+
+ global_pool.clone( std::move( s.global_pool ) );
+
+ if( ! f_Observer )
+  return;
+
+ // If the global pool was not initially empty, issue a Modification telling
+ // that all previous linearizations have been removed.
+
+ if( ! global_pool_was_empty )
+  f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+                                ( this , C05FunctionMod::GlobalPoolRemoved ,
+                                  Subset() , 0 , 0 ) );
+
+ // Collect the indices of all linearizations that were added and issue the
+ // Modification.
+
+ Subset added;
+ added.reserve( global_pool.size() );
+ for( Index i = 0 ; i < global_pool.size() ; ++i )
+  if( global_pool.is_linearization_there( i ) )
+   added.push_back( i );
+
+ if( ! added.empty() )
+  f_Observer->add_Modification( std::make_shared<C05FunctionMod>
+                                ( this , C05FunctionMod::GlobalPoolAdded ,
+                                  std::move( added ) , 0 , 0 ) );
+}  // end( InvestmentFunction::put_State )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::serialize_State
+( netCDF::NcGroup & group , const std::string & sub_group_name ) const {
+
+ if( ! sub_group_name.empty() ) {
+  auto g = group.addGroup( sub_group_name );
+  serialize_State( g );
+  return;
+ }
+
+ group.putAtt( "type" , "InvestmentFunctionState" );
+ global_pool.serialize( group );
+
+}  // end( InvestmentFunction::serialize_State )
 
 /*--------------------------------------------------------------------------*/
 /*---- METHODS FOR HANDLING "ACTIVE" Variable IN THE InvestmentFunction ----*/
@@ -682,7 +911,8 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
   group.putAtt( "ReplicateIntermittentUnits" , netCDF::NcInt() ,
                 int( f_replicate_intermittent ) );
 
- auto NumAssets = group.addDim( "NumAssets" , v_asset_indices.size() );
+ const auto num_assets = v_asset_indices.size();
+ auto NumAssets = group.addDim( "NumAssets" , num_assets );
 
  ::serialize( group , "Assets" , netCDF::NcUint() , NumAssets ,
               v_asset_indices );
@@ -702,6 +932,25 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
   ::serialize( group , "InstalledQuantity" , netCDF::NcDouble() , NumAssets ,
                v_installed_quantity );
 
+ if( ! v_A.empty() ) {
+ // Deserialize the linear constraints
+
+  const auto num_constraints = v_A.size();
+  auto NumConstraints = group.addDim( "NumConstraints" , num_constraints );
+
+ ::serialize( group , "Constraints_LowerBound" , netCDF::NcDouble() ,
+              NumConstraints , v_constraints_lower_bound );
+
+ ::serialize( group , "Constraints_UpperBound" , netCDF::NcDouble() ,
+              NumConstraints , v_constraints_upper_bound );
+
+  auto Constraints_A = group.addVar( "Constraints_A" , netCDF::NcDouble() ,
+                                     { NumConstraints , NumAssets } );
+
+  for( Index i = 0 ; i < num_constraints ; ++i )
+   Constraints_A.putVar( { i , 0 } , { 1 , num_assets } , v_A[ i ].data() );
+ }
+
  if( auto inner_block = get_nested_Block( 0 ) ) {
   auto inner_block_group = group.addGroup( BLOCK_NAME );
   inner_block->serialize( inner_block_group );
@@ -714,13 +963,28 @@ void InvestmentFunction::serialize( netCDF::NcGroup & group ) const {
 
 int InvestmentFunction::compute( bool changedvars ) {
 
- if( ( ! changedvars ) && f_blocks_are_updated )
+ if( ( ! changedvars ) && f_blocks_are_updated ) {
   // TODO We need another flag telling whether the sub-Block has changed since
   // the last call.
-  return( f_solver_status ); //  nothing changed since last call, nothing to do
+  handle_events( eBeforeTermination );
+  return( f_status ); //  nothing changed since last call, nothing to do
+ }
 
+ output_variable_values();
+
+ reset_linearization();
  f_has_diagonal_linearization = false;
  f_has_value = false;
+
+ f_violated_constraint = { Inf< Index >() , eLHS };
+ if( ! is_feasible() ) { // the linear constraints are not satisfied
+  f_has_value = true;
+  f_value = worst_value();
+  output_function_value();
+  f_status = kOK;
+  handle_events( eBeforeTermination );
+  return( f_status );
+ }
 
  if( v_Block.empty() )
   throw( std::logic_error( "InvestmentFunction::compute: there must be at "
@@ -735,8 +999,13 @@ int InvestmentFunction::compute( bool changedvars ) {
  // Try to lock the inner Blocks.
  for( Index i = 0 ; i < v_Block.size() ; ++i ) {
   owned[ i ] = v_Block[ i ]->is_owned_by( f_id );
-  if( ( ! owned[ i ] ) && ( ! v_Block[ i ]->lock( f_id ) ) )
-   return( kError ); // If this does not work, this is clearly an error.
+  if( ( ! owned[ i ] ) && ( ! v_Block[ i ]->lock( f_id ) ) ) {
+   f_value = worst_value();
+   output_function_value();
+   f_status = kError; // If this does not work, this is clearly an error.
+   handle_events( eBeforeTermination );
+   return( f_status );
+  }
  }
 
  // Since the inner Solver may need to lock the inner Block, the
@@ -767,20 +1036,23 @@ int InvestmentFunction::compute( bool changedvars ) {
     if( ! owned[ i ] )
      v_Block[ i ]->unlock( f_id );  // unlock the inner Block
    }
-   std::cout << "InvestmentFunction::compute(): an error occurred while "
+   std::cerr << "InvestmentFunction::compute(): an error occurred while "
     "updating the Blocks: '" << e.what() << "'" << std::endl;
-   return( kError );
+   f_value = worst_value();
+   output_function_value();
+   f_status = kError;
+   handle_events( eBeforeTermination );
+   return( f_status );
   }
  }
 
  const auto num_scenarios = get_number_scenarios();
  f_value = 0.0;
- reset_linearization();
 
  const auto saved_f_ignore_modifications = f_ignore_modifications;
  f_ignore_modifications = true;
 
- f_solver_status = kUnEval;
+ f_status = kUnEval;
 
  // This variable indicates whether the loop over the scenarios must be
  // interrupted. The loop is interrupted when either a solution for a
@@ -791,7 +1063,7 @@ int InvestmentFunction::compute( bool changedvars ) {
  int error_status = kError;
 
  #pragma omp parallel for reduction( + : f_value )
- for( int scenario = 0 ; scenario < num_scenarios ; ++scenario ) {
+ for( int scenario = 0 ; scenario < int( num_scenarios ) ; ++scenario ) {
 
   if( interrupt_loop )
    continue;
@@ -802,6 +1074,7 @@ int InvestmentFunction::compute( bool changedvars ) {
   const auto status = solver->compute( true );
 
   if( ! solver->has_var_solution() ) {
+   unlock_sub_block( sub_block_index );
    #pragma omp critical( InvestmentFunction )
    {
     interrupt_loop = true;
@@ -813,14 +1086,16 @@ int InvestmentFunction::compute( bool changedvars ) {
   try {
    #pragma omp critical( InvestmentFunction )
    {
-    f_solver_status = status;
-    update_linearization( sub_block_index );
+    f_status = status;
+    if( f_compute_linearization )
+     update_linearization( sub_block_index );
    }
   }
   catch( const std::exception & e ) {
    // An error occurred while updating the linearization.
    std::cout << "InvestmentFunction::compute(): an error occurred while "
     "updating the linearization: '" << e.what() << "'" << std::endl;
+   unlock_sub_block( sub_block_index );
    #pragma omp critical( InvestmentFunction )
    {
     error_status = kError;
@@ -832,6 +1107,12 @@ int InvestmentFunction::compute( bool changedvars ) {
   // Update the function value
 
   f_value += solver->get_var_value();
+
+  // Possibly output the solution
+
+  if( f_output_solution )
+   SDDPBlockSolutionOutput().print( get_sddp_block( sub_block_index ) ,
+                                    scenario , true );
 
   // Unlock the sub-Block
 
@@ -853,8 +1134,11 @@ int InvestmentFunction::compute( bool changedvars ) {
    unlock_sub_block( i );
   }
 
-  f_solver_status = error_status;
-  return( f_solver_status );
+  f_status = kError;
+  f_value = worst_value();
+  output_function_value();
+  handle_events( eBeforeTermination );
+  return( f_status );
  }
 
  f_ignore_modifications = saved_f_ignore_modifications;
@@ -900,10 +1184,16 @@ int InvestmentFunction::compute( bool changedvars ) {
    v_Block[ i ]->unlock( f_id );
  }
 
- f_has_diagonal_linearization = true;
+ // At this point, if a linearization has been computed, then a diagonal
+ // linearization is available.
+ f_has_diagonal_linearization = f_compute_linearization;
+
  f_has_value = true;
 
- return( f_solver_status );
+ output_function_value();
+ f_status = kOK;
+ handle_events( eBeforeTermination );
+ return( f_status );
 
 }  // end( InvestmentFunction::compute )
 
@@ -949,11 +1239,29 @@ bool InvestmentFunction::has_linearization( const bool diagonal ) {
  }
  else {
   f_diagonal_linearization_required = false;
-  // TODO
-  throw( std::logic_error( "InvestmentFunction::has_linearization: vertical "
-                           "linearization not implemented yet." ) );
+
+  if( f_violated_constraint.first < Inf< Index >() ) {
+   // A constraint has been violated. Compute the vertical linearization.
+   assert( f_violated_constraint.first < v_A.size() );
+   const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+   const auto i = f_violated_constraint.first;
+   for( Index j = 0 ; j < Index( v_x.size() ) ; ++j )
+    v_linearization[ j ] = sign * v_A[ i ][ j ];
+   return true;
+  }
+
+  return false;
  }
 }  // end( InvestmentFunction::has_linearization )
+
+
+/*--------------------------------------------------------------------------*/
+
+bool InvestmentFunction::compute_new_linearization( bool diagonal ) {
+ if( diagonal )
+  return false;
+ return ! is_feasible();
+}
 
 /*--------------------------------------------------------------------------*/
 
@@ -1033,16 +1341,28 @@ void InvestmentFunction::delete_linearizations( Subset && which , bool ordered ,
 void InvestmentFunction::get_linearization_coefficients
 ( FunctionValue * g , Range range , Index name ) {
 
- if( name != Inf< Index >() )
-  throw( std::logic_error( "InvestmentFunction::get_linearization_coefficients: "
-                           "linearization from global pool not implemented yet." ) );
-
  range.second = std::min( range.second , Index( v_x.size() ) );
  if( range.second <= range.first )
   return;
 
- for( Index i = range.first ; i < range.second ; ++i ) {
-  g[ i - range.first ] = v_linearization[ i ];
+ if( name != Inf< Index >() ) {
+  // Linearization from the global pool
+  global_pool.get_linearization_coefficients( g , range , name );
+  return;
+ }
+
+ if( f_diagonal_linearization_required ) {
+  // Diagonal linearization
+  for( Index i = range.first ; i < range.second ; ++i )
+   g[ i - range.first ] = v_linearization[ i ];
+ }
+ else {
+  // Vertical linearization
+  assert( f_violated_constraint.first < v_A.size() );
+  const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+  const auto i = f_violated_constraint.first;
+  for( Index j = range.first ; j < range.second ; ++j )
+   g[ j - range.first ] = sign * v_A[ i ][ j ];
  }
 }  // end( InvestmentFunction::get_linearization_coefficients( * , range ) )
 
@@ -1051,16 +1371,28 @@ void InvestmentFunction::get_linearization_coefficients
 void InvestmentFunction::get_linearization_coefficients
 ( SparseVector & g , Range range , Index name ) {
 
- if( name != Inf< Index >() )
-  throw( std::logic_error( "InvestmentFunction::get_linearization_coefficients: "
-                           "linearization from global pool not implemented yet." ) );
-
  range.second = std::min( range.second , Index( v_x.size() ) );
  if( range.second <= range.first )
   return;
 
- for( Index i = range.first ; i < range.second ; ++i ) {
-  g.coeffRef( i ) = v_linearization[ i ];
+ if( name != Inf< Index >() ) {
+  // Linearization from the global pool
+  global_pool.get_linearization_coefficients( g , range , name );
+  return;
+ }
+
+ if( f_diagonal_linearization_required ) {
+  // Diagonal linearization
+  for( Index i = range.first ; i < range.second ; ++i )
+   g.coeffRef( i ) = v_linearization[ i ];
+ }
+ else {
+  // Vertical linearization
+  assert( f_violated_constraint.first < v_A.size() );
+  const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+  const auto i = f_violated_constraint.first;
+  for( Index j = range.first ; j < range.second ; ++j )
+   g.coeffRef( j ) = sign * v_A[ i ][ j ];
  }
 }  // end( InvestmentFunction::get_linearization_coefficients( sv , range ) )
 
@@ -1069,13 +1401,26 @@ void InvestmentFunction::get_linearization_coefficients
 void InvestmentFunction::get_linearization_coefficients
 ( FunctionValue * g , c_Subset & subset , const bool ordered , Index name ) {
 
- if( name != Inf< Index >() )
-  throw( std::logic_error( "InvestmentFunction::get_linearization_coefficients: "
-                           "linearization from global pool not implemented yet." ) );
+ if( name != Inf< Index >() ) {
+  // Linearization from the global pool
+  global_pool.get_linearization_coefficients( g , subset , ordered , name );
+  return;
+ }
 
- Index k = 0;
- for( auto i : subset ) {
-  g[ k++ ] = v_linearization[ i ];
+ if( f_diagonal_linearization_required ) {
+  // Diagonal linearization
+  Index k = 0;
+  for( auto i : subset )
+   g[ k++ ] = v_linearization[ i ];
+ }
+ else {
+  // Vertical linearization
+  assert( f_violated_constraint.first < v_A.size() );
+  const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+  const auto i = f_violated_constraint.first;
+  Index k = 0;
+  for( auto j : subset )
+   g[ k++ ] = sign * v_A[ i ][ j ];
  }
 }  // end( InvestmentFunction::get_linearization_coefficients( * , subset ) )
 
@@ -1084,12 +1429,24 @@ void InvestmentFunction::get_linearization_coefficients
 void InvestmentFunction::get_linearization_coefficients
 ( SparseVector & g , c_Subset & subset , const bool ordered , Index name ) {
 
- if( name != Inf< Index >() )
-  throw( std::logic_error( "InvestmentFunction::get_linearization_coefficients: "
-                           "linearization from global pool not implemented yet." ) );
+ if( name != Inf< Index >() ) {
+  // Linearization from the global pool
+  global_pool.get_linearization_coefficients( g , subset , ordered , name );
+  return;
+ }
 
- for( auto i : subset ) {
-  g.coeffRef( i ) = v_linearization[ i ];
+ if( f_diagonal_linearization_required ) {
+  // Diagonal linearization
+  for( auto i : subset )
+   g.coeffRef( i ) = v_linearization[ i ];
+ }
+ else {
+  // Vertical linearization
+  assert( f_violated_constraint.first < v_A.size() );
+  const double sign = ( f_violated_constraint.second == eLHS ) ? -1 : 1;
+  const auto i = f_violated_constraint.first;
+  for( auto j : subset )
+   g.coeffRef( j ) = sign * v_A[ i ][ j ];
  }
 }  // end( InvestmentFunction::get_linearization_coefficients( sv, subset ) )
 
@@ -1102,6 +1459,7 @@ InvestmentFunction::get_linearization_constant( Index name ) {
   // Linearization just computed and not in the global pool yet.
 
   if( f_diagonal_linearization_required ) {
+   // Diagonal linearization
    auto alpha = f_value;
    for( Index i = 0 ; i < v_linearization.size() ; ++i ) {
     alpha -= v_linearization[ i ] * get_var_value( i );
@@ -1110,16 +1468,28 @@ InvestmentFunction::get_linearization_constant( Index name ) {
    return alpha;
   }
   else {
-   // TODO
-   throw( std::logic_error( "InvestmentFunction::get_linearization_constant: "
-                            "vertical linearization not implemented yet." ) );
+   // Vertical linearization
+   assert( f_violated_constraint.first < v_A.size() );
+   const auto i = f_violated_constraint.first;
+   double alpha = 0;
+   if( f_reformulated_bounds ) {
+    for( Index j = 0 ; j < v_A[ i ].size() ; ++j )
+     if( ( j < v_lower_bound.size() )
+         && ( v_lower_bound[ j ] > -Inf< double >() ) )
+      alpha += v_A[ i ][ j ] * v_lower_bound[ j ];
+   }
+
+   if( f_violated_constraint.second == eLHS )
+    alpha = v_constraints_lower_bound[ i ] - alpha;
+   else
+    alpha = alpha - v_constraints_upper_bound[ i ];
+
+   return alpha;
   }
  }
  else {
-  // TODO
-  throw( std::logic_error( "InvestmentFunction::get_linearization_constant: "
-                           "linearization from global pool not implemented "
-                           "yet." ) );
+  // Linearization from the global pool
+  return global_pool.get_linearization_constant( name );
  }
 
  return 0;
@@ -1130,10 +1500,60 @@ InvestmentFunction::get_linearization_constant( Index name ) {
 Function::FunctionValue InvestmentFunction::get_value( void ) const {
  if( f_has_value )
   return f_value;
- if( get_inner_block_objective_sense() == Objective::eMin )
-  return Inf< double >();
- return -Inf< double >();
+ return worst_value();
 } // end ( InvestmentFunction::get_value )
+
+/*--------------------------------------------------------------------------*/
+
+double InvestmentFunction::compute_linear_constraint_value( Index i ) const {
+ double value = 0;
+ for( Index j = 0 ; j < v_A[ i ].size() ; ++j )
+  value += v_A[ i ][ j ] * get_var_value( j , false );
+ return value;
+}
+
+/*--------------------------------------------------------------------------*/
+
+bool InvestmentFunction::is_feasible( void ) {
+
+ Index start = 0;
+ if( f_violated_constraint.first < Inf< Index >() )
+  start = f_violated_constraint.first + 1;
+
+ for( Index i = start ; i < v_A.size() ; ++i ) {
+  auto constraint_value = compute_linear_constraint_value( i );
+
+  // Lower bound constraint
+  {
+   auto lower_violation = v_constraints_lower_bound[ i ] - constraint_value;
+   if( lower_violation > 0 ) {
+    lower_violation /=
+     std::max( decltype( v_constraints_lower_bound )::value_type( 1 ) ,
+               std::abs( v_constraints_lower_bound[ i ] ) );
+    if( lower_violation > f_constraints_tolerance ) {
+     f_violated_constraint = { i , eLHS };
+     return false;
+    }
+   }
+  }
+
+  // Upper bound constraint
+  {
+   auto upper_violation = constraint_value - v_constraints_upper_bound[ i ];
+   if( upper_violation > 0 ) {
+    upper_violation /=
+     std::max( decltype( v_constraints_upper_bound )::value_type( 1 ) ,
+               std::abs( v_constraints_upper_bound[ i ] ) );
+    if( upper_violation > f_constraints_tolerance ) {
+     f_violated_constraint = { i , eRHS };
+     return false;
+    }
+   }
+  }
+ }
+
+ return true;
+} // end ( InvestmentFunction::is_feasible )
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- Methods for handling Modification -------------------*/
@@ -1283,7 +1703,7 @@ void InvestmentFunction::build_generator_node_map() {
 
     const auto index = std::distance( block_indices.cbegin() , it );
 
-    if( index == block_indices.size() ) {
+    if( index == decltype( index)( block_indices.size() ) ) {
      // This UnitBlock is not subject to investment.
      elc_generator += num_generators;
      continue;
@@ -1755,8 +2175,6 @@ double InvestmentFunction::compute_kappa_linearization
   // Intake and outtake level bounds
 
   if( ! intake_bound_constraints.empty() ) {
-   double alpha_max = 0;
-
    const auto dual = intake_bound_constraints[ t ].get_dual();
 
    // Now determine which bound is associated with the dual value
@@ -2221,6 +2639,45 @@ void InvestmentFunction::unlock_sub_block( Index i ) {
 }
 
 /*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::output_variable_values() const {
+ if( f_output_filename.empty() )
+  return;
+
+ std::ofstream file( f_output_filename , std::ios_base::app );
+
+ if( ! file.is_open() ) {
+  std::cerr << "InvestmentFunction::output_variable_values: "
+            << "it was not possible to open the file \""
+            << f_output_filename + "\"." << std::endl;
+  return;
+ }
+
+ file << "Variables: " << v_x.size() << std::endl;
+ file << std::setprecision( 20 );
+ for( Index i = 0 ; i < v_x.size() ; ++i )
+  file << get_var_value( i , false ) << std::endl;
+}
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::output_function_value() const {
+ if( f_output_filename.empty() )
+  return;
+
+ std::ofstream file( f_output_filename , std::ios_base::app );
+
+ if( ! file.is_open() ) {
+  std::cerr << "InvestmentFunction::output_function_value: "
+            << "it was not possible to open the file \""
+            << f_output_filename + "\"." << std::endl;
+  return;
+ }
+
+ file << "Function value: " << f_value << std::endl;
+}
+
+/*--------------------------------------------------------------------------*/
 /*----------------------------- GlobalPool ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -2366,6 +2823,270 @@ void InvestmentFunction::GlobalPool::delete_linearizations( Subset & which ,
    if( is_linearization_there( i ) )
     delete_linearization( i );
  }
+}
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::deserialize
+( const netCDF::NcGroup & group ) {
+
+ auto gs = group.getDim( "InvestmentFunction_MaxGlob" );
+ const auto global_pool_size = gs.isNull() ? 0 : gs.getSize();
+
+ linearization_constants.assign( global_pool_size , NaN );
+ linearization_coefficients.resize( global_pool_size , {} );
+ is_diagonal.assign( global_pool_size , true );
+
+ if( global_pool_size ) {
+
+  ::deserialize( group , "InvestmentFunction_Constants" , { global_pool_size } ,
+                 linearization_constants , false , false );
+
+  auto nct = group.getVar( "InvestmentFunction_Type" );
+  if( nct.isNull() )
+   throw( std::logic_error( "InvestmentFunction::GlobalPool::deserialize: "
+                            "InvestmentFunction_Type was not found." ) );
+
+  auto nc_coeff = group.getVar( "InvestmentFunction_Coefficients" );
+
+  // Number of non-NaN constants
+  auto num_constants = std::count_if( std::cbegin( linearization_constants ) ,
+                                      std::cend( linearization_constants ) ,
+                                      []( FunctionValue v ) {
+                                       return ! std::isnan( v ); } );
+
+  Index num_var = 0;
+
+  if( num_constants ) {
+   // At least one linearization constant is not NaN. In this case, the
+   // coefficients must be provided.
+   if( nc_coeff.isNull() )
+    throw( std::logic_error( "InvestmentFunction::GlobalPool::deserialize: "
+                             "InvestmentFunction_Coefficients was not found."
+                             ) );
+
+   // Retrieve the number of variables.
+
+   assert( nc_coeff.getDimCount() == 1 );
+   const auto dim_size = nc_coeff.getDim( 0 ).getSize();
+   if( dim_size % num_constants != 0 )
+    throw( std::logic_error( "InvestmentFunction::GlobalPool::deserialize: "
+                             "InvestmentFunction_Coefficients has an "
+                             "incompatible dimension." ) );
+
+   num_var = dim_size / num_constants;
+  }
+
+  Index coeff_start = 0;
+
+  for( Index i = 0 ; i < global_pool_size ; ++i ) {
+   int type;
+   nct.getVar( { i } , &type );
+   is_diagonal[ i ] = ( type != 0 );
+
+   if( ! std::isnan( linearization_constants[ i ] ) ) {
+    // There is a linearization that is not
+    linearization_coefficients[ i ].resize( num_var );
+    nc_coeff.getVar( { coeff_start } , { num_var } ,
+                     linearization_coefficients[ i ].data() );
+    coeff_start += num_var;
+   }
+  }
+ }
+
+ auto nic = group.getDim( "InvestmentFunction_ImpCoeffNum" );
+ if( ( ! nic.isNull() ) && ( nic.getSize() ) ) {
+  important_linearization_lin_comb.resize( nic.getSize() );
+
+  auto ncCI = group.getVar( "InvestmentFunction_ImpCoeffInd" );
+  if( ncCI.isNull() )
+   throw( std::logic_error( "InvestmentFunction::GlobalPool::deserialize: "
+                            "InvestmentFunction_ImpCoeffInd was not found." ) );
+
+  auto ncCV = group.getVar( "InvestmentFunction_ImpCoeffVal" );
+  if( ncCV.isNull() )
+   throw( std::logic_error( "InvestmentFunction::GlobalPool::deserialize: "
+                            "InvestmentFunction_ImpCoeffVal was not found." ) );
+
+  for( Index i = 0 ; i < important_linearization_lin_comb.size() ; ++i ) {
+   ncCI.getVar( { i } , &( important_linearization_lin_comb[ i ].first ) );
+   ncCV.getVar( { i } , &( important_linearization_lin_comb[ i ].second ) );
+  }
+ }
+ else
+  important_linearization_lin_comb.clear();
+
+}  // end( InvestmentFunction::GlobalPool::deserialize )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::serialize( netCDF::NcGroup & group ) const {
+
+ const auto global_pool_size = size();
+
+ if( global_pool_size ) {
+
+  auto size_dim = group.addDim( "InvestmentFunction_MaxGlob" , global_pool_size );
+
+  group.addVar( "InvestmentFunction_Constants" , netCDF::NcDouble() , size_dim ).
+   putVar( linearization_constants.data() );
+
+  Index num_var = 0;
+  Index coeff_dim_size = 0;
+  for( Index i = 0 ; i < global_pool_size ; ++i )
+   if( ! std::isnan( linearization_constants[ i ] ) ) {
+    if( num_var == 0 )
+     num_var = linearization_coefficients[ i ].size();
+    assert( num_var == linearization_coefficients[ i ].size() );
+    coeff_dim_size += num_var;
+   }
+
+  if( coeff_dim_size ) {
+   auto nc_coeff_dim = group.addDim( "InvestmentFunction_Coefficients_Dim" ,
+                                     coeff_dim_size );
+   auto nc_coeff = group.addVar( "InvestmentFunction_Coefficients" ,
+                                 netCDF::NcDouble() , nc_coeff_dim );
+   Index coeff_start = 0;
+   for( Index i = 0 ; i < global_pool_size ; ++i )
+    if( ! std::isnan( linearization_constants[ i ] ) ) {
+     nc_coeff.putVar( { coeff_start } , { num_var } ,
+                      linearization_coefficients[ i ].data() );
+     coeff_start += num_var;
+    }
+  }
+
+  std::vector< int > type( global_pool_size );
+  for( Index i = 0 ; i < global_pool_size ; ++i )
+   type[ i ] = is_diagonal[ i ] ? 1 : 0;
+
+  group.addVar( "InvestmentFunction_Type" , netCDF::NcByte() , size_dim )
+   .putVar( { 0 } , { global_pool_size } , type.data() );
+ }
+
+ if( ! important_linearization_lin_comb.empty() ) {
+  auto linearization_dim = group.addDim
+   ( "InvestmentFunction_ImpCoeffNum" , important_linearization_lin_comb.size() );
+
+  auto linearization_coeff_index = group.addVar
+   ( "InvestmentFunction_ImpCoeffInd" , netCDF::NcInt() , linearization_dim );
+
+  auto linearization_coeff_value = group.addVar
+   ( "InvestmentFunction_ImpCoeffVal" , netCDF::NcDouble() , linearization_dim );
+
+  for( Index i = 0 ; i < important_linearization_lin_comb.size() ; ++i ) {
+   linearization_coeff_index.putVar
+    ( { i } , important_linearization_lin_comb[ i ].first );
+   linearization_coeff_value.putVar
+    ( { i } , important_linearization_lin_comb[ i ].second );
+  }
+ }
+}  // end( InvestmentFunction::GlobalPool::serialize )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::clone( const GlobalPool & global_pool ) {
+
+ if( this->size() < global_pool.size() ) {
+  // resize this GlobalPool to accomodate the given elements
+  this->resize( global_pool.size() );
+ }
+
+ std::copy( global_pool.is_diagonal.cbegin() ,
+            global_pool.is_diagonal.cend() ,
+            is_diagonal.begin() );
+
+ std::copy( global_pool.linearization_constants.cbegin() ,
+            global_pool.linearization_constants.cend() ,
+            linearization_constants.begin() );
+
+ important_linearization_lin_comb =
+  global_pool.important_linearization_lin_comb;
+
+ for( Index i = 0 ; i < size() ; ++i )
+  linearization_coefficients[ i ] = global_pool.linearization_coefficients[ i ];
+}  // end( InvestmentFunction::GlobalPool::clone )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::clone( GlobalPool && global_pool ) {
+
+ // The size of the GlobalPool will be at least the size it currently has.
+ const auto size = std::max( this->size() , global_pool.size() );
+
+ is_diagonal = std::move( global_pool.is_diagonal );
+
+ linearization_constants = std::move( global_pool.linearization_constants );
+
+ important_linearization_lin_comb =
+  std::move( global_pool.important_linearization_lin_comb );
+
+ linearization_coefficients =
+  std::move( global_pool.linearization_coefficients );
+
+ // Possibly resize this GlobalPool so that it has at least the same size it
+ // had before.
+
+ this->resize( size );
+
+}  // end( InvestmentFunction::GlobalPool::clone )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::get_linearization_coefficients
+( FunctionValue * g , Range range , Index name ) const {
+ for( Index i = range.first ; i < range.second ; ++i )
+  g[ i - range.first ] = linearization_coefficients[ name ][ i ];
+}  // end( InvestmentFunction::GlobalPool::get_linearization_coefficients )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::get_linearization_coefficients
+( SparseVector & g , Range range , Index name ) const {
+ for( Index i = range.first ; i < range.second ; ++i )
+  g.coeffRef( i ) = linearization_coefficients[ name ][ i ];
+}  // end( InvestmentFunction::GlobalPool::get_linearization_coefficients )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::get_linearization_coefficients
+( FunctionValue * g , c_Subset & subset , const bool ordered , Index name )
+ const {
+ Index k = 0;
+ for( auto i : subset )
+  g[ k++ ] = linearization_coefficients[ name ][ i ];
+}  // end( InvestmentFunction::GlobalPool::get_linearization_coefficients )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunction::GlobalPool::get_linearization_coefficients
+( SparseVector & g , c_Subset & subset , const bool ordered , Index name )
+ const {
+ for( auto i : subset )
+  g.coeffRef( i ) = linearization_coefficients[ name ][ i ];
+}  // end( InvestmentFunction::GlobalPool::get_linearization_coefficients )
+
+/*--------------------------------------------------------------------------*/
+/*------------------------ InvestmentFunctionState -------------------------*/
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunctionState::deserialize( const netCDF::NcGroup & group ) {
+ global_pool.deserialize( group );
+}
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentFunctionState::serialize( netCDF::NcGroup & group ) const {
+ State::serialize( group );
+ global_pool.serialize( group );
+}
+
+/*--------------------------------------------------------------------------*/
+
+InvestmentFunctionState::InvestmentFunctionState
+( const InvestmentFunction * f ) {
+ if( ! f )
+  return;
+ global_pool.clone( f->global_pool );
 }
 
 /*--------------------------------------------------------------------------*/

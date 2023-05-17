@@ -18,7 +18,7 @@
 cmake_minimum_required(VERSION 3.12)
 cmake_policy(VERSION 3.12)
 project(SMS++_tools
-        VERSION 0.5.1
+        VERSION 0.5.2
         DESCRIPTION "SMS++ tools"
         HOMEPAGE_URL https://gitlab.com/smspp/tools
         LANGUAGES C CXX)
@@ -28,7 +28,7 @@ get_directory_property(hasParent PARENT_DIRECTORY)
 
 # ----- Settings ------------------------------------------------------------ #
 # An option is an ON/OFF user-settable cache variable.
-option(tools_USE_DL "Use dynamic loading" ON)
+option(tools_USE_DL "Use dynamic loading" OFF)
 
 # This is needed for setting the runtime path when installing.
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)

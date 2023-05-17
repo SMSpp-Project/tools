@@ -7,7 +7,7 @@
  * InvestmentBlock. The description of the InvestmentBlock must be given in a
  * netCDF file. This tool can be executed as follows:
  *
- *   ./investment_solver [-s] [-r] [-e] [-l FILE] [-n NUMBER] [-B FILE]
+ *   ./investment_solver [-s] [-r] [-e] [-o] [-l FILE] [-n NUMBER] [-B FILE]
  *                       [-p PATH] [-c PATH] [-x FILE ] -S FILE <nc4-file>
  *
  * The only mandatory arguments are the netCDF file containing the description
@@ -39,6 +39,16 @@
  *
  * The -r option indicates that the integrality constraints over the variables
  * must be relaxed.
+ *
+ * To simulate a given investment, i.e., to compute the investment function at
+ * a given point, the -s option must be used. The investment to be simulated
+ * is given by the initial point as described above: a given point provided by
+ * the -x option or the default initial point.
+ *
+ * If the -o option is used, then part of the primal and dual solutions of
+ * every UCBlock for each scenario is output while the investment function is
+ * computed. Typically, one may want the solutions to be output in simulation
+ * mode (i.e., when the -s option is used).
  *
  * The -n option specifies the number of sub-Blocks of SDDPBlock that must be
  * constructed for each stage. By default, SDDPBlock contains a single
@@ -106,6 +116,7 @@
 #include "CutProcessing.h"
 #include "InvestmentBlock.h"
 #include "InvestmentFunction.h"
+#include "SDDPBlockSolutionOutput.h"
 
 #ifdef USE_MPI
 #include <boost/mpi/environment.hpp>
@@ -122,11 +133,23 @@ std::string solver_config_filename{};
 std::string config_filename_prefix{};
 std::string cuts_filename{};
 std::string initial_point_filename{};
+
+// State to be loaded into the InvestmentBlock Solver
+std::string solver_state_input_filename{};
+
+// Prefix to the name of the file that will store the State of the
+// InvestmentBlock Solver
+std::string solver_state_output_filename{};
+
+const std::string best_solution_filename = "Solution_OUT.csv";
+
 long num_sub_blocks_per_stage = 1;
+
 bool relax_integrality = false;
 bool eliminate_reduntant_cuts = false;
 bool simulate_investment = false;
 bool single_scenario = false;
+bool output_solution = false;
 const bool force_hard_components = false;
 const bool continuous_relaxation = true;
 
@@ -134,6 +157,9 @@ const bool continuous_relaxation = true;
 // of the form l <= x <= u, these constraints must be reformulated by
 // replacing them by 0 <= x <= u - l.
 const bool reformulate_variable_bounds = true;
+
+// This variable indicates whether negative prices may occur
+const bool negative_prices = false;
 
 std::string exe{};         ///< Name of the executable file
 std::string docopt_desc{}; ///< Tool description
@@ -158,12 +184,15 @@ void print_help() {
            << "  " << exe << " -h | --help\n"
            << std::endl
            << "Options:\n"
+           << "  -a, --save-state <prefix>       Save states of the InvestmentBlock solver.\n"
            << "  -B, --blockcfg <file>           Block configuration.\n"
+           << "  -b, --load-state <file>         Load a state for the InvestmentBlock solver.\n"
            << "  -c, --configdir <path>          The prefix for all config filenames.\n"
            << "  -e, --eliminate-redundant-cuts  Eliminate given redundant cuts.\n"
            << "  -h, --help                      Print this help.\n"
            << "  -l, --load-cuts <file>          Load cuts from a file.\n"
            << "  -n, --num-blocks <number>       Number of sub-Blocks per stage.\n"
+           << "  -o, --output-solution           Output the solutions.\n"
            << "  -p, --prefix <path>             The prefix for all Block filenames.\n"
            << "  -r, --relax                     Relax integer variables.\n"
            << "  -S, --solvercfg <file>          Solver configuration.\n"
@@ -195,14 +224,17 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:c:hel:n:p:rS:sx:";
+ const char * const short_opts = "a:B:b:c:hel:n:op:rS:sx:";
  const option long_opts[] = {
+  { "save-state" ,               required_argument , nullptr , 'a' } ,
   { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
+  { "load-state" ,               required_argument , nullptr , 'b' } ,
   { "configdir" ,                required_argument , nullptr , 'c' } ,
   { "help" ,                     no_argument ,       nullptr , 'h' } ,
   { "eliminate-redundant-cuts" , no_argument ,       nullptr , 'e' } ,
   { "load-cuts" ,                required_argument , nullptr , 'l' } ,
   { "num-blocks" ,               required_argument , nullptr , 'n' } ,
+  { "output-solution" ,          no_argument ,       nullptr , 'o' } ,
   { "prefix" ,                   required_argument , nullptr , 'p' } ,
   { "relax" ,                    no_argument ,       nullptr , 'r' } ,
   { "solvercfg" ,                required_argument , nullptr , 'S' } ,
@@ -221,8 +253,14 @@ void process_args( int argc , char ** argv ) {
   }
 
   switch( opt ) {
+   case 'a':
+    solver_state_output_filename = std::string( optarg );
+    break;
    case 'B':
     block_config_filename = std::string( optarg );
+    break;
+   case 'b':
+    solver_state_input_filename = std::string( optarg );
     break;
    case 'c':
     config_filename_prefix = std::string( optarg );
@@ -243,6 +281,9 @@ void process_args( int argc , char ** argv ) {
     }
     break;
    }
+   case 'o':
+    output_solution = true;
+    break;
    case 'p':
     Block::set_filename_prefix( std::string( optarg ) );
     break;
@@ -452,9 +493,10 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
            " and " + std::to_string( stage ) +
            " do not have the same structure." ) );
 
- if( single_scenario ) {
-  // The only way to update the initial up and down time is when there is a
-  // single scenario.
+ if( simulate_investment && single_scenario ) {
+  // One case where we can safely update the initial up and downtime is when
+  // we are simulating a single scenario considering the simulation-based
+  // investment function.
   auto init_up_down_time = compute_init_up_down_time
    ( sddp_block , previous_unit , unit , stage );
 
@@ -558,41 +600,53 @@ std::vector< double > load_initial_point() {
 
 void set_initial_point( InvestmentBlock * investment_block ) {
 
- // Set the initial point
+ // Generate the abstract variables so that we can set their values.
 
  investment_block->generate_abstract_variables();
 
+ // Possibly load a given initial point.
+
  initial_point = load_initial_point();
 
- bool initial_point_provided = true;
+ if( ! initial_point.empty() ) {
+  // An initial point has been provided.
 
- if( initial_point.empty() ) {
-  initial_point_provided = false;
+  const auto num_variables = investment_block->get_number_variables();
+  if( initial_point.size() != num_variables )
+   throw( std::logic_error( "The initial point has size " +
+                            std::to_string( initial_point.size() ) + ", but "
+                            "there are " + std::to_string( num_variables ) +
+                            " variables." ) );
+
+  if( reformulate_variable_bounds ) {
+
+   // If variable bounds have been reformulated, the initial point must be
+   // adjusted.
+
+   const auto & var_lower_bound = investment_block->get_variable_lower_bound();
+   for( Index i = 0 ; i < initial_point.size() ; ++i ) {
+    if( ( i < var_lower_bound.size() ) &&
+        ( var_lower_bound[ i ] > -Inf< double >() ) )
+     initial_point[ i ] -= var_lower_bound[ i ];
+   }
+  }
+ }
+ else {
+  // Since no initial point has been provided, we use the default one.
   initial_point = get_default_initial_point( investment_block );
  }
 
- const auto num_variables = investment_block->get_number_variables();
- if( initial_point.size() != num_variables )
-  throw( std::logic_error( "The initial point has size " +
-                           std::to_string( initial_point.size() ) + ", but "
-                           "there are " + std::to_string( num_variables ) +
-                           " variables." ) );
+ // Finally, set the initial point.
 
- if( initial_point_provided ) {
+ investment_block->set_variable_values( initial_point );
+}
 
-  auto initial_point_ = initial_point;
+/*--------------------------------------------------------------------------*/
 
-  if( reformulate_variable_bounds ) {
-   const auto & var_lower_bound = investment_block->get_variable_lower_bound();
-   for( Index i = 0 ; i < initial_point_.size() ; ++i ) {
-    if( ( i < var_lower_bound.size() ) &&
-        ( var_lower_bound[ i ] > -Inf< double >() ) )
-     initial_point_[ i ] -= var_lower_bound[ i ];
-   }
-  }
-
-  investment_block->set_variable_values( initial_point_ );
- }
+int get_objective_sense( const SDDPBlock * sddp_block ) {
+ if( ! sddp_block )
+  return Objective::eUndef;
+ return sddp_block->get_objective_sense();
 }
 
 /*--------------------------------------------------------------------------*/
@@ -601,6 +655,10 @@ void invest( InvestmentBlock * investment_block ) {
 
  auto investment_function = static_cast< InvestmentFunction * >
   ( investment_block->get_function() );
+
+ // Possibly output the solution
+ investment_function->
+  set_par( InvestmentFunction::intOutputSolution , output_solution );
 
  for( Index i = 0 ; i < investment_function->get_number_nested_Blocks() ;
       ++i ) {
@@ -648,15 +706,28 @@ void invest( InvestmentBlock * investment_block ) {
 
   if( ! initial_point.empty() ) {
    std::cout << "Simulating the investment (";
-   bool first_point = true;
-   for( auto x : initial_point ) {
-    if( ! first_point )
+
+   const auto & var_lower_bound = investment_block->get_variable_lower_bound();
+
+   for( Index i = 0 ; i < initial_point.size() ; ++i ) {
+
+    auto x_i = initial_point[ i ];
+    if( reformulate_variable_bounds && ( i < var_lower_bound.size() ) &&
+        ( var_lower_bound[ i ] > -Inf< double >() ) )
+     // Since variable bounds have been reformulated, adjust x_i so that the
+     // user sees the expected initial point.
+     x_i += var_lower_bound[ i ];
+
+    if( i > 0 )
      std::cout << ", ";
-    std::cout << x;
-    first_point = false;
+    std::cout << x_i;
    }
    std::cout << ")." << std::endl;
   }
+
+  // Disable the computation of linearization
+  investment_function->
+   set_par( InvestmentFunction::intComputeLinearization , 0 );
 
   // Simulate
   auto objective =
@@ -674,32 +745,140 @@ void invest( InvestmentBlock * investment_block ) {
 
   investment_solver->set_log( &std::cout );
 
-  auto status = investment_solver->compute();
+  // Output the variable and function values at each iteration
+  investment_function->set_par( InvestmentFunction::strOutputFilename ,
+                                "investment_candidates.txt" );
+
+  if( ! solver_state_input_filename.empty() ) {
+   // Load the given State
+
+   netCDF::NcFile file;
+   try {
+    file.open( solver_state_input_filename , netCDF::NcFile::read );
+    auto state = State::new_State( file );
+    investment_solver->put_State( *state );
+    delete state;
+   } catch( netCDF::exceptions::NcException & e ) {
+    std::cout << "Warning: It was not possible to open the State file '"
+              << solver_state_input_filename << "'. The State of the Solver "
+              << "will not be loaded." << std::endl;
+   } catch( const std::exception& e ) {
+    std::cout << "Warning: An error occurred while loading the Solver State: '"
+              << e.what() << "'." << std::endl;
+   }
+  }
+
+  if( ! solver_state_output_filename.empty() ) {
+   // Register an event to save the State of the Solver
+
+   investment_solver->set_par( ThinComputeInterface::intEverykIt , 1 );
+   investment_solver->set_event_handler
+    ( ThinComputeInterface::eEverykIteration ,
+      [ investment_solver ]() {
+       static int i = 0;
+       std::string filename =
+        solver_state_output_filename + std::to_string( i++ ) + ".nc4";
+       i %= 2;
+       netCDF::NcFile file( filename , netCDF::NcFile::replace );
+       investment_solver->serialize_State( file );
+       return ThinComputeInterface::eContinue;
+      } );
+  }
+
+  // Register an event to keep track of the best solution and to handle the
+  // output.
+
+  std::vector< double > best_solution;
+
+  const auto objective_sense =
+   get_objective_sense( investment_function->get_sddp_block( 0 ) );
+
+  const auto sign = ( objective_sense == Objective::eMin ) ? 1 : -1;
+  const auto worst_value = sign * Inf< InvestmentFunction::FunctionValue >();
+  auto best_solution_value = worst_value;
+
+  investment_function->set_par( ThinComputeInterface::eBeforeTermination , 1 );
+  investment_function->set_event_handler
+   ( ThinComputeInterface::eBeforeTermination ,
+     [ investment_block , investment_function , &best_solution_value ,
+       &best_solution , objective_sense ]() {
+
+      auto solution_improved = [ investment_function , &best_solution_value ,
+                                 objective_sense ]() {
+       const auto function_value = investment_function->get_value();
+       if( ( ( objective_sense == Objective::eMin ) &&
+             ( function_value < best_solution_value ) ) ||
+           ( ( objective_sense == Objective::eMax ) &&
+             ( function_value > best_solution_value ) ) ) {
+        best_solution_value = function_value;
+        return true;
+       }
+       return false;
+      };
+
+      if( solution_improved() ) {
+       // Save the best solution found so far
+
+       std::ofstream best_solution_file( best_solution_filename ,
+                                         std::ios::out );
+
+       const auto & variables = investment_block->get_variables();
+       const auto & var_lower_bound =
+        investment_block->get_variable_lower_bound();
+       best_solution.resize( variables.size() );
+
+       for( Index i = 0 ; i < variables.size() ; ++i ) {
+        auto value = variables[ i ].get_value();
+        if( reformulate_variable_bounds && ( i < var_lower_bound.size() ) &&
+            ( var_lower_bound[ i ] > -Inf< double >() ) )
+         value += var_lower_bound[ i ];
+        best_solution[ i ] = value;
+        best_solution_file << std::setprecision( 20 ) << value << std::endl;
+       }
+
+       // Possibly output information associated with the solution
+       if( output_solution )
+        SDDPBlockSolutionOutput().copy
+         ( investment_function->get_sddp_block( 0 ) , ".best" , true );
+      }
+
+      return ThinComputeInterface::eContinue;
+     } );
+
+  // Solve the investment problem
+
+  investment_solver->compute();
 
 #ifdef USE_MPI
   boost::mpi::communicator world;
   if( world.rank() == 0 ) {
 #endif
 
-   if( investment_solver->has_var_solution() ) {
-    const auto solution_value = investment_solver->get_var_value();
+   // Rename the output files if necessary
+
+   if( output_solution )
+    SDDPBlockSolutionOutput().rename
+     ( investment_function->get_sddp_block( 0 ) , ".best" , true );
+
+   // Output solution information
+
+   if( best_solution_value == worst_value )
+    std::cout << "No solution has been found." << std::endl;
+   else if( best_solution_value == - worst_value )
+    std::cout << "The problem is unbounded." << std::endl;
+   else {
+    // A solution has been found
     std::cout << "Solution value: " << std::setprecision( 20 )
-              << solution_value << std::endl;
-    investment_solver->get_var_solution();
-    std::cout << "Solution: " << std::endl;
-    const auto & variables = investment_block->get_variables();
+              << best_solution_value << std::endl;
     const auto & var_lower_bound = investment_block->get_variable_lower_bound();
-    const auto width = std::to_string( variables.size() ).size();
-    for( Index i = 0 ; i < variables.size() ; ++i ) {
-     auto value = variables[ i ].get_value();
+    const auto width = std::to_string( best_solution.size() ).size();
+    for( Index i = 0 ; i < best_solution.size() ; ++i ) {
+     auto value = best_solution[ i ];
      if( reformulate_variable_bounds && ( i < var_lower_bound.size() ) &&
          ( var_lower_bound[ i ] > -Inf< double >() ) )
       value += var_lower_bound[ i ];
      std::cout << std::setw( width ) << i << " " << value << std::endl;
     }
-   }
-   else {
-    std::cout << "No solution has been found." << std::endl;
    }
 
 #ifdef USE_MPI
@@ -756,8 +935,8 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
    else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration =
-     new SimpleConfiguration<int>( var_type );
+    config->f_static_variables_Configuration = new SimpleConfiguration<
+     std::pair< int , int > >( { negative_prices , var_type } );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration<int>( cons_type );
     unit->set_BlockConfig( config );
