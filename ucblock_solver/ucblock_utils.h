@@ -13,7 +13,7 @@
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
- * Copyright &copy; by Ali Ghezelsoflu, Niccolo' Iardella
+ * \copyright &copy; by Ali Ghezelsoflu, Niccolo' Iardella
  */
 
 #include <BatteryUnitBlock.h>

@@ -88,7 +88,7 @@
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
- * Copyright &copy by Rafael Durbano Lobato
+ * \copyright &copy; by Rafael Durbano Lobato
  */
 
 #include <getopt.h>
