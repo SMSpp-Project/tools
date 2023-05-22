@@ -6,7 +6,7 @@ if (NOT hasParent)
     find_package(MILPSolver)
     find_package(BundleSolver)
     find_package(LagrangianDualSolver)
-endif()
+endif ()
 
 # ----- ucblock_solver ------------------------------------------------------ #
 if (TARGET SMS++::UCBlock)

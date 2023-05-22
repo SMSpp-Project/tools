@@ -170,7 +170,7 @@ const std::string default_config_filename = "LPBSCfg.txt";
 // Gets the name of the executable from its full path
 std::string get_filename( const std::string & fullpath ) {
  std::size_t found = fullpath.find_last_of( "/\\" );
- return fullpath.substr( found + 1 );
+ return( fullpath.substr( found + 1 ) );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -209,7 +209,7 @@ long get_long_option() {
                        ( errno || ( end && *end ) ) ) ) {
   option = -1;
  }
- return option;
+ return( option );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -386,7 +386,7 @@ Block * get_uc_block( const SDDPBlock * sddp_block , const Index stage ) {
  auto benders_function = static_cast< BendersBFunction * >
   ( objective->get_function() );
 
- return benders_function->get_inner_block();
+ return( benders_function->get_inner_block() );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -396,10 +396,10 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
  auto unit = dynamic_cast< HydroUnitBlock * >( block );
  auto previous_unit = dynamic_cast< HydroUnitBlock * >( previous_block );
 
- if( ! unit && ! previous_unit )
-  return false;
+ if( ( ! unit ) && ( ! previous_unit ) )
+  return( false );
 
- if( ! unit || ! previous_unit )
+ if( ( ! unit ) || ( ! previous_unit ) )
   throw( std::logic_error
          ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
            " and " + std::to_string( stage ) +
@@ -426,7 +426,7 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
 
  unit->set_initial_flow_rate( flow_rate.cbegin() );
 
- return true;
+ return( true );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -436,10 +436,10 @@ bool update_battery_unit( Block * previous_block , Block * block ,
  auto unit = dynamic_cast< BatteryUnitBlock * >( block );
  auto previous_unit = dynamic_cast< BatteryUnitBlock * >( previous_block );
 
- if( ! unit && ! previous_unit )
-  return false;
+ if( ( ! unit ) && ( ! previous_unit ) )
+  return( false );
 
- if( ! unit || ! previous_unit )
+ if( ( ! unit ) || ( ! previous_unit ) )
   throw( std::logic_error
          ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
            " and " + std::to_string( stage ) +
@@ -457,7 +457,7 @@ bool update_battery_unit( Block * previous_block , Block * block ,
 
  unit->set_initial_storage( initial_storage_data.cbegin() );
 
- return true;
+ return( true );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -471,7 +471,7 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
 
  auto shutdown = previous_unit->get_shut_down( time_horizon - 1 );
  if( shutdown && shutdown->get_value() >= 0.5 ) {
-  return 0;
+  return( 0 );
  }
 
  int init_up_down_time = 0;
@@ -488,7 +488,7 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
   for( Index t = 1 ; t < time_horizon ; ++t , --commitment ) {
    if( std::abs( commitment->get_value() -
                  ( commitment - 1 )->get_value() ) > 0.5 )
-    return init_up_down_time;
+    return( init_up_down_time );
    if( on ) ++init_up_down_time;
    else --init_up_down_time;
   }
@@ -524,7 +524,7 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
   }
  }
 
- return init_up_down_time;
+ return( init_up_down_time );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -536,10 +536,10 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
  auto previous_unit = dynamic_cast< ThermalUnitBlock * >( previous_block );
  auto unit = dynamic_cast< ThermalUnitBlock * >( block );
 
- if( ! unit && ! previous_unit )
-  return false;
+ if( ( ! unit ) && ( ! previous_unit ) )
+  return( false );
 
- if( ! unit || ! previous_unit )
+ if( ( ! unit ) || ( ! previous_unit ) )
   throw( std::logic_error
          ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
            " and " + std::to_string( stage ) +
@@ -559,7 +559,7 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
   { ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
  unit->set_initial_power( active_power_data.cbegin() );
 
- return true;
+ return( true );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -572,10 +572,10 @@ void callback( SDDPBlock * sddp_block , Block::Index stage ) {
  auto previous_uc_block = get_uc_block( sddp_block , stage - 1 );
  auto uc_block = get_uc_block( sddp_block , stage );
 
- std::queue< Block *> blocks;
+ std::queue< Block * > blocks;
  blocks.push( uc_block );
 
- std::queue< Block *> previous_blocks;
+ std::queue< Block * > previous_blocks;
  previous_blocks.push( previous_uc_block );
 
  while( ! blocks.empty() ) {
@@ -849,7 +849,7 @@ bool using_thermal_dp_solver( const std::string & config_filename ) {
  if( ! solver_config ) {
   std::cerr << "Solver configuration is not valid: "
             << config_name << std::endl;
-  delete config;
+  delete( config );
   exit( 1 );
  }
 
@@ -859,18 +859,18 @@ bool using_thermal_dp_solver( const std::string & config_filename ) {
  catch( ... ) {
   std::cout << "Error while loading Solver configuration: "
             << config_name << std::endl;
-  delete config;
+  delete( config );
   exit( 1 );
  }
 
  for( const auto & solver_name : solver_config->get_SolverNames() )
   if( solver_name == "ThermalUnitDPSolver" ) {
-   delete config;
-   return true;
+   delete( config );
+   return( true );
   }
 
- delete config;
- return false;
+ delete( config );
+ return( false );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -888,16 +888,16 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
-  auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
-  auto benders_block = static_cast<BendersBlock *>
+  auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
+  auto benders_block = static_cast< BendersBlock * >
    ( stochastic_block-> get_nested_Blocks().front() );
-  auto objective = static_cast<FRealObjective *>
+  auto objective = static_cast< FRealObjective * >
    ( benders_block->get_objective() );
-  auto benders_function = static_cast<BendersBFunction *>
+  auto benders_function = static_cast< BendersBFunction * >
    ( objective->get_function() );
   auto inner_block = benders_function->get_inner_block();
 
-  std::queue< Block *> blocks;
+  std::queue< Block * > blocks;
   blocks.push( inner_block );
 
   while( ! blocks.empty() ) {
@@ -911,7 +911,7 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
    // Configure PolyhedralFunctionBlock
    if( auto polyhedral = dynamic_cast< PolyhedralFunctionBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration = new SimpleConfiguration<int>(1);
+    config->f_static_variables_Configuration = new SimpleConfiguration< int >( 1 );
     config->f_is_feasible_Configuration = is_feasible_config.clone();
     polyhedral->set_BlockConfig( config );
    }
@@ -919,9 +919,9 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
    else if( auto unit = dynamic_cast< SlackUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
     config->f_static_variables_Configuration =
-     new SimpleConfiguration<int>( var_type );
+     new SimpleConfiguration< int >( var_type );
     config->f_static_constraints_Configuration =
-     new SimpleConfiguration<int>( cons_type );
+     new SimpleConfiguration< int >( cons_type );
     config->f_is_feasible_Configuration = is_feasible_config.clone();
     unit->set_BlockConfig( config );
    }
@@ -931,7 +931,7 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
     config->f_static_variables_Configuration = new SimpleConfiguration<
      std::pair< int , int > >( { negative_prices , var_type } );
     config->f_static_constraints_Configuration =
-     new SimpleConfiguration<int>( cons_type );
+     new SimpleConfiguration< int >( cons_type );
     config->f_is_feasible_Configuration = is_feasible_config.clone();
     unit->set_BlockConfig( config );
    }
@@ -939,12 +939,12 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
    else if( auto unit = dynamic_cast< ThermalUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
     config->f_static_variables_Configuration =
-     new SimpleConfiguration<int>( var_type );
+     new SimpleConfiguration< int >( var_type );
     config->f_static_constraints_Configuration =
-     new SimpleConfiguration<int>( cons_type );
+     new SimpleConfiguration< int >( cons_type );
 
     if( add_reserve_variables_to_objective )
-     config->f_objective_Configuration = new SimpleConfiguration<int>( 3 );
+     config->f_objective_Configuration = new SimpleConfiguration< int >( 3 );
 
     config->f_is_feasible_Configuration = is_feasible_config.clone();
 
@@ -973,12 +973,12 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
 void set_log( SDDPBlock * sddp_block , std::ostream * output_stream ) {
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
-  auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
-  auto benders_block = static_cast<BendersBlock *>
+  auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
+  auto benders_block = static_cast< BendersBlock * >
    ( stochastic_block-> get_nested_Blocks().front() );
-  auto objective = static_cast<FRealObjective *>
+  auto objective = static_cast< FRealObjective * >
    ( benders_block->get_objective() );
-  auto benders_function = static_cast<BendersBFunction *>
+  auto benders_function = static_cast< BendersBFunction * >
    ( objective->get_function() );
   auto inner_block = benders_function->get_inner_block();
   for( auto solver : inner_block->get_registered_solvers() )
@@ -1004,7 +1004,7 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Configure block
   auto block_config_group = problem_group.getGroup( "BlockConfig" );
-  auto block_config = static_cast<BlockConfig *>
+  auto block_config = static_cast< BlockConfig * >
    ( BlockConfig::new_Configuration( block_config_group ) );
   if( ! block_config )
    throw( std::logic_error("BlockConfig group was not properly provided.") );
@@ -1013,7 +1013,7 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Configure solver
   auto solver_config_group = problem_group.getGroup( "BlockSolver" );
-  auto block_solver_config = static_cast<BlockSolverConfig *>
+  auto block_solver_config = static_cast< BlockSolverConfig * >
    ( BlockSolverConfig::new_Configuration( solver_config_group ) );
   if( ! block_solver_config )
    throw( std::logic_error("BlockSolver group was not properly provided.") );
@@ -1048,12 +1048,12 @@ void process_prob_file( const netCDF::NcFile & file ) {
   // Destroy the Block and the Configurations
 
   block_config->apply( sddp_block );
-  delete block_config;
+  delete( block_config );
 
   block_solver_config->apply( sddp_block );
-  delete block_solver_config;
+  delete( block_solver_config );
 
-  delete sddp_block;
+  delete( sddp_block );
  }
 }
 
@@ -1072,7 +1072,7 @@ BlockSolverConfig * build_BlockSolverConfig() {
   block_solver_config->add_ComputeConfig( "SDDPSolver" , config );
  }
 
- return block_solver_config;
+ return( block_solver_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1109,7 +1109,7 @@ BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block ) {
   benders_block_config->set_Config_Objective( benders_function_config );
  }
 
- return sddp_config;
+ return( sddp_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1119,7 +1119,7 @@ BlockConfig * load_BlockConfig() {
  if( block_config_filename.empty() ) {
   std::cout << "Block configuration was not provided. "
    "Using default configuration." << std::endl;
-  return nullptr;
+  return( nullptr );
  }
 
  std::ifstream block_config_file;
@@ -1142,7 +1142,7 @@ BlockConfig * load_BlockConfig() {
  if( ! block_config ) {
   std::cerr << "Block configuration is not valid: "
             << config_name << std::endl;
-  delete config;
+  delete( config );
   exit( 1 );
  }
 
@@ -1155,7 +1155,7 @@ BlockConfig * load_BlockConfig() {
  }
 
  block_config_file.close();
- return block_config;
+ return( block_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1165,7 +1165,7 @@ BlockSolverConfig * load_BlockSolverConfig( const std::string & filename ) {
  if( filename.empty() ) {
   std::cout << "Solver configuration was not provided. "
    "Using default configuration." << std::endl;
-  return nullptr;
+  return( nullptr );
  }
 
  std::ifstream solver_config_file;
@@ -1187,7 +1187,7 @@ BlockSolverConfig * load_BlockSolverConfig( const std::string & filename ) {
  if( ! solver_config ) {
   std::cerr << "Solver configuration is not valid: "
             << config_name << std::endl;
-  delete config;
+  delete( config );
   exit( 1 );
  }
 
@@ -1200,7 +1200,7 @@ BlockSolverConfig * load_BlockSolverConfig( const std::string & filename ) {
  }
 
  solver_config_file.close();
- return solver_config;
+ return( solver_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1209,9 +1209,9 @@ std::string get_str_par( ComputeConfig * compute_config ,
                          std::string par_name ) {
  for( const auto & pair : compute_config->str_pars ) {
   if( pair.first == par_name )
-   return pair.second;
+   return( pair.second );
  }
- return "";
+ return( "" );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1219,9 +1219,9 @@ std::string get_str_par( ComputeConfig * compute_config ,
 int get_int_par( ComputeConfig * compute_config , std::string par_name ) {
  for( const auto & pair : compute_config->int_pars ) {
   if( pair.first == par_name )
-   return pair.second;
+   return( pair.second );
  }
- return Inf<int>();
+ return( Inf< int >() );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1229,7 +1229,7 @@ int get_int_par( ComputeConfig * compute_config , std::string par_name ) {
 bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
 
  if( ! sddp_solver_config )
-  return false;
+  return( false );
 
  BlockSolverConfig * inner_solver_config = nullptr;
  ComputeConfig * compute_config = nullptr;
@@ -1265,7 +1265,7 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
 
   if( ! inner_solver_config ) {
    inner_solver_config_file.close();
-   delete inner_config;
+   delete( inner_config );
    continue;
   }
 
@@ -1274,7 +1274,7 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
   }
   catch( ... ) {
    inner_solver_config_file.close();
-   delete inner_config;
+   delete( inner_config );
    continue;
   }
 
@@ -1282,13 +1282,13 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
 
   for( Index j = 0 ; j < inner_solver_config->num_ComputeConfig() ; ++j ) {
    if( inner_solver_config->get_SolverName( j ) == "LagrangianDualSolver" ) {
-    delete inner_config;
-    return true;
+    delete( inner_config );
+    return( true );
    }
   }
-  delete inner_config;
+  delete( inner_config );
  }
- return false;
+ return( false );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1343,7 +1343,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
   if( ! inner_solver_config ) {
    inner_solver_config_file.close();
-   delete inner_config;
+   delete( inner_config );
    return;
   }
 
@@ -1352,7 +1352,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   }
   catch( ... ) {
    inner_solver_config_file.close();
-   delete inner_config;
+   delete( inner_config );
    return;
   }
 
@@ -1431,12 +1431,12 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
  const auto sub_block = sddp_block->get_nested_Block( 0 );
 
- auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
- auto benders_block = static_cast<BendersBlock *>
+ auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
+ auto benders_block = static_cast< BendersBlock * >
   ( stochastic_block-> get_nested_Blocks().front() );
- auto objective = static_cast<FRealObjective *>
+ auto objective = static_cast< FRealObjective * >
   ( benders_block->get_objective() );
- auto benders_function = static_cast<BendersBFunction *>
+ auto benders_function = static_cast< BendersBFunction * >
   ( objective->get_function() );
  auto inner_block = benders_function->get_inner_block();
 
@@ -1555,7 +1555,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    ( std::remove_if( lagrangian_dual_compute_config->vint_pars.begin() ,
                      lagrangian_dual_compute_config->vint_pars.end() ,
                      []( const auto & pair ) {
-                      return pair.first == "vintNoEasy"; } ) ,
+                      return( pair.first == "vintNoEasy" ); } ) ,
      lagrangian_dual_compute_config->vint_pars.end() );
 
   // Add the vintNoEasy parameter that was constructed here
@@ -1578,7 +1578,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   ( std::remove_if( compute_config->str_pars.begin() ,
                     compute_config->str_pars.end() ,
                     []( const auto & pair ){
-                     return pair.first == "strInnerBSC"; } ) ,
+                     return( pair.first == "strInnerBSC" ); } ) ,
     compute_config->str_pars.end() );
 
  /* The extra Configuration of the SDDPSolver and the SDDPGreedySolver is a
@@ -1660,17 +1660,17 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
        { "get_dual_partial" , get_dual_config->clone() } } );
 
   for( auto sub_block : sddp_block->get_nested_Blocks() ) {
-   auto stochastic_block = static_cast<StochasticBlock *>( sub_block );
-   auto benders_block = static_cast<BendersBlock *>
+   auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
+   auto benders_block = static_cast< BendersBlock * >
     ( stochastic_block-> get_nested_Blocks().front() );
-   auto objective = static_cast<FRealObjective *>
+   auto objective = static_cast< FRealObjective * >
     ( benders_block->get_objective() );
-   auto benders_function = static_cast<BendersBFunction *>
+   auto benders_function = static_cast< BendersBFunction * >
     ( objective->get_function() );
    benders_function->set_ComputeConfig( benders_function_config );
   }
 
-  delete benders_function_config;
+  delete( benders_function_config );
  }
 
  // OSIMPSolver is currently not able to deal with some changes in a Block
@@ -1784,25 +1784,25 @@ void process_block_file( const netCDF::NcFile & file ) {
   if( block_config )
    block_config->apply( sddp_block );
   if( ! given_block_config ) {
-   delete block_config;
+   delete( block_config );
    block_config = nullptr;
   }
 
   cleared_solver_config->apply( sddp_block );
 
-  delete sddp_block;
+  delete( sddp_block );
  }
 
- delete block_config;
- delete given_block_config;
- delete solver_config;
- delete cleared_solver_config;
+ delete( block_config );
+ delete( given_block_config );
+ delete( solver_config );
+ delete( cleared_solver_config );
 }
 
 /*--------------------------------------------------------------------------*/
 
 /// returns the final state (solution) of the system at the given \p stage
-std::vector<double> get_final_state( SDDPBlock * block , Index stage ) {
+std::vector< double > get_final_state( SDDPBlock * block , Index stage ) {
 
  Index state_size = 0;
  for( Index i = 0 ; i < block->get_num_polyhedral_function_per_sub_block() ;
@@ -1811,7 +1811,7 @@ std::vector<double> get_final_state( SDDPBlock * block , Index stage ) {
    block->get_polyhedral_function( stage , i )->get_num_active_var();
  }
 
- std::vector<double> state;
+ std::vector< double > state;
  state.reserve( state_size );
 
  for( Index i = 0 ; i < block->get_num_polyhedral_function_per_sub_block() ;
@@ -1822,7 +1822,7 @@ std::vector<double> get_final_state( SDDPBlock * block , Index stage ) {
     ( static_cast< const ColVariable & >( variable ).get_value() );
   }
  }
- return state;
+ return( state );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -2015,20 +2015,20 @@ void multiple_simulations( const netCDF::NcFile & file ) {
    if( block_config )
     block_config->apply( sddp_block );
    if( ! given_block_config ) {
-    delete block_config;
+    delete( block_config );
     block_config = nullptr;
    }
 
    cleared_solver_config->apply( sddp_block );
-   delete sddp_block;
+   delete( sddp_block );
 
   }
  }
 
- delete block_config;
- delete given_block_config;
- delete solver_config;
- delete cleared_solver_config;
+ delete( block_config );
+ delete( given_block_config );
+ delete( solver_config );
+ delete( cleared_solver_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -2085,5 +2085,5 @@ int main( int argc , char ** argv ) {
  }
 
  file.close();
- return 0;
+ return( 0 );
 }

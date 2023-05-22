@@ -33,7 +33,7 @@ ComputeConfig # exact type of the ComputeConfig object
 1 # number of integer parameters
 
 # now all the integer parameters
-intLogVerb      0    # log verbosity of the MILPSolver
+intLogVerb       0    # log verbosity of the MILPSolver
 #intRelaxIntVars 1    # nonzero if the continuous relaxation is solved
 
 # note that we could eof() the file here since the rest is all empty

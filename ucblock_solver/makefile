@@ -4,13 +4,7 @@
 #                                                                            #
 #   makefile of test (for ucblock_solver)                                    #
 #                                                                            #
-#                                VERSION 1.00                                #
-#                               07 - 04 - 2021                               #
-#                                                                            #
-#                              Implementation by:                            #
-#                                                                            #
 #                              Antonio Frangioni                             #
-#                           Operations Research Group                        #
 #                          Dipartimento di Informatica                       #
 #                              Universita' di Pisa                           #
 #                                                                            #

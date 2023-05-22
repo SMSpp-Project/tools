@@ -4,12 +4,7 @@
 /** @file
  * Implementation of CutProcessing.
  *
- * \version 0.10
- *
- * \date 28 - 01 - 2021
- *
  * \author Rafael Durbano Lobato \n
- *         Operations Research Group \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
@@ -51,7 +46,7 @@ using Subset = Block::Subset;
 namespace {
 
  double get_sign( const PolyhedralFunction * function ) {
-  return function->is_convex() ? - 1.0 : 1.0;
+  return( function->is_convex() ? - 1.0 : 1.0 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -77,7 +72,7 @@ namespace {
   const auto & A = function->get_A();
 
   if( A.empty() )
-   return nullptr;
+   return( nullptr );
 
   const auto & b = function->get_b();
 
@@ -113,7 +108,7 @@ namespace {
     function->add_variable( & ( *x )[ j ] , - sign * A[ i ][ j ] );
    }
    function->add_variable( y , sign );
-   ( * constraints_it ).set_lhs( - Inf< double >() );
+   ( * constraints_it ).set_lhs( -Inf< double >() );
    ( * constraints_it ).set_rhs( sign * b[ i ]  );
    ( * constraints_it ).set_function( function );
    constraints_it++;
@@ -121,7 +116,7 @@ namespace {
 
   lp->add_dynamic_constraint( * constraints , "c" );
 
-  return lp;
+  return( lp );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -160,7 +155,7 @@ namespace {
    const auto & b = function->get_b();
 
    std::list< FRowConstraint > new_constraint( 1 );
-   new_constraint.front().set_lhs( - Inf< double >() );
+   new_constraint.front().set_lhs( -Inf< double >() );
    new_constraint.front().set_rhs( sign * b[ i ]  );
 
    auto v_var = objective_function->get_v_var();
@@ -306,8 +301,8 @@ void CutProcessing::remove_redundant_cuts( PolyhedralFunction * function )
 
  function->delete_rows( std::move( rows_to_remove ) );
 
- delete solver;
- delete lp;
+ delete( solver );
+ delete( lp );
 }
 
 /*--------------------------------------------------------------------------*/

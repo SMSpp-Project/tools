@@ -2,12 +2,18 @@
  * Some common utilities for SMS++ tools.
  *
  * \author Niccolo' Iardella \n
- *         Operations Research Group \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
- * Copyright &copy; by Niccolo' Iardella
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * \copyright &copy; by Niccolo' Iardella
  */
+/*--------------------------------------------------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
 
 #ifndef __COMMON_UTILS
 #define __COMMON_UTILS
@@ -19,11 +25,19 @@
 #include <RBlockConfig.h>
 
 #ifndef NDEBUG
-#include <queue>    // For scanning the subblocks
+#include <queue>    // For scanning the sub-Blocks
 #include <FRealObjective.h>
 #endif
 
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- USING -----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
 using namespace SMSpp_di_unipi_it;
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------- GLOBALS ----------------------------------*/
+/*--------------------------------------------------------------------------*/
 
 /**
  * @name Global variables used by every tool
@@ -52,11 +66,13 @@ int solution_output_type = 1;
 /// @}
 
 /*--------------------------------------------------------------------------*/
+/*------------------------------ FUNCTIONS ---------------------------------*/
+/*--------------------------------------------------------------------------*/
 
 /// Gets the name of the executable from its full path
 std::string get_filename( const std::string & fullpath ) {
  std::size_t found = fullpath.find_last_of( "/\\" );
- return fullpath.substr( found + 1 );
+ return( fullpath.substr( found + 1 ) );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -157,12 +173,11 @@ BlockSolverConfig * default_configure_solver( int verbose ) {
  auto s_config = new BlockSolverConfig;
  auto c_config = new ComputeConfig;
 
- if( verbose ) {
-  c_config->set_par( "intLogVerb", 1 );
- }
+ if( verbose )
+  c_config->set_par( "intLogVerb" , 1 );
 
- s_config->add_ComputeConfig( "CPXMILPSolver", c_config );
- return s_config;
+ s_config->add_ComputeConfig( "CPXMILPSolver" , c_config );
+ return( s_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -198,7 +213,7 @@ void print_status( int status ) {
 
 /// Solves the problem with all available solvers
 void solve_all( Block * block ) {
- std::chrono::time_point<std::chrono::system_clock> start, end;
+ std::chrono::time_point< std::chrono::system_clock > start, end;
 
  for( auto solver : block->get_registered_solvers() ) {
   std::cout << "Solver: " << solver->classname() << std::endl;
@@ -206,7 +221,7 @@ void solve_all( Block * block ) {
   start = std::chrono::system_clock::now();
   auto status = solver->compute();
   end = std::chrono::system_clock::now();
-  std::chrono::duration<double> compute_time = end - start;
+  std::chrono::duration< double > compute_time = end - start;
   std::cout << "Elapsed time: " << compute_time.count() << " s" << std::endl;
 
   auto ub = solver->get_ub();
@@ -216,32 +231,8 @@ void solve_all( Block * block ) {
   std::cout << "Lower bound = " << lb << std::endl;
 
 #ifndef NDEBUG
-  /*
-   * We get the OF value from the block,
-   * with the summation of all subblocks' OFs.
-   */
   solver->get_var_solution();
-  double of_value = 0;
-
-  std::queue< Block * > Q;
-  Q.push( block );
-
-  while( !Q.empty() ) {
-   Block * q_Block = Q.front();
-   Q.pop();
-
-   for( auto * i : q_Block->get_nested_Blocks() ) {
-    Q.push( i );
-   }
-
-   auto of = dynamic_cast<FRealObjective *>(q_Block->get_objective());
-   if (of) {
-    of->compute();
-    of_value += of->value();
-   }
-  }
-
-  std::cout << "O.F. value  = " << of_value << std::endl;
+  std::cout << "O.F. value  = " << solver->get_var_value() << std::endl;
 #endif
  }
 }
@@ -250,59 +241,54 @@ void solve_all( Block * block ) {
 
 /// Gets a BlockConfig from a BlockConfig file
 BlockConfig * get_blockconfig( const std::string & conf_file ) {
- BlockConfig * b_config = nullptr;
+ BlockConfig * b_config;
  std::ifstream bcf;
 
  bcf.open( conf_file, std::ifstream::in );
- if( !bcf.is_open() ) {
-  return nullptr;
- }
+ if( ! bcf.is_open() )
+  return( nullptr );
 
  std::string name;
  bcf >> eatcomments >> name;
- b_config = dynamic_cast<BlockConfig *> ( Configuration::new_Configuration( name ) );
+ b_config = dynamic_cast< BlockConfig * > ( Configuration::new_Configuration( name ) );
 
- if( !b_config ) {
-  return nullptr;
- }
+ if( ! b_config )
+  return( nullptr );
 
  try {
   bcf >> *b_config;
  } catch( const std::exception & e ) {
-  return nullptr;
+  return( nullptr );
  }
 
- return b_config;
+ return( b_config );
 }
 
 /*--------------------------------------------------------------------------*/
 
 /// Gets a BlockSolverConfig from a BlockSolverConfig file
-BlockSolverConfig *
-get_blocksolverconfig( const std::string & conf_file ) {
- BlockSolverConfig * s_config = nullptr;
+BlockSolverConfig * get_blocksolverconfig( const std::string & conf_file ) {
+ BlockSolverConfig * s_config;
  std::ifstream scf;
 
  scf.open( conf_file, std::ifstream::in );
- if( !scf.is_open() ) {
-  return nullptr;
- }
+ if( ! scf.is_open() )
+  return( nullptr );
 
  std::string name;
  scf >> eatcomments >> name;
- s_config = dynamic_cast<BlockSolverConfig *> ( Configuration::new_Configuration( name ) );
+ s_config = dynamic_cast< BlockSolverConfig * > ( Configuration::new_Configuration( name ) );
 
- if( !s_config ) {
-  return nullptr;
- }
+ if( ! s_config )
+  return( nullptr );
 
  try {
   scf >> *s_config;
  } catch( const std::exception & e ) {
-  return nullptr;
+  return( nullptr );
  }
 
- return s_config;
+ return( s_config );
 }
 
 /*--------------------------------------------------------------------------*/

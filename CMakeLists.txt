@@ -11,7 +11,6 @@
 #          keep it in mind when editing it.                                   #
 #                                                                             #
 #                              Niccolo' Iardella                              #
-#                          Operations Research Group                          #
 #                         Dipartimento di Informatica                         #
 #                             Universita' di Pisa                             #
 # --------------------------------------------------------------------------- #
@@ -54,7 +53,6 @@ add_subdirectory(block_solver)
 add_subdirectory(chgcfg)
 add_subdirectory(investment_solver)
 add_subdirectory(sddp_solver)
-add_subdirectory(thermalunit_solver)
 add_subdirectory(ucblock_solver)
 
 # --------------------------------------------------------------------------- #
