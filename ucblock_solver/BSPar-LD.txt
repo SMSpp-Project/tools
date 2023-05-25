@@ -96,10 +96,12 @@ dblCtOff   0.01   # cut-off factor for pricing in MinQuad
 1 # number of string parameters
 
 # now all the string parameters
-#str_LDSlv_ISName	ParallelBundleSolver  # the inner Solver used by LagrangianDualSolver
-str_LDSlv_ISName	BundleSolver  # the inner Solver used by LagrangianDualSolver
-#str_LagBF_BSCfg		LPBSCfg.txt   # BlockSolverConfig for the LagBFunctions
+#str_LDSlv_ISName   ParallelBundleSolver  # the inner Solver used by LagrangianDualSolver
+str_LDSlv_ISName    BundleSolver          # the inner Solver used by LagrangianDualSolver
+#str_LagBF_BSCfg    LPBSCfg.txt           # BlockSolverConfig for the LagBFunctions
 # not needed if intDoEasy >= 1 && USE_BundleSolver > 0, this is done "by hand"
+# in fact, not only "not needed" but "wrong" as two Solver are then registered to
+# sub-Block, and the wrong one may end up being used
 
 # note that we could eof() the file here since the rest is all empty
 
