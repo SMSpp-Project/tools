@@ -134,7 +134,6 @@ long num_sub_blocks_per_stage = 1;
 long number_simulations = 1;
 long initial_solution_stage = -1;
 bool simulation_mode = false;
-bool relax_integrality = false;
 bool eliminate_reduntant_cuts = false;
 const bool force_hard_components = false;
 const bool continuous_relaxation = true;
@@ -289,13 +288,13 @@ void process_args( int argc , char ** argv ) {
     Block::set_filename_prefix( std::string( optarg ) );
     break;
    case 'r':
-     std::cout << "The -r option no longer exists. In order relax the "
-               << "integrality constraints,\nplease properly configure the "
-               << "solver. For instance, some solvers have the\nparameter "
-               << "'intRelaxIntVars', which can be set to 1 in the solver\n"
-               << "configuration file associated with the Block whose "
-               << "constraints must be\nrelaxed." << std::endl;
-     exit( 1 );
+    std::cout << "The -r option no longer exists. In order relax the "
+              << "integrality constraints,\nplease properly configure the "
+              << "solver. For instance, some solvers have the\nparameter "
+              << "'intRelaxIntVars', which can be set to 1 in the solver\n"
+              << "configuration file associated with the Block whose "
+              << "constraints must be\nrelaxed." << std::endl;
+    exit( 1 );
    case 's':
     simulation_mode = true;
     break;
@@ -876,7 +875,7 @@ bool using_thermal_dp_solver( const std::string & config_filename ) {
 
 /*--------------------------------------------------------------------------*/
 
-void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
+void configure_Blocks( SDDPBlock * sddp_block ,
                        bool add_reserve_variables_to_objective ,
                        double feasibility_tolerance , bool relative_violation ,
                        bool is_using_lagrangian_dual_solver ) {
@@ -1730,8 +1729,7 @@ void process_block_file( const netCDF::NcFile & file ) {
   if( given_block_config )
    given_block_config->apply( sddp_block );
   else {
-   configure_Blocks( sddp_block , relax_integrality ,
-                     is_using_lagrangian_dual_solver ,
+   configure_Blocks( sddp_block , is_using_lagrangian_dual_solver ,
                      feasibility_tolerance , relative_violation ,
                      is_using_lagrangian_dual_solver );
 
@@ -1906,8 +1904,7 @@ void multiple_simulations( const netCDF::NcFile & file ) {
    if( given_block_config )
     given_block_config->apply( sddp_block );
    else {
-    configure_Blocks( sddp_block , relax_integrality ,
-                      is_using_lagrangian_dual_solver ,
+    configure_Blocks( sddp_block , is_using_lagrangian_dual_solver ,
                       feasibility_tolerance , relative_violation ,
                       is_using_lagrangian_dual_solver );
 
