@@ -95,7 +95,6 @@ Options:
   -n, --num-blocks <number>        Number of sub-Blocks per stage.
   -o, --output-solution            Output the solutions.
   -p, --prefix <path>              The prefix for all Block filenames.
-  -r, --relax                      Relax integer variables.
   -S, --solvercfg <file>           Solver configuration.
   -s, --simulate                   Simulate the given investment.
   -x, --initial-investment <file>  Initial investment.
@@ -126,9 +125,6 @@ determined as follows. If the lower bound l_i on the i-th investment is
 finite, then x_i = l_i. Otherwise, if the upper bound u_i on the i-th
 investment is finite, then x_i = u_i. Otherwise, if both bounds are not
 finite, then x_i = 0.
-
-The `-r` option indicates that the integrality constraints over the variables
-must be relaxed.
 
 To simulate a given investment, i.e., to compute the investment function at a
 given point, the `-s` option must be used. The investment to be simulated is

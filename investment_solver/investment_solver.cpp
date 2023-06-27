@@ -7,7 +7,7 @@
  * InvestmentBlock. The description of the InvestmentBlock must be given in a
  * netCDF file. This tool can be executed as follows:
  *
- *   ./investment_solver [-s] [-r] [-e] [-o] [-l FILE] [-n NUMBER] [-B FILE]
+ *   ./investment_solver [-s] [-e] [-o] [-l FILE] [-n NUMBER] [-B FILE]
  *                       [-p PATH] [-c PATH] [-x FILE ] -S FILE <nc4-file>
  *
  * The only mandatory arguments are the netCDF file containing the description
@@ -36,9 +36,6 @@
  * finite, then x_i = l_i. Otherwise, if the upper bound u_i on the i-th
  * investment is finite, then x_i = u_i. Otherwise, if both bounds are not
  * finite, then x_i = 0.
- *
- * The -r option indicates that the integrality constraints over the variables
- * must be relaxed.
  *
  * To simulate a given investment, i.e., to compute the investment function at
  * a given point, the -s option must be used. The investment to be simulated
@@ -143,7 +140,6 @@ const std::string best_solution_filename = "Solution_OUT.csv";
 
 long num_sub_blocks_per_stage = 1;
 
-bool relax_integrality = false;
 bool eliminate_redundant_cuts = false;
 bool simulate_investment = false;
 bool single_scenario = false;
@@ -192,7 +188,6 @@ void print_help() {
            << "  -n, --num-blocks <number>       Number of sub-Blocks per stage.\n"
            << "  -o, --output-solution           Output the solutions.\n"
            << "  -p, --prefix <path>             The prefix for all Block filenames.\n"
-           << "  -r, --relax                     Relax integer variables.\n"
            << "  -S, --solvercfg <file>          Solver configuration.\n"
            << "  -s, --simulate                  Simulate the given investment.\n"
            << "  -x, --initial-investment <file> Initial investment."
@@ -286,8 +281,13 @@ void process_args( int argc , char ** argv ) {
     Block::set_filename_prefix( std::string( optarg ) );
     break;
    case 'r':
-    relax_integrality = true;
-    break;
+    std::cout << "The -r option no longer exists. In order relax the "
+              << "integrality constraints,\nplease properly configure the "
+              << "solver. For instance, some solvers have the\nparameter "
+              << "'intRelaxIntVars', which can be set to 1 in the solver\n"
+              << "configuration file associated with the Block whose "
+              << "constraints must be\nrelaxed." << std::endl;
+    exit( 1 );
    case 'S':
     solver_config_filename = std::string( optarg );
     break;
@@ -887,7 +887,7 @@ void invest( InvestmentBlock * investment_block ) {
 
 /*--------------------------------------------------------------------------*/
 
-void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
+void configure_Blocks( SDDPBlock * sddp_block ,
                        bool add_reserve_variables_to_objective ) {
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
@@ -911,8 +911,6 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
     blocks.push( block->get_nested_Block( i ) );
    }
 
-   int var_type = 0;
-   if( relax_binary_variables ) var_type = 1;
    int cons_type = 1; // generate OneVarConstraints
 
    // Configure PolyhedralFunctionBlock
@@ -925,8 +923,6 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
    else if( auto unit = dynamic_cast< SlackUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration =
-     new SimpleConfiguration< int >( var_type );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration< int >( cons_type );
     unit->set_BlockConfig( config );
@@ -934,8 +930,8 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
    else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration = new SimpleConfiguration<
-     std::pair< int , int > >( { negative_prices , var_type } );
+    config->f_static_variables_Configuration =
+      new SimpleConfiguration< int >( negative_prices );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration< int >( cons_type );
     unit->set_BlockConfig( config );
@@ -943,8 +939,6 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
    else if( auto unit = dynamic_cast< ThermalUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration =
-     new SimpleConfiguration< int >( var_type );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration< int >( cons_type );
 
@@ -1748,8 +1742,7 @@ void process_block_file( const netCDF::NcFile & file ) {
 
     auto sddp_block = dynamic_cast< SDDPBlock * >( sddp_block_ );
 
-    configure_Blocks( sddp_block , relax_integrality ,
-                      is_using_lagrangian_dual_solver );
+    configure_Blocks( sddp_block , is_using_lagrangian_dual_solver );
    }
 
    if( reformulate_variable_bounds ) {
