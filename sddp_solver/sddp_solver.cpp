@@ -7,7 +7,7 @@
  * SDDPSolver or the SDDPGreedySolver. The description of the SDDPBlock must
  * be given in a netCDF file. This tool can be executed as follows:
  *
- *   ./sddp_solver [-r] [-s] [-e] [-l FILE] [-i INDEX] [-m NUMBER] [-t STAGE]
+ *   ./sddp_solver [-s] [-e] [-l FILE] [-i INDEX] [-m NUMBER] [-t STAGE]
  *                 [-n NUMBER] [-B FILE] [-S FILE] [-p PATH] [-c PATH]
  *                 <nc4-file>
  *
@@ -42,9 +42,6 @@
  * initial state for the next simulation. See the comments below for more
  * details. If the value NUMBER provided by this option is greater than 1,
  * then NUMBER consecutive simulations are performed.
- *
- * The -r option indicates that the integrality constraints over the variables
- * must be relaxed.
  *
  * The -n option specifies the number of sub-Blocks of SDDPBlock that must be
  * constructed for each stage. By default, SDDPBlock contains a single
@@ -192,7 +189,6 @@ void print_help() {
            << "  -m, --num-simulations <number>  Number of simulations to be performed.\n"
            << "  -n, --num-blocks <number>       Number of sub-Blocks per stage.\n"
            << "  -p, --prefix <path>             The prefix for all Block filenames.\n"
-           << "  -r, --relax                     Relax integer variables.\n"
            << "  -s, --simulation                Simulation mode.\n"
            << "  -S, --solvercfg <file>          Solver configuration.\n"
            << "  -t, --stage <stage>             Stage from which initial state is taken."
@@ -293,8 +289,13 @@ void process_args( int argc , char ** argv ) {
     Block::set_filename_prefix( std::string( optarg ) );
     break;
    case 'r':
-    relax_integrality = true;
-    break;
+     std::cout << "The -r option no longer exists. In order relax the "
+               << "integrality constraints,\nplease properly configure the "
+               << "solver. For instance, some solvers have the\nparameter "
+               << "'intRelaxIntVars', which can be set to 1 in the solver\n"
+               << "configuration file associated with the Block whose "
+               << "constraints must be\nrelaxed." << std::endl;
+     exit( 1 );
    case 's':
     simulation_mode = true;
     break;
@@ -883,7 +884,6 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
  const SimpleConfiguration< std::pair< double , int > >
   is_feasible_config( { feasibility_tolerance , relative_violation } );
 
- const int var_type = relax_binary_variables;
  const int cons_type = 1; // generate OneVarConstraints
 
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
@@ -918,8 +918,6 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
    else if( auto unit = dynamic_cast< SlackUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration =
-     new SimpleConfiguration< int >( var_type );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration< int >( cons_type );
     config->f_is_feasible_Configuration = is_feasible_config.clone();
@@ -928,8 +926,8 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
    else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration = new SimpleConfiguration<
-     std::pair< int , int > >( { negative_prices , var_type } );
+    config->f_static_variables_Configuration =
+      new SimpleConfiguration< int >( negative_prices );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration< int >( cons_type );
     config->f_is_feasible_Configuration = is_feasible_config.clone();
@@ -938,8 +936,6 @@ void configure_Blocks( SDDPBlock * sddp_block , bool relax_binary_variables ,
 
    else if( auto unit = dynamic_cast< ThermalUnitBlock * >( block ) ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration =
-     new SimpleConfiguration< int >( var_type );
     config->f_static_constraints_Configuration =
      new SimpleConfiguration< int >( cons_type );
 

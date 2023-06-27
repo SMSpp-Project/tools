@@ -188,7 +188,6 @@ Options:
   -m, --num-simulations <number>  Number of simulations to be performed.
   -n, --num-blocks <number>       Number of sub-Blocks per stage.
   -p, --prefix <path>             The prefix for all Block filenames.
-  -r, --relax                     Relax integer variables.
   -s, --simulation                Simulation mode.
   -S, --solvercfg <file>          Solver configuration.
   -t, --stage <stage>             Stage from which initial state is taken.
@@ -224,9 +223,6 @@ linked by the storage levels. The final state of some stage of a simulation is
 used as the initial state for the next simulation. See the comments below for
 more details. If the value NUMBER provided by this option is greater than 1,
 then NUMBER consecutive simulations are performed.
-
-The `-r` option indicates that the integrality constraints over the variables
-must be relaxed.
 
 The `-n` option specifies the number of sub-Blocks of SDDPBlock that must be
 constructed for each stage. By default, SDDPBlock contains a single sub-Blocks
