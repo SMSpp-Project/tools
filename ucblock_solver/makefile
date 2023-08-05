@@ -14,7 +14,7 @@
 NAME = ucblock_solver
 
 # basic directory
-DIR = ./
+DIR = .
 
 # debug switches
 #SW = -g3 -glldb -fno-inline -std=c++17 -ferror-limit=1 -Wno-enum-compare
@@ -33,35 +33,33 @@ CC = clang++
 
 # default target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-default: $(NAME)
+default: $(DIR)/$(NAME)
 
 # clean - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 clean::
-	rm -f $(DIR)*.o $(DIR)*~ $(NAME)
+	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/$(NAME)
 
 # define & include the necessary modules- - - - - - - - - - - - - - - - - - -
 # if a module is not used in the current configuration, just comment out the
 # corresponding include line
 # each module outputs some macros to be used here:
 # *OBJ is the final object(s) / library
-# *LIB is the external libreries + -L<libdirs>
+# *LIB is the external libraries + -L< libdirs >
 # *H   is the list of all include files
-# *INC is the -I<include directories>
+# *INC is the -I< include directories >
 
 # BundleSolver
-BNDSLVSDR = ../../BundleSolver/
-include $(BNDSLVSDR)makefile-c
+BNDSLVSDR = ../../BundleSolver
+include $(BNDSLVSDR)/makefile-c
 
 # LagrangianDualSolver
-LgDSLVSDR = ../../LagrangianDualSolver/
-include $(LgDSLVSDR)makefile
+LgDSLVSDR = ../../LagrangianDualSolver
+include $(LgDSLVSDR)/makefile
 
 # define input macros for UCBlock makefile, then include it
-# note that this is not the "complete" makefile: UCBlock only requires
-# the core SMS++, that is already included above (by LagrangianDualSolver)
-UCBckDIR = ../../UCBlock/
-include $(UCBckDIR)lib/makefile
+UCBckDIR = ../../UCBlock
+include $(UCBckDIR)/lib/makefile
 
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -71,8 +69,8 @@ MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ)
 # libreries
 MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 
-$(NAME): $(MOBJ) $(DIR)ucblock_solver.o
-	$(CC) -o $(DIR)$(NAME) $^ $(MLIB) $(SW)
+$(DIR)/$(NAME): $(MOBJ) $(DIR)/ucblock_solver.o
+	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
 
 # dependencies: every .o from its .C + every recursively included .h- - - - -
 
@@ -84,7 +82,7 @@ MH =    $(BNDSLVH) $(LgDSLVH) $(UCBckH)
 
 # compile command
 
-$(DIR)ucblock_solver.o: $(DIR)ucblock_solver.cpp $(MH)
-	$(CC) -c $(DIR)ucblock_solver.cpp -o $@ $(MINC) $(SW)
+$(DIR)/ucblock_solver.o: $(DIR)/ucblock_solver.cpp $(MH)
+	$(CC) -c $(DIR)/ucblock_solver.cpp -o $@ $(MINC) $(SW)
 
 ############################ End of makefile #################################
