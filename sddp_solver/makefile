@@ -75,22 +75,22 @@ include $(UCBckDIR)/lib/makefile
 
 # object files
 MOBJ =  $(SMS++OBJ) $(SDDPBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) \
-	$(DIR)CutProcessing.o
+	$(DIR)/CutProcessing.o
 
 # libreries
 MLIB =  $(SMS++LIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 
-$(DIR)/sddp_solver: $(MOBJ) $(DIR)/sddp_solver.o
+$(DIR)/sddp_solver: $(DIR)/sddp_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/sddp_solver $^ $(MLIB) $(SW)
 
-$(DIR)/sddp_greedy_solver: $(MOBJ) $(DIR)/sddp_greedy_solver.o
+$(DIR)/sddp_greedy_solver: $(DIR)/sddp_greedy_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/sddp_greedy_solver $^ $(MLIB) $(SW)
 
 # dependencies: every .o from its .C + every recursively included .h- - - - -
 
 # include directives
 MINC =  $(SMS++INC) $(SDDPBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) \
-	-I$/(DIR) -I../ucblock_solver/
+	-I$(DIR) -I../ucblock_solver
 
 # includes
 MH =    $(SMS++H) $(SDDPBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) \

@@ -69,7 +69,7 @@ MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ)
 # libreries
 MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 
-$(DIR)/$(NAME): $(MOBJ) $(DIR)/ucblock_solver.o
+$(DIR)/$(NAME): $(DIR)/ucblock_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
 
 # dependencies: every .o from its .C + every recursively included .h- - - - -
