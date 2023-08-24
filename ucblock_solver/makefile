@@ -66,7 +66,7 @@ include $(UCBckDIR)/lib/makefile
 # object files
 MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ)
 
-# libreries
+# libraries
 MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 
 $(DIR)/$(NAME): $(DIR)/ucblock_solver.o $(MOBJ)

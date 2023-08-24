@@ -77,7 +77,7 @@ include $(UCBckDIR)/lib/makefile
 MOBJ =  $(SMS++OBJ) $(SDDPBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) \
 	$(DIR)/CutProcessing.o
 
-# libreries
+# libraries
 MLIB =  $(SMS++LIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 
 $(DIR)/sddp_solver: $(DIR)/sddp_solver.o $(MOBJ)
