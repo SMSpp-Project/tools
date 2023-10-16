@@ -59,8 +59,8 @@ add_subdirectory(sddp_solver)
 add_subdirectory(ucblock_solver)
 
 # --------------------------------------------------------------------------- #
-# Just consuming these to avoid warnings
 if (BUILD_TESTING)
+    # Just consuming BUILD_TESTING to avoid warnings
 endif ()
 
 # --------------------------------------------------------------------------- #

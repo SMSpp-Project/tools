@@ -28,15 +28,12 @@ if (BUILD_SHARED_LIBS AND tools_USE_DL)
         target_compile_definitions(block_solver PRIVATE USE_DL)
         target_link_libraries(block_solver PRIVATE SMS++::SMS++ dl)
     endif ()
-
 else ()
     # Otherwise, link all the supported libraries.
-    if (TARGET SMS++::UCBlock)
+    if (TARGET SMS++::UCBlock AND
+        TARGET SMS++::MILPSolver)
         target_link_libraries(block_solver PRIVATE
-                              SMS++::UCBlock)
-    endif ()
-    if (TARGET SMS++::MILPSolver)
-        target_link_libraries(block_solver PRIVATE
+                              SMS++::UCBlock
                               SMS++::MILPSolver)
     endif ()
 endif ()
