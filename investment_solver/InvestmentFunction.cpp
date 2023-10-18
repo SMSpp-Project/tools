@@ -1061,7 +1061,9 @@ int InvestmentFunction::compute( bool changedvars ) {
 
  int error_status = kError;
 
- #pragma omp parallel for reduction( + : f_value )
+ auto simulation_value = decltype( f_value )( 0 );
+
+ #pragma omp parallel for reduction( + : simulation_value )
  for( int scenario = 0 ; scenario < int( num_scenarios ) ; ++scenario ) {
 
   if( interrupt_loop )
@@ -1105,7 +1107,7 @@ int InvestmentFunction::compute( bool changedvars ) {
 
   // Update the function value
 
-  f_value += solver->get_var_value();
+  simulation_value += solver->get_var_value();
 
   // Possibly output the solution
 
@@ -1139,6 +1141,8 @@ int InvestmentFunction::compute( bool changedvars ) {
   handle_events( eBeforeTermination );
   return( f_status );
  }
+
+ f_value = simulation_value;
 
  f_ignore_modifications = saved_f_ignore_modifications;
 
@@ -1701,7 +1705,7 @@ void InvestmentFunction::build_generator_node_map() {
 
     const auto index = std::distance( block_indices.cbegin() , it );
 
-    if( index == decltype( index)( block_indices.size() ) ) {
+    if( index == decltype( index )( block_indices.size() ) ) {
      // This UnitBlock is not subject to investment.
      elc_generator += num_generators;
      continue;
