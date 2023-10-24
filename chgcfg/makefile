@@ -36,7 +36,7 @@ clean::
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 $(DIR)/$(NAME): $(DIR)/chgcfg.o
-	$(CC) -o $(DIR)$/$(NAME) $^ $(SW)
+	$(CC) -o $(DIR)/$(NAME) $^ $(SW)
 
 # compile command - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
