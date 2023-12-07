@@ -35,7 +35,7 @@ ComputeConfig # exact type of the ComputeConfig object
 
 # now all the integer parameters
 
-intFrcLstSS 1 # If set to true, ensures that all the non-easycomponents have been evaluated the last time on the point that is returned (first) by get_var_solution().
+intFrcLstSS 1 # If set to true, ensures that all the non-easy components have been evaluated the last time on the point that is returned (first) by get_var_solution().
 
 intDoEasy  1      # do easy components for (some) LagBFunction
 intMaxIter 10000  # max number of iterations for each call

@@ -134,7 +134,7 @@ long num_sub_blocks_per_stage = 1;
 long number_simulations = 1;
 long initial_solution_stage = -1;
 bool simulation_mode = false;
-bool eliminate_reduntant_cuts = false;
+bool eliminate_redundant_cuts = false;
 const bool force_hard_components = false;
 const bool continuous_relaxation = true;
 
@@ -253,7 +253,7 @@ void process_args( int argc , char ** argv ) {
     Configuration::set_filename_prefix( std::string( optarg ) );
     break;
    case 'e':
-    eliminate_reduntant_cuts = true;
+    eliminate_redundant_cuts = true;
     break;
    case 'i': {
     scenario_id = get_long_option();
@@ -627,7 +627,7 @@ void simulate( SDDPBlock * sddp_block ) {
 
  // Eliminate redundant cuts if it is desired
 
- if( eliminate_reduntant_cuts )
+ if( eliminate_redundant_cuts )
   CutProcessing().remove_redundant_cuts( sddp_block );
 
  solver->set_scenario_id( scenario_id );
@@ -715,7 +715,7 @@ void solve( SDDPBlock * sddp_block ) {
  SDDPBlockSolutionOutput o;
  o.print_cuts( sddp_block , "BellmanValuesAllOUT.csv" );
 
- if( eliminate_reduntant_cuts )
+ if( eliminate_redundant_cuts )
   CutProcessing().remove_redundant_cuts
    ( static_cast< SDDPBlock * >( sddp_block ) );
 
@@ -1027,7 +1027,7 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Eliminate redundant cuts if it is desired
 
-  if( eliminate_reduntant_cuts )
+  if( eliminate_redundant_cuts )
    CutProcessing().remove_redundant_cuts( sddp_block );
 
 
@@ -1759,7 +1759,7 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Eliminate redundant cuts if it is desired
 
-  if( eliminate_reduntant_cuts )
+  if( eliminate_redundant_cuts )
    CutProcessing().remove_redundant_cuts( sddp_block );
 
   // Solve
@@ -1964,7 +1964,7 @@ void multiple_simulations( const netCDF::NcFile & file ) {
 
    // Eliminate redundant cuts if it is desired
 
-   if( eliminate_reduntant_cuts )
+   if( eliminate_redundant_cuts )
     CutProcessing().remove_redundant_cuts( sddp_block );
 
    // Set the name of the file that will output the subgradients

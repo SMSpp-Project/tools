@@ -655,3 +655,9 @@ TSWLatexianTemp*
 
 # Makeindex log files
 *.lpz
+
+# sddp output files
+*.gsbd
+*.gsbmf
+*.csv
+*.txt
