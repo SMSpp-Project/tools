@@ -96,7 +96,6 @@
  * \copyright &copy; by Rafael Durbano Lobato
  */
 
-#include <filesystem>
 #include <getopt.h>
 #include <iomanip>
 #include <iostream>
@@ -589,9 +588,9 @@ void callback( SDDPBlock * sddp_block , Block::Index stage ) {
 
   if( n != previous_block->get_number_nested_Blocks() ) {
    throw( std::logic_error
-          ("sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
-           " and " + std::to_string( stage ) +
-           " do not have the same structure." ) );
+          ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
+            " and " + std::to_string( stage ) +
+            " do not have the same structure." ) );
   }
 
   for( decltype( n ) i = 0 ; i < n ; ++i ) {
@@ -1002,7 +1001,7 @@ void process_prob_file( const netCDF::NcFile & file ) {
   auto block_config = static_cast< BlockConfig * >
    ( BlockConfig::new_Configuration( block_config_group ) );
   if( ! block_config )
-   throw( std::logic_error("BlockConfig group was not properly provided.") );
+   throw( std::logic_error( "BlockConfig group was not properly provided." ) );
   block_config->apply( sddp_block );
   block_config->clear();
 
@@ -1011,7 +1010,7 @@ void process_prob_file( const netCDF::NcFile & file ) {
   auto block_solver_config = static_cast< BlockSolverConfig * >
    ( BlockSolverConfig::new_Configuration( solver_config_group ) );
   if( ! block_solver_config )
-   throw( std::logic_error("BlockSolver group was not properly provided.") );
+   throw( std::logic_error( "BlockSolver group was not properly provided." ) );
   block_solver_config->apply( sddp_block );
   block_solver_config->clear();
 
@@ -1021,9 +1020,8 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Load possibly given cuts
 
-  if( ! simulation_mode ) {
+  if( ! simulation_mode )
    load_cuts( sddp_block );
-  }
 
   // Eliminate redundant cuts if it is desired
 
@@ -1753,9 +1751,8 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Load possibly given cuts
 
-  if( ! simulation_mode ) {
+  if( ! simulation_mode )
    load_cuts( sddp_block );
-  }
 
   // Eliminate redundant cuts if it is desired
 
