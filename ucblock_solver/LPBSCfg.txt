@@ -33,33 +33,39 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-4 # number of integer parameters
+3 # number of integer parameters
+
 # now all the integer parameters
 intLogVerb      	0    # log verbosity of the MILPSolver
-intRelaxIntVars 	0    # nonzero if the continuous relaxation is solved
-intCutSepPar            7    # separate (P/C) at both root node and any node
-#CPXPARAM_LPMethod	1    # LP method (4 = barrier)
-intMaxThread            1    # max number of new threads to spawn
-#CPX_PARAM_THREADS	1    # the same as above
+intRelaxIntVars 	1    # nonzero if the continuous relaxation is solved
+intCutSepPar        7    # separate (P/C) at both root node and any node
+#CPXPARAM_LPMethod	 1    # LP method (4 = barrier)
+#intMaxThread        1    # max number of new threads to spawn
+#CPX_PARAM_THREADS	 1    # the same as above
 
-2  # Number of double parameters
+0 # Number of double parameters
+
 # now all the double parameters
-dblAAccSol 1e-04
-dblMaxTime 3600
+#dblAAccSol 1e-04
+#dblMaxTime 3600
 
-0  # Number of string parameters
+0 # Number of string parameters
+
 # now all the string parameters
 #strOutputFile uc.lp
 
 0 # number of vector-of-int parameters
+
 # now all the vector-of-int parameters
 # [none]
 
 0 # number of vector-of-double parameters
+
 # now all the vector-of-double parameters
 # [none]
 
 0 # number of vector-of-string parameters
+
 # now all the vector-of-string parameters
 # [none]
 
