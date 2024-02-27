@@ -2,7 +2,7 @@
 ################################ makefile ####################################
 ##############################################################################
 #                                                                            #
-#   makefile of test (for ucblock_solver)                                    #
+#   makefile of test (for block_solver)                                      #
 #                                                                            #
 #                              Antonio Frangioni                             #
 #                          Dipartimento di Informatica                       #
@@ -11,7 +11,7 @@
 ##############################################################################
 
 # module name
-NAME = ucblock_solver
+NAME = block_solver
 
 # basic directory
 DIR = .
@@ -49,42 +49,37 @@ clean::
 # *H   is the list of all include files
 # *INC is the -I< include directories >
 
-# BundleSolver
-BNDSLVSDR = ../../BundleSolver
-include $(BNDSLVSDR)/makefile-c
-
-# LagrangianDualSolver
-LgDSLVSDR = ../../LagrangianDualSolver
-include $(LgDSLVSDR)/makefile
-
 # define input macros for UCBlock makefile, then include it
 UCBckDIR = ../../UCBlock
-include $(UCBckDIR)/lib/makefile
+include $(UCBckDIR)/lib/makefile-c
+
+# define input macros for MILPSolver makefile + dependencies, then include it
+# use the makefile-s version since the SMS++ stuff is supposed to be there
+MILPSSDR = ../../MILPSolver
+include $(MILPSSDR)/makefile-s
 
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ)
+MOBJ =  $(MILPSOBJ) $(UCBckOBJ)
 
 # libraries
-MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
+MLIB =  $(MILPSINC) $(UCBckLIB)
 
-$(DIR)/$(NAME): $(MOBJ) $(DIR)/ucblock_solver.o
+$(DIR)/$(NAME): $(MOBJ) $(DIR)/block_solver.o
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
 
 # dependencies: every .o from its .C + every recursively included .h- - - - -
 
 # include directives
-MINC =  $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) -I$(DIR)/../block_solver/
+MINC =  $(MILPSINC) $(UCBckINC)
 
 # includes
-MH =    $(BNDSLVH) $(LgDSLVH) $(UCBckH)
+MH =    $(MILPSH) $(UCBckH)
 
 # compile command
 
-$(DIR)/ucblock_solver.o: $(DIR)/ucblock_solver.cpp \
-	$(DIR)/../block_solver/common_utils.h \
-	$(DIR)/UCBlockSolutionOutput.h $(MH)
-	$(CC) -c $(DIR)/ucblock_solver.cpp -o $@ $(MINC) $(SW)
+$(DIR)/block_solver.o: $(DIR)/block_solver.cpp $(DIR)/common_utils.h $(MH)
+	$(CC) -c $(DIR)/block_solver.cpp -o $@ $(MINC) $(SW)
 
 ############################ End of makefile #################################
