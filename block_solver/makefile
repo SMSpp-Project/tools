@@ -49,14 +49,13 @@ clean::
 # *H   is the list of all include files
 # *INC is the -I< include directories >
 
+# define input macros for MILPSolver makefile + dependencies, then include it
+MILPSSDR = ../../MILPSolver
+include $(MILPSSDR)/makefile-c
+
 # define input macros for UCBlock makefile, then include it
 UCBckDIR = ../../UCBlock
-include $(UCBckDIR)/lib/makefile-c
-
-# define input macros for MILPSolver makefile + dependencies, then include it
-# use the makefile-s version since the SMS++ stuff is supposed to be there
-MILPSSDR = ../../MILPSolver
-include $(MILPSSDR)/makefile-s
+include $(UCBckDIR)/lib/makefile
 
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -64,7 +63,7 @@ include $(MILPSSDR)/makefile-s
 MOBJ =  $(MILPSOBJ) $(UCBckOBJ)
 
 # libraries
-MLIB =  $(MILPSINC) $(UCBckLIB)
+MLIB =  $(MILPSLIB) $(UCBckLIB)
 
 $(DIR)/$(NAME): $(MOBJ) $(DIR)/block_solver.o
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
