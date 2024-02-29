@@ -2,7 +2,10 @@
 ################################ makefile ####################################
 ##############################################################################
 #                                                                            #
-#   makefile of test (for ucblock_solver)                                    #
+#   makefile of investment_solver                                            #
+#   this version will work when the InvestmentSolver/include/Investment*.h   #
+#   and InvestmentSolver/src/Investment*.cpp files will be used rather than  #
+#   the old versions in this folder                                          #
 #                                                                            #
 #                              Antonio Frangioni                             #
 #                          Dipartimento di Informatica                       #
@@ -11,7 +14,7 @@
 ##############################################################################
 
 # module name
-NAME = ucblock_solver
+NAME = investment_solver
 
 # basic directory
 DIR = .
@@ -53,38 +56,54 @@ clean::
 BNDSLVSDR = ../../BundleSolver
 include $(BNDSLVSDR)/makefile-c
 
+# not necessary, BundleSolver does that already
+# MILPSolver
+#MILPSSDR = ../../../MILPSolver
+#include $(MILPSSDR)/makefile
+
 # LagrangianDualSolver
 LgDSLVSDR = ../../LagrangianDualSolver
 include $(LgDSLVSDR)/makefile
 
+# define input macros for InvestmentBlock makefile, then include it
+InvsBkSDR = ../../InvestmentBlock
+include $(InvsBkSDR)/makefile-s
+
+# not necessary, InvestmentBlock does that already
 # define input macros for UCBlock makefile, then include it
-UCBckDIR = ../../UCBlock
-include $(UCBckDIR)/lib/makefile
+#UCBckDIR = ../../UCBlock
+#include $(UCBckDIR)/lib/makefile
+
+# not necessary, InvestmentBlock does that already
+# define input macros for SDDPBlock makefile, then include it
+#SDDPBkSDR = $(InvsBkSDR)/../SDDPBlock
+#include $(SDDPBkSDR)/makefile-s
 
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ)
+MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(InvsBkOBJ)
 
 # libraries
-MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
+MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(InvsBkLIB)
 
-$(DIR)/$(NAME): $(MOBJ) $(DIR)/ucblock_solver.o
+$(DIR)/$(NAME): $(MOBJ) $(DIR)/investment_solver.o
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
 
 # dependencies: every .o from its .C + every recursively included .h- - - - -
 
 # include directives
-MINC =  $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) -I$(DIR)/../block_solver/
+MINC =  $(BNDSLVINC) $(LgDSLVINC) $(InvsBkINC) -I$(DIR)/../sddp_solver \
+	-I$(DIR)/../ucblock_solver
 
 # includes
-MH =    $(BNDSLVH) $(LgDSLVH) $(UCBckH)
+MH =    $(BNDSLVH) $(LgDSLVH) $(InvsBkH)
 
 # compile command
 
-$(DIR)/ucblock_solver.o: $(DIR)/ucblock_solver.cpp \
-	$(DIR)/../block_solver/common_utils.h \
-	$(DIR)/UCBlockSolutionOutput.h $(MH)
-	$(CC) -c $(DIR)/ucblock_solver.cpp -o $@ $(MINC) $(SW)
+$(DIR)/investment_solver.o: $(DIR)/investment_solver.cpp \
+	$(DIR)/../ucblock_solver/UCBlockSolutionOutput.h \
+	$(DIR)/../sddp_solver/SDDPBlockSolutionOutput.h $(MH)
+	$(CC) -c $(DIR)/investment_solver.cpp -o $@ $(MINC) $(SW)
 
 ############################ End of makefile #################################

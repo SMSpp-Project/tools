@@ -22,7 +22,7 @@ LagrangianDualSolver    # name of 2nd Solver
 1  # number of ComputeConfig in this BlockSolverConfig
 
 # now all the ComputeConfig
-# 1st ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # ComputeConfig of the LagrangianDualSolver; it mostly is the
 # ComputeConfig of the inner Solver, which is a [Parallel]BundleSolver
 
@@ -35,7 +35,7 @@ ComputeConfig # exact type of the ComputeConfig object
 
 # now all the integer parameters
 
-intFrcLstSS 1 # If set to true, ensures that all the non-easycomponents have been evaluated the last time on the point that is returned (first) by get_var_solution().
+intFrcLstSS 1 # If set to true, ensures that all the non-easy components have been evaluated the last time on the point that is returned (first) by get_var_solution().
 
 intDoEasy  15     # do easy components for (some) LagBFunction
 intMaxIter 10000  # max number of iterations for each call

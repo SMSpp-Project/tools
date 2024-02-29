@@ -93,7 +93,7 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- void print( SDDPBlock * block , Index fault_stage = Inf<Index>() ) const {
+ void print( SDDPBlock * block , Index fault_stage = Inf< Index >() ) const {
 
   UCBlockSolutionOutput solution_output;
   solution_output.set_separator_character( separator_character );
@@ -146,7 +146,7 @@ public:
   auto benders_function = static_cast< BendersBFunction * >
    ( objective->get_function() );
 
-  return static_cast< UCBlock * >( benders_function->get_inner_block() );
+  return( static_cast< UCBlock * >( benders_function->get_inner_block() ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -191,14 +191,14 @@ public:
 /*--------------------------------------------------------------------------*/
 
  static std::string get_filename_suffix( Index scenario ) {
-   return "_Scen" + std::to_string( scenario ) + "_OUT.csv";
+   return( "_Scen" + std::to_string( scenario ) + "_OUT.csv" );
  }
 
 /*--------------------------------------------------------------------------*/
 
  static std::string get_filename_suffix( Index scenario , Index stage ) {
-  return "_Scen" + std::to_string( scenario ) + "_" +
-   std::to_string( stage ) + "_OUT.csv";
+  return( "_Scen" + std::to_string( scenario ) + "_" +
+          std::to_string( stage ) + "_OUT.csv" );
  }
 
 /*--------------------------------------------------------------------------*/

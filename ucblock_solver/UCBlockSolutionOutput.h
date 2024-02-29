@@ -131,6 +131,10 @@
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
  * \copyright &copy; by Rafael Durbano Lobato
  */
 
@@ -146,7 +150,6 @@
 /*--------------------------------------------------------------------------*/
 
 #include "BatteryUnitBlock.h"
-#include "BusNetworkBlock.h"
 #include "DCNetworkBlock.h"
 #include "HydroSystemUnitBlock.h"
 #include "IntermittentUnitBlock.h"
@@ -168,13 +171,14 @@ using namespace SMSpp_di_unipi_it;
 /*---------------------- CLASS UCBlockSolutionOutput -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-class UCBlockSolutionOutput {
+class UCBlockSolutionOutput
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- PUBLIC PART OF THE CLASS -------------------------*/
 /*--------------------------------------------------------------------------*/
 
-public:
+ public:
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- PUBLIC TYPES --------------------------------*/
@@ -227,24 +231,25 @@ public:
 
   auto get_power_flow =
    []( NetworkBlock * block , Index line ) -> double {
-    if( auto dc = dynamic_cast<DCNetworkBlock *>( block ) ) {
+    if( auto dc = dynamic_cast< DCNetworkBlock * >( block ) ) {
      const auto & power_flow = dc->get_power_flow();
      if( line < power_flow.size() )
-      return power_flow[ line ].get_value();
+      return( power_flow[ line ].get_value() );
     }
-    return 0;
+    return( 0 );
    };
 
   std::function< std::string( Index ) > get_line_name = []( Index line ) {
-   return "Line_" + std::to_string( line );
+   return( "Line_" + std::to_string( line ) );
   };
 
-  if( auto network_data = uc_block->get_NetworkData() ) {
+  if( auto network_data = dynamic_cast< DCNetworkBlock::DCNetworkData * >(
+   uc_block->get_NetworkData() ) ) {
    const auto & line_names = network_data->get_line_names();
    if( ! line_names.empty() )
     get_line_name = [ &line_names ]( Index line ) {
      assert( line < line_names.size() );
-     return line_names[ line ];
+     return( line_names[ line ] );
     };
   }
 
@@ -261,12 +266,12 @@ public:
 
   auto get_node_injection =
    []( NetworkBlock * block , Index node ) -> double {
-    if( auto dc = dynamic_cast<DCNetworkBlock *>( block ) ) {
+    if( auto dc = dynamic_cast< DCNetworkBlock * >( block ) ) {
      const auto & node_injection = dc->get_node_injection();
-     if( node < node_injection.size() )
-      return node_injection[ node ].get_value();
+     if( node < dc->get_number_nodes() )
+      return( node_injection[ node ].get_value() );
     }
-    return 0;
+    return( 0 );
    };
 
   print_node_data( output , uc_block , get_node_injection );
@@ -285,8 +290,8 @@ public:
    []( UCBlock * block , Index time , Index node ) -> double {
     const auto & constraints = block->get_node_injection_constraints();
     if( time < constraints.size() && node < constraints[ time ].size() )
-     return - constraints[ time ][ node ].get_dual();
-    return 0;
+     return( - constraints[ time ][ node ].get_dual() );
+    return( 0 );
    };
 
   print_data( output , uc_block , get_node_injection_dual ,
@@ -307,13 +312,13 @@ public:
    []( UCBlock * block , Index time , Index zone ) -> double {
     const auto & constraints = block->get_primary_demand_constraints();
     if( time < constraints.size() && zone < constraints[ time ].size() )
-     return constraints[ time ][ zone ].get_dual();
-    return 0;
+     return( constraints[ time ][ zone ].get_dual() );
+    return( 0 );
    };
 
   print_data( output , uc_block , get_primary_demand_dual ,
               uc_block->get_number_primary_zones() ,
-              []( Index i ) { return "Zone_" + std::to_string( i ); } );
+              []( Index i ) { return( "Zone_" + std::to_string( i ) ); } );
 
   output.close();
  }
@@ -329,13 +334,13 @@ public:
    []( UCBlock * block , Index time , Index zone ) -> double {
     const auto & constraints = block->get_secondary_demand_constraints();
     if( time < constraints.size() && zone < constraints[ time ].size() )
-     return constraints[ time ][ zone ].get_dual();
-    return 0;
+     return( constraints[ time ][ zone ].get_dual() );
+    return( 0 );
    };
 
   print_data( output , uc_block , get_secondary_demand_dual ,
               uc_block->get_number_secondary_zones() ,
-              []( Index i ) { return "Zone_" + std::to_string( i ); } );
+              []( Index i ) { return( "Zone_" + std::to_string( i ) ); } );
 
   output.close();
  }
@@ -351,20 +356,20 @@ public:
    []( UCBlock * block , Index time , Index zone ) -> double {
     const auto & constraints = block->get_inertia_demand_constraints();
     if( time < constraints.size() && zone < constraints[ time ].size() )
-     return constraints[ time ][ zone ].get_dual();
-    return 0;
+     return( constraints[ time ][ zone ].get_dual() );
+    return( 0 );
    };
 
   print_data( output , uc_block , get_inertia_demand_dual ,
               uc_block->get_number_inertia_zones() ,
-              []( Index i ) { return "Zone_" + std::to_string( i ); } );
+              []( Index i ) { return( "Zone_" + std::to_string( i ) ); } );
 
   output.close();
  }
 
 /*--------------------------------------------------------------------------*/
 
- /// dual values for the mazimum pollutant emmision constraints
+ /// dual values for the maximum pollutant emission constraints
  void print_maximum_pollutant_emission_duals( UCBlock * uc_block ) const {
 
   const auto number_pollutants = uc_block->get_number_pollutants();
@@ -398,33 +403,34 @@ public:
 
   auto get_power_flow_limit_dual =
    []( NetworkBlock * block , Index line ) -> double {
-    if( auto dc = dynamic_cast<DCNetworkBlock *>( block ) ) {
+    if( auto dc = dynamic_cast< DCNetworkBlock * >( block ) ) {
      if( auto network_data = dc->get_NetworkData() ) {
-      if( network_data->get_lines_type() == NetworkBlock::kHVDC ) {
+      if( static_cast< DCNetworkBlock::DCNetworkData * >(network_data)
+           ->get_lines_type() == DCNetworkBlock::kHVDC ) {
        const auto & constraints = dc->get_power_flow_limit_HVDC_bounds();
        if( line < constraints.size() )
-        return constraints[ line ].get_dual();
-      }
-      else {
+        return( constraints[ line ].get_dual() );
+      } else {
        const auto & constraints = dc->get_power_flow_limit_constraints();
        if( line < constraints.size() )
-        return constraints[ line ].get_dual();
+        return( constraints[ line ].get_dual() );
       }
      }
     }
-    return 0;
+    return( 0 );
    };
 
   std::function< std::string( Index ) > get_line_name = []( Index line ) {
-   return "Line_" + std::to_string( line );
+   return( "Line_" + std::to_string( line ) );
   };
 
-  if( auto network_data = uc_block->get_NetworkData() ) {
+  if( auto network_data = dynamic_cast< DCNetworkBlock::DCNetworkData * >(
+   uc_block->get_NetworkData() ) ) {
    const auto & line_names = network_data->get_line_names();
    if( ! line_names.empty() )
     get_line_name = [ &line_names ]( Index line ) {
      assert( line < line_names.size() );
-     return line_names[ line ];
+     return( line_names[ line ] );
     };
   }
 
@@ -457,10 +463,10 @@ public:
     if( ! network_blocks.empty() ) {
      assert( network_blocks.size() > time );
      auto network_block = block->get_network_blocks()[ time ];
-     return network_block->get_active_demand()[ node ];
-    }
-    else {
-     return block->get_node_injection_constraints()[ time ][ node ].get_rhs();
+     return( network_block->get_active_demand()[ node ] );
+    } else {
+     return( block->get_node_injection_constraints()
+     [ time ][ node ].get_rhs() );
     }
    };
 
@@ -478,8 +484,8 @@ public:
   auto get_active_power =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( const auto active_power = block->get_active_power( g ) )
-     return ( active_power + t )->get_value() * block->get_scale();
-    return 0;
+     return( active_power + t )->get_value();
+    return( 0 );
    };
 
   print_generator_data( output , blocks , get_active_power );
@@ -493,35 +499,9 @@ public:
 
   std::ofstream output( filenames[ max_power ].name() , open_mode() );
 
-  auto get_max_power =
-   []( UnitBlock * block , Index g , Index t ) {
-    if( auto b = dynamic_cast<HydroUnitBlock *>( block ) ) {
-     const auto & max_power = b->get_maximum_power();
-     if( t < max_power.size() && g < max_power[ t ].size() )
-      return max_power[ t ][ g ];
-    }
-    if( auto b = dynamic_cast<ThermalUnitBlock *>( block ) ) {
-     const auto & max_power = b->get_max_power();
-     if( t < max_power.size() )
-      return max_power[ t ];
-    }
-    if( auto b = dynamic_cast<SlackUnitBlock *>( block ) ) {
-     const auto & max_power = b->get_max_power();
-     if( t < max_power.size() )
-      return max_power[ t ];
-    }
-    if( auto b = dynamic_cast<IntermittentUnitBlock *>( block ) ) {
-     const auto & max_power = b->get_maximum_power();
-     if( t < max_power.size() )
-      return max_power[ t ] * b->get_kappa();
-    }
-    if( auto b = dynamic_cast<BatteryUnitBlock *>( block ) ) {
-     const auto & max_power = b->get_maximum_power();
-     if( t < max_power.size() )
-      return max_power[ t ] * b->get_kappa();
-    }
-    return Inf<double>();
-   };
+  auto get_max_power = []( UnitBlock * block , Index g , Index t ) {
+   return( block->get_max_power( t , g ) );
+  };
 
   print_generator_data( output , blocks , get_max_power );
 
@@ -530,8 +510,8 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- void print_primary_spinning_reserve
- ( const std::vector< UnitBlock * > & blocks ) const {
+ void print_primary_spinning_reserve(
+  const std::vector< UnitBlock * > & blocks ) const {
 
   std::ofstream output( filenames[ primary_spinning_reserve ].name() ,
                         open_mode() );
@@ -539,8 +519,8 @@ public:
   auto get_primary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_primary_spinning_reserve( g ) )
-     return ( reserve + t )->get_value() * block->get_scale();
-    return 0;
+     return( reserve + t )->get_value();
+    return( 0 );
    };
 
   print_generator_data( output , blocks , get_primary_spinning_reserve );
@@ -550,8 +530,8 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- void print_secondary_spinning_reserve
- ( const std::vector< UnitBlock * > & blocks ) const {
+ void print_secondary_spinning_reserve(
+  const std::vector< UnitBlock * > & blocks ) const {
 
   std::ofstream output( filenames[ secondary_spinning_reserve ].name() ,
                         open_mode() );
@@ -559,8 +539,8 @@ public:
   auto get_secondary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_secondary_spinning_reserve( g ) )
-     return ( reserve + t )->get_value() * block->get_scale();
-    return 0;
+     return( reserve + t )->get_value();
+    return( 0 );
    };
 
   print_generator_data( output , blocks , get_secondary_spinning_reserve );
@@ -577,8 +557,8 @@ public:
   auto get_volume =
    []( HydroUnitBlock * block , Index r , Index t ) -> double {
     if( const auto volume = block->get_volume( r , t ) )
-     return volume->get_value();
-    return 0;
+     return( volume->get_value() );
+    return( 0 );
    };
 
   print_reservoir_data( output , blocks , get_volume );
@@ -596,8 +576,8 @@ public:
    []( HydroUnitBlock * block , Index r , Index t ) -> double {
     const auto & inflows = block->get_inflows();
     if( r < inflows.size() && t < inflows[ r ].size() )
-     return inflows[ r ][ t ];
-    return 0;
+     return( inflows[ r ][ t ] );
+    return( 0 );
    };
 
   print_reservoir_data( output , blocks , get_inflow );
@@ -613,10 +593,10 @@ public:
 
   auto get_flow_rate =
    []( UnitBlock * block , Index g , Index t ) -> double {
-    if( auto flow_rate =  static_cast< HydroUnitBlock * >
-        ( block )->get_flow_rate( g , t ) )
-     return flow_rate->get_value();
-    return 0;
+    if( auto flow_rate = static_cast< HydroUnitBlock * >
+    ( block )->get_flow_rate( g , t ) )
+     return( flow_rate->get_value() );
+    return( 0 );
    };
 
   std::vector< UnitBlock * > unit_blocks;
@@ -637,20 +617,19 @@ public:
 
   auto get_storage =
    []( UnitBlock * block , Index r , Index t ) -> double {
-    if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) ) {
+    if( auto hydro = dynamic_cast< HydroUnitBlock * >( block ) ) {
      if( auto volume = hydro->get_volume( r , t ) )
-      return volume->get_value();
-     return 0;
-    }
-    else if( auto battery = dynamic_cast<BatteryUnitBlock *>( block ) ) {
+      return( volume->get_value() );
+     return( 0 );
+    } else if( auto battery = dynamic_cast< BatteryUnitBlock * >( block ) ) {
      const auto & storage = battery->get_storage_level();
      if( t < storage.size() )
-      return storage[ t ].get_value();
-     return 0;
-    }
-    else
-     throw( "UCBlockSolutionOutput::print_storage: invalid type of "
-            "UnitBlock: " + block->classname() );
+      return( storage[ t ].get_value() );
+     return( 0 );
+    } else
+     throw( std::invalid_argument(
+      "UCBlockSolutionOutput::print_storage: invalid type of UnitBlock: " +
+      block->classname() ) );
    };
 
   print_storage_data( output , blocks , get_storage );
@@ -660,16 +639,18 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- void print( UCBlock * uc_block ) const {
-  auto unit_blocks = get_unit_blocks( uc_block );
-  print_active_power( unit_blocks );
-  print_primary_spinning_reserve( unit_blocks );
-  print_secondary_spinning_reserve( unit_blocks );
-  print_storage( get_unit_blocks_with_storage( uc_block ) );
-  print_flow( uc_block );
-  print_duals( uc_block );
-  print_demand( uc_block );
-  print_max_power( unit_blocks );
+ void print( Block * block ) const {
+  if( auto uc_block = dynamic_cast< UCBlock * >( block ) ) {
+   auto unit_blocks = get_unit_blocks( uc_block );
+   print_active_power( unit_blocks );
+   print_primary_spinning_reserve( unit_blocks );
+   print_secondary_spinning_reserve( unit_blocks );
+   print_storage( get_unit_blocks_with_storage( uc_block ) );
+   print_flow( uc_block );
+   print_duals( uc_block );
+   print_demand( uc_block );
+   print_max_power( unit_blocks );
+  }
  }
 
 /*--------------------------------------------------------------------------*/
@@ -753,7 +734,7 @@ public:
 /*--------------------- PRIVATE PART OF THE CLASS --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-private:
+ private:
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- PRIVATE METHODS ------------------------------*/
@@ -762,44 +743,45 @@ private:
  std::string get_name( const Block * block ) const {
   const auto name = block->name();
   if( ! name.empty() )
-   return name;
-  return block->classname();
+   return( name );
+  return( block->classname() );
  }
 
 /*--------------------------------------------------------------------------*/
 
  Index get_number_nodes( const UCBlock * block ) const {
-  if( ! block ) return 0;
+  if( ! block ) return( 0 );
   auto network_data = block->get_NetworkData();
-  return network_data ? network_data->get_number_nodes() : 1;
+  return( network_data ? network_data->get_number_nodes() : 1 );
  }
 
 /*--------------------------------------------------------------------------*/
 
  Index get_number_lines( const NetworkBlock * block ) const {
-  if( ! block ) return 0;
-  auto network_data = block->get_NetworkData();
-  return network_data ? network_data->get_number_lines() : 0;
+  if( ! block ) return( 0 );
+  auto network_data = static_cast< DCNetworkBlock::DCNetworkData * >(
+   block->get_NetworkData() );
+  return( network_data ? network_data->get_number_lines() : 0 );
  }
 
 /*--------------------------------------------------------------------------*/
 
  Index get_number_nodes( const NetworkBlock * block ) const {
-  if( ! block ) return 0;
+  if( ! block ) return( 0 );
   auto network_data = block->get_NetworkData();
-  return network_data ? network_data->get_number_nodes() : 1;
+  return( network_data ? network_data->get_number_nodes() : 1 );
  }
 
 /*--------------------------------------------------------------------------*/
 
  std::string get_marginal_pollutant_filename( Index pollutant ) const {
-  return filenames[ marginal_pollutant ].prefix +
-   std::to_string( pollutant ) + filenames[ marginal_pollutant ].suffix;
+  return( filenames[ marginal_pollutant ].prefix +
+         std::to_string( pollutant ) + filenames[ marginal_pollutant ].suffix );
  }
 
 /*--------------------------------------------------------------------------*/
 
- template<class F , class G>
+ template< class F , class G >
  void print_line_data( std::ostream & output ,
                        const std::vector< NetworkBlock * > & blocks ,
                        const F & get_data , const G & get_line_name ,
@@ -835,9 +817,10 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- template<class F>
+ template< class F >
  void print_node_data( std::ostream & output , const UCBlock * uc_block ,
                        const F & get_data , const int precision = 20 ) const {
+
 
   const auto & blocks = uc_block->get_network_blocks();
 
@@ -848,15 +831,16 @@ private:
   // Header
 
   std::function< std::string( Index ) > get_node_name = []( Index node ) {
-   return "Node_" + std::to_string( node );
+   return( "Node_" + std::to_string( node ) );
   };
 
-  if( auto network_data = uc_block->get_NetworkData() ) {
+  if( auto network_data = dynamic_cast< DCNetworkBlock::DCNetworkData * >(
+   uc_block->get_NetworkData() ) ) {
    const auto & node_names = network_data->get_node_names();
    if( ! node_names.empty() )
     get_node_name = [ &node_names ]( Index node ) {
      assert( node < node_names.size() );
-     return node_names[ node ];
+     return( node_names[ node ] );
     };
   }
 
@@ -885,7 +869,7 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- template<class F , class G>
+ template< class F , class G >
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
                   const Index columns , const G & get_column_name ,
                   const std::string first_column_header ,
@@ -913,19 +897,20 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- template<class F>
+ template< class F >
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
                   const Index columns , const int precision = 20 ) const {
   std::function< std::string( Index ) > get_node_name = []( Index node ) {
-   return "Node_" + std::to_string( node );
+   return( "Node_" + std::to_string( node ) );
   };
 
-  if( auto network_data = block->get_NetworkData() ) {
+  if( auto network_data = dynamic_cast< DCNetworkBlock::DCNetworkData * >(
+   block->get_NetworkData() ) ) {
    const auto & node_names = network_data->get_node_names();
    if( ! node_names.empty() )
     get_node_name = [ &node_names ]( Index node ) {
      assert( node < node_names.size() );
-     return node_names[ node ];
+     return( node_names[ node ] );
     };
   }
 
@@ -936,7 +921,7 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- template<class F , class G>
+ template< class F, class G >
  void print_data( std::ostream & output , UCBlock * block , const F & get_data ,
                   const Index columns , const G & get_column_name ,
                   const int precision = 20 ) const {
@@ -955,62 +940,63 @@ private:
   for( Index i = 0 ; i < uc_block->get_number_units() ; ++i ) {
 
    auto block = uc_block->get_unit_block( i );
-   if( auto hydro_system = dynamic_cast<HydroSystemUnitBlock *>( block ) )
+   if( auto hydro_system = dynamic_cast< HydroSystemUnitBlock * >( block ) )
     for( Index h = 0 ; h < hydro_system->get_number_hydro_units() ; ++h )
      unit_blocks.push_back( hydro_system->get_hydro_unit_block( h ) );
    else
     unit_blocks.push_back( block );
   }
 
-  return unit_blocks;
+  return( unit_blocks );
  }
 
 /*--------------------------------------------------------------------------*/
 
- std::vector< HydroUnitBlock * >
- get_hydro_unit_blocks( UCBlock * uc_block ) const {
+ std::vector< HydroUnitBlock * > get_hydro_unit_blocks(
+  UCBlock * uc_block ) const {
 
   std::vector< HydroUnitBlock * > hydro_unit_blocks;
 
   for( Index i = 0 ; i < uc_block->get_number_units() ; ++i ) {
    auto block = uc_block->get_unit_block( i );
-   if( auto hydro_system = dynamic_cast<HydroSystemUnitBlock *>( block ) )
+   if( auto hydro_system = dynamic_cast< HydroSystemUnitBlock * >( block ) )
     for( Index h = 0 ; h < hydro_system->get_number_hydro_units() ; ++h )
      hydro_unit_blocks.push_back( hydro_system->get_hydro_unit_block( h ) );
-   else if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) )
+   else if( auto hydro = dynamic_cast< HydroUnitBlock * >( block ) )
     hydro_unit_blocks.push_back( hydro );
   }
 
-  return hydro_unit_blocks;
+  return( hydro_unit_blocks );
  }
 
 /*--------------------------------------------------------------------------*/
 
- std::vector< UnitBlock * >
- get_unit_blocks_with_storage( UCBlock * uc_block ) const {
+ std::vector< UnitBlock * > get_unit_blocks_with_storage(
+  UCBlock * uc_block ) const {
 
   std::vector< UnitBlock * > unit_blocks;
 
   for( Index i = 0 ; i < uc_block->get_number_units() ; ++i ) {
    auto block = uc_block->get_unit_block( i );
-   if( auto battery = dynamic_cast<BatteryUnitBlock *>( block ) )
+   if( auto battery = dynamic_cast< BatteryUnitBlock * >( block ) )
     unit_blocks.push_back( battery );
-   else if( auto hydro_system = dynamic_cast<HydroSystemUnitBlock *>( block ) )
+   else if( auto hydro_system = dynamic_cast< HydroSystemUnitBlock * >( block ) )
     for( Index h = 0 ; h < hydro_system->get_number_hydro_units() ; ++h )
      unit_blocks.push_back( hydro_system->get_hydro_unit_block( h ) );
-   else if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) )
+   else if( auto hydro = dynamic_cast< HydroUnitBlock * >( block ) )
     unit_blocks.push_back( hydro );
   }
 
-  return unit_blocks;
+  return( unit_blocks );
  }
 
 /*--------------------------------------------------------------------------*/
 
- template<class F>
- void print_generator_data
- ( std::ostream & output , const std::vector< UnitBlock * > & blocks ,
-   const F & get_data , const int precision = 20 ) const {
+ template< class F >
+ void print_generator_data( std::ostream & output ,
+                            const std::vector< UnitBlock * > & blocks ,
+                            const F & get_data ,
+                            const int precision = 20 ) const {
 
   if( blocks.empty() ) return;
 
@@ -1054,10 +1040,11 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- template<class F>
- void print_reservoir_data
- ( std::ostream & output , const std::vector< HydroUnitBlock * > & blocks ,
-   const F & get_data , const int precision = 20 ) const {
+ template< class F >
+ void print_reservoir_data( std::ostream & output ,
+                            const std::vector< HydroUnitBlock * > & blocks ,
+                            const F & get_data ,
+                            const int precision = 20 ) const {
 
   if( blocks.empty() ) return;
 
@@ -1100,10 +1087,11 @@ private:
 
 /*--------------------------------------------------------------------------*/
 
- template<class F>
- void print_storage_data
- ( std::ostream & output , const std::vector< UnitBlock * > & blocks ,
-   const F & get_data , const int precision = 20 ) const {
+ template< class F >
+ void print_storage_data( std::ostream & output ,
+                          const std::vector< UnitBlock * > & blocks ,
+                          const F & get_data ,
+                          const int precision = 20 ) const {
 
   if( blocks.empty() ) return;
 
@@ -1113,19 +1101,19 @@ private:
    output << "Timestep";
    for( auto block : blocks ) {
     auto block_name = get_name( block );
-    if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) ) {
+    if( auto hydro = dynamic_cast< HydroUnitBlock * >( block ) ) {
      const auto number_reservoirs = hydro->get_number_reservoirs();
      if( number_reservoirs <= 1 )
       output << separator_character << block_name;
      else
       for( Index r = 0 ; r < number_reservoirs ; ++r )
        output << separator_character << block_name << "_" << r;
-    }
-    else if( auto battery = dynamic_cast<BatteryUnitBlock *>( block ) )
+    } else if( auto battery = dynamic_cast< BatteryUnitBlock * >( block ) )
      output << separator_character << block_name;
     else
-     throw( "UCBlockSolutionOutput::print_storage_data: invalid type of "
-            "UnitBlock: " + block->classname() );
+     throw( std::invalid_argument(
+      "UCBlockSolutionOutput::print_storage_data: invalid type of UnitBlock: "
+      + block->classname() ) );
    }
    output << std::endl;
   }
@@ -1143,18 +1131,18 @@ private:
    output << time;
    for( auto block : blocks ) {
 
-    if( auto hydro = dynamic_cast<HydroUnitBlock *>( block ) ) {
+    if( auto hydro = dynamic_cast< HydroUnitBlock * >( block ) ) {
      const auto number_reservoirs = hydro->get_number_reservoirs();
      for( Index r = 0 ; r < number_reservoirs ; ++r )
       output << separator_character << std::setprecision( precision )
              << get_data( hydro , r , t );
-    }
-    else if( auto battery = dynamic_cast<BatteryUnitBlock *>( block ) )
+    } else if( auto battery = dynamic_cast< BatteryUnitBlock * >( block ) )
      output << separator_character << std::setprecision( precision )
             << get_data( battery , t , t );
     else
-     throw( "UCBlockSolutionOutput::print_storage_data: invalid type of "
-            "UnitBlock: " + block->classname() );
+     throw( std::invalid_argument(
+      "UCBlockSolutionOutput::print_storage_data: invalid type of UnitBlock: "
+      + block->classname() ) );
    }
    output << std::endl;
   }
@@ -1164,21 +1152,24 @@ private:
 
  std::ios_base::openmode open_mode() const {
   if( append )
-   return ( std::ios::out | std::ios::app );
-  return std::ios::out;
+   return( std::ios::out | std::ios::app );
+  return( std::ios::out );
  }
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- PRIVATE TYPES  ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
- struct Filename {
+ struct Filename
+ {
   std::string prefix;
   std::string suffix;
-  std::string name() const { return prefix + suffix; };
+
+  std::string name() const { return( prefix + suffix ); };
  };
 
- enum files {
+ enum files
+ {
   active_power = 0 ,
   primary_spinning_reserve ,
   secondary_spinning_reserve ,
@@ -1205,7 +1196,7 @@ private:
  char separator_character = ',';
  bool append = false;
  Index initial_time = 0;
- std::vector<Filename> filenames;
+ std::vector< Filename > filenames;
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/

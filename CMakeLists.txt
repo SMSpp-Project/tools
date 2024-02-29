@@ -11,11 +11,11 @@
 #          keep it in mind when editing it.                                   #
 #                                                                             #
 #                              Niccolo' Iardella                              #
-#                          Operations Research Group                          #
+#                                Donato Meoli                                 #
 #                         Dipartimento di Informatica                         #
 #                             Universita' di Pisa                             #
 # --------------------------------------------------------------------------- #
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.19)
 cmake_policy(VERSION 3.12)
 project(SMS++_tools
         VERSION 0.5.2
@@ -38,14 +38,19 @@ include(GNUInstallDirs)
 # may wrongly appear unused, and by default the linker does not include them,
 # so we have to force the linking.
 if (BUILD_SHARED_LIBS)
-    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    if (UNIX AND (NOT APPLE))
         add_link_options("-Wl,--no-as-needed")
     endif ()
 else ()
-    if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        add_link_options("-Wl,-all_load")
-    else ()
-        add_link_options("-Wl,--whole-archive,--allow-multiple-definition")
+    if (MSVC)
+        add_link_options("/WHOLEARCHIVE")
+        add_link_options("/FORCE:MULTIPLE")
+    else () # Unix
+        if (APPLE)
+            add_link_options("-Wl,-all_load")
+        else ()
+            add_link_options("-Wl,--whole-archive,--allow-multiple-definition")
+        endif ()
     endif ()
 endif ()
 
@@ -54,12 +59,11 @@ add_subdirectory(block_solver)
 add_subdirectory(chgcfg)
 add_subdirectory(investment_solver)
 add_subdirectory(sddp_solver)
-add_subdirectory(thermalunit_solver)
 add_subdirectory(ucblock_solver)
 
 # --------------------------------------------------------------------------- #
-# Just consuming these to avoid warnings
 if (BUILD_TESTING)
+    # Just consuming BUILD_TESTING to avoid warnings
 endif ()
 
 # --------------------------------------------------------------------------- #

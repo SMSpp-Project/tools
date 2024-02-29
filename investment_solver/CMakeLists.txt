@@ -7,12 +7,14 @@ if (NOT hasParent)
     find_package(MILPSolver)
     find_package(SDDPBlock)
     find_package(UCBlock)
+    find_package(InvestmentBlock)
 endif ()
 
 # ----- investment_solver --------------------------------------------------- #
 if (TARGET SMS++::UCBlock AND
     TARGET SMS++::SDDPBlock AND
-    TARGET SMS++::MILPSolver)
+    TARGET SMS++::MILPSolver AND
+    TARGET SMS++::InvestmentBlock)
 
     add_executable(investment_solver
                    investment_solver.cpp ../sddp_solver/CutProcessing.cpp
@@ -23,7 +25,8 @@ if (TARGET SMS++::UCBlock AND
     target_link_libraries(investment_solver PRIVATE
                           SMS++::UCBlock
                           SMS++::SDDPBlock
-                          SMS++::MILPSolver)
+                          SMS++::MILPSolver
+                          SMS++::InvestmentBlock)
 
     if (UNIX AND (NOT APPLE))
         target_link_libraries(investment_solver PRIVATE stdc++fs)

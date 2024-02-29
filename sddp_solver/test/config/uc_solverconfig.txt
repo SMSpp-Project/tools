@@ -3,7 +3,7 @@ BlockSolverConfig # The name of the configuration
 0  # The BlockSolverConfig is not "differential"
 1  # The number of Solvers
 
-#Nnow all the names of the Solvers
+# Now all the names of the Solvers
 CPXMILPSolver
 
 1  # The number of ComputeConfigs
@@ -23,9 +23,9 @@ dblMaxTime 20000
 0  # Number of string parameters
 #strOutputFile uc_lp.lp
 
-0 # number of vector-of-int parameters
-0 # number of vector-of-double parameters
-0 # number of vector-of-string parameters
+0  # number of vector-of-int parameters
+0  # number of vector-of-double parameters
+0  # number of vector-of-string parameters
 
 # Pointer to the "extra" Configuration
 * # [none]

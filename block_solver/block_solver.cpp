@@ -3,20 +3,19 @@
  *
  * A tool that loads a SMS++ nc4 Block or Problem file and solves it.
  *
- * In case of a Block file, i.e. a file that contains one or more Blocks,
+ * In case of a Block file, i.e., a file that contains one or more Blocks,
  * it optionally configures all the Blocks with a BlockConfig and/or a
  * BlockSolverConfig, then it solves it with all the loaded solvers.
  *
- * In case of a Problem file, i.e. one that contains one or more Problems
+ * In case of a Problem file, i.e., one that contains one or more Problems
  * (with a problem being a Block/BlockConfig/BlockSolverConfig tuple),
  * it solves each problem with all the loaded solvers.
  *
  * \author Niccolo' Iardella \n
- *         Operations Research Group \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
- * Copyright &copy; by Niccolo' Iardella
+ * \copyright &copy; by Niccolo' Iardella
  */
 
 #include <iostream>
@@ -60,7 +59,7 @@ void load_library( const std::string & class_name ) {
  auto lib_path = "lib" + lib + LIBEXT;
  void * handle = dlopen( lib_path.c_str(), RTLD_LAZY );
 
- if( !handle ) {
+ if( ! handle ) {
   std::cerr << "Error:" << dlerror();
   exit( 1 );
  } else {
@@ -130,14 +129,14 @@ int main( int argc, char ** argv ) {
 
     // Configure block
     auto bgc = p.second.getGroup( "BlockConfig" );
-    auto b_config = static_cast<BlockConfig *>(BlockConfig::new_Configuration( bgc ));
+    auto b_config = static_cast< BlockConfig * >( BlockConfig::new_Configuration( bgc ) );
     if( b_config ) {
      b_config->apply( block );
     }
 
     // Configure solver
     auto bgs = p.second.getGroup( "BlockSolver" );
-    auto s_config = static_cast<BlockSolverConfig *>(BlockSolverConfig::new_Configuration( bgs ));
+    auto s_config = static_cast< BlockSolverConfig * >( BlockSolverConfig::new_Configuration( bgs ) );
     if( s_config ) {
 #ifdef USE_DL
      for( const auto & solvername : s_config->get_SolverNames() ) {
@@ -179,7 +178,7 @@ int main( int argc, char ** argv ) {
 
     // Configure block
     BlockConfig * b_config;
-    if( !bconf_file.empty() ) {
+    if( ! bconf_file.empty() ) {
      b_config = get_blockconfig( bconf_file );
      if( b_config == nullptr ) {
       std::cerr << exe << ": Block configuration not valid" << std::endl;
@@ -190,7 +189,7 @@ int main( int argc, char ** argv ) {
 
     // Configure solver
     BlockSolverConfig * s_config;
-    if( !sconf_file.empty() ) {
+    if( ! sconf_file.empty() ) {
      s_config = get_blocksolverconfig( sconf_file );
      if( s_config == nullptr ) {
       std::cerr << exe << ": Block configuration not valid" << std::endl;
@@ -225,5 +224,5 @@ int main( int argc, char ** argv ) {
 #ifdef USE_DL
  unload_libraries();
 #endif
- return 0;
+ return( 0 );
 }

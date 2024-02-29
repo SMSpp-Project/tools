@@ -40,7 +40,9 @@
 *.i*86
 *.x86_64
 *.hex
-sddp_greedy_solver
+block_solver/block_solver
+investment_solver/investment_solver
+sddp_solver/sddp_greedy_solver
 sddp_solver/sddp_solver
 ucblock_solver/ucblock_solver
 chgcfg/chgcfg
@@ -655,3 +657,9 @@ TSWLatexianTemp*
 
 # Makeindex log files
 *.lpz
+
+# sddp output files
+*.gsbd
+*.gsbmf
+*.csv
+*.txt

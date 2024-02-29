@@ -41,7 +41,7 @@ SMSpp_insert_in_factory_cpp_1( InvestmentBlock );
 
 InvestmentBlock::~InvestmentBlock() {
  for( auto block : v_Block )
-  delete block;
+  delete( block );
  v_Block.clear();
 
  for( auto & constraint : v_constraints )
@@ -151,7 +151,7 @@ void InvestmentBlock::generate_abstract_constraints( Configuration * stcc ) {
   return; // there is no bound constraint
 
  f_reformulate_bounds = 0;
- auto config = dynamic_cast<SimpleConfiguration< int > *>( stcc );
+ auto config = dynamic_cast< SimpleConfiguration< int > * >( stcc );
  if( ( ! config ) && f_BlockConfig )
   config = dynamic_cast< SimpleConfiguration< int > * >
    ( f_BlockConfig->f_static_constraints_Configuration );
@@ -165,7 +165,7 @@ void InvestmentBlock::generate_abstract_constraints( Configuration * stcc ) {
  // Initialize the constraints
  v_constraints.resize( v_variables.size() );
  for( Index i = 0 ; i < v_constraints.size() ; ++i ) {
-  v_constraints[ i ].set_lhs( - Inf< double > () );
+  v_constraints[ i ].set_lhs( -Inf< double > () );
   v_constraints[ i ].set_rhs( Inf< double > () );
   v_constraints[ i ].set_variable( & v_variables[ i ] );
  }
@@ -236,7 +236,7 @@ void InvestmentBlock::serialize( netCDF::NcGroup & group ) const {
 
 bool InvestmentBlock::is_feasible( bool useabstract , Configuration * fsbc ) {
  if( v_variables.empty() )
-  return true;
+  return( true );
 
  // Retrieve the tolerance.
 
@@ -257,10 +257,10 @@ bool InvestmentBlock::is_feasible( bool useabstract , Configuration * fsbc ) {
     continue;
    constraint.compute();
    if( constraint.abs_viol() > tolerance )
-    return false;
+    return( false );
   }
 
-  return true;
+  return( true );
  }
 
  // Check the "physical representation"
@@ -268,14 +268,14 @@ bool InvestmentBlock::is_feasible( bool useabstract , Configuration * fsbc ) {
  for( Index i = 0 ; i < v_lower_bound.size() ; ++i )
   if( v_lower_bound[ i ] > -Inf< double >() )
    if( v_variables[ i ].get_value() < v_lower_bound[ i ] - tolerance )
-    return false;
+    return( false );
 
  for( Index i = 0 ; i < v_upper_bound.size() ; ++i )
   if( v_upper_bound[ i ] < Inf< double >() )
    if( v_variables[ i ].get_value() > v_upper_bound[ i ] + tolerance )
-    return false;
+    return( false );
 
- return true;
+ return( true );
 }
 
 /*--------------------------------------------------------------------------*/

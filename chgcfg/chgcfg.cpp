@@ -31,7 +31,7 @@
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
- * Copyright &copy by Antonio Frangioni
+ * \copyright &copy; by Antonio Frangioni
  */
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- MACROS ----------------------------------*/
@@ -50,8 +50,6 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -59,44 +57,44 @@ int main( int argc , char ** argv )
 {
  // check command line parameters
  if( ( argc < 3 ) || ( ! ( argc % 2 ) ) ) {
-  cerr << "Usage: " << argv[ 0 ]
-       << "in_cfg out_cfg [ par1 val1 [ par2 val2 [ ... ] ] ]" << endl;
+  std::cerr << "Usage: " << argv[ 0 ]
+       << "in_cfg out_cfg [ par1 val1 [ par2 val2 [ ... ] ] ]" << std::endl;
   return( 1 );
   }
 
- if( string( argv[ 1 ] ) == string( argv[ 2 ] ) ) {
-  cerr << "Error: in_cfg must be different from out_cfg " << endl;
+ if( std::string( argv[ 1 ] ) == std::string( argv[ 2 ] ) ) {
+  std::cerr << "Error: in_cfg must be different from out_cfg " << std::endl;
   return( 1 );
   }
 
  // open input file
- ifstream ifile( argv[ 1 ] );
+ std::ifstream ifile( argv[ 1 ] );
  if( ! ifile.is_open() ) {
-  cerr << "Error: cannot open input file " << argv[ 1 ] << endl;
+  std::cerr << "Error: cannot open input file " << argv[ 1 ] << std::endl;
   return( 1 );
   }
 
  // open output file
- ofstream ofile( argv[ 2 ] , ofstream::out | ofstream::trunc );
+ std::ofstream ofile( argv[ 2 ] , std::ofstream::out | std::ofstream::trunc );
  if( ! ofile.is_open() ) {
-  cerr << "Error: cannot open output file " << argv[ 2 ] << endl;
+  std::cerr << "Error: cannot open output file " << argv[ 2 ] << std::endl;
   return( 1 );
   }
 
  // prepare vector of < parameter , value > pairs
  int npars = ( argc / 2 ) - 1;
- vector< pair< string , string > > pairs( npars );
+ std::vector< std::pair< std::string , std::string > > pairs( npars );
  for( int i = 0 ; i < npars ; ++i ) {
-  pairs[ i ].first = string( argv[ i * 2 + 3 ] );
-  pairs[ i ].second = string( argv[ i * 2 + 4 ] );
+  pairs[ i ].first = std::string( argv[ i * 2 + 3 ] );
+  pairs[ i ].second = std::string( argv[ i * 2 + 4 ] );
   }
 
  // main loop - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  while( ! ifile.eof() ) {
-  string line;
+  std::string line;
   getline( ifile , line );
   if( ( ! ifile.eof() ) && ifile.fail() ) {
-   cerr << "Error reading from input file " << argv[ 1 ] << endl;
+   std::cerr << "Error reading from input file " << argv[ 1 ] << std::endl;
    return( 1 );
    }
 
@@ -106,13 +104,13 @@ int main( int argc , char ** argv )
    ++it;
 
   if( it == line.end() ) {  // empty (or all-whitespace) line
-   ofile << endl;
+   ofile << std::endl;
    continue;
    }
 
   if( *it == '#' ) {  // comments-only line
    #if ! BAREBONES
-    ofile << line << endl;
+    ofile << line << std::endl;
    #endif
    continue;
    }
@@ -124,18 +122,18 @@ int main( int argc , char ** argv )
   // check if this is one of the parameters to be replaced
   auto pit = pairs.begin();
   for( ; pit != pairs.end() ; ++pit )
-   if( line.find( (*pit).first ) != string::npos )
+   if( line.find( (*pit).first ) != std::string::npos )
     break;
 
   if( pit != pairs.end() ) {  // found
    ofile << (*pit).first << "   " << (*pit).second;
    #if BAREBONES
-    ofile << endl;
+    ofile << std::endl;
    #else
     for( it = line.begin() ; it != line.end() ; ++it )
      if( *it == '#' ) {
       line.erase( line.begin() , it );
-      ofile << "   " << line << endl;
+      ofile << "   " << line << std::endl;
       break;
       }
    #endif
@@ -151,16 +149,16 @@ int main( int argc , char ** argv )
       break;
       }
    #endif
-   ofile << line << endl;
+   ofile << line << std::endl;
    } 
   }  // end( main loop )
 
  // cleanup loop: just copy the remaining part- - - - - - - - - - - - - - -
  while( ! ifile.eof() ) {
-  string line;
+  std::string line;
   getline( ifile , line );
   if( ( ! ifile.eof() ) && ifile.fail() ) {
-   cerr << "Error reading from input file " << argv[ 1 ] << endl;
+   std::cerr << "Error reading from input file " << argv[ 1 ] << std::endl;
    return( 1 );
    }
   #if BAREBONES
@@ -169,7 +167,7 @@ int main( int argc , char ** argv )
     ++it;
 
    if( it == line.end() ) {  // empty (or all-whitespace) line
-    ofile << endl;
+    ofile << std::endl;
     continue;
     }
 
@@ -182,7 +180,7 @@ int main( int argc , char ** argv )
      break;
      }
   #endif
-  ofile << line << endl;
+  ofile << line << std::endl;
   }
 
  // the end

@@ -52,8 +52,7 @@ make
 
 ## Usage
 
-The Block solver (`block_solver`), the Thermal Unit solver
-(`thermalunit_solver`) and the Unit Commitment solver (`ucblock_solver`)
+The Block solver (`block_solver`) and the Unit Commitment solver (`ucblock_solver`)
 share the same interface:
 
 ```sh
@@ -66,7 +65,7 @@ Usage: <solver-name> [options] <nc4-file>
   -h, --help                      Print this help.
 ```
 
-See the [`examples`](thermalunit_solver/examples) directory for sample
+See the [`examples`](ucblock_solver/examples) directory for sample
 input files and configurations.
 
 ### Block solver
@@ -79,7 +78,7 @@ The input netCDF file can be a problem file or a Block file:
 - a Block file needs a Block configuration and a Solver configuration to be
   solved.
 
-See the [`examples`](thermalunit_solver/examples) directory for sample input
+See the [`examples`](ucblock_solver/examples) directory for sample input
 files and configurations.
 
 ### InvestmentBlock Solver
@@ -96,7 +95,6 @@ Options:
   -n, --num-blocks <number>        Number of sub-Blocks per stage.
   -o, --output-solution            Output the solutions.
   -p, --prefix <path>              The prefix for all Block filenames.
-  -r, --relax                      Relax integer variables.
   -S, --solvercfg <file>           Solver configuration.
   -s, --simulate                   Simulate the given investment.
   -x, --initial-investment <file>  Initial investment.
@@ -127,9 +125,6 @@ determined as follows. If the lower bound l_i on the i-th investment is
 finite, then x_i = l_i. Otherwise, if the upper bound u_i on the i-th
 investment is finite, then x_i = u_i. Otherwise, if both bounds are not
 finite, then x_i = 0.
-
-The `-r` option indicates that the integrality constraints over the variables
-must be relaxed.
 
 To simulate a given investment, i.e., to compute the investment function at a
 given point, the `-s` option must be used. The investment to be simulated is
@@ -189,7 +184,6 @@ Options:
   -m, --num-simulations <number>  Number of simulations to be performed.
   -n, --num-blocks <number>       Number of sub-Blocks per stage.
   -p, --prefix <path>             The prefix for all Block filenames.
-  -r, --relax                     Relax integer variables.
   -s, --simulation                Simulation mode.
   -S, --solvercfg <file>          Solver configuration.
   -t, --stage <stage>             Stage from which initial state is taken.
@@ -225,9 +219,6 @@ linked by the storage levels. The final state of some stage of a simulation is
 used as the initial state for the next simulation. See the comments below for
 more details. If the value NUMBER provided by this option is greater than 1,
 then NUMBER consecutive simulations are performed.
-
-The `-r` option indicates that the integrality constraints over the variables
-must be relaxed.
 
 The `-n` option specifies the number of sub-Blocks of SDDPBlock that must be
 constructed for each stage. By default, SDDPBlock contains a single sub-Blocks
@@ -332,19 +323,19 @@ conduct, and the process for submitting merge requests to us.
 
 - **Antonio Frangioni**  
   Dipartimento di Informatica  
-  Universita' di Pisa
+  Università di Pisa
 
 - **Ali Ghezelsoflu**  
   Dipartimento di Informatica  
-  Universita' di Pisa
+  Università di Pisa
 
-- **Niccolo' Iardella**  
+- **Niccolò Iardella**  
   Dipartimento di Informatica  
-  Universita' di Pisa
+  Università di Pisa
 
 - **Rafael Durbano Lobato**  
   Dipartimento di Informatica  
-  Universita' di Pisa
+  Università di Pisa
 
 
 ## License

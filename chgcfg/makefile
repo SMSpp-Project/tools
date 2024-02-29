@@ -14,7 +14,7 @@
 NAME = chgcfg
 
 # basic directory
-DIR = ./
+DIR = .
 
 # debug switches
 #SW = -g3 -glldb -fno-inline -std=c++17 -ferror-limit=1
@@ -26,21 +26,21 @@ CC = clang++
 
 # default target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-default: $(NAME)
+default: $(DIR)/$(NAME)
 
 # clean - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 clean::
-	rm -f $(DIR)*.o $(DIR)*~ $(NAME)
+	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/$(NAME)
 
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
-$(NAME): chgcfg.o
-	$(CC) -o $(DIR)$(NAME) $^ $(SW)
+$(DIR)/$(NAME): $(DIR)/chgcfg.o
+	$(CC) -o $(DIR)/$(NAME) $^ $(SW)
 
 # compile command - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-$(DIR)chgcfg.o: $(DIR)chgcfg.cpp
-	$(CC) -c $(DIR)chgcfg.cpp -o $@ $(SW)
+$(DIR)/chgcfg.o: $(DIR)/chgcfg.cpp
+	$(CC) -c $(DIR)/chgcfg.cpp -o $@ $(SW)
 
 ############################ End of makefile #################################

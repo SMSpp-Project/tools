@@ -9,20 +9,25 @@
  * BlockSolverConfig on a SMS++ nc4 problem file.
  *
  * \author Niccolo' Iardella \n
- *         Operations Research Group \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
- * Copyright &copy; by Niccolo' Iardella
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * \copyright &copy; by Niccolo' Iardella
  */
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
 
 #include <iostream>
 #include <iomanip>
 
 #include <Block.h>
 #include <BlockSolverConfig.h>
-
-#include <UCBlock.h>
 
 #include "common_utils.h"
 #include "ucblock_utils.h"
@@ -36,51 +41,19 @@ int main( int argc, char ** argv ) {
 
  // Manage options and help, see common_utils.h
  docopt_desc = "SMS++ unit commitment solver.\n";
- exe = get_filename( argv[ 0 ] );
  process_args( argc, argv );
 
- // Read nc4 file
- netCDF::NcFile f;
- try {
-  f.open( filename, netCDF::NcFile::read );
- } catch( netCDF::exceptions::NcException & e ) {
-  std::cerr << exe << ": cannot open nc4 file " << filename << std::endl;
-  exit( 1 );
- }
-
- netCDF::NcGroupAtt gtype = f.getAtt( "SMS++_file_type" );
- if( gtype.isNull() ) {
-  std::cerr << exe << ": "
-            << filename << " is not an SMS++ nc4 file" << std::endl;
-  exit( 1 );
- }
-
- // Read nc4 group
- int type;
- gtype.getValues( &type );
-
- if( type != eBlockFile ) {
-  std::cerr << exe << ": "
-            << filename << " is not an SMS++ nc4 Block file" << std::endl;
-  exit( 1 );
- }
-
- netCDF::NcGroup bg = f.getGroup( "Block_0" );
- if( bg.isNull() ) {
-  std::cerr << exe << ": "
-            << "Block_0 empty or undefined in " << filename << std::endl;
-  exit( 1 );
- }
-
  // Deserialize block
- auto block = dynamic_cast<UCBlock *>(Block::new_Block( "UCBlock" ));
- block->deserialize( bg );
-
- //check_UCBlock_data(block);
+ Block * block = Block::deserialize( filename );
+ if( ! block ) {
+  std::cerr << exe << ": "
+            << "Block::deserialize() failed!" << std::endl;
+  exit( 1 );
+ }
 
  // Configure block
  BlockConfig * b_config;
- if( !bconf_file.empty() ) {
+ if( ! bconf_file.empty() ) {
   b_config = get_blockconfig( bconf_file );
   if( b_config == nullptr ) {
    std::cerr << exe << ": Block configuration not valid" << std::endl;
@@ -89,13 +62,13 @@ int main( int argc, char ** argv ) {
  } else {
   // TODO: Try to remove this
   std::cout << "Using a default Block configuration" << std::endl;
-  b_config = default_configure_ucblock( block );
+  b_config = default_configure_UCBlock( block );
  }
  b_config->apply( block );
 
  // Configure solver
  BlockSolverConfig * s_config;
- if( !sconf_file.empty() ) {
+ if( ! sconf_file.empty() ) {
   s_config = get_blocksolverconfig( sconf_file );
   if( s_config == nullptr ) {
    std::cerr << exe << ": Solver configuration not valid" << std::endl;
@@ -108,9 +81,8 @@ int main( int argc, char ** argv ) {
  s_config->apply( block );
 
  // Write nc4 problem
- if( writeprob ) {
+ if( writeprob )
   write_nc4problem( block, b_config, s_config );
- }
 
  // Solve
  std::cout.setf( std::ios::scientific, std::ios::floatfield );
@@ -118,7 +90,11 @@ int main( int argc, char ** argv ) {
  solve_all( block );
 
  // Print the results
- print_ucblock_solver_results( block , solution_output_type );
+ print_UCBlock_solver_results( block , solution_output_type );
 
- return 0;
-}
+ return( 0 );
+}  // end( main )
+
+/*--------------------------------------------------------------------------*/
+/*---------------------- End File ucblock_solver.cpp -----------------------*/
+/*--------------------------------------------------------------------------*/
