@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed 
 
-## [0.5.3] - 2024-02-28
+## [0.5.3] - 2024-02-29
 
 ### Changed 
 
@@ -22,8 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - the -r option from sddp_solver
-
-- copy of Investment* files from investment_solver
 
 ## [0.5.2] - 2023-05-17
 
