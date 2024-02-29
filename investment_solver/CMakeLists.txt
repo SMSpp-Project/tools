@@ -16,9 +16,8 @@ if (TARGET SMS++::UCBlock AND
     TARGET SMS++::MILPSolver AND
     TARGET SMS++::InvestmentBlock)
 
-    add_executable(investment_solver
-                   investment_solver.cpp ../sddp_solver/CutProcessing.cpp
-                   InvestmentFunction.cpp InvestmentBlock.cpp)
+    add_executable(investment_solver investment_solver.cpp
+                   ../sddp_solver/CutProcessing.cpp)
     target_compile_features(investment_solver PUBLIC cxx_std_17)
     target_include_directories(investment_solver PRIVATE ../ucblock_solver)
     target_include_directories(investment_solver PRIVATE ../sddp_solver)
