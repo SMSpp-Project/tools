@@ -41,7 +41,6 @@
 
 #include <BendersBlock.h>
 #include <BlockSolverConfig.h>
-#include <CPXMILPSolver.h>
 #include <HydroSystemUnitBlock.h>
 #include <RBlockConfig.h>
 #include <SDDPBlock.h>

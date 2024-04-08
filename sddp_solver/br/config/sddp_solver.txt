@@ -36,7 +36,7 @@ ComputeConfig # exact type of the ComputeConfig object
 
 intStoreRandomCuts 1
 #intMaxIter 20
-intLogVerb             1 # log verbosity
+intLogVerb               1 # log verbosity
 intNStepConv             5 # Frequency at which the convergence is checked
 intPrintTime             1 # Indicates whether computational time should be displayed
 intNbSimulCheckForConv   20 # Number of simulations considered when checking convergence

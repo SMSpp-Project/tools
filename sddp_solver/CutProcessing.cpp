@@ -23,7 +23,6 @@
 #include <FRealObjective.h>
 #include <FRowConstraint.h>
 #include <LinearFunction.h>
-#include <CPXMILPSolver.h>
 #include <PolyhedralFunction.h>
 #include <SDDPBlock.h>
 
@@ -255,11 +254,13 @@ void CutProcessing::remove_redundant_cuts( PolyhedralFunction * function )
  auto lp = ::build_lp( function );
 
  if( config_filename.empty() ) {
-  auto solver = new CPXMILPSolver;
-  solver->set_par( solver->int_par_str2idx( "intLogVerb" ) , 0 );
-  solver->set_par( solver->dbl_par_str2idx( "dblFAccSol" ) , 1.0e-15 );
-  solver->set_par( solver->dbl_par_str2idx( "dblRelAcc" ) , 1.0e-15 );
-  lp->register_Solver( solver );
+  auto bsc = new BlockSolverConfig();
+  auto cc = new ComputeConfig();
+  cc->set_par( "intLogVerb" , int( 0 ) );
+  cc->set_par( "dblFAccSol" , double( 1.0e-15 ) );
+  cc->set_par( "dblRelAcc" , double( 1.0e-15 ) );
+  bsc->add_ComputeConfig( "CPXMILPSolver" , cc );
+  bsc->apply( lp );
  }
  else {
   auto solver_config = dynamic_cast< BlockSolverConfig * >
