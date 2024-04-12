@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - END sddp_solver.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - sddp_solver.txt - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a SDDPSolver
 #
