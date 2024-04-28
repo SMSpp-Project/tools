@@ -87,7 +87,9 @@ void docopt() {
            << std::endl
            << "Options:\n"
            << "  -B, --blockcfg <file>    Block configuration.\n"
+           << "  -p, --prefix <path>      The prefix for all Block filenames.\n"
            << "  -S, --solvercfg <file>   Solver configuration.\n"
+           << "  -c, --configdir <path>   The prefix for all config filenames.\n"
            << "  -n, --nc4problem <file>  Write nc4 problem on file.\n"
            << "  -v, --verbose            Make the solver verbose.\n"
            << "  -o, --output <type>      Solution output type (0 none, 1 screen, 2 files, 3 both).\n"
@@ -105,30 +107,38 @@ void process_args( int argc, char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:S:o:nvh";
+ const char * const short_opts = "B:p:S:c:o:nvh";
  const option long_opts[] = {
-  { "blockcfg",   required_argument, nullptr, 'B' },
-  { "solvercfg",  required_argument, nullptr, 'S' },
-  { "output",     required_argument, nullptr, 'o' },
-  { "nc4problem", no_argument,       nullptr, 'n' },
-  { "verbose",    no_argument,       nullptr, 'v' },
-  { "help",       no_argument,       nullptr, 'h' },
-  { nullptr,      no_argument,       nullptr, 0 }
+  { "blockcfg" ,   required_argument , nullptr , 'B' } ,
+  { "prefix" ,     required_argument , nullptr , 'p' } ,
+  { "solvercfg" ,  required_argument , nullptr , 'S' } ,
+  { "configdir" ,  required_argument , nullptr , 'c' } ,
+  { "output" ,     required_argument , nullptr , 'o' } ,
+  { "nc4problem" , no_argument ,       nullptr , 'n' } ,
+  { "verbose" ,    no_argument ,       nullptr , 'v' } ,
+  { "help" ,       no_argument ,       nullptr , 'h' } ,
+  { nullptr ,      no_argument ,       nullptr , 0 }
  };
 
  // Options
  while( true ) {
   const auto opt = getopt_long( argc, argv, short_opts, long_opts, nullptr );
 
-  if( -1 == opt ) {
+  if( -1 == opt )
    break;
-  }
+
   switch( opt ) {
    case 'B':
     bconf_file = std::string( optarg );
     break;
+   case 'p':
+    Block::set_filename_prefix( std::string( optarg ) );
+    break;
    case 'S':
     sconf_file = std::string( optarg );
+    break;
+   case 'c':
+    Configuration::set_filename_prefix( std::string( optarg ) );
     break;
    case 'o': {
     auto s = std::string( optarg );
