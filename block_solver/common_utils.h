@@ -70,7 +70,8 @@ int solution_output_type = 1;
 /*--------------------------------------------------------------------------*/
 
 /// Gets the name of the executable from its full path
-std::string get_filename( const std::string & fullpath ) {
+std::string get_filename( const std::string & fullpath )
+{
  std::size_t found = fullpath.find_last_of( "/\\" );
  return( fullpath.substr( found + 1 ) );
 }
@@ -78,7 +79,8 @@ std::string get_filename( const std::string & fullpath ) {
 /*--------------------------------------------------------------------------*/
 
 /// Prints the tool description and usage
-void docopt() {
+void docopt()
+{
  // http://docopt.org
  std::cout << docopt_desc << std::endl;
  std::cout << "Usage:\n"
@@ -99,7 +101,8 @@ void docopt() {
 /*--------------------------------------------------------------------------*/
 
 /// Processes the command line arguments
-void process_args( int argc, char ** argv ) {
+void process_args( int argc , char ** argv )
+{
 
  if( argc < 2 ) {
   std::cout << exe << ": no input file\n"
@@ -122,7 +125,7 @@ void process_args( int argc, char ** argv ) {
 
  // Options
  while( true ) {
-  const auto opt = getopt_long( argc, argv, short_opts, long_opts, nullptr );
+  const auto opt = getopt_long( argc , argv , short_opts , long_opts , nullptr );
 
   if( -1 == opt )
    break;
@@ -179,7 +182,8 @@ void process_args( int argc, char ** argv ) {
 /*--------------------------------------------------------------------------*/
 
 /// Returns a default Solver configuration
-BlockSolverConfig * default_configure_solver( int verbose ) {
+BlockSolverConfig * default_configure_solver( int verbose )
+{
  auto s_config = new BlockSolverConfig;
  auto c_config = new ComputeConfig;
 
@@ -193,7 +197,8 @@ BlockSolverConfig * default_configure_solver( int verbose ) {
 /*--------------------------------------------------------------------------*/
 
 /// Prints the status in a human-readable form
-void print_status( int status ) {
+void print_status( int status )
+{
  std::cout << "Status = " << status << " (";
 
  switch( status ) {
@@ -222,8 +227,9 @@ void print_status( int status ) {
 /*--------------------------------------------------------------------------*/
 
 /// Solves the problem with all available solvers
-void solve_all( Block * block ) {
- std::chrono::time_point< std::chrono::system_clock > start, end;
+void solve_all( Block * block )
+{
+ std::chrono::time_point< std::chrono::system_clock > start , end;
 
  for( auto solver : block->get_registered_solvers() ) {
   std::cout << "Solver: " << solver->classname() << std::endl;
@@ -250,11 +256,12 @@ void solve_all( Block * block ) {
 /*--------------------------------------------------------------------------*/
 
 /// Gets a BlockConfig from a BlockConfig file
-BlockConfig * get_blockconfig( const std::string & conf_file ) {
+BlockConfig * get_blockconfig( const std::string & conf_file )
+{
  BlockConfig * b_config;
  std::ifstream bcf;
 
- bcf.open( conf_file, std::ifstream::in );
+ bcf.open( conf_file , std::ifstream::in );
  if( ! bcf.is_open() )
   return( nullptr );
 
@@ -277,11 +284,12 @@ BlockConfig * get_blockconfig( const std::string & conf_file ) {
 /*--------------------------------------------------------------------------*/
 
 /// Gets a BlockSolverConfig from a BlockSolverConfig file
-BlockSolverConfig * get_blocksolverconfig( const std::string & conf_file ) {
+BlockSolverConfig * get_blocksolverconfig( const std::string & conf_file )
+{
  BlockSolverConfig * s_config;
  std::ifstream scf;
 
- scf.open( conf_file, std::ifstream::in );
+ scf.open( conf_file , std::ifstream::in );
  if( ! scf.is_open() )
   return( nullptr );
 
@@ -304,23 +312,23 @@ BlockSolverConfig * get_blocksolverconfig( const std::string & conf_file ) {
 /*--------------------------------------------------------------------------*/
 
 /// Writes a new nc4 problem using the block and its configurations
-void write_nc4problem( Block * block,
-                       BlockConfig * b_config,
+void write_nc4problem( Block * block ,
+                       BlockConfig * b_config ,
                        BlockSolverConfig * s_config ) {
 
  std::size_t found = filename.find_last_of( '.' );
- std::string nc4_file = filename.substr( 0, found ) + "_problem.nc4";
+ std::string nc4_file = filename.substr( 0 , found ) + "_problem.nc4";
 
  netCDF::NcFile outfile;
  try {
-  outfile.open( nc4_file, netCDF::NcFile::replace );
+  outfile.open( nc4_file , netCDF::NcFile::replace );
  } catch( netCDF::exceptions::NcException & e ) {
   std::cerr << exe << ": cannot open nc4 file " << nc4_file << std::endl;
   exit( 1 );
  }
- outfile.putAtt( "SMS++_file_type", netCDF::NcInt(), eProbFile );
+ outfile.putAtt( "SMS++_file_type" , netCDF::NcInt() , eProbFile );
 
- block->Block::serialize( outfile, eProbFile );
+ block->Block::serialize( outfile , eProbFile );
  netCDF::NcGroup g = outfile.getGroup( "Prob_0" );
 
  auto new_bc = g.addGroup( "BlockConfig" );
