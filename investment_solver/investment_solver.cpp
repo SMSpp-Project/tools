@@ -871,11 +871,8 @@ void invest( InvestmentBlock * investment_block ) {
     const auto & var_lower_bound = investment_block->get_variable_lower_bound();
     const auto width = std::to_string( best_solution.size() ).size();
     for( Index i = 0 ; i < best_solution.size() ; ++i ) {
-     auto value = best_solution[ i ];
-     if( reformulate_variable_bounds && ( i < var_lower_bound.size() ) &&
-         ( var_lower_bound[ i ] > -Inf< double >() ) )
-      value += var_lower_bound[ i ];
-     std::cout << std::setw( width ) << i << " " << value << std::endl;
+     std::cout << std::setw( width ) << i << " "
+	       << best_solution[ i ] << std::endl;
     }
    }
 
