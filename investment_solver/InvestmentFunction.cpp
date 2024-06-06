@@ -1198,7 +1198,7 @@ int InvestmentFunction::compute( bool changedvars ) {
  handle_events( eBeforeTermination );
  return( f_status );
 
-}  // end( InvestmentFunction::compute )
+ }  // end( InvestmentFunction::compute )
 
 /*--------------------------------------------------------------------------*/
 
@@ -1210,32 +1210,30 @@ static RealObjective::OFValue get_recours_obj( const Block * blck ) {
   rv += get_recours_obj( bk );
 
  return( rv );
-};
+ }
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 
-Function::FunctionValue InvestmentFunction::get_constant_term( void ) const {
+Function::FunctionValue InvestmentFunction::get_constant_term( void ) const
+{
  if( auto bk = get_nested_Block( 0 ) )
   return( get_recours_obj( bk ) );
  else
   return( 0 );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
-bool InvestmentFunction::is_convex( void ) const {
- return( true );
-}
+bool InvestmentFunction::is_convex( void ) { return( true ); }
 
 /*--------------------------------------------------------------------------*/
 
-bool InvestmentFunction::is_concave( void ) const {
- return( false );
-}
+bool InvestmentFunction::is_concave( void ) { return( false ); }
 
 /*--------------------------------------------------------------------------*/
 
-bool InvestmentFunction::has_linearization( const bool diagonal ) {
+bool InvestmentFunction::has_linearization( const bool diagonal )
+{
  if( diagonal ) {
   f_diagonal_linearization_required = true;
   return( f_has_diagonal_linearization );
@@ -1495,15 +1493,19 @@ InvestmentFunction::get_linearization_constant( Index name ) {
  }
 
  return( 0 );
-}  // end( InvestmentFunction::get_linearization_constant )
+
+ }  // end( InvestmentFunction::get_linearization_constant )
 
 /*--------------------------------------------------------------------------*/
 
-Function::FunctionValue InvestmentFunction::get_value( void ) const {
+Function::FunctionValue InvestmentFunction::get_value( void )
+{
  if( f_has_value )
   return( f_value );
+
  return( worst_value() );
-} // end ( InvestmentFunction::get_value )
+
+ } // end ( InvestmentFunction::get_value )
 
 /*--------------------------------------------------------------------------*/
 

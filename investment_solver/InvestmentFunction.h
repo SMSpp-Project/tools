@@ -1256,28 +1256,28 @@ class InvestmentFunction : public C05Function , public Block {
   * not have a sub-Block or its sub-Block does not have a Solver attached to
   * it, then an exception is thrown. */
 
- FunctionValue get_value() const override;
+ FunctionValue get_value( void ) override;
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
  /// returns a lower estimate of the InvestmentFunction
  /** This method simply returns get_value(). */
 
- FunctionValue get_lower_estimate() const override {
+ FunctionValue get_lower_estimate( void ) override {
   return( get_value() );
- }
+  }
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
  /// returns an upper estimate of the InvestmentFunction
  /** This method simply returns get_value(). */
 
- FunctionValue get_upper_estimate() const override {
+ FunctionValue get_upper_estimate( void ) override {
   return( get_value() );
- }
+  }
 
 /*--------------------------------------------------------------------------*/
  /// returns the "constant term" of the InvestmentFunction
 
- FunctionValue get_constant_term() const override;
+ FunctionValue get_constant_term( void ) const override;
 
 /*--------------------------------------------------------------------------*/
  /// returns true only if this InvestmentFunction is convex
@@ -1286,7 +1286,7 @@ class InvestmentFunction : public C05Function , public Block {
   * its sub-Block is maximization, then this method returns false. Otherwise,
   * it returns true. */
 
- bool is_convex() const override;
+ bool is_convex( void ) override;
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
  /// returns true only if this InvestmentFunction is concave
@@ -1295,7 +1295,7 @@ class InvestmentFunction : public C05Function , public Block {
   * its sub-Block is minimization, then this method returns false. Otherwise,
   * it returns true. */
 
- bool is_concave() const override;
+ bool is_concave( void ) override;
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
  /// returns true only if this InvestmentFunction is linear
@@ -1304,7 +1304,7 @@ class InvestmentFunction : public C05Function , public Block {
   * linear. We do not attempt to find this out and this method simply returns
   * \c false. */
 
- bool is_linear() const override { return( false ); }
+ bool is_linear( void ) override { return( false ); }
 
 /*--------------------------------------------------------------------------*/
  /// tells whether a linearization is available
@@ -1326,13 +1326,13 @@ class InvestmentFunction : public C05Function , public Block {
 
  bool is_linearization_there( Index name ) const override final {
   return( global_pool.is_linearization_there( name ) );
- }
+  }
 
 /*--------------------------------------------------------------------------*/
 
  bool is_linearization_vertical( Index name ) const override final {
   return( global_pool.is_linearization_vertical( name ) );
- }
+  }
 
 /*--------------------------------------------------------------------------*/
  /// stores a combination of the given linearizations
@@ -1525,11 +1525,12 @@ class InvestmentFunction : public C05Function , public Block {
   * InvestmentFunction; it is virtual so that derived classes can print their
   * specific information in the format they choose. */
 
- void print( std::ostream &output ) const override {
+ void print( std::ostream &output ) override {
   output << "InvestmentFunction [" << this << "]"
          << " with " << get_num_active_var() << " active variables";
- }
+  }
 
+/*--------------------------------------------------------------------------*/
  /// load the InvestmentFunction out of an input stream
  /** This method loads the InvestmentFunction out of an input stream. */
 

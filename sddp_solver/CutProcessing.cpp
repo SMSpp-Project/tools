@@ -44,12 +44,11 @@ using Subset = Block::Subset;
 
 namespace {
 
- double get_sign( const PolyhedralFunction * function ) {
+ double get_sign( PolyhedralFunction * function ) {
   return( function->is_convex() ? - 1.0 : 1.0 );
- }
+  }
 
 /*--------------------------------------------------------------------------*/
-
  /** Given a pointer to a PolyhedralFunction representing the function
   *
   *     f( x ) = max { a_i x + b_i : i = 0, ... , m - 1 }
@@ -66,7 +65,8 @@ namespace {
   *
   * where s = - 1 in the convex case and s = 1 in the concave case.
   */
- AbstractBlock * build_lp( const PolyhedralFunction * function ) {
+
+ AbstractBlock * build_lp( PolyhedralFunction * function ) {
 
   const auto & A = function->get_A();
 
