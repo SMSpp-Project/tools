@@ -34,19 +34,6 @@ if (TARGET SMS++::UCBlock AND
         target_link_libraries(sddp_solver PRIVATE SMS++::LagrangianDualSolver)
     endif ()
 
-    find_package(Boost COMPONENTS mpi)
-    find_package(MPI)
-    if (MPI_CXX_FOUND AND Boost_MPI_FOUND)
-        message(STATUS "sddp_solver: MPI and Boost::mpi found. Using MPI.")
-        target_compile_definitions(sddp_solver PRIVATE USE_MPI)
-        target_link_libraries(sddp_solver PRIVATE Boost::mpi MPI::MPI_CXX)
-    endif ()
-
-    find_package(OpenMP)
-    if (OPENMP_FOUND)
-        target_link_libraries(sddp_solver PRIVATE OpenMP::OpenMP_CXX)
-    endif ()
-
     # Install
     install(TARGETS sddp_solver
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

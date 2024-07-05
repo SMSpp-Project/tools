@@ -41,20 +41,6 @@ if (TARGET SMS++::UCBlock AND
                               SMS++::LagrangianDualSolver)
     endif ()
 
-    find_package(Boost COMPONENTS mpi)
-    find_package(MPI)
-    if (MPI_CXX_FOUND AND Boost_MPI_FOUND)
-        message(STATUS
-                "investment_solver: MPI and Boost::mpi found. Using MPI.")
-        target_compile_definitions(investment_solver PRIVATE USE_MPI)
-        target_link_libraries(investment_solver PRIVATE Boost::mpi MPI::MPI_CXX)
-    endif ()
-
-    find_package(OpenMP)
-    if (OPENMP_FOUND)
-        target_link_libraries(investment_solver PRIVATE OpenMP::OpenMP_CXX)
-    endif ()
-
     # Install
     install(TARGETS investment_solver
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
