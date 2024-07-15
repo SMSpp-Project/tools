@@ -31,7 +31,7 @@ Configure and build with:
 mkdir build
 cd build
 cmake ..
-make
+cmake --build .
 ```
 
 Optionally, install with:
@@ -46,7 +46,7 @@ Some (but not all) the modules have a hand-made makefile that can be
 manually edited and then used with just
 
 ```sh
-make
+cmake --build .
 ```
 
 
