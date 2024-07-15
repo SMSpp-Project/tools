@@ -22,7 +22,7 @@ if (TARGET SMS++::UCBlock)
         target_link_libraries(ucblock_solver PRIVATE SMS++::BundleSolver)
     endif ()
 
-    if (TARGET SMS++::BundleSolver)
+    if (TARGET SMS++::LagrangianDualSolver)
         target_link_libraries(ucblock_solver PRIVATE SMS++::LagrangianDualSolver)
     endif ()
 
