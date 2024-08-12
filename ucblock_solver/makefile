@@ -72,7 +72,7 @@ MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 $(DIR)/$(NAME): $(MOBJ) $(DIR)/ucblock_solver.o
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
 
-# dependencies: every .o from its .C + every recursively included .h- - - - -
+# dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
 MINC =  $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) -I$(DIR)/../block_solver/
