@@ -3,8 +3,6 @@
 #
 # A txt description of a BlockSolverConfig for the "other" :UnitBlock, which
 # is allowed to be empty if all the "other" :UnitBlock are treated as "easy"
-# 
-#   version 1.0 , 26/04/2021
 #
 #   Antonio Frangioni
 #
@@ -17,7 +15,7 @@ BlockSolverConfig     # exact type of the Configuration object
 1  # the BlockSolverConfig is a "differential" one
 
 1  # number of (the names of) Solver in this BlockSolverConfig
-# now all the names of the Solver
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
 CPXMILPSolver
 #SCIPMILPSolver
 

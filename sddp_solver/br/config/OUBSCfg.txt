@@ -3,8 +3,6 @@
 #
 # A txt description of a BlockSolverConfig for the "other" :UnitBlock, which
 # is allowed to be empty if all the "other" :UnitBlock are treated as "easy"
-# 
-#   version 1.0 , 26/04/2021
 #
 #   Antonio Frangioni
 #
@@ -17,7 +15,7 @@ BlockSolverConfig     # exact type of the Configuration object
 1  # the BlockSolverConfig is a "differential" one
 
 1  # number of (the names of) Solver in this BlockSolverConfig
-# now all the names of the Solver
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
 CPXMILPSolver
 #SCIPMILPSolver
 
@@ -30,13 +28,11 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-1 # number of integer parameters
+1  # number of integer parameters
 
 # now all the integer parameters
 intLogVerb       0    # log verbosity of the MILPSolver
 #intRelaxIntVars 1    # nonzero if the continuous relaxation is solved
-
-# note that we could eof() the file here since the rest is all empty
 
 2  # Number of double parameters
 
@@ -50,7 +46,6 @@ dblMaxTime 20000
 
 # now all the string parameters
 #strOutputFile	unit.lp
-# [none]
 
 0 # number of vector-of-int parameters
 
