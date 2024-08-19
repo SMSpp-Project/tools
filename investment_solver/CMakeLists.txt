@@ -2,19 +2,16 @@
 # If it's not being called by the umbrella, we need to
 # look for the system-installed libraries.
 if (NOT hasParent)
-    find_package(BundleSolver)
-    find_package(LagrangianDualSolver)
-    find_package(MILPSolver)
-    find_package(SDDPBlock)
-    find_package(UCBlock)
+    # Blocks
     find_package(InvestmentBlock)
+    # Solvers
+    find_package(MILPSolver)
+    find_package(LagrangianDualSolver)
+    find_package(BundleSolver)
 endif ()
 
 # ----- investment_solver --------------------------------------------------- #
-if (TARGET SMS++::UCBlock AND
-    TARGET SMS++::SDDPBlock AND
-    TARGET SMS++::MILPSolver AND
-    TARGET SMS++::InvestmentBlock)
+if (TARGET SMS++::InvestmentBlock)
 
     add_executable(investment_solver
                    investment_solver.cpp ../sddp_solver/CutProcessing.cpp
@@ -22,23 +19,19 @@ if (TARGET SMS++::UCBlock AND
     target_compile_features(investment_solver PUBLIC cxx_std_17)
     target_include_directories(investment_solver PRIVATE ../ucblock_solver)
     target_include_directories(investment_solver PRIVATE ../sddp_solver)
-    target_link_libraries(investment_solver PRIVATE
-                          SMS++::UCBlock
-                          SMS++::SDDPBlock
-                          SMS++::MILPSolver
-                          SMS++::InvestmentBlock)
+    target_link_libraries(investment_solver PRIVATE SMS++::InvestmentBlock)
 
-    if (UNIX AND (NOT APPLE))
-        target_link_libraries(investment_solver PRIVATE stdc++fs)
-    endif ()
-
-    if (TARGET SMS++::BundleSolver)
-        target_link_libraries(investment_solver PRIVATE SMS++::BundleSolver)
+    if (TARGET SMS++::MILPSolver)
+        target_link_libraries(investment_solver PRIVATE SMS++::MILPSolver)
     endif ()
 
     if (TARGET SMS++::LagrangianDualSolver)
         target_link_libraries(investment_solver PRIVATE
-                              SMS++::LagrangianDualSolver)
+                SMS++::LagrangianDualSolver)
+    endif ()
+
+    if (TARGET SMS++::BundleSolver)
+        target_link_libraries(investment_solver PRIVATE SMS++::BundleSolver)
     endif ()
 
     # Install

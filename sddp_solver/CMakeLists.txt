@@ -2,36 +2,36 @@
 # If it's not being called by the umbrella, we need to
 # look for the system-installed libraries.
 if (NOT hasParent)
-    find_package(BundleSolver)
-    find_package(LagrangianDualSolver)
-    find_package(MILPSolver)
-    find_package(SDDPBlock)
+    # Blocks
     find_package(UCBlock)
+    find_package(SDDPBlock)
+    # Solvers
+    find_package(MILPSolver)
+    find_package(LagrangianDualSolver)
+    find_package(BundleSolver)
 endif ()
 
 # ----- sddp_solver --------------------------------------------------------- #
 if (TARGET SMS++::UCBlock AND
-    TARGET SMS++::SDDPBlock AND
-    TARGET SMS++::MILPSolver)
+    TARGET SMS++::SDDPBlock)
 
     add_executable(sddp_solver sddp_solver.cpp CutProcessing.cpp)
     target_compile_features(sddp_solver PUBLIC cxx_std_17)
     target_include_directories(sddp_solver PRIVATE ../ucblock_solver)
     target_link_libraries(sddp_solver PRIVATE
                           SMS++::UCBlock
-                          SMS++::SDDPBlock
-                          SMS++::MILPSolver)
+                          SMS++::SDDPBlock)
 
-    if (UNIX AND (NOT APPLE))
-        target_link_libraries(sddp_solver PRIVATE stdc++fs)
-    endif ()
-
-    if (TARGET SMS++::BundleSolver)
-        target_link_libraries(sddp_solver PRIVATE SMS++::BundleSolver)
+    if (TARGET SMS++::MILPSolver)
+        target_link_libraries(sddp_solver PRIVATE SMS++::MILPSolver)
     endif ()
 
     if (TARGET SMS++::LagrangianDualSolver)
         target_link_libraries(sddp_solver PRIVATE SMS++::LagrangianDualSolver)
+    endif ()
+
+    if (TARGET SMS++::BundleSolver)
+        target_link_libraries(sddp_solver PRIVATE SMS++::BundleSolver)
     endif ()
 
     # Install
