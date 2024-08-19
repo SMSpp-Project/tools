@@ -26,9 +26,9 @@ if (NOT hasParent)
     # Blocks
     find_package(UCBlock)
     # Solvers
-    find_package(MILPSolver)
     find_package(LagrangianDualSolver)
     find_package(BundleSolver)
+    find_package(MILPSolver)
 endif ()
 
 # ----- ucblock_solver ------------------------------------------------------ #
@@ -38,16 +38,16 @@ if (TARGET SMS++::UCBlock)
     target_include_directories(ucblock_solver PRIVATE ../block_solver)
     target_link_libraries(ucblock_solver PRIVATE SMS++::UCBlock)
 
-    if (TARGET SMS++::MILPSolver)
-        target_link_libraries(ucblock_solver PRIVATE SMS++::MILPSolver)
-    endif ()
-
     if (TARGET SMS++::LagrangianDualSolver)
         target_link_libraries(ucblock_solver PRIVATE SMS++::LagrangianDualSolver)
     endif ()
 
     if (TARGET SMS++::BundleSolver)
         target_link_libraries(ucblock_solver PRIVATE SMS++::BundleSolver)
+    endif ()
+
+    if (TARGET SMS++::MILPSolver)
+        target_link_libraries(ucblock_solver PRIVATE SMS++::MILPSolver)
     endif ()
 
     # Install
