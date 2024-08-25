@@ -16,23 +16,46 @@ DIR = .
 # module name
 NAME = $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
 
+# common flags
+COMMON_SW = -std=c++17 -ferror-limit=1 -Wno-enum-compare
+
 # debug switches
-#SW = -g3 -glldb -fno-inline -std=c++17 -ferror-limit=1 -Wno-enum-compare
+SW_DEBUG = -g3 -glldb -fno-inline $(COMMON_SW)
 # debug switches with address sanitizer and extra pedantic warning
-SW = -g3 -glldb -fno-inline -std=c++17 -ferror-limit=1 -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -Wpedantic -Wextra -Wno-unused-parameter -DCLANG_1200_0_32_27_PATCH -Wno-enum-compare
+SW_DEBUG_ASAN = -g3 -glldb -fno-inline $(COMMON_SW) -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -Wpedantic -Wextra -Wno-unused-parameter -DCLANG_1200_0_32_27_PATCH
 # production switches with address sanitizer
-#SW = -O3 -std=c++17 -DNDEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -Wno-enum-compare
+SW_RELEASE_ASAN = -O3 $(COMMON_SW) -DNDEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined
 # production switches
-#SW = -O3 -std=c++17 -DNDEBUG -DCLANG_1200_0_32_27_PATCH -Wno-enum-compare
+SW_RELEASE = -O3 $(COMMON_SW) -DNDEBUG -DCLANG_1200_0_32_27_PATCH
 
 # compiler
 CC = clang++
 
 # default target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-default: $(DIR)/$(NAME)
+default: release
 
-# clean - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# debug target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+debug: SW = $(SW_DEBUG)
+debug: $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
+
+# debug_asan target - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+debug_asan: SW = $(SW_DEBUG_ASAN)
+debug_asan: $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
+
+# release target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+release: SW = $(SW_RELEASE)
+release: $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
+
+# release_asan target - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+release_asan: SW = $(SW_RELEASE_ASAN)
+release_asan: $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
+
+# clean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 clean::
 	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/$(NAME)
@@ -57,11 +80,6 @@ include $(BNDSLVSDR)/makefile-s
 # LagrangianDualSolver
 LgDSLVSDR = ../../LagrangianDualSolver
 include $(LgDSLVSDR)/makefile
-
-# not necessary, BundleSolver does that already
-# MILPSolver
-#MILPSSDR = ../../../MILPSolver
-#include $(MILPSSDR)/makefile
 
 # define input macros for SDDPBlock makefile + dependencies, then include it
 SDDPBkSDR = ../../SDDPBlock
@@ -106,5 +124,26 @@ $(DIR)/sddp_greedy_solver.o: $(DIR)/sddp_greedy_solver.cpp $(MH)
 
 $(DIR)/CutProcessing.o: $(DIR)/CutProcessing.cpp $(MH)
 	$(CC) -c $(DIR)/CutProcessing.cpp -o $@ $(MINC) $(SW)
+
+# install/uninstall - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+prefix = /usr/local
+bindir = $(prefix)/bin
+
+install: $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
+	install -s -D $(DIR)/sddp_solver $(DESTDIR)$(bindir)/sddp_solver
+	install -s -D $(DIR)/sddp_greedy_solver $(DESTDIR)$(bindir)/sddp_greedy_solver
+
+uninstall:
+	rm -f $(DESTDIR)$(bindir)/sddp_solver
+	rm -f $(DESTDIR)$(bindir)/sddp_greedy_solver
+
+# distclean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+distclean: clean
+
+# phony targets - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+.PHONY: debug debug_asan release release_asan install uninstall clean distclean
 
 ############################ End of makefile #################################

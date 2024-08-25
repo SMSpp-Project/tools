@@ -16,19 +16,32 @@ NAME = chgcfg
 # basic directory
 DIR = .
 
+# common flags
+COMMON_SW = -std=c++17 -ferror-limit=1
+
 # debug switches
-#SW = -g3 -glldb -fno-inline -std=c++17 -ferror-limit=1
+SW_DEBUG = -g3 -glldb -fno-inline $(COMMON_SW)
 # production switches
-SW = -O3 -std=c++17 -DNDEBUG -ferror-limit=1
+SW_RELEASE = -O3 $(COMMON_SW) -DNDEBUG
 
 # compiler
 CC = clang++
 
 # default target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-default: $(DIR)/$(NAME)
+default: release
 
-# clean - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# debug target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+debug: SW = $(SW_DEBUG)
+debug: $(DIR)/$(NAME)
+
+# release target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+release: SW = $(SW_RELEASE)
+release: $(DIR)/$(NAME)
+
+# clean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 clean::
 	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/$(NAME)
@@ -42,5 +55,24 @@ $(DIR)/$(NAME): $(DIR)/chgcfg.o
 
 $(DIR)/chgcfg.o: $(DIR)/chgcfg.cpp
 	$(CC) -c $(DIR)/chgcfg.cpp -o $@ $(SW)
+
+# install/uninstall - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+prefix = /usr/local
+bindir = $(prefix)/bin
+
+install: $(DIR)/$(NAME)
+	install -s -D $(DIR)/$(NAME) $(DESTDIR)$(bindir)/$(NAME)
+
+uninstall:
+	rm -f $(DESTDIR)$(bindir)/$(NAME)
+
+# distclean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+distclean: clean
+
+# phony targets - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+.PHONY: debug release install uninstall clean distclean
 
 ############################ End of makefile #################################
