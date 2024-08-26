@@ -127,6 +127,7 @@ std::string block_config_filename{};
 std::string solver_config_filename{};
 std::string config_filename_prefix{};
 std::string cuts_filename{};
+std::string output_solution_directory = ".";
 long scenario_id = 0;
 long num_sub_blocks_per_stage = 1;
 long number_simulations = 1;
@@ -179,6 +180,7 @@ void print_help() {
            << "Options:\n"
            << "  -B, --blockcfg <file>           Block configuration.\n"
            << "  -c, --configdir <path>          The prefix for all config filenames.\n"
+           << "  -d, --output-dir                Directory where solutions are written.\n"
            << "  -e, --eliminate-redundant-cuts  Eliminate given redundant cuts.\n"
            << "  -h, --help                      Print this help.\n"
            << "  -i, --scenario <index>          The index of the scenario.\n"
@@ -215,10 +217,11 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:c:hei:l:m:n:p:rsS:t:";
+ const char * const short_opts = "B:c:d:hei:l:m:n:p:rsS:t:";
  const option long_opts[] = {
   { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
   { "configdir" ,                required_argument , nullptr , 'c' } ,
+  { "output-dir" ,               required_argument , nullptr , 'd' } ,
   { "help" ,                     no_argument ,       nullptr , 'h' } ,
   { "eliminate-redundant-cuts" , no_argument ,       nullptr , 'e' } ,
   { "scenario" ,                 required_argument , nullptr , 'i' } ,
@@ -249,6 +252,9 @@ void process_args( int argc , char ** argv ) {
    case 'c':
     config_filename_prefix = std::string( optarg );
     Configuration::set_filename_prefix( std::string( optarg ) );
+    break;
+   case 'd':
+    output_solution_directory = std::string( optarg );
     break;
    case 'e':
     eliminate_redundant_cuts = true;
@@ -639,11 +645,11 @@ void simulate( SDDPBlock * sddp_block ) {
 
  show_simulation_status( status , solver->get_fault_stage() );
 
- SDDPBlockSolutionOutput output;
+ SDDPBlockSolutionOutput output( output_solution_directory );
 
  if( solver->has_var_solution() ) {
   solver->get_var_solution();
-  output.print( sddp_block );
+  output.print( sddp_block , scenario_id , true );
  }
  else
   output.print( sddp_block , solver->get_fault_stage() );
@@ -710,7 +716,7 @@ void solve( SDDPBlock * sddp_block ) {
 
  show_status( status );
 
- SDDPBlockSolutionOutput o;
+ SDDPBlockSolutionOutput o( output_solution_directory );
  o.print_cuts( sddp_block , "BellmanValuesAllOUT.csv" );
 
  if( eliminate_redundant_cuts )
@@ -2022,6 +2028,16 @@ void multiple_simulations( const netCDF::NcFile & file ) {
 
 /*--------------------------------------------------------------------------*/
 
+void check_consistency() {
+ if( ! std::filesystem::is_directory( output_solution_directory ) ) {
+  std::cerr << "Directory '" << output_solution_directory
+	    << "' does not exist." << std::endl;
+  exit( 1 );
+ }
+}
+
+/*--------------------------------------------------------------------------*/
+
 int main( int argc , char ** argv ) {
 
 #ifdef USE_MPI
@@ -2031,6 +2047,8 @@ int main( int argc , char ** argv ) {
  docopt_desc = "SMS++ SDDP solver.\n";
  exe = get_filename( argv[ 0 ] );
  process_args( argc , argv );
+
+ check_consistency();
 
  netCDF::NcFile file;
  try {
