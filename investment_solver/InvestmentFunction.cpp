@@ -1112,8 +1112,8 @@ int InvestmentFunction::compute( bool changedvars ) {
   // Possibly output the solution
 
   if( f_output_solution )
-   SDDPBlockSolutionOutput().print( get_sddp_block( sub_block_index ) ,
-                                    scenario , true );
+   SDDPBlockSolutionOutput( f_output_solution_directory ).
+    print( get_sddp_block( sub_block_index ) , scenario , true );
 
   // Unlock the sub-Block
 
