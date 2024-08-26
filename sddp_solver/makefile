@@ -133,7 +133,12 @@ $(DIR)/CutProcessing.o: $(DIR)/CutProcessing.cpp $(MH)
 
 # install/uninstall - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-prefix = /opt/smspp-project
+# Check if the user is in the sudoers file
+ifeq ($(shell id -u),0)
+    prefix = /opt/smspp-project
+else
+    prefix = $(pwd)/smspp-project
+endif
 bindir = $(prefix)/$(BUILD_MODE)/bin
 
 install: $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
