@@ -7,8 +7,9 @@
  * InvestmentBlock. The description of the InvestmentBlock must be given in a
  * netCDF file. This tool can be executed as follows:
  *
- *   ./investment_solver [-s] [-e] [-o] [-l FILE] [-n NUMBER] [-B FILE]
- *                       [-p PATH] [-c PATH] [-x FILE ] -S FILE <nc4-file>
+ *   ./investment_solver [-s] [-e] [-o] [-d DIRECTORY] [-l FILE] [-n NUMBER]
+ *                       [-B FILE] [-p PATH] [-c PATH] [-x FILE ]
+ *                       -S FILE <nc4-file>
  *
  * The only mandatory arguments are the netCDF file containing the description
  * of the InvestmentBlock and the solver configuration file indicated by the
@@ -45,7 +46,12 @@
  * If the -o option is used, then part of the primal and dual solutions of
  * every UCBlock for each scenario is output while the investment function is
  * computed. Typically, one may want the solutions to be output in simulation
- * mode (i.e., when the -s option is used).
+ * mode (i.e., when the -s option is used). Additionally, the -d option can be
+ * used to specify the path to a directory into which the solutions must be
+ * written. By default, the solutions are written into the working directory.
+ * If the -d option is used then it must be followed by a path to an existing
+ * directory. If the directory provided does not exist, an error will be
+ * thrown.
  *
  * The -n option specifies the number of sub-Blocks of SDDPBlock that must be
  * constructed for each stage. By default, SDDPBlock contains a single
@@ -88,6 +94,7 @@
  * \copyright &copy; by Rafael Durbano Lobato
  */
 
+#include <filesystem>
 #include <getopt.h>
 #include <iomanip>
 #include <iostream>
@@ -128,6 +135,7 @@ std::string solver_config_filename{};
 std::string config_filename_prefix{};
 std::string cuts_filename{};
 std::string initial_point_filename{};
+std::string output_solution_directory = ".";
 
 // State to be loaded into the InvestmentBlock Solver
 std::string solver_state_input_filename{};
@@ -217,12 +225,13 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "a:B:b:c:hel:n:op:rS:sx:";
+ const char * const short_opts = "a:B:b:c:d:hel:n:op:rS:sx:";
  const option long_opts[] = {
   { "save-state" ,               required_argument , nullptr , 'a' } ,
   { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
   { "load-state" ,               required_argument , nullptr , 'b' } ,
   { "configdir" ,                required_argument , nullptr , 'c' } ,
+  { "output-dir" ,               required_argument , nullptr , 'd' } ,
   { "help" ,                     no_argument ,       nullptr , 'h' } ,
   { "eliminate-redundant-cuts" , no_argument ,       nullptr , 'e' } ,
   { "load-cuts" ,                required_argument , nullptr , 'l' } ,
@@ -258,6 +267,9 @@ void process_args( int argc , char ** argv ) {
    case 'c':
     config_filename_prefix = std::string( optarg );
     Configuration::set_filename_prefix( std::string( optarg ) );
+    break;
+   case 'd':
+    output_solution_directory = std::string( optarg );
     break;
    case 'e':
     eliminate_redundant_cuts = true;
@@ -649,6 +661,20 @@ int get_objective_sense( const SDDPBlock * sddp_block ) {
 
 /*--------------------------------------------------------------------------*/
 
+std::string get_best_solution_filename() {
+ return std::filesystem::path( output_solution_directory ) /
+  best_solution_filename;
+}
+
+/*--------------------------------------------------------------------------*/
+
+std::string get_investment_candidates_filename() {
+ return std::filesystem::path( output_solution_directory ) /
+  "investment_candidates.txt";
+}
+
+/*--------------------------------------------------------------------------*/
+
 void invest( InvestmentBlock * investment_block ) {
 
  auto investment_function = static_cast< InvestmentFunction * >
@@ -657,6 +683,13 @@ void invest( InvestmentBlock * investment_block ) {
  // Possibly output the solution
  investment_function->
   set_par( InvestmentFunction::intOutputSolution , output_solution );
+
+ {
+  auto dir = output_solution_directory;
+  investment_function->
+   set_par( InvestmentFunction::strOutputSolutionDirectory ,
+	    std::move( dir ) );
+ }
 
  for( Index i = 0 ; i < investment_function->get_number_nested_Blocks() ;
       ++i ) {
@@ -745,7 +778,7 @@ void invest( InvestmentBlock * investment_block ) {
 
   // Output the variable and function values at each iteration
   investment_function->set_par( InvestmentFunction::strOutputFilename ,
-                                "investment_candidates.txt" );
+                                get_investment_candidates_filename() );
 
   if( ! solver_state_input_filename.empty() ) {
    // Load the given State
@@ -817,7 +850,7 @@ void invest( InvestmentBlock * investment_block ) {
       if( solution_improved() ) {
        // Save the best solution found so far
 
-       std::ofstream best_solution_file( best_solution_filename ,
+       std::ofstream best_solution_file( get_best_solution_filename() ,
                                          std::ios::out );
 
        const auto & variables = investment_block->get_variables();
@@ -836,7 +869,7 @@ void invest( InvestmentBlock * investment_block ) {
 
        // Possibly output information associated with the solution
        if( output_solution )
-        SDDPBlockSolutionOutput().copy
+        SDDPBlockSolutionOutput( output_solution_directory ).copy
          ( investment_function->get_sddp_block( 0 ) , ".best" , true );
       }
 
@@ -855,7 +888,7 @@ void invest( InvestmentBlock * investment_block ) {
    // Rename the output files if necessary
 
    if( output_solution )
-    SDDPBlockSolutionOutput().rename
+    SDDPBlockSolutionOutput( output_solution_directory ).rename
      ( investment_function->get_sddp_block( 0 ) , ".best" , true );
 
    // Output solution information
@@ -1840,6 +1873,16 @@ std::vector< double > get_final_state( SDDPBlock * block , Index stage ) {
 
 /*--------------------------------------------------------------------------*/
 
+void check_consistency() {
+ if( ! std::filesystem::is_directory( output_solution_directory ) ) {
+  std::cerr << "Directory '" << output_solution_directory
+	    << "' does not exist." << std::endl;
+  exit( 1 );
+ }
+}
+
+/*--------------------------------------------------------------------------*/
+
 int main( int argc , char ** argv ) {
 
 #ifdef USE_MPI
@@ -1849,6 +1892,8 @@ int main( int argc , char ** argv ) {
  docopt_desc = "SMS++ investment solver.\n";
  exe = get_filename( argv[ 0 ] );
  process_args( argc , argv );
+
+ check_consistency();
 
  if( solver_config_filename.empty() ) {
   // For the moment, the Solver configuration must be provided.
