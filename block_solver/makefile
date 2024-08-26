@@ -109,7 +109,7 @@ $(DIR)/block_solver.o: $(DIR)/block_solver.cpp $(DIR)/common_utils.h $(MH)
 
 # install/uninstall - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# Check if the user is in the sudoers file
+# check if the user is in the sudoers file
 ifeq ($(shell id -u),0)
     prefix = /opt/smspp-project
 else

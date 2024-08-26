@@ -62,7 +62,7 @@ $(DIR)/chgcfg.o: $(DIR)/chgcfg.cpp
 
 # install/uninstall - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# Check if the user is in the sudoers file
+# check if the user is in the sudoers file
 ifeq ($(shell id -u),0)
     prefix = /opt/smspp-project
 else
