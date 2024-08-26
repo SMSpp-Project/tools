@@ -271,6 +271,13 @@ class InvestmentFunction : public C05Function , public Block {
    * compute()-ed. If it is empty, then the variable and function values are
    * not output. The default value for this parameter is the empty string. */
 
+  strOutputSolutionDirectory ,
+  ///< path to the directory where the solution should be output
+  /**< If the solution must be output (see #intOutputSolution) then this is
+   * the path to the directory where the solution will be output. If it is
+   * empty, then the solution is output to the working directory. The default
+   * value of this parameter is empty. */
+
   strLastParInvestmentF
   ///< first allowed new string parameter for derived classes
   /**< Convenience value for easily allow derived classes to extend the set of
@@ -660,6 +667,8 @@ class InvestmentFunction : public C05Function , public Block {
   *
   * - #strOutputFilename
   *
+  * - #strOutputSolutionDirectory
+  *
   * @param par The parameter to be set.
   *
   * @return The value of the parameter. */
@@ -668,6 +677,9 @@ class InvestmentFunction : public C05Function , public Block {
   switch( par ) {
    case( strOutputFilename ):
     f_output_filename = std::move( value );
+    break;
+   case( strOutputSolutionDirectory ):
+    f_output_solution_directory = std::move( value );
     break;
    default: C05Function::set_par( par , value );
   }
@@ -762,6 +774,7 @@ class InvestmentFunction : public C05Function , public Block {
  const std::string & get_str_par( const idx_type par ) const override {
   switch( par ) {
    case( strOutputFilename ): return( f_output_filename );
+   case( strOutputSolutionDirectory ): return( f_output_solution_directory );
   }
   return( C05Function::get_str_par( par ) );
  }
@@ -823,7 +836,10 @@ class InvestmentFunction : public C05Function , public Block {
 
  [[nodiscard]] idx_type str_par_str2idx( const std::string & name )
   const override {
-  if( name == "strOutputFilename" ) return( strOutputFilename );
+  if( name == "strOutputFilename" )
+   return( strOutputFilename );
+  if( name == "strOutputSolutionDirectory" )
+   return( strOutputSolutionDirectory );
   return( C05Function::str_par_str2idx( name ) );
  }
 
@@ -852,7 +868,7 @@ class InvestmentFunction : public C05Function , public Block {
  const std::string & str_par_idx2str( const idx_type idx ) const override {
 
   static const std::vector< std::string > parameter_names =
-   { "strOutputFilename" };
+    { "strOutputFilename" , "strOutputSolutionDirectory"};
 
   if( idx >= str_par_type_C05F::strLastParC05F &&
       idx < str_par_type_InvestmentF::strLastParInvestmentF )
@@ -1645,6 +1661,9 @@ class InvestmentFunction : public C05Function , public Block {
 
  std::string f_output_filename;
  ///< name of the file into which the variable and function values are output
+
+ std::string f_output_solution_directory;
+ ///< path to the directory where the solution will be output
 
  std::vector< std::vector< EventHandler > > v_events;
  ///< container of event handlers
