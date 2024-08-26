@@ -4,8 +4,6 @@
 # A txt description of a BlockSolverConfig for a UCBlock to be solved by a
 # LagrangianDualSolver using a BundleSolver as the inner Solver
 #
-#   version 1.0 , 30/12/2020
-#
 #   Enrico Gorgone, Antonio Frangioni
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -59,20 +57,20 @@ intMaxNrEvls 2    # maximum number of function evaluations at each iteration
 intMPName  15     # MP solver: 0 = QPP, 7 = Cplex with quadratic stabilization
                   # + 8 = check for duplicate linearizations
 
-# QPPenalty's parameters : - - - - - -
+# QPPenalty's parameters :- - - - - - - - - - - - - - - - - - - - - - - - - -
+
 intMPlvl   2      # log verbosity of Master Problem
-                  
 intQPmp1   0	  # MxAdd, how many variables can be added to the base at each
       	          # iteration in BMinQuad (0 = at will)
 intQPmp2   0      # MxRmv, how many variables can be removed from the base at each
       	          # iteration in BMinQuad (0 = at will)
 
-# OSiMPSolver's parameters : - - - - - -
-intOSImp1  1      # CPLEX algorithm
+# OSIMPSolver's parameters :- - - - - - - - - - - - - - - - - - - - - - - - -
+
+intOSImp1  1      # Osi(Cpx/Grb)Solver algorithm (0 = auto (default), 1 = primal, 2 = dual, 3 = network, 4 = barrier, 5 = sifting, 6 = concurrent)
 intOSImp2  1      # pre-processing (reduction)
 intOSImp3  1      # threads
-
-intRstAlg   2     # parameter to handle the reset of the algorithm
+intRstAlg  2      # parameter to handle the reset of the algorithm
 
 16 # number of double parameters
 
@@ -92,7 +90,6 @@ dbltMaior  1e+6   # maximum value for t
 dbltMinor  1e-10   # minimum value for t
 dbltInit   1e+0   # initial value for t
 dbltSPar2  1e-2   # parameter for the long-term t-strategy
-
 dblCtOff   0.01   # cut-off factor for pricing in MinQuad
 
 2 # number of string parameters
@@ -102,8 +99,6 @@ dblCtOff   0.01   # cut-off factor for pricing in MinQuad
 str_LDSlv_ISName	BundleSolver  # the inner Solver used by LagrangianDualSolver
 str_LagBF_BSCfg		LPBSCfg.txt   # BlockSolverConfig for the LagBFunctions
 # not needed if intDoEasy >= 1 && USE_BundleSolver > 0, this is done "by hand"
-
-# note that we could eof() the file here since the rest is all empty
 
 0 # number of vector-of-int parameters
 

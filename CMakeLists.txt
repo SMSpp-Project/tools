@@ -34,36 +34,12 @@ option(tools_USE_DL "Use dynamic loading" OFF)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 include(GNUInstallDirs)
 
-# Since we are using the block factory, objects from linked libraries
-# may wrongly appear unused, and by default the linker does not include them,
-# so we have to force the linking.
-if (BUILD_SHARED_LIBS)
-    if (UNIX AND (NOT APPLE))
-        add_link_options("-Wl,--no-as-needed")
-    endif ()
-else ()
-    if (MSVC)
-        add_link_options("/WHOLEARCHIVE")
-        add_link_options("/FORCE:MULTIPLE")
-    else () # Unix
-        if (APPLE)
-            add_link_options("-Wl,-all_load")
-        else ()
-            add_link_options("-Wl,--whole-archive,--allow-multiple-definition")
-        endif ()
-    endif ()
-endif ()
-
 # ----- Tools --------------------------------------------------------------- #
 add_subdirectory(block_solver)
-add_subdirectory(chgcfg)
 add_subdirectory(investment_solver)
 add_subdirectory(sddp_solver)
 add_subdirectory(ucblock_solver)
 
-# --------------------------------------------------------------------------- #
-if (BUILD_TESTING)
-    # Just consuming BUILD_TESTING to avoid warnings
-endif ()
+add_subdirectory(chgcfg)
 
 # --------------------------------------------------------------------------- #

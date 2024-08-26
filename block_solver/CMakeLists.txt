@@ -6,8 +6,10 @@ option(tools_USE_DL "Use dynamic loading" ON)
 # If it's not being called by the umbrella, we need to
 # look for the system-installed libraries.
 if (NOT hasParent)
+    # Blocks
     find_package(SMS++)
     find_package(UCBlock)
+    # Solvers
     find_package(MILPSolver)
 endif ()
 
@@ -30,11 +32,12 @@ if (BUILD_SHARED_LIBS AND tools_USE_DL)
     endif ()
 else ()
     # Otherwise, link all the supported libraries.
-    if (TARGET SMS++::UCBlock AND
-        TARGET SMS++::MILPSolver)
-        target_link_libraries(block_solver PRIVATE
-                              SMS++::UCBlock
-                              SMS++::MILPSolver)
+    if (TARGET SMS++::UCBlock)
+        target_link_libraries(block_solver PRIVATE SMS++::UCBlock)
+
+        if (TARGET SMS++::MILPSolver)
+            target_link_libraries(block_solver PRIVATE SMS++::MILPSolver)
+        endif ()
     endif ()
 endif ()
 

@@ -2,10 +2,8 @@
 # - - - - - - - - - - - - - - - LPBSCfg.txt - - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a UCBlock to be solved by two
-# different Solver: a *MILPSolver and a LagrangianDualSolver using a
+# different Solver: a :MILPSolver and a LagrangianDualSolver using a
 # BundleSolver as the inner Solver
-#
-#   version 1.0 , 30/12/2020
 #
 #   Enrico Gorgone, Antonio Frangioni
 #
@@ -26,22 +24,27 @@ CPXMILPSolver
 # now all the ComputeConfig
 # 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# ComputeConfig of the *MILPSolver
+# ComputeConfig of the :MILPSolver
 
 ComputeConfig # exact type of the ComputeConfig object
 
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-3 # number of integer parameters
+3  # number of integer parameters
 
 # now all the integer parameters
 intLogVerb      	0    # log verbosity of the MILPSolver
 intRelaxIntVars 	1    # nonzero if the continuous relaxation is solved
 intCutSepPar        7    # separate (P/C) at both root node and any node
-#CPXPARAM_LPMethod	 1    # LP method (4 = barrier)
+
+## All specific CPLEX parameter (uncomment based on Solver)
+#CPXPARAM_LPMethod	 1    # 0 = auto (default), 1 = primal, 2 = dual, 3 = network, 4 = barrier, 5 = sifting, 6 = concurrent
 #intMaxThread        1    # max number of new threads to spawn
-#CPX_PARAM_THREADS	 1    # the same as above
+#CPXPARAM_Threads	 1    # the same as above
+
+## All specific GUROBI parameter (uncomment based on Solver)
+#Method 0  # -1 = auto (default), 0 = primal, 1 = dual, 2 = barrier, 3 = barrier + crossover, 4 = network
 
 0 # Number of double parameters
 

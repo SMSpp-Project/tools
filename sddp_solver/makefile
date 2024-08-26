@@ -86,7 +86,7 @@ $(DIR)/sddp_solver: $(DIR)/sddp_solver.o $(MOBJ)
 $(DIR)/sddp_greedy_solver: $(DIR)/sddp_greedy_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/sddp_greedy_solver $^ $(MLIB) $(SW)
 
-# dependencies: every .o from its .C + every recursively included .h- - - - -
+# dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
 MINC =  $(SMS++INC) $(SDDPBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) \

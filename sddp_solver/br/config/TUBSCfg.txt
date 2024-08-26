@@ -7,8 +7,6 @@
 #       0 Solver, in which case HydroSystemUnitBlock will be treated as
 #       "easy components" (this is a problem if the HydroSystemUnitBlock is
 #       modified by adding rows, but not for "one-shot" solutions)
-# 
-#   version 1.0 , 13/02/2021
 #
 #   Antonio Frangioni
 #
@@ -21,7 +19,7 @@ BlockSolverConfig     # exact type of the Configuration object
 1  # the BlockSolverConfig is a "differential" one
 
 1  # number of (the names of) Solver in this BlockSolverConfig
-# now all the names of the Solver
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
 CPXMILPSolver
 #ThermalUnitDPSolver
 #SCIPMILPSolver

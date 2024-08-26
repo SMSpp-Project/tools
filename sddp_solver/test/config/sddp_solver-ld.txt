@@ -3,8 +3,6 @@
 #
 # A txt description of a BlockSolverConfig for a SDDPSolver
 #
-#   version 1.0 , 23/01/2021
-#
 #   Rafael Durbano Lobato
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -16,7 +14,7 @@ BlockSolverConfig     # exact type of the Configuration object
 
 1  # number of (the names of) Solver in this BlockSolverConfig
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
-SDDPSolver    # name of 1st Solver
+SDDPSolver    # name of Solver
 
 1  # number of ComputeConfig in this BlockSolverConfig
 
@@ -29,7 +27,7 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-6 # number of integer parameters
+6  # number of integer parameters
 
 # now all the integer parameters
 
@@ -53,8 +51,6 @@ dblAccuracy 1.0e-6 # Relative accuracy for declaring a solution optimal
 
 strInnerBSC   BSPar-LD.txt          # BlockSolverConfig for the UCBlock
 strOutputFile cuts.txt
-
-# note that we could eof() the file here since the rest is all empty
 
 0 # number of vector-of-int parameters
 
