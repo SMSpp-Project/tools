@@ -172,7 +172,7 @@ public:
     solution_output.set_filenames_suffix
      ( get_filename_suffix( scenario , stage ) );
    }
-   else if( append ) {
+   else {
     solution_output.set_filenames_suffix( get_filename_suffix( scenario ) );
     if( stage == 0 )
      solution_output.set_append( false );
