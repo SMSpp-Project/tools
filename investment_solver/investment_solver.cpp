@@ -190,6 +190,7 @@ void print_help() {
            << "  -B, --blockcfg <file>           Block configuration.\n"
            << "  -b, --load-state <file>         Load a state for the InvestmentBlock solver.\n"
            << "  -c, --configdir <path>          The prefix for all config filenames.\n"
+           << "  -d, --output-dir                Directory where solutions are written.\n"
            << "  -e, --eliminate-redundant-cuts  Eliminate given redundant cuts.\n"
            << "  -h, --help                      Print this help.\n"
            << "  -l, --load-cuts <file>          Load cuts from a file.\n"
