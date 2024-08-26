@@ -119,7 +119,7 @@ $(DIR)/ucblock_solver.o: $(DIR)/ucblock_solver.cpp \
 ifeq ($(shell id -u),0)
     prefix = /opt/smspp-project
 else
-    prefix = $(pwd)/smspp-project
+    prefix = $(HOME)/smspp-project
 endif
 bindir = $(prefix)/$(BUILD_MODE)/bin
 
