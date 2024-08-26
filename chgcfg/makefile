@@ -29,16 +29,20 @@ CC = clang++
 
 # default target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-default: release
+BUILD_MODE = release
+
+default: $(BUILD_MODE)
 
 # debug target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 debug: SW = $(SW_DEBUG)
+debug: BUILD_MODE = debug
 debug: $(DIR)/$(NAME)
 
 # release target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 release: SW = $(SW_RELEASE)
+release: BUILD_MODE = release
 release: $(DIR)/$(NAME)
 
 # clean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -58,8 +62,8 @@ $(DIR)/chgcfg.o: $(DIR)/chgcfg.cpp
 
 # install/uninstall - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-prefix = /usr/local
-bindir = $(prefix)/bin
+prefix = /opt/smspp-project
+bindir = $(prefix)/$(BUILD_MODE)/bin
 
 install: $(DIR)/$(NAME)
 	install -s -D $(DIR)/$(NAME) $(DESTDIR)$(bindir)/$(NAME)

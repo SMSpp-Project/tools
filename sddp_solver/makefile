@@ -17,7 +17,7 @@ DIR = .
 NAME = $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
 
 # common flags
-COMMON_SW = -std=c++17 -ferror-limit=1 -Wno-enum-compare
+COMMON_SW = -std=c++17 -ferror-limit=1 -Wno-enum-compare -Wno-unqualified-std-cast-call -Wno-backslash-newline-escape
 
 # debug switches
 SW_DEBUG = -g3 -glldb -fno-inline $(COMMON_SW)
@@ -33,26 +33,32 @@ CC = clang++
 
 # default target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-default: release
+BUILD_MODE = release
+
+default: $(BUILD_MODE)
 
 # debug target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 debug: SW = $(SW_DEBUG)
+debug: BUILD_MODE = debug
 debug: $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
 
 # debug_asan target - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 debug_asan: SW = $(SW_DEBUG_ASAN)
+debug_asan: BUILD_MODE = debug
 debug_asan: $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
 
 # release target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 release: SW = $(SW_RELEASE)
+release: BUILD_MODE = release
 release: $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
 
 # release_asan target - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 release_asan: SW = $(SW_RELEASE_ASAN)
+release_asan: BUILD_MODE = release_asan
 release_asan: $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
 
 # clean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -127,8 +133,8 @@ $(DIR)/CutProcessing.o: $(DIR)/CutProcessing.cpp $(MH)
 
 # install/uninstall - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-prefix = /usr/local
-bindir = $(prefix)/bin
+prefix = /opt/smspp-project
+bindir = $(prefix)/$(BUILD_MODE)/bin
 
 install: $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
 	install -s -D $(DIR)/sddp_solver $(DESTDIR)$(bindir)/sddp_solver

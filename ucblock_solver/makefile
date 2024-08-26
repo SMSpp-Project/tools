@@ -33,26 +33,32 @@ CC = clang++
 
 # default target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-default: release
+BUILD_MODE = release
+
+default: $(BUILD_MODE)
 
 # debug target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 debug: SW = $(SW_DEBUG)
+debug: BUILD_MODE = debug
 debug: $(DIR)/$(NAME)
 
 # debug_asan target - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 debug_asan: SW = $(SW_DEBUG_ASAN)
+debug_asan: BUILD_MODE = debug
 debug_asan: $(DIR)/$(NAME)
 
 # release target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 release: SW = $(SW_RELEASE)
+release: BUILD_MODE = release
 release: $(DIR)/$(NAME)
 
 # release_asan target - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 release_asan: SW = $(SW_RELEASE_ASAN)
+release_asan: BUILD_MODE = release_asan
 release_asan: $(DIR)/$(NAME)
 
 # clean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -109,8 +115,8 @@ $(DIR)/ucblock_solver.o: $(DIR)/ucblock_solver.cpp \
 
 # install/uninstall - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-prefix = /usr/local
-bindir = $(prefix)/bin
+prefix = /opt/smspp-project
+bindir = $(prefix)/$(BUILD_MODE)/bin
 
 install: $(DIR)/$(NAME)
 	install -s -D $(DIR)/$(NAME) $(DESTDIR)$(bindir)/$(NAME)
