@@ -250,7 +250,7 @@ private:
 /*--------------------------- PRIVATE METHODS ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
- std::string get_filepath( const std::string & filename ) const {
+ std::filesystem::path get_filepath( const std::string & filename ) const {
   return std::filesystem::path( f_output_directory ) / filename;
  }
 
