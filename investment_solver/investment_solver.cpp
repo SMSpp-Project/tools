@@ -663,15 +663,15 @@ int get_objective_sense( const SDDPBlock * sddp_block ) {
 /*--------------------------------------------------------------------------*/
 
 std::string get_best_solution_filename() {
- return std::filesystem::path( output_solution_directory ) /
-  best_solution_filename;
+ return ( std::filesystem::path( output_solution_directory ) /
+	  best_solution_filename ).string();
 }
 
 /*--------------------------------------------------------------------------*/
 
 std::string get_investment_candidates_filename() {
- return std::filesystem::path( output_solution_directory ) /
-  "investment_candidates.txt";
+ return ( std::filesystem::path( output_solution_directory ) /
+	  "investment_candidates.txt" ).string();
 }
 
 /*--------------------------------------------------------------------------*/
