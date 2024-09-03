@@ -42,9 +42,11 @@ if (TARGET SMS++::UCBlock)
         target_link_libraries(ucblock_solver PRIVATE SMS++::LagrangianDualSolver)
     endif ()
 
-    if (TARGET SMS++::BundleSolver) # includes SMS+::MILPSolver
+    if (TARGET SMS++::BundleSolver)
         target_link_libraries(ucblock_solver PRIVATE SMS++::BundleSolver)
-    elseif (TARGET SMS++::MILPSolver)
+    endif ()
+
+    if (TARGET SMS++::MILPSolver)
         target_link_libraries(ucblock_solver PRIVATE SMS++::MILPSolver)
     endif ()
 
