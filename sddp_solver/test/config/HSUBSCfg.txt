@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - LPBSCfg.txt - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - HUBSCfg.txt - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for the HydroSystemUnitBlock
 #
@@ -26,5 +26,5 @@ CPXMILPSolver
 0  # number of ComputeConfig in this BlockSolverConfig
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#- - - - - - - - - - - - - - - - END LPBSCfg.txt - - - - - - - - - - - - - -
+#- - - - - - - - - - - - - - - - END HUBSCfg.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

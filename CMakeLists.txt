@@ -38,6 +38,7 @@ include(GNUInstallDirs)
 add_subdirectory(block_solver)
 add_subdirectory(investment_solver)
 add_subdirectory(sddp_solver)
+add_subdirectory(tssb_solver)
 add_subdirectory(ucblock_solver)
 
 add_subdirectory(chgcfg)
