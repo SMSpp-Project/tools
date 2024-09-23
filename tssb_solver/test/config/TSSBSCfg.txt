@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - tssb_solver.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - TSSBSCfg.txt- - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a TSSBSolver
 #
@@ -65,5 +65,5 @@ strOutputFile	tssb.lp
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - END tssb_solver.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END TSSBSCfg.txt- - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
