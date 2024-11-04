@@ -87,10 +87,10 @@ int main( int argc, char ** argv ) {
  // Solve
  std::cout.setf( std::ios::scientific, std::ios::floatfield );
  std::cout << std::setprecision( 8 );
- solve_all( block );
+ int status = solve_all( block );
 
  // Print the results
- print_UCBlock_solver_results( block , solution_output_type );
+ if ( status == 0 ) print_UCBlock_solver_results( block , solution_output_type );
 
  return( 0 );
 }  // end( main )

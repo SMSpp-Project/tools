@@ -227,8 +227,7 @@ void print_status( int status )
 /*--------------------------------------------------------------------------*/
 
 /// Solves the problem with all available solvers
-void solve_all( Block * block )
-{
+int solve_all( Block * block ) {
  std::chrono::time_point< std::chrono::system_clock > start , end;
 
  for( auto solver : block->get_registered_solvers() ) {
@@ -246,11 +245,15 @@ void solve_all( Block * block )
   std::cout << "Upper bound = " << ub << std::endl;
   std::cout << "Lower bound = " << lb << std::endl;
 
+  if ( status != Solver::kOK ) return( 1 );
+
 #ifndef NDEBUG
   solver->get_var_solution();
   std::cout << "O.F. value  = " << solver->get_var_value() << std::endl;
 #endif
  }
+
+ return( 0 );
 }
 
 /*--------------------------------------------------------------------------*/
