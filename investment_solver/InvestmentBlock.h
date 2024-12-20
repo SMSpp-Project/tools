@@ -26,7 +26,7 @@
 /*--------------------------------------------------------------------------*/
 
 #ifndef __InvestmentBlock
-#define __InvestmentBlock
+ #define __InvestmentBlock
                       /* self-identification: #endif at the end of the file */
 
 /*--------------------------------------------------------------------------*/

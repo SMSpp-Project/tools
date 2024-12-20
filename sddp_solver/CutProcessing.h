@@ -16,7 +16,7 @@
 /*--------------------------------------------------------------------------*/
 
 #ifndef __CutProcessing
-#define __CutProcessing
+ #define __CutProcessing
                       /* self-identification: #endif at the end of the file */
 
 /*--------------------------------------------------------------------------*/

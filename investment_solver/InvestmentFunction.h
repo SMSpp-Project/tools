@@ -17,7 +17,7 @@
 /*--------------------------------------------------------------------------*/
 
 #ifndef __InvestmentFunction
-#define __InvestmentFunction
+ #define __InvestmentFunction
                       /* self-identification: #endif at the end of the file */
 
 /*--------------------------------------------------------------------------*/

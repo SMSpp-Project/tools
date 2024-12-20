@@ -16,7 +16,7 @@
 /*--------------------------------------------------------------------------*/
 
 #ifndef __COMMON_UTILS
-#define __COMMON_UTILS
+ #define __COMMON_UTILS
 
 #include <getopt.h> // For getting command line parameters
 #include <chrono>   // For measuring compute time
