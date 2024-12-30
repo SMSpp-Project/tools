@@ -91,7 +91,7 @@ MOBJ =  $(MILPSOBJ) $(UCBckOBJ)
 # libraries
 MLIB =  $(MILPSLIB) $(UCBckLIB)
 
-$(DIR)/$(NAME): $(MOBJ) $(DIR)/block_solver.o
+$(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
 
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
