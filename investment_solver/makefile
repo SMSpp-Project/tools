@@ -17,7 +17,7 @@ NAME = investment_solver
 DIR = .
 
 # common flags
-COMMON_SW = -std=c++17 -ferror-limit=1 -Wno-enum-compare -Wno-backslash-newline-escape
+COMMON_SW = -std=c++20 -ferror-limit=1 -Wno-enum-compare -Wno-backslash-newline-escape
 
 # debug switches
 SW_DEBUG = -g3 -glldb -fno-inline $(COMMON_SW)
