@@ -86,10 +86,10 @@ include $(UCBckDIR)/lib/makefile
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(MILPSOBJ) $(UCBckOBJ)
+MOBJ =  $(UCBckOBJ) $(MILPSOBJ)
 
 # libraries
-MLIB =  $(MILPSLIB) $(UCBckLIB)
+MLIB =  $(UCBckLIB) $(MILPSLIB)
 
 $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)

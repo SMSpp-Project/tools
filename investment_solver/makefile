@@ -110,10 +110,10 @@ InvsBkH   = $(InvsBkSDR)/InvestmentBlock.h \
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) $(SDDPBkOBJ) $(InvsBkOBJ)
+MOBJ =  $(UCBckOBJ) $(SDDPBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(InvsBkOBJ)
 
 # libraries
-MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB) $(SDDPBkLIB)
+MLIB =  $(UCBckLIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB)
 
 $(DIR)/$(NAME): $(DIR)/investment_solver.o $(DIR)/CutProcessing.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
