@@ -34,7 +34,7 @@ endif ()
 
 # ----- investment_solver --------------------------------------------------- #
 if (TARGET SMS++::UCBlock AND
-        TARGET SMS++::SDDPBlock)
+    TARGET SMS++::SDDPBlock)
 
     add_executable(investment_solver
                    investment_solver.cpp ../sddp_solver/CutProcessing.cpp
@@ -42,6 +42,9 @@ if (TARGET SMS++::UCBlock AND
     target_compile_features(investment_solver PUBLIC cxx_std_17)
     target_include_directories(investment_solver PRIVATE ../ucblock_solver)
     target_include_directories(investment_solver PRIVATE ../sddp_solver)
+    target_link_libraries(investment_solver PRIVATE
+                          SMS++::UCBlock
+                          SMS++::SDDPBlock)
 
     if (TARGET SMS++::LagrangianDualSolver)
         target_link_libraries(investment_solver PRIVATE
