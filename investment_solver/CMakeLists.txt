@@ -24,7 +24,8 @@ endif ()
 # look for the system-installed libraries.
 if (NOT hasParent)
     # Blocks
-    find_package(InvestmentBlock)
+    find_package(UCBlock)
+    find_package(SDDPBlock)
     # Solvers
     find_package(LagrangianDualSolver)
     find_package(BundleSolver)
@@ -32,7 +33,8 @@ if (NOT hasParent)
 endif ()
 
 # ----- investment_solver --------------------------------------------------- #
-if (TARGET SMS++::InvestmentBlock)
+if (TARGET SMS++::UCBlock AND
+        TARGET SMS++::SDDPBlock)
 
     add_executable(investment_solver
                    investment_solver.cpp ../sddp_solver/CutProcessing.cpp
@@ -40,7 +42,6 @@ if (TARGET SMS++::InvestmentBlock)
     target_compile_features(investment_solver PUBLIC cxx_std_17)
     target_include_directories(investment_solver PRIVATE ../ucblock_solver)
     target_include_directories(investment_solver PRIVATE ../sddp_solver)
-    target_link_libraries(investment_solver PRIVATE SMS++::InvestmentBlock)
 
     if (TARGET SMS++::LagrangianDualSolver)
         target_link_libraries(investment_solver PRIVATE
