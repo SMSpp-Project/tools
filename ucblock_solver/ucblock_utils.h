@@ -24,6 +24,7 @@
 #include <HydroUnitBlock.h>
 #include <SlackUnitBlock.h>
 #include <IntermittentUnitBlock.h>
+#include <RBlockConfig.h>
 #include <ThermalUnitBlock.h>
 
 #include "UCBlockSolutionOutput.h"
