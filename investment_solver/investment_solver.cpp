@@ -136,6 +136,7 @@ std::string config_filename_prefix{};
 std::string cuts_filename{};
 std::string initial_point_filename{};
 std::string output_solution_directory = ".";
+std::string cut_processing_solver_config_filename{};
 
 // State to be loaded into the InvestmentBlock Solver
 std::string solver_state_input_filename{};
@@ -226,7 +227,7 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "a:B:b:c:d:hel:n:op:rS:sx:";
+ const char * const short_opts = "a:B:b:c:d:he:l:n:op:rS:sx:";
  const option long_opts[] = {
   { "save-state" ,               required_argument , nullptr , 'a' } ,
   { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
@@ -234,7 +235,7 @@ void process_args( int argc , char ** argv ) {
   { "configdir" ,                required_argument , nullptr , 'c' } ,
   { "output-dir" ,               required_argument , nullptr , 'd' } ,
   { "help" ,                     no_argument ,       nullptr , 'h' } ,
-  { "eliminate-redundant-cuts" , no_argument ,       nullptr , 'e' } ,
+  { "eliminate-redundant-cuts" , required_argument , nullptr , 'e' } ,
   { "load-cuts" ,                required_argument , nullptr , 'l' } ,
   { "num-blocks" ,               required_argument , nullptr , 'n' } ,
   { "output-solution" ,          no_argument ,       nullptr , 'o' } ,
@@ -273,6 +274,7 @@ void process_args( int argc , char ** argv ) {
     output_solution_directory = std::string( optarg );
     break;
    case 'e':
+    cut_processing_solver_config_filename = std::string( optarg );
     eliminate_redundant_cuts = true;
     break;
    case 'l':
@@ -676,6 +678,13 @@ std::string get_investment_candidates_filename() {
 
 /*--------------------------------------------------------------------------*/
 
+std::string get_cut_processing_solver_config_filepath() {
+ return ( std::filesystem::path( config_filename_prefix ) /
+	  cut_processing_solver_config_filename ).string();
+}
+
+/*--------------------------------------------------------------------------*/
+
 void invest( InvestmentBlock * investment_block ) {
 
  auto investment_function = static_cast< InvestmentFunction * >
@@ -728,8 +737,11 @@ void invest( InvestmentBlock * investment_block ) {
 
   // Eliminate redundant cuts if it is desired
 
-  if( eliminate_redundant_cuts )
-   CutProcessing().remove_redundant_cuts( sddp_block );
+  if( eliminate_redundant_cuts ) {
+   CutProcessing cut_processing
+     ( get_cut_processing_solver_config_filepath() );
+   cut_processing.remove_redundant_cuts( sddp_block );
+  }
  }
 
  // Solve
@@ -1054,8 +1066,11 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
    // Eliminate redundant cuts if it is desired
 
-   if( eliminate_redundant_cuts )
-    CutProcessing().remove_redundant_cuts( sddp_block );
+   if( eliminate_redundant_cuts ) {
+    CutProcessing cut_processing
+      ( get_cut_processing_solver_config_filepath() );
+    cut_processing.remove_redundant_cuts( sddp_block );
+   }
   }
 
   // Configure block
@@ -1755,8 +1770,11 @@ void process_block_file( const netCDF::NcFile & file ) {
 
    // Eliminate redundant cuts if it is desired
 
-   if( eliminate_redundant_cuts )
-    CutProcessing().remove_redundant_cuts( sddp_block );
+   if( eliminate_redundant_cuts ) {
+    CutProcessing cut_processing
+      ( get_cut_processing_solver_config_filepath() );
+    cut_processing.remove_redundant_cuts( sddp_block );
+   }
   }
 
   // Configure the SDDPBlock

@@ -128,6 +128,7 @@ std::string solver_config_filename{};
 std::string config_filename_prefix{};
 std::string cuts_filename{};
 std::string output_solution_directory = ".";
+std::string cut_processing_solver_config_filename{};
 long scenario_id = 0;
 long num_sub_blocks_per_stage = 1;
 long number_simulations = 1;
@@ -217,13 +218,13 @@ void process_args( int argc , char ** argv ) {
   exit( 1 );
  }
 
- const char * const short_opts = "B:c:d:hei:l:m:n:p:rsS:t:";
+ const char * const short_opts = "B:c:d:he:i:l:m:n:p:rsS:t:";
  const option long_opts[] = {
   { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
   { "configdir" ,                required_argument , nullptr , 'c' } ,
   { "output-dir" ,               required_argument , nullptr , 'd' } ,
   { "help" ,                     no_argument ,       nullptr , 'h' } ,
-  { "eliminate-redundant-cuts" , no_argument ,       nullptr , 'e' } ,
+  { "eliminate-redundant-cuts" , required_argument , nullptr , 'e' } ,
   { "scenario" ,                 required_argument , nullptr , 'i' } ,
   { "load-cuts" ,                required_argument , nullptr , 'l' } ,
   { "num-simulations" ,          required_argument , nullptr , 'm' } ,
@@ -257,6 +258,7 @@ void process_args( int argc , char ** argv ) {
     output_solution_directory = std::string( optarg );
     break;
    case 'e':
+    cut_processing_solver_config_filename = std::string( optarg );
     eliminate_redundant_cuts = true;
     break;
    case 'i': {
@@ -375,6 +377,13 @@ void show_simulation_status( Index status , Index fault_stage ) {
              << fault_stage << " has not been found." << std::endl;
    break;
  }
+}
+
+/*--------------------------------------------------------------------------*/
+
+std::string get_cut_processing_solver_config_filepath() {
+ return ( std::filesystem::path( config_filename_prefix ) /
+	  cut_processing_solver_config_filename ).string();
 }
 
 /*--------------------------------------------------------------------------*/
@@ -631,8 +640,11 @@ void simulate( SDDPBlock * sddp_block ) {
 
  // Eliminate redundant cuts if it is desired
 
- if( eliminate_redundant_cuts )
-  CutProcessing().remove_redundant_cuts( sddp_block );
+ if( eliminate_redundant_cuts ) {
+  CutProcessing cut_processing
+    ( get_cut_processing_solver_config_filepath() );
+  cut_processing.remove_redundant_cuts( sddp_block );
+ }
 
  solver->set_scenario_id( scenario_id );
 
@@ -719,9 +731,12 @@ void solve( SDDPBlock * sddp_block ) {
  SDDPBlockSolutionOutput o( output_solution_directory );
  o.print_cuts( sddp_block , "BellmanValuesAllOUT.csv" );
 
- if( eliminate_redundant_cuts )
-  CutProcessing().remove_redundant_cuts
-   ( static_cast< SDDPBlock * >( sddp_block ) );
+ if( eliminate_redundant_cuts ) {
+  CutProcessing cut_processing
+    ( get_cut_processing_solver_config_filepath() );
+  cut_processing.remove_redundant_cuts
+    ( static_cast< SDDPBlock * >( sddp_block ) );
+ }
 
  o.print_cuts( sddp_block , "BellmanValuesOUT.csv" );
 }
@@ -1030,9 +1045,11 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Eliminate redundant cuts if it is desired
 
-  if( eliminate_redundant_cuts )
-   CutProcessing().remove_redundant_cuts( sddp_block );
-
+  if( eliminate_redundant_cuts ) {
+   CutProcessing cut_processing
+   ( get_cut_processing_solver_config_filepath() );
+   cut_processing.remove_redundant_cuts( sddp_block );
+  }
 
   std::cout << "Problem: " << problem.first << std::endl;
 
@@ -1761,8 +1778,11 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Eliminate redundant cuts if it is desired
 
-  if( eliminate_redundant_cuts )
-   CutProcessing().remove_redundant_cuts( sddp_block );
+  if( eliminate_redundant_cuts ) {
+   CutProcessing cut_processing
+     ( get_cut_processing_solver_config_filepath() );
+   cut_processing.remove_redundant_cuts( sddp_block );
+  }
 
   // Solve
 
@@ -1966,8 +1986,11 @@ void multiple_simulations( const netCDF::NcFile & file ) {
 
    // Eliminate redundant cuts if it is desired
 
-   if( eliminate_redundant_cuts )
-    CutProcessing().remove_redundant_cuts( sddp_block );
+   if( eliminate_redundant_cuts ) {
+    CutProcessing cut_processing
+      ( get_cut_processing_solver_config_filepath() );
+    cut_processing.remove_redundant_cuts( sddp_block );
+   }
 
    // Set the name of the file that will output the subgradients
 

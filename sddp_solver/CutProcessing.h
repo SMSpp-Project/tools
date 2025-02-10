@@ -108,6 +108,11 @@ public:
 /*--------------------- PUBLIC METHODS OF THE CLASS ------------------------*/
 /*--------------------------------------------------------------------------*/
 
+ CutProcessing( std::string solver_config_filepath = "" ) :
+  config_filename( solver_config_filepath ) { }
+
+/*--------------------------------------------------------------------------*/
+
  void remove_parallel_cuts( PolyhedralFunction * function ) const;
 
 /*--------------------------------------------------------------------------*/
