@@ -22,7 +22,6 @@
 #include <chrono>   // For measuring compute time
 
 #include <Block.h>
-#include <RBlockConfig.h>
 
 #ifndef NDEBUG
 #include <queue>    // For scanning the sub-Blocks
@@ -181,21 +180,6 @@ void process_args( int argc , char ** argv )
 
 /*--------------------------------------------------------------------------*/
 
-/// Returns a default Solver configuration
-BlockSolverConfig * default_configure_solver( int verbose )
-{
- auto s_config = new BlockSolverConfig;
- auto c_config = new ComputeConfig;
-
- if( verbose )
-  c_config->set_par( "intLogVerb" , 1 );
-
- s_config->add_ComputeConfig( "CPXMILPSolver" , c_config );
- return( s_config );
-}
-
-/*--------------------------------------------------------------------------*/
-
 /// Prints the status in a human-readable form
 void print_status( int status )
 {
@@ -345,8 +329,5 @@ void write_nc4problem( Block * block ,
  }
  outfile.close();
 }
-
-/*--------------------------------------------------------------------------*/
-
 
 #endif //__COMMON_UTILS

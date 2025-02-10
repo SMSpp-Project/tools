@@ -1,12 +1,12 @@
 /** @file
  * SMS++ unit commitment solver.
  *
- * A tool that loads an UCBlock from a SMS++ nc4 Block file,
+ * A tool that loads a UCBlock from an SMS++ nc4 Block file,
  * optionally configures it with a BlockConfig and a BlockSolverConfig,
  * and solves it with all the loaded Solvers.
  *
  * Optionally, it writes back the Block, the BlockConfig and the
- * BlockSolverConfig on a SMS++ nc4 problem file.
+ * BlockSolverConfig on an SMS++ nc4 problem file.
  *
  * \author Niccolo' Iardella \n
  *         Dipartimento di Informatica \n
@@ -68,15 +68,10 @@ int main( int argc, char ** argv ) {
 
  // Configure solver
  BlockSolverConfig * s_config;
- if( ! sconf_file.empty() ) {
-  s_config = get_blocksolverconfig( sconf_file );
-  if( s_config == nullptr ) {
-   std::cerr << exe << ": Solver configuration not valid" << std::endl;
-   exit( 1 );
-  }
- } else {
-  std::cout << "Using a default Solver configuration" << std::endl;
-  s_config = default_configure_solver( solvVerbose );
+ s_config = get_blocksolverconfig( sconf_file );
+ if( s_config == nullptr ) {
+  std::cerr << exe << ": Solver configuration not valid" << std::endl;
+  exit( 1 );
  }
  s_config->apply( block );
 

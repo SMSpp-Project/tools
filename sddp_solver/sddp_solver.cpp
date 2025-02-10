@@ -382,7 +382,7 @@ void show_simulation_status( Index status , Index fault_stage ) {
 /*--------------------------------------------------------------------------*/
 
 std::string get_cut_processing_solver_config_filepath() {
- return ( std::filesystem::path( config_filename_prefix ) /
+ return( std::filesystem::path( config_filename_prefix ) /
 	  cut_processing_solver_config_filename ).string();
 }
 
@@ -620,6 +620,51 @@ void callback( SDDPBlock * sddp_block , Block::Index stage ) {
 
 /*--------------------------------------------------------------------------*/
 
+BlockSolverConfig * load_BlockSolverConfig( const std::string & filename ) {
+
+ if( filename.empty() ) {
+  std::cout << "Solver configuration was not provided. "
+   "Using default configuration." << std::endl;
+  return( nullptr );
+ }
+
+ std::ifstream solver_config_file;
+ solver_config_file.open( filename , std::ifstream::in );
+
+ if( ! solver_config_file.is_open() ) {
+  std::cerr << "Solver configuration " + filename +
+   " was not found." << std::endl;
+  exit( 1 );
+ }
+
+ std::cout << "Using Solver configuration in " << filename << "." << std::endl;
+
+ std::string config_name;
+ solver_config_file >> eatcomments >> config_name;
+ auto config = Configuration::new_Configuration( config_name );
+ auto solver_config = dynamic_cast< BlockSolverConfig * >( config );
+
+ if( ! solver_config ) {
+  std::cerr << "Solver configuration is not valid: "
+            << config_name << std::endl;
+  delete( config );
+  exit( 1 );
+ }
+
+ try {
+  solver_config_file >> *solver_config;
+ }
+ catch( ... ) {
+  std::cout << "Solver configuration is not valid." << std::endl;
+  exit( 1 );
+ }
+
+ solver_config_file.close();
+ return( solver_config );
+}
+
+/*--------------------------------------------------------------------------*/
+
 void simulate( SDDPBlock * sddp_block ) {
 
  auto solver = dynamic_cast< SDDPGreedySolver * >
@@ -640,11 +685,10 @@ void simulate( SDDPBlock * sddp_block ) {
 
  // Eliminate redundant cuts if it is desired
 
- if( eliminate_redundant_cuts ) {
-  CutProcessing cut_processing
-    ( get_cut_processing_solver_config_filepath() );
-  cut_processing.remove_redundant_cuts( sddp_block );
- }
+ if( eliminate_redundant_cuts )
+  CutProcessing(
+   load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
+  ).remove_redundant_cuts( sddp_block );
 
  solver->set_scenario_id( scenario_id );
 
@@ -731,12 +775,10 @@ void solve( SDDPBlock * sddp_block ) {
  SDDPBlockSolutionOutput o( output_solution_directory );
  o.print_cuts( sddp_block , "BellmanValuesAllOUT.csv" );
 
- if( eliminate_redundant_cuts ) {
-  CutProcessing cut_processing
-    ( get_cut_processing_solver_config_filepath() );
-  cut_processing.remove_redundant_cuts
-    ( static_cast< SDDPBlock * >( sddp_block ) );
- }
+ if( eliminate_redundant_cuts )
+  CutProcessing(
+   load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
+  ).remove_redundant_cuts( sddp_block );
 
  o.print_cuts( sddp_block , "BellmanValuesOUT.csv" );
 }
@@ -1045,11 +1087,10 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Eliminate redundant cuts if it is desired
 
-  if( eliminate_redundant_cuts ) {
-   CutProcessing cut_processing
-   ( get_cut_processing_solver_config_filepath() );
-   cut_processing.remove_redundant_cuts( sddp_block );
-  }
+  if( eliminate_redundant_cuts )
+   CutProcessing(
+    load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
+   ).remove_redundant_cuts( sddp_block );
 
   std::cout << "Problem: " << problem.first << std::endl;
 
@@ -1171,51 +1212,6 @@ BlockConfig * load_BlockConfig() {
 
  block_config_file.close();
  return( block_config );
-}
-
-/*--------------------------------------------------------------------------*/
-
-BlockSolverConfig * load_BlockSolverConfig( const std::string & filename ) {
-
- if( filename.empty() ) {
-  std::cout << "Solver configuration was not provided. "
-   "Using default configuration." << std::endl;
-  return( nullptr );
- }
-
- std::ifstream solver_config_file;
- solver_config_file.open( filename , std::ifstream::in );
-
- if( ! solver_config_file.is_open() ) {
-  std::cerr << "Solver configuration " + filename +
-   " was not found." << std::endl;
-  exit( 1 );
- }
-
- std::cout << "Using Solver configuration in " << filename << "." << std::endl;
-
- std::string config_name;
- solver_config_file >> eatcomments >> config_name;
- auto config = Configuration::new_Configuration( config_name );
- auto solver_config = dynamic_cast< BlockSolverConfig * >( config );
-
- if( ! solver_config ) {
-  std::cerr << "Solver configuration is not valid: "
-            << config_name << std::endl;
-  delete( config );
-  exit( 1 );
- }
-
- try {
-  solver_config_file >> *solver_config;
- }
- catch( ... ) {
-  std::cout << "Solver configuration is not valid." << std::endl;
-  exit( 1 );
- }
-
- solver_config_file.close();
- return( solver_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1778,11 +1774,10 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Eliminate redundant cuts if it is desired
 
-  if( eliminate_redundant_cuts ) {
-   CutProcessing cut_processing
-     ( get_cut_processing_solver_config_filepath() );
-   cut_processing.remove_redundant_cuts( sddp_block );
-  }
+  if( eliminate_redundant_cuts )
+   CutProcessing(
+    load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
+   ).remove_redundant_cuts( sddp_block );
 
   // Solve
 
@@ -1986,11 +1981,10 @@ void multiple_simulations( const netCDF::NcFile & file ) {
 
    // Eliminate redundant cuts if it is desired
 
-   if( eliminate_redundant_cuts ) {
-    CutProcessing cut_processing
-      ( get_cut_processing_solver_config_filepath() );
-    cut_processing.remove_redundant_cuts( sddp_block );
-   }
+   if( eliminate_redundant_cuts )
+    CutProcessing(
+     load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
+    ).remove_redundant_cuts( sddp_block );
 
    // Set the name of the file that will output the subgradients
 

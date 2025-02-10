@@ -443,17 +443,17 @@ void InvestmentFunction::set_ComputeConfig( ComputeConfig * scfg ) {
 void InvestmentFunction::set_variables( VarVector && x ) {
  if( ! v_cost.empty() )
   if( v_cost.size() != x.size() )
-   throw( std::logic_error("InvestmentFunction::set_variables: given x has "
-                           "size " + std::to_string( x.size() ) + ", but the "
-                           "number of linear coefficients is " +
-                           std::to_string( v_cost.size() ) ) );
+   throw( std::logic_error( "InvestmentFunction::set_variables: given x has "
+                            "size " + std::to_string( x.size() ) + ", but the "
+                            "number of linear coefficients is " +
+                            std::to_string( v_cost.size() ) ) );
 
  if( ! v_disinvestment_cost.empty() )
   if( v_disinvestment_cost.size() != x.size() )
-   throw( std::logic_error("InvestmentFunction::set_variables: given x has "
-                           "size " + std::to_string( x.size() ) + ", but the "
-                           "number of linear coefficients is " +
-                           std::to_string( v_disinvestment_cost.size() ) ) );
+   throw( std::logic_error( "InvestmentFunction::set_variables: given x has "
+                            "size " + std::to_string( x.size() ) + ", but the "
+                            "number of linear coefficients is " +
+                            std::to_string( v_disinvestment_cost.size() ) ) );
 
  v_x = std::move( x );
  f_blocks_are_updated = false;

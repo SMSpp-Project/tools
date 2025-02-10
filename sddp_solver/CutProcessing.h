@@ -51,7 +51,7 @@ using namespace SMSpp_di_unipi_it;
  *     f( x ) = min { a_i x + b_i : i in { 0 , ... , m - 1 } }
  *
  * in the concave case (pointwise minimum of linear functions). This class
- * implements methods that eliminates two types of redundant cuts (or rows):
+ * implements methods that eliminate two types of redundant cuts (or rows):
  * parallel cuts and inactive ones. Let s = - 1 if the PolyhedralFunction is
  * convex and s = 1 if it is concave. If there exist i and k such that i != k,
  * a_i is equal to a_k, and s * b_k >= s * b_i, then these two cuts are
@@ -92,8 +92,7 @@ using namespace SMSpp_di_unipi_it;
  * A configuration file can be used to configure the Solver for the linear
  * programming problem above, which is represented by an AbstractBlock. The
  * name of the configuration file can be specified by the function
- * set_config_filename(). If no configuration file is provided, then a
- * CPXMILPSolver is used to solve that problem.
+ * set_config_filename().
  */
 
 class CutProcessing {
@@ -108,8 +107,8 @@ public:
 /*--------------------- PUBLIC METHODS OF THE CLASS ------------------------*/
 /*--------------------------------------------------------------------------*/
 
- CutProcessing( std::string solver_config_filepath = "" ) :
-  config_filename( solver_config_filepath ) { }
+ CutProcessing( BlockSolverConfig * block_solver_config ) :
+  solver_config( block_solver_config ) { }
 
 /*--------------------------------------------------------------------------*/
 
@@ -153,8 +152,8 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- void set_config_filename( const std::string & filename ) {
-  config_filename = filename;
+ void set_solver_config( BlockSolverConfig * block_solver_config ) {
+  solver_config = block_solver_config;
  }
 
 /*--------------------------------------------------------------------------*/
@@ -175,8 +174,7 @@ protected:
 
  double optimization_relative_error = 0.0;
 
- std::string config_filename;
-
+ BlockSolverConfig * solver_config;
 };
 
 /*--------------------------------------------------------------------------*/

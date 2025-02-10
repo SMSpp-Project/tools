@@ -685,6 +685,51 @@ std::string get_cut_processing_solver_config_filepath() {
 
 /*--------------------------------------------------------------------------*/
 
+BlockSolverConfig * load_BlockSolverConfig( const std::string & filename ) {
+
+ if( filename.empty() ) {
+  std::cout << "Solver configuration was not provided. "
+   "Using default configuration." << std::endl;
+  return( nullptr );
+ }
+
+ std::ifstream solver_config_file;
+ solver_config_file.open( filename , std::ifstream::in );
+
+ if( ! solver_config_file.is_open() ) {
+  std::cerr << "Solver configuration " + filename +
+   " was not found." << std::endl;
+  exit( 1 );
+ }
+
+ std::cout << "Using Solver configuration in " << filename << "." << std::endl;
+
+ std::string config_name;
+ solver_config_file >> eatcomments >> config_name;
+ auto config = Configuration::new_Configuration( config_name );
+ auto solver_config = dynamic_cast< BlockSolverConfig * >( config );
+
+ if( ! solver_config ) {
+  std::cerr << "Solver configuration is not valid: "
+            << config_name << std::endl;
+  delete( config );
+  exit( 1 );
+ }
+
+ try {
+  solver_config_file >> *solver_config;
+ }
+ catch( ... ) {
+  std::cout << "Solver configuration is not valid." << std::endl;
+  exit( 1 );
+ }
+
+ solver_config_file.close();
+ return( solver_config );
+}
+
+/*--------------------------------------------------------------------------*/
+
 void invest( InvestmentBlock * investment_block ) {
 
  auto investment_function = static_cast< InvestmentFunction * >
@@ -737,11 +782,10 @@ void invest( InvestmentBlock * investment_block ) {
 
   // Eliminate redundant cuts if it is desired
 
-  if( eliminate_redundant_cuts ) {
-   CutProcessing cut_processing
-     ( get_cut_processing_solver_config_filepath() );
-   cut_processing.remove_redundant_cuts( sddp_block );
-  }
+  if( eliminate_redundant_cuts )
+   CutProcessing(
+    load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
+   ).remove_redundant_cuts( sddp_block );
  }
 
  // Solve
@@ -1066,11 +1110,10 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
    // Eliminate redundant cuts if it is desired
 
-   if( eliminate_redundant_cuts ) {
-    CutProcessing cut_processing
-      ( get_cut_processing_solver_config_filepath() );
-    cut_processing.remove_redundant_cuts( sddp_block );
-   }
+   if( eliminate_redundant_cuts )
+    CutProcessing(
+     load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
+    ).remove_redundant_cuts( sddp_block );
   }
 
   // Configure block
@@ -1156,51 +1199,6 @@ BlockConfig * load_BlockConfig() {
 
  block_config_file.close();
  return( block_config );
-}
-
-/*--------------------------------------------------------------------------*/
-
-BlockSolverConfig * load_BlockSolverConfig( const std::string & filename ) {
-
- if( filename.empty() ) {
-  std::cout << "Solver configuration was not provided. "
-   "Using default configuration." << std::endl;
-  return( nullptr );
- }
-
- std::ifstream solver_config_file;
- solver_config_file.open( filename , std::ifstream::in );
-
- if( ! solver_config_file.is_open() ) {
-  std::cerr << "Solver configuration " + filename +
-   " was not found." << std::endl;
-  exit( 1 );
- }
-
- std::cout << "Using Solver configuration in " << filename << "." << std::endl;
-
- std::string config_name;
- solver_config_file >> eatcomments >> config_name;
- auto config = Configuration::new_Configuration( config_name );
- auto solver_config = dynamic_cast< BlockSolverConfig * >( config );
-
- if( ! solver_config ) {
-  std::cerr << "Solver configuration is not valid: "
-            << config_name << std::endl;
-  delete( config );
-  exit( 1 );
- }
-
- try {
-  solver_config_file >> *solver_config;
- }
- catch( ... ) {
-  std::cout << "Solver configuration is not valid." << std::endl;
-  exit( 1 );
- }
-
- solver_config_file.close();
- return( solver_config );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1645,7 +1643,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    required_dual_solution.push_back( { asset_indices[ i ] , -1 } );
 
  if( num_lines > 0 ) {
-  // Since there are lines which are subject to investment, we must require
+  // Since there are lines that are subject to investment, we must require
   // the dual solutions of all NetworkBlocks.
 
   const auto num_ucblock_sub_blocks = ucblock->get_number_nested_Blocks();
@@ -1672,7 +1670,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
  // (-1, -1).
  required_dual_solution.push_back( { -1 , -1 } );
 
- // Finally create the SimpleConfiguration for the get_dual_solution() method.
+ // Finally, create the SimpleConfiguration for the get_dual_solution() method.
 
  get_dual_solution_config = new SimpleConfiguration
   < std::vector< std::pair< int , int > > >( required_dual_solution );
@@ -1770,11 +1768,10 @@ void process_block_file( const netCDF::NcFile & file ) {
 
    // Eliminate redundant cuts if it is desired
 
-   if( eliminate_redundant_cuts ) {
-    CutProcessing cut_processing
-      ( get_cut_processing_solver_config_filepath() );
-    cut_processing.remove_redundant_cuts( sddp_block );
-   }
+   if( eliminate_redundant_cuts )
+    CutProcessing(
+     load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
+    ).remove_redundant_cuts( sddp_block );
   }
 
   // Configure the SDDPBlock
