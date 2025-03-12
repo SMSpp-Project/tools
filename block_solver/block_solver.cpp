@@ -93,7 +93,7 @@ void unload_libraries() {
 int main( int argc, char ** argv )
 {
  // manage options and help, see common_utils.h
- docopt_desc = "SMS++ generic block and problem solver" << std::endl;
+ docopt_desc = "SMS++ generic block and problem solver";
  exe = get_filename( argv[ 0 ] );
  process_args( argc , argv );
 

@@ -29,6 +29,8 @@
 #include <chrono>    // for measuring compute time
 
 #include <Block.h>
+#include <CDASolver.h>
+#include <Solution.h>
 
 #ifndef NDEBUG
  #include <queue>    // For scanning the sub-Blocks
@@ -193,70 +195,6 @@ void process_args( int argc , char ** argv )
  }
 
 /*--------------------------------------------------------------------------*/
-/// get Block, BlockConfig and BlockSolverConfig from files, configure all
-
-void get_all( const std::string & b_file , const std::string & bc_file ,
-	      const std::string & bsc_file , Block * & block ,
-	      BlockConfig * & b_config , BlockSolverConfig * & s_config )
-{
- block = Block::deserialize( b_file );
- if( ! block ) {
-  std::cerr << "Error: " << b_file << " does not contain a valid Block"
-	    << std::endl;
-  exit( 1 );
-  }
- 
- b_config = get_blockconfig( bc_file );
- s_config = get_blocksolverconfig( bsc_file );
- config_Block( block , b_config , s_config );
- }
-
-/*--------------------------------------------------------------------------*/
-/// get Block from group, BlockConfig and BlockSolverConfig from files
-
-void get_all( netCDF::NcGroup group , const std::string & bc_file ,
-	      const std::string & bsc_file , Block * & block ,
-	      BlockConfig * & b_config , BlockSolverConfig * & s_config )
-{
- auto block = Block::new_Block( group );
- if( ! block ) {
-  std::cerr << "Error: group does not contain a valid Block" << std::endl;
-  exit( 1 );
-  }
- 
- b_config = get_blockconfig( bc_file );
- s_config = get_blocksolverconfig( bsc_file );
- config_Block( block , b_config , s_config );
- }
-
-/*--------------------------------------------------------------------------*/
-/// get Block, BlockConfig and BlockSolverConfig from group
-
-void get_all( netCDF::NcGroup group , Block * & block ,
-	      BlockConfig * & b_config , BlockSolverConfig * & s_config )
-{
- // deserialize block
- auto gb = group.getGroup( "Block" );
- auto block = Block::new_Block( gb );
- if( ! block ) {
-  std::cerr << "Error: group does not contain a valid Block" << std::endl;
-  exit( 1 );
-  }
-
- // Configure block
- auto bgc = group.getGroup( "BlockConfig" );
- auto b_config = dynamic_cast< BlockConfig * >(
-				     BlockConfig::new_Configuration( bgc ) );
-
- // Configure solver
- auto bgs = group.getGroup( "BlockSolver" );
- auto s_config = static_cast< BlockSolverConfig * >(
-			       BlockSolverConfig::new_Configuration( bgs ) );
-
- config_Block( block , b_config , s_config );
- }
-
-/*--------------------------------------------------------------------------*/
 /// gets a BlockConfig from a BlockConfig file
 
 BlockConfig * get_blockconfig( const std::string & conf_file )
@@ -296,6 +234,96 @@ void config_Block( Block * block , BlockConfig * b_config ,
  }
 
 /*--------------------------------------------------------------------------*/
+/// get Block, BlockConfig and BlockSolverConfig from files, configure all
+
+void get_all( const std::string & b_file , const std::string & bc_file ,
+	      const std::string & bsc_file , Block * & block ,
+	      BlockConfig * & b_config , BlockSolverConfig * & s_config )
+{
+ block = Block::deserialize( b_file );
+ if( ! block ) {
+  std::cerr << "Error: " << b_file << " does not contain a valid Block"
+	    << std::endl;
+  exit( 1 );
+  }
+ 
+ b_config = get_blockconfig( bc_file );
+ s_config = get_blocksolverconfig( bsc_file );
+ config_Block( block , b_config , s_config );
+ }
+
+/*--------------------------------------------------------------------------*/
+/// get Block from group, BlockConfig and BlockSolverConfig from files
+
+void get_all( const netCDF::NcGroup & group , const std::string & bc_file ,
+	      const std::string & bsc_file , Block * & block ,
+	      BlockConfig * & b_config , BlockSolverConfig * & s_config )
+{
+ block = Block::new_Block( group );
+ if( ! block ) {
+  std::cerr << "Error: group does not contain a valid Block" << std::endl;
+  exit( 1 );
+  }
+ 
+ b_config = get_blockconfig( bc_file );
+ s_config = get_blocksolverconfig( bsc_file );
+ config_Block( block , b_config , s_config );
+ }
+
+/*--------------------------------------------------------------------------*/
+/// get Block, BlockConfig and BlockSolverConfig from group
+
+void get_all( const netCDF::NcGroup & group , Block * & block ,
+	      BlockConfig * & b_config , BlockSolverConfig * & s_config )
+{
+ // deserialize Block
+ auto gb = group.getGroup( "Block" );
+ block = Block::new_Block( gb );
+ if( ! block ) {
+  std::cerr << "Error: group does not contain a valid Block" << std::endl;
+  exit( 1 );
+  }
+
+ // deserialize BlockConfig
+ auto bgc = group.getGroup( "BlockConfig" );
+ auto c = BlockConfig::new_Configuration( bgc );
+ if( auto bc = dynamic_cast< BlockConfig * >( c ) )
+  b_config = bc;
+ else
+  delete c;
+
+ // deserialize BlockSolverConfig
+ auto bgs = group.getGroup( "BlockSolver" );
+ c = BlockSolverConfig::new_Configuration( bgs );
+ if( auto bsc = dynamic_cast< BlockSolverConfig * >( c ) )
+  s_config = bsc;
+ else
+  delete c;
+
+ config_Block( block , b_config , s_config );
+ }
+
+/*--------------------------------------------------------------------------*/
+/// prints the status in a human-readable form
+
+void print_status( int status )
+{
+ std::cout << "Status = " << status << " (";
+
+ switch( status ) {
+  case Solver::kOK:         std::cout << "Success)" << std::endl;    break;
+  case Solver::kError:      std::cout << "Error)" << std::endl;      break;
+  case Solver::kInfeasible: std::cout << "Infeasible)" << std::endl; break;
+  case Solver::kUnbounded:  std::cout << "Unbounded)" << std::endl;  break;
+  case Solver::kStopTime:   std::cout << "Stopped for time limit)"
+				      << std::endl;                  break;
+  case Solver::kStopIter:   std::cout << "Stopped for iteration limit)"
+				      << std::endl;                  break;
+  default:;
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
 /// solves the problem with all available solvers (unless dry run)
 
 int solve_all( Block * block )
@@ -318,7 +346,7 @@ int solve_all( Block * block )
   std::cout << "Solver: " << solver->classname() << std::endl;
 
   if( initsol )
-   sol->write( block );
+   initsol->write( block );
 
   if( ! dryrun ) {
    std::chrono::time_point< std::chrono::system_clock > start , end;
@@ -355,26 +383,6 @@ int solve_all( Block * block )
  delete initsol;
 
  return( retval );
- }
-
-/*--------------------------------------------------------------------------*/
-/// prints the status in a human-readable form
-
-void print_status( int status )
-{
- std::cout << "Status = " << status << " (";
-
- switch( status ) {
-  case Solver::kOK:         std::cout << "Success)" << std::endl;    break;
-  case Solver::kError:      std::cout << "Error)" << std::endl;      break;
-  case Solver::kInfeasible: std::cout << "Infeasible)" << std::endl; break;
-  case Solver::kUnbounded:  std::cout << "Unbounded)" << std::endl;  break;
-  case Solver::kStopTime:   std::cout << "Stopped for time limit)"
-				      << std::endl;                  break;
-  case Solver::kStopIter:   std::cout << "Stopped for iteration limit)"
-				      << std::endl;                  break;
-  default:;
-  }
  }
 
 /*--------------------------------------------------------------------------*/
