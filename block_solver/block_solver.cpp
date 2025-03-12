@@ -1,3 +1,6 @@
+/*--------------------------------------------------------------------------*/
+/*--------------------------- block_solver.cpp -----------------------------*/
+/*--------------------------------------------------------------------------*/
 /** @file
  * SMS++ generic block and problem solver.
  *
@@ -11,50 +14,61 @@
  * (with a problem being a Block/BlockConfig/BlockSolverConfig tuple),
  * it solves each problem with all the loaded solvers.
  *
+ * \author Antonio Frangioni \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
  * \author Niccolo' Iardella \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
- * \copyright &copy; by Niccolo' Iardella
+ * \copyright &copy; by Antonio Frangioni, Niccolo' Iardella
  */
+/*--------------------------------------------------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
 
 #include <iostream>
 #include <iomanip>
 
+/*!!
 #ifdef USE_DL
-
-#include <dlfcn.h>
-
+ #include <dlfcn.h>
 #endif
+!!*/
 
 #include <Block.h>
 #include <BlockSolverConfig.h>
 
 #include "common_utils.h"
 
-using namespace SMSpp_di_unipi_it;
-
-#if __APPLE__
-#define LIBEXT ".dylib"
-#else
-#define LIBEXT ".so"
-#endif
-
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- USING -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+using namespace SMSpp_di_unipi_it;
+
+/*----------------------------------------------------------------------------
+
 #ifdef USE_DL
+ #if __APPLE__
+  #define LIBEXT ".dylib"
+ #else
+  #define LIBEXT ".so"
+ #endif
+
 std::vector< void * > dl_handles;
 
 const static std::map< std::string, std::string > class_to_lib{
  { "ThermalUnitBlock", "UCBlock" },
  { "UCBlock",          "UCBlock" },
  { "CPXMILPSolver",    "MILPSolver" },
-};
+ };
 
-/*--------------------------------------------------------------------------*/
+------------------------------------------------------------------------------
 
-void load_library( const std::string & class_name ) {
-
+void load_library( const std::string & class_name )
+{
  const std::string & lib = class_to_lib.at( class_name );
  auto lib_path = "lib" + lib + LIBEXT;
  void * handle = dlopen( lib_path.c_str(), RTLD_LAZY );
@@ -62,162 +76,91 @@ void load_library( const std::string & class_name ) {
  if( ! handle ) {
   std::cerr << "Error:" << dlerror();
   exit( 1 );
- } else {
+  }
+ else
   dl_handles.push_back( handle );
  }
-}
 
 void unload_libraries() {
- for( auto handle: dl_handles ) {
+ for( auto handle: dl_handles )
   dlclose( handle );
  }
-}
 
 #endif
 
-/*--------------------------------------------------------------------------*/
+----------------------------------------------------------------------------*/
 
-int main( int argc, char ** argv ) {
-
- // Manage options and help, see common_utils.h
- docopt_desc = "SMS++ generic block and problem solver.\n";
+int main( int argc, char ** argv )
+{
+ // manage options and help, see common_utils.h
+ docopt_desc = "SMS++ generic block and problem solver" << std::endl;
  exe = get_filename( argv[ 0 ] );
- process_args( argc, argv );
+ process_args( argc , argv );
 
- // Read nc4 file
+ // read nc4 file
  netCDF::NcFile f;
  try {
   f.open( filename, netCDF::NcFile::read );
- } catch( netCDF::exceptions::NcException & e ) {
+  }
+ catch( netCDF::exceptions::NcException & e ) {
   std::cerr << exe << ": cannot open nc4 file " << filename << std::endl;
   exit( 1 );
- }
+  }
 
  netCDF::NcGroupAtt gtype = f.getAtt( "SMS++_file_type" );
  if( gtype.isNull() ) {
-  std::cerr << exe << ": "
-            << filename << " is not an SMS++ nc4 file" << std::endl;
+  std::cerr << exe << ": " << filename
+	    << " is not an SMS++ nc4 file" << std::endl;
   exit( 1 );
- }
+  }
 
  int type;
  gtype.getValues( &type );
 
- switch( type ) {
-
-  case eProbFile: {
-   // Problem file containing one or more Block/BlockConfig/BlockSolver sets
-
-   std::cout << filename
-             << " is a problem file, ignoring Block/Solver configurations..."
-             << std::endl;
-
-   std::multimap< std::string , netCDF::NcGroup > problems = f.getGroups();
-
-   // For each problem descriptor
-   for( auto & p : problems ) {
-
-    // Deserialize block
-    auto gb = p.second.getGroup( "Block" );
-#ifdef USE_DL
-    netCDF::NcGroupAtt gbtype = gb.getAtt( "type" );
-    std::string classname;
-    gbtype.getValues( classname );
-    load_library( classname );
-#endif
-    auto block = Block::new_Block( gb );
-
-    // Configure block
-    auto bgc = p.second.getGroup( "BlockConfig" );
-    auto b_config = static_cast< BlockConfig * >( BlockConfig::new_Configuration( bgc ) );
-    if( b_config ) {
-     b_config->apply( block );
-    }
-
-    // Configure solver
-    auto bgs = p.second.getGroup( "BlockSolver" );
-    auto s_config = static_cast< BlockSolverConfig * >( BlockSolverConfig::new_Configuration( bgs ) );
-    if( s_config ) {
-#ifdef USE_DL
-     for( const auto & solvername : s_config->get_SolverNames() ) {
-      load_library( solvername );
-     }
-#endif
-     s_config->apply( block );
-    }
-
-    std::cout << "Problem: " << p.first << std::endl;
-
-    // Solve
-    std::cout.setf( std::ios::scientific, std::ios::floatfield );
-    std::cout << std::setprecision( 8 );
-    solve_all( block );
-   }
-   break;
+ if( ( type != eProbFile ) && ( type != eBlockFile ) ) {
+  std::cerr << exe << ": " << filename << " is not a valid SMS++ file"
+	    << std::endl;
+  exit( 1 );
   }
 
-  case eBlockFile: {
-   // Block file containing one or more Blocks
+ if( type == eProbFile )
+  // problem file containing one or more Block/BlockConfig/BlockSolver sets
+  std::cout << filename
+	    << " is a problem file, ignoring Block/Solver configurations"
+	    << std::endl;
 
-   std::cout << filename << " is a block file" << std::endl;
+ auto groups = f.getGroups();
 
-   std::multimap< std::string, netCDF::NcGroup > block_groups = f.getGroups();
+ // for each sub-group
+ for( auto & g : groups ) {
+  Block * block = nullptr;
+  BlockConfig * b_config = nullptr;
+  BlockSolverConfig * s_config = nullptr;
 
-   // For each Block
-   for( const auto & bg : block_groups ) {
-
-    // Deserialize block
-    auto gb = bg.second;
-#ifdef USE_DL
-    netCDF::NcGroupAtt gbtype = gb.getAtt( "type" );
-    std::string classname;
-    gbtype.getValues( classname );
-    load_library( classname );
-#endif
-    auto block = Block::new_Block( gb );
-
-    // Configure block
-    BlockConfig * b_config;
-    if( ! bconf_file.empty() ) {
-     b_config = get_blockconfig( bconf_file );
-     if( b_config == nullptr ) {
-      std::cerr << exe << ": Block configuration not valid" << std::endl;
-      exit( 1 );
-     }
-     b_config->apply( block );
-    }
-
-    // Configure solver
-    BlockSolverConfig * s_config;
-    s_config = get_blocksolverconfig( sconf_file );
-    if( s_config == nullptr ) {
-     std::cerr << exe << ": Block configuration not valid" << std::endl;
-     exit( 1 );
-    }
-
-#ifdef USE_DL
-    for( const auto & solvername : s_config->get_SolverNames() ) {
-     load_library( solvername );
-    }
-#endif
-    s_config->apply( block );
-
-    // Solve
-    std::cout.setf( std::ios::scientific, std::ios::floatfield );
-    std::cout << std::setprecision( 8 );
-    solve_all( block );
+  if( type == eProbFile ) {
+   std::cout << "Problem: " << g.first << std::endl;
+   get_all( g.second , block , b_config , s_config );
    }
-   break;
+  else {
+   std::cout << "Block: " << g.first << std::endl;
+   get_all( g.second , bconf_file , sconf_file ,
+	    block , b_config , s_config );
+   }
+
+  solve_all( block );
+  if( s_config )
+   s_config->apply( block );
+
+  delete s_config;
+  delete b_config;
+  delete block;
   }
 
-  default:
-   std::cerr << exe << ": "
-             << filename << " is not a valid SMS++ file" << std::endl;
-   exit( 1 );
- }
-
-#ifdef USE_DL
- unload_libraries();
-#endif
  return( 0 );
-}
+
+ }  // end( main )
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- end block_solver.cpp ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
