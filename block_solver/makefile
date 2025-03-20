@@ -17,7 +17,7 @@ NAME = block_solver
 DIR = .
 
 # common flags
-COMMON_SW = -std=c++17 -ferror-limit=1 -Wno-enum-compare
+COMMON_SW = -std=c++20 -ferror-limit=1 -Wno-enum-compare
 
 # debug switches
 SW_DEBUG = -g3 -glldb -fno-inline $(COMMON_SW)
@@ -75,21 +75,46 @@ clean::
 # *H   is the list of all include files
 # *INC is the -I< include directories >
 
-# define input macros for MILPSolver makefile + dependencies, then include it
-MILPSSDR = ../../MILPSolver
-include $(MILPSSDR)/makefile-c
+# define input macros for SMS++ complete makefile, then include it
+SMS++SDR = ../../SMS++
+include $(SMS++SDR)/lib/makefile-c
+
+# BundleSolver
+BNDSLVSDR = ../../BundleSolver
+include $(BNDSLVSDR)/makefile-s
+
+# LagrangianDualSolver
+LgDSLVSDR = ../../LagrangianDualSolver
+include $(LgDSLVSDR)/makefile
+
+# not necessary, BundleSolver does that already
+# MILPSolver
+#MILPSSDR = ../../MILPSolver
+#include $(MILPSSDR)/makefile-c
 
 # define input macros for UCBlock makefile, then include it
 UCBckDIR = ../../UCBlock
 include $(UCBckDIR)/lib/makefile
 
+# MCFBlock
+MCFBkSDR = ../../MCFBlock
+include $(MCFBkSDR)/makefile-s
+
+# LEMONSolver, assuming all dependencies (MCFBlock) are there already
+# (comment out if not required)
+# note: -std=c++20 is required if this is included
+MCFLESDR = ../../LEMONSolver
+include $(MCFLESDR)/makefile
+
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(UCBckOBJ) $(MILPSOBJ)
+MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) $(SMS++OBJ) $(MCFLEOBJ) \
+	$(MCFBkOBJ)
 
 # libraries
-MLIB =  $(UCBckLIB) $(MILPSLIB)
+MLIB =  $(SMS++LIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB) $(MCFBkLIB) \
+	$(MILPSLIB)
 
 $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
@@ -97,10 +122,11 @@ $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
-MINC =  $(MILPSINC) $(UCBckINC)
+MINC =  $(SMS++INC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) $(MCFBkINC) \
+	$(MCFLEINC)
 
 # includes
-MH =    $(MILPSH) $(UCBckH)
+MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(MCFBkH) $(MCFLEH)
 
 # compile command
 

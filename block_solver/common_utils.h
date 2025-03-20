@@ -109,7 +109,7 @@ void docopt( void )
 	   << std::endl
            << "  -n, --nc4problem <file>  write nc4 problem on file"
 	   << std::endl
-           << "  -d, --dryrun             if the compute() call si skipped"
+           << "  -d, --dryrun             if the compute() call is skipped"
 	   << std::endl
            << "  -v, --verbose            make the solver verbose"
 	   << std::endl
@@ -131,17 +131,17 @@ void process_args( int argc , char ** argv )
   exit( 1 );
   }
 
- const char * const short_opts = "B:p:S:c:onIOtdvh";
+ const char * const short_opts = "B:p:S:c:o:n:I:O:t:dvh";
  const option long_opts[] = {
   { "blockcfg" ,   required_argument , nullptr , 'B' } ,
   { "prefix" ,     required_argument , nullptr , 'p' } ,
   { "solvercfg" ,  required_argument , nullptr , 'S' } ,
   { "configdir" ,  required_argument , nullptr , 'c' } ,
-  { "output" ,     no_argument ,       nullptr , 'o' } ,
-  { "nc4problem" , no_argument ,       nullptr , 'n' } ,
-  { "inputsol" ,   no_argument ,       nullptr , 'I' } ,
-  { "outputsol" ,  no_argument ,       nullptr , 'O' } ,
-  { "outsolcfg" ,  no_argument ,       nullptr , 't' } ,
+  { "output" ,     required_argument , nullptr , 'o' } ,
+  { "nc4problem" , required_argument , nullptr , 'n' } ,
+  { "inputsol" ,   required_argument , nullptr , 'I' } ,
+  { "outputsol" ,  required_argument , nullptr , 'O' } ,
+  { "outsolcfg" ,  required_argument , nullptr , 't' } ,
   { "dryrun" ,     no_argument ,       nullptr , 'd' } ,
   { "verbose" ,    no_argument ,       nullptr , 'v' } ,
   { "help" ,       no_argument ,       nullptr , 'h' } ,
@@ -199,6 +199,9 @@ void process_args( int argc , char ** argv )
 
 BlockConfig * get_blockconfig( const std::string & conf_file )
 {
+ if( conf_file.empty() )
+  return( nullptr );
+
  auto cfg = Configuration::deserialize( conf_file );
  auto bcfg = dynamic_cast< BlockConfig * >( cfg );
  if( ! bcfg )
@@ -211,6 +214,9 @@ BlockConfig * get_blockconfig( const std::string & conf_file )
 
 BlockSolverConfig * get_blocksolverconfig( const std::string & conf_file )
 {
+ if( conf_file.empty() )
+  return( nullptr );
+
  auto cfg = Configuration::deserialize( conf_file );
  auto bscfg = dynamic_cast< BlockSolverConfig * >( cfg );
  if( ! bscfg )
@@ -336,7 +342,16 @@ int solve_all( Block * block )
  netCDF::NcFile f;
  Configuration * outsolcfg = nullptr;
  if( ! sol_output.empty() ) {
-  f.open( sol_output , netCDF::NcFile::write );
+  try {
+   // first try to open an existing file
+   f.open( sol_output , netCDF::NcFile::write );
+   }
+  catch( netCDF::exceptions::NcException & e ) {
+   // upon failure, open a new one
+   f.open( sol_output , netCDF::NcFile::replace );
+   // and put there the "SMS++_file_type" field
+   f.putAtt( "SMS++_file_type" , netCDF::NcInt() , eSolutionFile );
+   }
   if( ! sol_cfg_file.empty() )
    outsolcfg = Configuration::deserialize( sol_cfg_file );
   }
@@ -367,7 +382,8 @@ int solve_all( Block * block )
    if( ! sol_output.empty() ) {
     solver->get_var_solution();
     if( auto cdas = dynamic_cast< CDASolver * >( solver ) )
-     cdas->get_dual_solution();
+     if( cdas->has_dual_solution() )
+      cdas->get_dual_solution();
     }
    }
 
