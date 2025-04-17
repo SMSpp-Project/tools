@@ -93,8 +93,9 @@ include $(LgDSLVSDR)/makefile
 #include $(MILPSSDR)/makefile-c
 
 # define input macros for UCBlock makefile, then include it
-UCBckDIR = ../../UCBlock
-include $(UCBckDIR)/lib/makefile
+# not necessary, InvestmentBlock does it already
+#UCBckDIR = ../../UCBlock
+#include $(UCBckDIR)/lib/makefile
 
 # MCFBlock
 MCFBkSDR = ../../MCFBlock
@@ -106,15 +107,19 @@ include $(MCFBkSDR)/makefile-s
 MCFLESDR = ../../LEMONSolver
 include $(MCFLESDR)/makefile
 
+# InvestmentBlock
+InvsBkSDR = ../../InvestmentBlock
+include $(InvsBkSDR)/makefile-s
+
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
 MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) $(SMS++OBJ) $(MCFLEOBJ) \
-	$(MCFBkOBJ)
+	$(MCFBkOBJ) $(InvsBkOBJ)
 
 # libraries
 MLIB =  $(SMS++LIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB) $(MCFBkLIB) \
-	$(MILPSLIB)
+	$(MILPSLIB) $(InvsBkLIB)
 
 $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
@@ -123,10 +128,11 @@ $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 
 # include directives
 MINC =  $(SMS++INC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) $(MCFBkINC) \
-	$(MCFLEINC)
+	$(MCFLEINC) $(InvsBkINC)
 
 # includes
-MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(MCFBkH) $(MCFLEH)
+MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(MCFBkH) $(MCFLEH) \
+	$(InvsBkH)
 
 # compile command
 
