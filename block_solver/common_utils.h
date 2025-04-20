@@ -32,11 +32,6 @@
 #include <CDASolver.h>
 #include <Solution.h>
 
-#ifndef NDEBUG
- #include <queue>    // For scanning the sub-Blocks
- #include <FRealObjective.h>
-#endif
-
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- USING -----------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -49,18 +44,24 @@ using namespace SMSpp_di_unipi_it;
 /** @name Global variables used by every tool
  *  @{ */
 
-std::string filename {};      ///< input filename
-std::string bconf_file {};    ///< BlockConfig filename
-std::string sconf_file {};    ///< BlockSolverConfig filename
-std::string exe {};           ///< name of the executable file
-std::string docopt_desc {};   ///< tool description
-std::string sol_input {};     ///< filename of input Solution
-std::string sol_output {};    ///< filename of output Solution 
-std::string sol_cfg_file {};  ///< filename of output Solution Configuration
+std::string docopt_desc = "SMS++ generic Block solver";
+///< tool description
 
-bool solvVerbose = false;     ///< if the solver should be verbose
-bool writeprob = false;       ///< if the problem should be written back
-bool dryrun = false;          ///< if compute() need not really ba called
+std::string filename {};        ///< input filename
+std::string bconf_file {};      ///< BlockConfig filename
+std::string sconf_file {};      ///< BlockSolverConfig filename
+std::string state_in_file {};   ///< State to be loaded into the Solver
+std::string state_out_file {};  ///< final State of the Solver
+std::string conf_prefix {};     ///< prefix for all Configuration files
+std::string exe {};             ///< name of the executable file
+std::string sol_input {};       ///< filename of input Solution
+std::string sol_output {};      ///< filename of output Solution 
+std::string sol_cfg_file {};    ///< filename of output Solution Configuration
+
+bool output_solution = false;   ///< true if solution has be output
+bool solvVerbose = false;       ///< if the solver should be verbose
+bool writeprob = false;         ///< if the problem should be written back
+bool dryrun = false;            ///< if compute() need not really ba called
 
 int solution_output_type = 1;
 /**< This indicates if and how a solution of the problem is output. If
@@ -74,6 +75,46 @@ int solution_output_type = 1;
  * - solution_output_type = 3, then the solution is output to both the screen
  *   and file(s);
  */
+
+std::string short_opts = "a:B:b:p:S:c:ot:n:I:O:C:Dvh";
+
+std::vector< option > long_opts = {
+ { "help"            , no_argument ,       nullptr , 'h' } ,
+ { "save-state"      , required_argument , nullptr , 'a' } ,
+ { "blockcfg"        , required_argument , nullptr , 'B' } ,
+ { "load-state"      , required_argument , nullptr , 'b' } ,
+ { "prefix"          , required_argument , nullptr , 'p' } ,
+ { "solvercfg"       , required_argument , nullptr , 'S' } ,
+ { "configdir"       , required_argument , nullptr , 'c' } ,
+ { "output-solution" , no_argument       , nullptr , 'o' } ,
+ { "output"          , required_argument , nullptr , 't' } ,
+ { "nc4problem"      , required_argument , nullptr , 'n' } ,
+ { "inputsol"        , required_argument , nullptr , 'I' } ,
+ { "outputsol"       , required_argument , nullptr , 'O' } ,
+ { "outsolcfg"       , required_argument , nullptr , 'C' } ,
+ { "dryrun"          , no_argument ,       nullptr , 'd' } ,
+ { "verbose"         , no_argument ,       nullptr , 'v' } ,
+ { nullptr           , no_argument ,       nullptr , 0 }
+ };
+
+std::string help =
+ "  -h, --help                    print this help\n"
+ "  -a, --save-state <file>       save State of the Solver\n"
+ "  -B, --blockcfg <file>         Block configuration\n"
+ "  -b, --load-state <file>       load State for the Solver\n"
+ "  -p, --prefix <path>           the prefix for all Block filenames\n"
+ "  -S, --solvercfg <file>        Solver configuration\n"
+ "  -c, --configdir <path>        the prefix for all Config filenames\n"
+ "  -I, --inputsol <file>         input Solution\n"
+ "  -O, --outputsol <file>        output Solution\n"
+ "  -C, --outsolcfg <file>        output Solution Configuration\n"
+ "  -o, --output-solution         output the solutions\n"
+ "  -n, --nc4problem <file>       write nc4 problem on file\n"
+ "  -D, --dryrun                  if the compute() call is skipped\n"
+ "  -v, --verbose                 make the solver verbose\n"
+ "  -o, --output-solution         output the solutions\n"
+ "  -t, --output <type>           solution output type [1]\n"
+ "                                (0 none, 1 screen, 2 files, 3 both)\n";
 
 /** @} ---------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -96,28 +137,45 @@ void docopt( void )
  std::cout << "Usage:" << std::endl
            << "  " << exe << " [options] <file>" << std::endl
            << "  " << exe << " -h | --help" << std::endl << std::endl
-           << "Options:" << std::endl
-           << "  -B, --blockcfg <file>    Block configuration" << std::endl
-           << "  -p, --prefix <path>      the prefix for all Block filenames"
-	   << std::endl
-           << "  -S, --solvercfg <file>   Solver configuration" << std::endl
-           << "  -c, --configdir <path>   the prefix for all config filenames"
-	   << std::endl
-           << "  -I, --inputsol <file>    input Solution" << std::endl
-           << "  -O, --outputsol <file>   output Solution" << std::endl
-           << "  -t, --outsolcfg <file>   output Solution Configuration"
-	   << std::endl
-           << "  -n, --nc4problem <file>  write nc4 problem on file"
-	   << std::endl
-           << "  -d, --dryrun             if the compute() call is skipped"
-	   << std::endl
-           << "  -v, --verbose            make the solver verbose"
-	   << std::endl
-           << "  -o, --output <type>      solution output type [1]"
-	   << std::endl
-	   << "                           (0 none, 1 screen, 2 files, 3 both)"
-	   << std::endl
-           << "  -h, --help               Print this help.\n";
+           << "Options:"  << std::endl << help << std::endl;
+ }
+
+/*--------------------------------------------------------------------------*/
+/// processes one command line argument
+
+bool process_standard_arg( int opt )
+{
+ switch( opt ) {
+  case 'a': state_out_file = std::string( optarg ); break;
+  case 'B': bconf_file = std::string( optarg ); break;
+  case 'b': state_in_file = std::string( optarg ); break;
+  case 'p': Block::set_filename_prefix( std::string( optarg ) ); break;
+  case 'S': sconf_file = std::string( optarg ); break;
+  case 'c': conf_prefix = std::string( optarg );
+            Configuration::set_filename_prefix( std::string( conf_prefix ) );
+	    break;
+  case 'o': output_solution = true; break;
+  case 't': { auto s = std::string( optarg );
+              if( s.size() != 1 || s.front() < '0' || s.front() > '3' ) {
+	       std::cout << "Invalid output solution type " << s << std::endl
+			 << "Try " << exe << "' --help' for more information"
+			 << std::endl;
+	       exit( 1 );
+	       }
+	      solution_output_type = s.front() - '0';
+	      break;
+              }
+  case 'I': sol_input = std::string( optarg ); break;
+  case 'O': sol_output = std::string( optarg ); break;
+  case 'C': sol_cfg_file = std::string( optarg ); break;
+  case 'n': writeprob = true; break;
+  case 'd': dryrun = true; break;
+  case 'v': solvVerbose = true; break;
+  case 'h': docopt(); exit( 0 );
+  case '?':
+  default:  return( false );
+  }
+ return( true );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -125,62 +183,23 @@ void docopt( void )
 
 void process_args( int argc , char ** argv )
 {
+ exe = get_filename( argv[ 0 ] );
  if( argc < 2 ) {
   std::cout << exe << ": no input file" << std::endl
 	    << "Try " << exe << "' --help' for more information" << std::endl;
   exit( 1 );
   }
 
- const char * const short_opts = "B:p:S:c:o:n:I:O:t:dvh";
- const option long_opts[] = {
-  { "blockcfg" ,   required_argument , nullptr , 'B' } ,
-  { "prefix" ,     required_argument , nullptr , 'p' } ,
-  { "solvercfg" ,  required_argument , nullptr , 'S' } ,
-  { "configdir" ,  required_argument , nullptr , 'c' } ,
-  { "output" ,     required_argument , nullptr , 'o' } ,
-  { "nc4problem" , required_argument , nullptr , 'n' } ,
-  { "inputsol" ,   required_argument , nullptr , 'I' } ,
-  { "outputsol" ,  required_argument , nullptr , 'O' } ,
-  { "outsolcfg" ,  required_argument , nullptr , 't' } ,
-  { "dryrun" ,     no_argument ,       nullptr , 'd' } ,
-  { "verbose" ,    no_argument ,       nullptr , 'v' } ,
-  { "help" ,       no_argument ,       nullptr , 'h' } ,
-  { nullptr ,      no_argument ,       nullptr , 0 }
-  };
-
  // options
  while( true ) {
-  const auto opt = getopt_long( argc , argv , short_opts , long_opts ,
-				nullptr );
-  if( -1 == opt ) break;
+  const auto opt = getopt_long( argc , argv , short_opts.data() ,
+				long_opts.data() , nullptr );
+  if( opt == -1 ) break;
 
-  switch( opt ) {
-   case 'B': bconf_file = std::string( optarg ); break;
-   case 'p': Block::set_filename_prefix( std::string( optarg ) ); break;
-   case 'S': sconf_file = std::string( optarg ); break;
-   case 'c': Configuration::set_filename_prefix( std::string( optarg ) );
-             break;
-   case 'o': { auto s = std::string( optarg );
-	       if( s.size() != 1 || s.front() < '0' || s.front() > '3' ) {
-		std::cout << "Invalid output solution type " << s << std::endl
-			  << "Try " << exe << "' --help' for more information"
-			  << std::endl;
-		exit( 1 );
-	        }
-	       solution_output_type = s.front() - '0';
-	       break;
-               }
-   case 'I': sol_input = std::string( optarg ); break;
-   case 'O': sol_output = std::string( optarg ); break;
-   case 't': sol_cfg_file = std::string( optarg ); break;
-   case 'n': writeprob = true; break;
-   case 'd': dryrun = true; break;
-   case 'v': solvVerbose = true; break;
-   case 'h': docopt(); exit( 0 );
-   case '?':
-   default:  std::cout << "Try " << exe << "' --help' for more information"
-		       << std::endl;
-             exit( 1 );
+  if( ! process_standard_arg( opt ) ) {
+   std::cout << "Try " << exe << "' --help' for more information"
+	     << std::endl;
+   exit( 1 );
    }
   }
 
@@ -189,10 +208,10 @@ void process_args( int argc , char ** argv )
   filename = std::string( argv[ optind ] );
  else {
   std::cout << exe << ": no input file" << std::endl
-            << "Try " << exe << "' --help' for more information" << std::endl;
+            << "Try '" << exe << " --help' for more information" << std::endl;
   exit( 1 );
   }
- }
+ }  // end( process_args )
 
 /*--------------------------------------------------------------------------*/
 /// gets a BlockConfig from a BlockConfig file
@@ -360,8 +379,29 @@ int solve_all( Block * block )
  for( auto solver : block->get_registered_solvers() ) {
   std::cout << "Solver: " << solver->classname() << std::endl;
 
-  if( initsol )
+  if( initsol )  // set the initial Solution, if provided
    initsol->write( block );
+
+  if( ! state_in_file.empty() ) {  // load the given State
+   // note: this is bound to fail if there are multiple Solver, since the
+   // State is supposed to be Solver-specific, unless all Solver but at
+   // most one ignore the State
+   netCDF::NcFile file;
+   try {
+    file.open( state_in_file , netCDF::NcFile::read );
+    auto state = State::new_State( file );
+    solver->put_State( *state );
+    delete( state );
+    }
+   catch( netCDF::exceptions::NcException & e ) {
+    std::cout << "Warning: State file " << state_in_file
+	      << " could not be loaded" << std::endl;
+    }
+   catch( const std::exception& e ) {
+    std::cout << "Warning: error " << e.what()
+	      << " occurred while loading the Solver State" << std::endl;
+    }
+   }
 
   if( ! dryrun ) {
    std::chrono::time_point< std::chrono::system_clock > start , end;
@@ -387,10 +427,24 @@ int solve_all( Block * block )
     }
    }
 
-  if( ! sol_output.empty() )
+  if( ! sol_output.empty() )  // if requires, write out Solution
    if( auto sol = block->get_Solution( outsolcfg , false ) ) {
     sol->serialize( f );
     delete sol;
+    }
+
+  if( ! state_out_file.empty() )  // if required, write out State
+   try {
+    netCDF::NcFile file( filename , netCDF::NcFile::replace );
+    solver->serialize_State( file );
+    }
+   catch( netCDF::exceptions::NcException & e ) {
+    std::cout << "Warning: State file " << state_out_file
+	      << " could not be opened" << std::endl;
+    }
+   catch( const std::exception& e ) {
+    std::cout << "Warning: error " << e.what()
+	      << " occurred while saving the Solver State" << std::endl;
     }
 
   }  // end( for( each Solver ) )

@@ -79,6 +79,13 @@ clean::
 SMS++SDR = ../../SMS++
 include $(SMS++SDR)/lib/makefile-c
 
+# MCFBlock
+# this has to be before BundleSolver because there are two definitions of
+# OPTstuff, but the one in MCFBlock lacks OPTvect.h that is needed by
+# the NDOstuff in BundleSolver
+MCFBkSDR = ../../MCFBlock
+include $(MCFBkSDR)/makefile-s
+
 # BundleSolver
 BNDSLVSDR = ../../BundleSolver
 include $(BNDSLVSDR)/makefile-s
@@ -96,10 +103,6 @@ include $(LgDSLVSDR)/makefile
 # not necessary, InvestmentBlock does it already
 #UCBckDIR = ../../UCBlock
 #include $(UCBckDIR)/lib/makefile
-
-# MCFBlock
-MCFBkSDR = ../../MCFBlock
-include $(MCFBkSDR)/makefile-s
 
 # LEMONSolver, assuming all dependencies (MCFBlock) are there already
 # (comment out if not required)
