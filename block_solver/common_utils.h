@@ -44,8 +44,7 @@ using namespace SMSpp_di_unipi_it;
 /** @name Global variables used by every tool
  *  @{ */
 
-std::string docopt_desc = "SMS++ generic Block solver";
-///< tool description
+std::string docopt_desc {};     ///< tool description
 
 std::string filename {};        ///< input filename
 std::string bconf_file {};      ///< BlockConfig filename
@@ -63,21 +62,8 @@ bool solvVerbose = false;       ///< if the Solver should be verbose
 bool writeprob = false;         ///< if the problem should be written back
 bool dryrun = false;            ///< if compute() need not really ba called
 
-int solution_output_type = 1;
-/**< This indicates if and how a solution of the problem is output. If
- *
- * - solution_output_type = 0, then no solution is output;
- *
- * - solution_output_type = 1, then the solution is output to the screen;
- *
- * - solution_output_type = 2, then the solution is output to file(s);
- *
- * - solution_output_type = 3, then the solution is output to both the screen
- *   and file(s);
- */
-
 /// default short command-line options
-std::string short_opts = "a:B:b:p:S:c:ot:n:I:O:C:Dvh";
+std::string short_opts = "a:B:b:p:S:c:on:I:O:C:Dvh";
 
 /// default long command-line options
 std::vector< option > long_opts = {
@@ -89,7 +75,6 @@ std::vector< option > long_opts = {
  { "solvercfg"       , required_argument , nullptr , 'S' } ,
  { "configdir"       , required_argument , nullptr , 'c' } ,
  { "output-solution" , no_argument       , nullptr , 'o' } ,
- { "output"          , required_argument , nullptr , 't' } ,
  { "nc4problem"      , required_argument , nullptr , 'n' } ,
  { "inputsol"        , required_argument , nullptr , 'I' } ,
  { "outputsol"       , required_argument , nullptr , 'O' } ,
@@ -115,9 +100,7 @@ std::string help =
  "  -n, --nc4problem <file>       write nc4 problem on file\n"
  "  -D, --dryrun                  if the compute() call is skipped\n"
  "  -v, --verbose                 make the solver verbose\n"
- "  -o, --output-solution         output the solutions\n"
- "  -t, --output <type>           solution output type [1]\n"
- "                                (0 none, 1 screen, 2 files, 3 both)\n";
+ "  -o, --output-solution         output the solutions\n";
 
 /** @} ---------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -131,6 +114,51 @@ std::string get_filename( const std::string & fullpath )
 {
  std::size_t found = fullpath.find_last_of( "/\\" );
  return( fullpath.substr( found + 1 ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/// gets an option as a string, converts it to long
+
+long get_long_option( char * end = nullptr )
+{
+ errno = 0;
+ long option = std::strtol( optarg , &end , 10 );
+ if( ( ! optarg ) || ( ( option = std::strtol( optarg , &end , 10 ) ) ,
+                       ( errno || ( end && *end ) ) ) ) {
+  option = -1;
+  }
+ return( option );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+/// open a netCDF file for reeading, returns its type
+
+int read_open_netCDF( netCDF::NcFile & f , const std::string fn )
+{
+ try {
+  f.open( fn, netCDF::NcFile::read );
+  }
+ catch( netCDF::exceptions::NcException & e ) {
+  std::cerr << exe << ": cannot open nc4 file " << fn << std::endl;
+  exit( 1 );
+  }
+
+ netCDF::NcGroupAtt gtype = f.getAtt( "SMS++_file_type" );
+ if( gtype.isNull() ) {
+  std::cerr << exe << ": " << fn << " is not an SMS++ nc4 file" << std::endl;
+  exit( 1 );
+  }
+
+ int type;
+ gtype.getValues( &type );
+
+ if( ( type != eProbFile ) && ( type != eBlockFile ) ) {
+  std::cerr << exe << ": " << fn << " is not a valid SMS++ file" << std::endl;
+  exit( 1 );
+  }
+
+ return( type );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -182,16 +210,6 @@ bool process_standard_arg( int opt )
             Configuration::set_filename_prefix( std::string( conf_prefix ) );
 	    break;
   case 'o': output_solution = true; break;
-  case 't': { auto s = std::string( optarg );
-              if( s.size() != 1 || s.front() < '0' || s.front() > '3' ) {
-	       std::cout << "Invalid output solution type " << s << std::endl
-			 << "Try " << exe << "' --help' for more information"
-			 << std::endl;
-	       exit( 1 );
-	       }
-	      solution_output_type = s.front() - '0';
-	      break;
-              }
   case 'I': sol_input = std::string( optarg ); break;
   case 'O': sol_output = std::string( optarg ); break;
   case 'C': sol_cfg_file = std::string( optarg ); break;
@@ -461,7 +479,7 @@ int solve_all( Block * block )
 
   if( ! state_out_file.empty() )  // if required, write out State- - - - - - -
    try {
-    netCDF::NcFile file( filename , netCDF::NcFile::replace );
+    netCDF::NcFile file( state_out_file , netCDF::NcFile::replace );
     solver->serialize_State( file );
     }
    catch( netCDF::exceptions::NcException & e ) {

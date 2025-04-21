@@ -31,12 +31,6 @@
 #include <iostream>
 #include <iomanip>
 
-/*!!
-#ifdef USE_DL
- #include <dlfcn.h>
-#endif
-!!*/
-
 #include <Block.h>
 #include <BlockSolverConfig.h>
 
@@ -48,80 +42,18 @@
 
 using namespace SMSpp_di_unipi_it;
 
-/*----------------------------------------------------------------------------
-
-#ifdef USE_DL
- #if __APPLE__
-  #define LIBEXT ".dylib"
- #else
-  #define LIBEXT ".so"
- #endif
-
-std::vector< void * > dl_handles;
-
-const static std::map< std::string, std::string > class_to_lib{
- { "ThermalUnitBlock", "UCBlock" },
- { "UCBlock",          "UCBlock" },
- { "CPXMILPSolver",    "MILPSolver" },
- };
-
-------------------------------------------------------------------------------
-
-void load_library( const std::string & class_name )
-{
- const std::string & lib = class_to_lib.at( class_name );
- auto lib_path = "lib" + lib + LIBEXT;
- void * handle = dlopen( lib_path.c_str(), RTLD_LAZY );
-
- if( ! handle ) {
-  std::cerr << "Error:" << dlerror();
-  exit( 1 );
-  }
- else
-  dl_handles.push_back( handle );
- }
-
-void unload_libraries() {
- for( auto handle: dl_handles )
-  dlclose( handle );
- }
-
-#endif
-
-----------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------*/
 
 int main( int argc, char ** argv )
 {
- // manage options and help, see common_utils.h
- docopt_desc = "SMS++ generic block and problem solver";
- exe = get_filename( argv[ 0 ] );
+ // manage options and help, see common_utils.h- - - - - - - - - - - - - - - -
+ docopt_desc = "SMS++ generic Block solver";
  process_args( argc , argv );
 
- // read nc4 file
+ // read nc4 file- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  netCDF::NcFile f;
- try {
-  f.open( filename, netCDF::NcFile::read );
-  }
- catch( netCDF::exceptions::NcException & e ) {
-  std::cerr << exe << ": cannot open nc4 file " << filename << std::endl;
-  exit( 1 );
-  }
-
- netCDF::NcGroupAtt gtype = f.getAtt( "SMS++_file_type" );
- if( gtype.isNull() ) {
-  std::cerr << exe << ": " << filename
-	    << " is not an SMS++ nc4 file" << std::endl;
-  exit( 1 );
-  }
-
- int type;
- gtype.getValues( &type );
-
- if( ( type != eProbFile ) && ( type != eBlockFile ) ) {
-  std::cerr << exe << ": " << filename << " is not a valid SMS++ file"
-	    << std::endl;
-  exit( 1 );
-  }
+ auto type = read_open_netCDF( f , filename );
 
  if( type == eProbFile )
   // problem file containing one or more Block/BlockConfig/BlockSolver sets
@@ -129,9 +61,9 @@ int main( int argc, char ** argv )
 	    << " is a problem file, ignoring Block/Solver configurations"
 	    << std::endl;
 
+ // for each sub-group - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  auto groups = f.getGroups();
 
- // for each sub-group
  for( auto & g : groups ) {
   Block * block = nullptr;
   BlockConfig * b_config = nullptr;
@@ -154,7 +86,8 @@ int main( int argc, char ** argv )
   delete s_config;
   delete b_config;
   delete block;
-  }
+
+  }  // end( for( all group ) )
 
  return( 0 );
 

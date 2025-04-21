@@ -105,7 +105,6 @@
 
 #include <filesystem>
 #include <iomanip>
-#include <iostream>
 #include <queue>
 
 #include <BatteryUnitBlock.h>
@@ -193,19 +192,6 @@ const std::string my_help =
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
-/*--------------------------------------------------------------------------*/
-
-long get_long_option( char * end = nullptr )
-{
- errno = 0;
- long option = std::strtol( optarg , &end , 10 );
- if( ( ! optarg ) || ( ( option = std::strtol( optarg , &end , 10 ) ) ,
-                       ( errno || ( end && *end ) ) ) ) {
-  option = -1;
-  }
- return( option );
- }
-
 /*--------------------------------------------------------------------------*/
 
 void process_my_args( int argc , char ** argv )
@@ -1834,7 +1820,7 @@ int main( int argc , char ** argv )
 {
  // append new options to default ones- - - - - - - - - - - - - - - - - - - -
 
- docopt_desc = "SMS++ investment solver.\n";
+ docopt_desc = "SMS++ investment solver";
  short_opts.append( my_short_opts );
  long_opts.insert( long_opts.end() ,
 		   my_long_opts.begin() , my_long_opts.end() );
@@ -1859,31 +1845,17 @@ int main( int argc , char ** argv )
   }
 
  netCDF::NcFile file;
- try {
-  file.open( filename , netCDF::NcFile::read );
-  }
- catch( netCDF::exceptions::NcException & e ) {
-  std::cerr << "Cannot open nc4 file " << filename << std::endl;
-  exit( 1 );
-  }
-
- netCDF::NcGroupAtt gtype = file.getAtt( "SMS++_file_type" );
- if( gtype.isNull() ) {
-  std::cerr << filename << " is not an SMS++ nc4 file" << std::endl;
-  exit( 1 );
-  }
+ auto type = read_open_netCDF( file , filename );
 
  // process the file- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
- int type;
- gtype.getValues( &type );
-
  switch( type ) {
   case eProbFile: std::cout << filename << " is a problem file, "
-                    "ignoring Block/Solver configurations..." << std::endl;
+			    << "ignoring Block/Solver Configuration(s)..."
+			    << std::endl;
                   process_prob_file( file );
 		  break;
-  case eBlockFile: std::cout << filename << " is a block file" << std::endl;
+  case eBlockFile: std::cout << filename << " is a Block file" << std::endl;
                    process_block_file( file );
 		   break;
   default: std::cerr << filename << " is not a valid SMS++ file"
