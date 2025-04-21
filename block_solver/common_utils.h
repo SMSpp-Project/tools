@@ -59,7 +59,7 @@ std::string sol_output {};      ///< filename of output Solution
 std::string sol_cfg_file {};    ///< filename of output Solution Configuration
 
 bool output_solution = false;   ///< true if solution has be output
-bool solvVerbose = false;       ///< if the solver should be verbose
+bool solvVerbose = false;       ///< if the Solver should be verbose
 bool writeprob = false;         ///< if the problem should be written back
 bool dryrun = false;            ///< if compute() need not really ba called
 
@@ -76,8 +76,10 @@ int solution_output_type = 1;
  *   and file(s);
  */
 
+/// default short command-line options
 std::string short_opts = "a:B:b:p:S:c:ot:n:I:O:C:Dvh";
 
+/// default long command-line options
 std::vector< option > long_opts = {
  { "help"            , no_argument ,       nullptr , 'h' } ,
  { "save-state"      , required_argument , nullptr , 'a' } ,
@@ -97,6 +99,7 @@ std::vector< option > long_opts = {
  { nullptr           , no_argument ,       nullptr , 0 }
  };
 
+/// default command-line options help string
 std::string help =
  "  -h, --help                    print this help\n"
  "  -a, --save-state <file>       save State of the Solver\n"
@@ -119,12 +122,36 @@ std::string help =
 /** @} ---------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
+/** @name Utility functions 
+ *  @{ */
+
 /// gets the name of the executable from its full path
 
 std::string get_filename( const std::string & fullpath )
 {
  std::size_t found = fullpath.find_last_of( "/\\" );
  return( fullpath.substr( found + 1 ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/// open a netCDF file for appending (if exists) or writing (if not)
+
+void write_open_netCDF( netCDF::NcFile & f , const std::string fn )
+{
+ try {  // first try to open an existing file
+  f.open( fn , netCDF::NcFile::write );
+  }
+ catch( netCDF::exceptions::NcException & e ) {
+  try {  // upon failure, try to open a new one
+   f.open( fn , netCDF::NcFile::replace );
+   }
+  catch( netCDF::exceptions::NcException & e ) {
+   std::cerr << "Error: cannot write-open netCDF file " << fn << std::endl;
+   exit( 1 );
+   }
+  // upon success, put there the "SMS++_file_type" field
+  f.putAtt( "SMS++_file_type" , netCDF::NcInt() , eSolutionFile );
+  }
  }
 
 /*--------------------------------------------------------------------------*/
@@ -141,7 +168,7 @@ void docopt( void )
  }
 
 /*--------------------------------------------------------------------------*/
-/// processes one command line argument
+/// processes any one of the default command-line arguments
 
 bool process_standard_arg( int opt )
 {
@@ -179,7 +206,7 @@ bool process_standard_arg( int opt )
  }
 
 /*--------------------------------------------------------------------------*/
-/// processes the command line arguments
+/// processes all default command-line arguments
 
 void process_args( int argc , char ** argv )
 {
@@ -190,8 +217,7 @@ void process_args( int argc , char ** argv )
   exit( 1 );
   }
 
- // options
- while( true ) {
+ while( true ) {  // options
   const auto opt = getopt_long( argc , argv , short_opts.data() ,
 				long_opts.data() , nullptr );
   if( opt == -1 ) break;
@@ -203,8 +229,7 @@ void process_args( int argc , char ** argv )
    }
   }
 
- // last argument
- if( optind < argc )
+ if( optind < argc )  // last argument == [Block] filename
   filename = std::string( argv[ optind ] );
  else {
   std::cout << exe << ": no input file" << std::endl
@@ -349,40 +374,38 @@ void print_status( int status )
  }
 
 /*--------------------------------------------------------------------------*/
-/// solves the problem with all available solvers (unless dry run)
+/// compute() the Block with all available Solver(s) (unless dry run)
 
 int solve_all( Block * block )
 {
+ // load initial Solution, if provided - - - - - - - - - - - - - - - - - - - -
  int retval = 0;
  Solution * initsol = nullptr;
  if( ! sol_input.empty() )
-  initsol = Solution::deserialize( sol_input );
+  if( ! ( initsol = Solution::deserialize( sol_input ) ) )
+   std::cout << "Warning: input Solution " << sol_input << " invalid"
+	      << std::endl;
 
+ // prepare file and Configuration for final Solution(s) - - - - - - - - - - -
  netCDF::NcFile f;
  Configuration * outsolcfg = nullptr;
  if( ! sol_output.empty() ) {
-  try {
-   // first try to open an existing file
-   f.open( sol_output , netCDF::NcFile::write );
-   }
-  catch( netCDF::exceptions::NcException & e ) {
-   // upon failure, open a new one
-   f.open( sol_output , netCDF::NcFile::replace );
-   // and put there the "SMS++_file_type" field
-   f.putAtt( "SMS++_file_type" , netCDF::NcInt() , eSolutionFile );
-   }
+  write_open_netCDF( f , sol_output );
   if( ! sol_cfg_file.empty() )
-   outsolcfg = Configuration::deserialize( sol_cfg_file );
+   if( ! ( outsolcfg = Configuration::deserialize( sol_cfg_file ) ) )
+     std::cout << "Warning: output Solution Configuration "
+	       << sol_cfg_file << " invalid" << std::endl;
   }
 
- // for each of the registered Solver
+ // for each of the registered Solver- - - - - - - - - - - - - - - - - - - - -
+ //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  for( auto solver : block->get_registered_solvers() ) {
   std::cout << "Solver: " << solver->classname() << std::endl;
 
-  if( initsol )  // set the initial Solution, if provided
+  if( initsol )  // set the initial Solution, if provided- - - - - - - - - - -
    initsol->write( block );
 
-  if( ! state_in_file.empty() ) {  // load the given State
+  if( ! state_in_file.empty() ) {  // load the given State - - - - - - - - - -
    // note: this is bound to fail if there are multiple Solver, since the
    // State is supposed to be Solver-specific, unless all Solver but at
    // most one ignore the State
@@ -397,13 +420,13 @@ int solve_all( Block * block )
     std::cout << "Warning: State file " << state_in_file
 	      << " could not be loaded" << std::endl;
     }
-   catch( const std::exception& e ) {
+   catch( const std::exception & e ) {
     std::cout << "Warning: error " << e.what()
 	      << " occurred while loading the Solver State" << std::endl;
     }
    }
 
-  if( ! dryrun ) {
+  if( ! dryrun ) {  // compute() - - - - - - - - - - - - - - - - - - - - - - -
    std::chrono::time_point< std::chrono::system_clock > start , end;
    start = std::chrono::system_clock::now();
    auto status = solver->compute();
@@ -427,13 +450,16 @@ int solve_all( Block * block )
     }
    }
 
-  if( ! sol_output.empty() )  // if requires, write out Solution
+  if( ! sol_output.empty() ) {  // if required, write out Solution - - - - - -
    if( auto sol = block->get_Solution( outsolcfg , false ) ) {
     sol->serialize( f );
     delete sol;
     }
+   else
+    std::cout << "Warning: output Solution empty" << std::endl;
+   }
 
-  if( ! state_out_file.empty() )  // if required, write out State
+  if( ! state_out_file.empty() )  // if required, write out State- - - - - - -
    try {
     netCDF::NcFile file( filename , netCDF::NcFile::replace );
     solver->serialize_State( file );
@@ -442,21 +468,23 @@ int solve_all( Block * block )
     std::cout << "Warning: State file " << state_out_file
 	      << " could not be opened" << std::endl;
     }
-   catch( const std::exception& e ) {
+   catch( const std::exception & e ) {
     std::cout << "Warning: error " << e.what()
 	      << " occurred while saving the Solver State" << std::endl;
     }
 
-  }  // end( for( each Solver ) )
- 
+  }  // end( for( each Solver ) )- - - - - - - - - - - - - - - - - - - - - - -
+     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
  delete outsolcfg;
  delete initsol;
 
  return( retval );
- }
+
+ }  // end( solve_all )
 
 /*--------------------------------------------------------------------------*/
-/// writes a new nc4 problem using the block and its configurations
+/// writes a new nc4 problem using the Clock and its Configuration(s)
 
 void write_nc4problem( Block * block , BlockConfig * b_config ,
                        BlockSolverConfig * s_config )
@@ -488,7 +516,7 @@ void write_nc4problem( Block * block , BlockConfig * b_config ,
  outfile.close();
  }
 
-/*--------------------------------------------------------------------------*/
+/** @} ---------------------------------------------------------------------*/
 
 #endif  //__COMMON_UTILS
 
