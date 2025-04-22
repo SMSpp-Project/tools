@@ -101,7 +101,6 @@
 
 #include "common_utils.h"
 
-#include <getopt.h>
 #include <iomanip>
 #include <queue>
 
@@ -133,6 +132,7 @@ using namespace SMSpp_di_unipi_it;
 /*--------------------------------------------------------------------------*/
 
 std::string output_solution_directory = ".";
+std::string cuts_filename {};
 std::string cut_processing_sconf_file {};
 
 long scenario_id = 0;
@@ -192,6 +192,8 @@ const std::string my_help =
  "  -s, --simulation                simulation mode\n"
  "  -t, --stage <stage>             stage from which initial state is taken";
 
+/*--------------------------------------------------------------------------*/
+/*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 void process_my_args( int argc , char ** argv )
@@ -254,7 +256,7 @@ void process_my_args( int argc , char ** argv )
    }
   }  // end( while( true ) )
 
- if( optind < argc )  // last argument == [InvestmentBlock] filename
+ if( optind < argc )  // last argument == [SDDPBlock] filename
   filename = std::string( argv[ optind ] );
  else {
  std::cout << exe << ": no input file" << std::endl
@@ -674,19 +676,30 @@ void solve( SDDPBlock * sddp_block )
   show_status( status );
   }
 
- if( ! sol_output.empty() ) {  // if required, write out Solution- - - - - - -
-  if( auto sol = sddp_block->get_Solution( outsolcfg , false ) ) {
-   sol->serialize( f );
-   delete sol;
+  // write final Solution, if required - - - - - - - - - - - - - - - - - - - -
+  if( ! sol_output.empty() ) {
+   netCDF::NcFile f;
+   write_open_netCDF( f , sol_output );
+   Configuration * outsolcfg = nullptr;
+   if( ! sol_cfg_file.empty() )
+    if( ! ( outsolcfg = Configuration::deserialize( sol_cfg_file ) ) )
+     std::cout << "Warning: output Solution Configuration "
+	       << sol_cfg_file << " invalid" << std::endl;
+
+   if( auto sol = sddp_block->get_Solution( outsolcfg , false ) ) {
+    sol->serialize( f );
+    delete sol;
+    }
+   else
+    std::cout << "Warning: output Solution empty" << std::endl;
+
+   delete outsolcfg;
    }
-  else
-   std::cout << "Warning: output Solution empty" << std::endl;
-  }
 
  if( ! state_out_file.empty() )  // if required, write out State - - - - - - -
   try {
    netCDF::NcFile file( state_out_file , netCDF::NcFile::replace );
-   sddp_solver->serialize_State( file );
+   solver->serialize_State( file );
    }
   catch( netCDF::exceptions::NcException & e ) {
    std::cout << "Warning: State file " << state_out_file
@@ -702,7 +715,7 @@ void solve( SDDPBlock * sddp_block )
  o.print_cuts( sddp_block , "BellmanValuesAllOUT.csv" );
 
  if( eliminate_redundant_cuts )
-  CutProcessing( get_blockconfig(
+  CutProcessing( get_blocksolverconfig(
 			      get_cut_processing_solver_config_filepath() )
 		 ).remove_redundant_cuts( sddp_block );
 
@@ -820,7 +833,7 @@ bool using_thermal_dp_solver( const std::string & config_filename )
 {
  auto solver_config = get_blocksolverconfig( config_filename );
  if( ! solver_config ) {
-  std::cerr << "Solver configuration " << config_name << " is invalid"
+  std::cerr << "Solver configuration " << config_filename << " is invalid"
 	    << std::endl;
   exit( 1 );
   }
@@ -1888,16 +1901,18 @@ void check_consistency( void )
 int main( int argc , char ** argv )
 {
  // append new options to default ones- - - - - - - - - - - - - - - - - - - -
-
+ // note that the last nullprr record in long_opts is overwritten since the
+ // new one is further down from there
+ 
  docopt_desc = "SMS++ SDDP solver";
  short_opts.append( my_short_opts );
- long_opts.insert( long_opts.end() ,
+ long_opts.insert( std::prev( long_opts.end() ) ,
 		   my_long_opts.begin() , my_long_opts.end() );
  help.append( my_help );
 
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
 
- process__my_args( argc , argv );
+ process_my_args( argc , argv );
 
  check_consistency();
 

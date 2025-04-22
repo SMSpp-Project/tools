@@ -139,10 +139,12 @@ $(DIR)/CutProcessing.o: \
 
 # include directives
 MINC =  $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) $(SDDPBkINC) \
-	-I$(DIR)/../sddp_solver -I$(DIR)/../ucblock_solver
+	-I$(DIR)/../sddp_solver -I$(DIR)/../ucblock_solver \
+	-I$(DIR)/../block_solver
 
 # includes
-MH =    $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(SDDPBkH)
+MH =    $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(SDDPBkH) \
+	$(DIR)/../block_solver/common_utils.h
 
 # compile command
 

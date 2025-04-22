@@ -29,6 +29,7 @@
 #include <chrono>    // for measuring compute time
 
 #include <Block.h>
+#include <BlockSolverConfig.h>
 #include <CDASolver.h>
 #include <Solution.h>
 

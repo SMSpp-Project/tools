@@ -105,20 +105,20 @@ MOBJ =  $(SMS++OBJ) $(SDDPBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) \
 MLIB =  $(SMS++LIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 
 $(DIR)/sddp_solver: $(DIR)/sddp_solver.o $(MOBJ)
-	$(CC) -o $(DIR)/sddp_solver $^ $(MLIB) $(SW)
+	$(CC) -o $(DIR)/sddp_solver $^ $(MLIB) -I../block_solver/ $(SW)
 
 $(DIR)/sddp_greedy_solver: $(DIR)/sddp_greedy_solver.o $(MOBJ)
-	$(CC) -o $(DIR)/sddp_greedy_solver $^ $(MLIB) $(SW)
+	$(CC) -o $(DIR)/sddp_greedy_solver $^ $(MLIB) -I../block_solver/ $(SW)
 
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
 MINC =  $(SMS++INC) $(SDDPBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) \
-	-I$(DIR) -I../ucblock_solver
+	-I$(DIR) -I$(DIR)/../block_solver -I$(DIR)/../ucblock_solver
 
 # includes
 MH =    $(SMS++H) $(SDDPBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) \
-	$(DIR)/CutProcessing.h
+	$(DIR)/CutProcessing.h	$(DIR)/../block_solver/common_utils.h
 
 # compile command
 

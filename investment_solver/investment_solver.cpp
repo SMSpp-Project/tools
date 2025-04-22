@@ -507,7 +507,7 @@ std::vector< double > get_default_initial_point( InvestmentBlock * block )
 std::vector< double > load_initial_point( void )
 {
  if( initial_point_filename.empty() )
-  return( {} );
+  return {};
 
  std::ifstream file( initial_point_filename );
 
@@ -850,7 +850,7 @@ void invest( InvestmentBlock * investment_block )
    write_open_netCDF( f , sol_output );
    Configuration * outsolcfg = nullptr;
    if( ! sol_cfg_file.empty() )
-    if( ! outsolcfg = Configuration::deserialize( sol_cfg_file ) )
+    if( ! ( outsolcfg = Configuration::deserialize( sol_cfg_file ) ) )
      std::cout << "Warning: output Solution Configuration "
 	       << sol_cfg_file << " invalid" << std::endl;
 
@@ -860,6 +860,8 @@ void invest( InvestmentBlock * investment_block )
     }
    else
     std::cout << "Warning: output Solution empty" << std::endl;
+
+   delete outsolcfg;
    }
 
   // handling of solution files in parallel case - - - - - - - - - - - - - - -
@@ -1819,10 +1821,12 @@ void check_consistency( void )
 int main( int argc , char ** argv )
 {
  // append new options to default ones- - - - - - - - - - - - - - - - - - - -
+ // note that the last nullprr record in long_opts is overwritten since the
+ // new one is further down from there
 
  docopt_desc = "SMS++ investment solver";
  short_opts.append( my_short_opts );
- long_opts.insert( long_opts.end() ,
+ long_opts.insert( std::prev( long_opts.end() ) ,
 		   my_long_opts.begin() , my_long_opts.end() );
  help.append( my_help );
 
