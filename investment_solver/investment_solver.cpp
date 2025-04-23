@@ -600,48 +600,6 @@ std::string get_cut_processing_solver_config_filepath( void )
 
 /*--------------------------------------------------------------------------*/
 
-BlockSolverConfig * load_BlockSolverConfig( const std::string & filename )
-{
- if( filename.empty() ) {
-  std::cout << "Solver configuration was not provided, "
-               "using default configuration" << std::endl;
-  return( nullptr );
-  }
-
- std::ifstream solver_config_file;
- solver_config_file.open( filename , std::ifstream::in );
-
- if( ! solver_config_file.is_open() ) {
-  std::cerr << "Solver configuration " + filename + " not found" << std::endl;
-  exit( 1 );
-  }
-
- std::cout << "Using Solver configuration in " << filename << std::endl;
-
- std::string config_name;
- solver_config_file >> eatcomments >> config_name;
- auto config = Configuration::new_Configuration( config_name );
- auto solver_config = dynamic_cast< BlockSolverConfig * >( config );
-
- if( ! solver_config ) {
-  std::cerr << "Invalid Solver configuration "  << config_name << std::endl;
-  delete( config );
-  exit( 1 );
-  }
-
- try {
-  solver_config_file >> *solver_config;
-  }
- catch( ... ) {
-  std::cout << "Invalid Solver configuration" << std::endl;
-  exit( 1 );
-  }
-
- return( solver_config );
- }
-
-/*--------------------------------------------------------------------------*/
-
 void invest( InvestmentBlock * investment_block )
 {
  auto investment_function = static_cast< InvestmentFunction * >(
@@ -688,7 +646,7 @@ void invest( InvestmentBlock * investment_block )
   // Eliminate redundant cuts if it is desired
   if( eliminate_redundant_cuts )
    CutProcessing(
-    load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
+        get_blocksolverconfig( get_cut_processing_solver_config_filepath() )
 		 ).remove_redundant_cuts( sddp_block );
   }
 
@@ -1041,7 +999,7 @@ void process_prob_file( const netCDF::NcFile & file )
    // eliminate redundant cuts if it is desired
    if( eliminate_redundant_cuts )
     CutProcessing(
-     load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
+       get_blocksolverconfig( get_cut_processing_solver_config_filepath() )
 		  ).remove_redundant_cuts( sddp_block );
    }
 
@@ -1079,51 +1037,6 @@ void process_prob_file( const netCDF::NcFile & file )
   delete( block_solver_config );
   delete( investment_block );
   }
- }
-
-/*--------------------------------------------------------------------------*/
-
-BlockConfig * load_BlockConfig( void )
-{
- if( bconf_file.empty() ) {
-  std::cout << "Block configuration was not provided, "
-               "using default configuration" << std::endl;
-  return( nullptr );
-  }
-
- std::ifstream block_config_file;
- block_config_file.open( bconf_file , std::ifstream::in );
-
- if( ! block_config_file.is_open() ) {
-  std::cerr << "Block configuration " << bconf_file << " not found"
-	    << std::endl;
-  exit( 1 );
-  }
-
- std::cout << "Using Block configuration in " << bconf_file << std::endl;
-
- std::string config_name;
- block_config_file >> eatcomments >> config_name;
- auto config = Configuration::new_Configuration( config_name );
- auto block_config = dynamic_cast< BlockConfig * >( config );
-
- if( ! block_config ) {
-  std::cerr << "Block Configuration " << config_name << " not valid"
-	    << std::endl;
-  delete( config );
-  exit( 1 );
-  }
-
- try {
-  block_config_file >> *block_config;
-  }
- catch( const std::exception & e ) {
-  std::cerr << "Block configuration is not valid: " << e.what() << std::endl;
-  exit( 1 );
-  }
-
- block_config_file.close();
- return( block_config );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1618,95 +1531,97 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
 void process_block_file( const netCDF::NcFile & file )
 {
- std::multimap< std::string , netCDF::NcGroup > blocks = file.getGroups();
-
  // BlockConfig
- auto given_block_config = load_BlockConfig();
+ BlockConfig * given_block_config = nullptr;
+ if( bconf_file.empty() )
+  std::cout << "Block configuration was not provided, "
+               "using default configuration" << std::endl;
+ else
+  if( ( given_block_config = get_blockconfig( bconf_file ) ) )
+   std::cout << "Using Block configuration in " << bconf_file << std::endl;
+  else {
+   std::cerr << "Block Configuration " << bconf_file << " invalid"
+	     << std::endl;
+   exit( 1 );
+   }
 
  BlockConfig * block_config = nullptr;
  if( given_block_config ) {
   block_config = given_block_config->clone();
   block_config->clear();
- }
+  }
 
  // BlockSolverConfig
- auto solver_config = load_BlockSolverConfig( sconf_file );
+ auto solver_config = get_blocksolverconfig( sconf_file );
  if( ! solver_config ) {
-  std::cout << "The Solver configuration is not valid." << std::endl;
+  std::cout << "Solver Configuration " << sconf_file << " invalid"
+	    << std::endl;
   exit( 1 );
- }
+  }
 
  auto cleared_solver_config = solver_config->clone();
  cleared_solver_config->clear();
 
- // For each Block descriptor
- for( auto block_description : blocks ) {
-
+ auto blocks = file.getGroups();
+ for( auto block_description : blocks ) {  // for each Block descriptor
   // Deserialize the Block
-
   auto block_type_att = block_description.second.getAtt( "type" );
 
   if( block_type_att.isNull() ) {
    std::cout << "The netCDF attribute 'type' was not found in the netCDF "
-             << "group " << block_description.second.getName() << "." << std::endl;
+             << "group " << block_description.second.getName() << std::endl;
    exit( 1 );
-  }
+   }
 
   std::string block_type;
   block_type_att.getValues( block_type );
-
   if( block_type != "InvestmentBlock" ) {
    std::cout << "The Block in the netCDF file " << block_type << " is "
-             << block_type << ", but it must be an InvestmentBlock."
+             << block_type << ", but it must be an InvestmentBlock"
              << std::endl;
    exit( 1 );
-  }
+   }
 
   auto investment_block = new InvestmentBlock;
   investment_block->set_number_sub_blocks( num_sub_blocks_per_stage );
   investment_block->deserialize( block_description.second );
 
-  auto investment_function = static_cast< InvestmentFunction * >
-   ( investment_block->get_function() );
+  auto investment_function = static_cast< InvestmentFunction * >(
+				         investment_block->get_function() );
 
   for( auto sddp_block_ : investment_function->get_nested_Blocks() ) {
 
    auto sddp_block = dynamic_cast< SDDPBlock * >( sddp_block_ );
-
    if( ! sddp_block ) {
-    std::cout << "The sub-Block of the InvestmentBlock is not an SDDPBlock."
+    std::cout << "The sub-Block of the InvestmentBlock is not a SDDPBlock"
               << std::endl;
     exit( 1 );
-   }
+    }
 
    // Set the output stream for the log of the inner Solvers
-
-   set_log( sddp_block , &std::cout );
+   set_log( sddp_block , & std::cout );
 
    // Eliminate redundant cuts if it is desired
-
    if( eliminate_redundant_cuts )
     CutProcessing(
-     load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
-    ).remove_redundant_cuts( sddp_block );
-  }
+       get_blocksolverconfig( get_cut_processing_solver_config_filepath() )
+		  ).remove_redundant_cuts( sddp_block );
+   }
 
   // Configure the SDDPBlock
-
   bool is_using_lagrangian_dual_solver = false;
 
   if( given_block_config )
    given_block_config->apply( investment_block );
   else {
    is_using_lagrangian_dual_solver =
-    using_lagrangian_dual_solver( solver_config );
+                           using_lagrangian_dual_solver( solver_config );
 
    for( auto sddp_block_ : investment_function->get_nested_Blocks() ) {
 
     auto sddp_block = dynamic_cast< SDDPBlock * >( sddp_block_ );
-
     configure_Blocks( sddp_block , is_using_lagrangian_dual_solver );
-   }
+    }
 
    if( reformulate_variable_bounds ) {
     // Since BundleSolver cannot currently handle general bounds on the
@@ -1715,62 +1630,55 @@ void process_block_file( const netCDF::NcFile & file )
     // l <= x <= u by 0 <= x <= u - l.
     auto config = new BlockConfig;
     config->f_static_constraints_Configuration =
-     new SimpleConfiguration< int >( 1 );
+                                         new SimpleConfiguration< int >( 1 );
 
     investment_block->set_BlockConfig( config );
+    }
    }
-  }
 
   // Configure the Solver
-
   if( is_using_lagrangian_dual_solver ) {
-   auto investment_function = static_cast< InvestmentFunction * >
-    ( investment_block->get_function() );
+   auto investment_function = static_cast< InvestmentFunction * >(
+					 investment_block->get_function() );
    for( auto sddp_block_ : investment_function->get_nested_Blocks() ) {
     auto sddp_block = dynamic_cast< SDDPBlock * >( sddp_block_ );
     config_Lagrangian_dual( solver_config , sddp_block , investment_block );
+    }
    }
-  }
 
-  // TODO This config file must be indicated in some appropriate way.
-
+  // TODO This config file must be indicated in some appropriate way
   const auto filename = conf_prefix + "sddp_greedy_investment.txt";
 
-  auto sddp_solver_config = load_BlockSolverConfig( filename );
+  auto sddp_solver_config = get_blocksolverconfig( filename );
 
   ComputeConfig investment_function_config;
 
   investment_function_config.f_extra_Configuration =
-   new SimpleConfiguration< std::map< std::string , Configuration * > >
-   ( { { "BlockSolverConfig" , sddp_solver_config  } } );
+   new SimpleConfiguration< std::map< std::string , Configuration * > >(
+		       { { "BlockSolverConfig" , sddp_solver_config  } } );
 
   investment_function->set_ComputeConfig( &investment_function_config );
 
   // Possibly set the initial point
-
   set_initial_point( investment_block );
 
   // Finally, apply the Solver configuration
-
   solver_config->apply( investment_block );
 
-  // Solve
-
-  invest( investment_block );
+  invest( investment_block );  // Solve
 
   // Destroy the InvestmentBlock and the Configurations
-
   if( block_config )
    block_config->apply( investment_block );
   if( ! given_block_config ) {
    delete( block_config );
    block_config = nullptr;
-  }
+   }
 
   cleared_solver_config->apply( investment_block );
 
   delete( investment_block );
- }
+  }
 
  delete( block_config );
  delete( given_block_config );

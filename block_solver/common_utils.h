@@ -215,7 +215,7 @@ bool process_standard_arg( int opt )
   case 'O': sol_output = std::string( optarg ); break;
   case 'C': sol_cfg_file = std::string( optarg ); break;
   case 'n': writeprob = true; break;
-  case 'd': dryrun = true; break;
+  case 'D': dryrun = true; break;
   case 'v': solvVerbose = true; break;
   case 'h': docopt(); exit( 0 );
   case '?':
@@ -242,7 +242,7 @@ void process_args( int argc , char ** argv )
   if( opt == -1 ) break;
 
   if( ! process_standard_arg( opt ) ) {
-   std::cout << "Try " << exe << "' --help' for more information"
+   std::cout << "Try '" << exe << " --help' for more information"
 	     << std::endl;
    exit( 1 );
    }
