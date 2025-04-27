@@ -90,47 +90,45 @@ const std::string my_help =
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-void process_my_args( int argc , char ** argv )
-{
+void process_my_args( int argc , char ** argv ) {
  exe = get_filename( argv[ 0 ] );
  if( argc < 2 ) {
   std::cout << exe << ": no input file\n"
-            << "Try " << exe << "' --help' for more information.\n";
+   << "Try " << exe << "' --help' for more information.\n";
   exit( 1 );
-  }
+ }
 
- while( true ) {  // options
+ while( true ) { // options
   auto opt = getopt_long( argc , argv , short_opts.data() ,
-			  long_opts.data() , nullptr );
+                          long_opts.data() , nullptr );
   if( opt == -1 ) break;
-  if( process_standard_arg( opt ) )  // if it is a standard one
-   continue;                         // next
+  if( process_standard_arg( opt ) ) // if it is a standard one
+   continue; // next
 
-  switch( opt ) {  // non-standard options
-   case 'd': output_solution_directory = std::string( optarg ); break;
-   case '?': // Unrecognized option
-   default: std::cout << "Try " << exe << "' --help' for more information"
-		      << std::endl;
-            exit( 1 );
-   }
-  }  // end( while( true ) )
+  switch( opt ) { // non-standard options
+  case 'd': output_solution_directory = std::string( optarg ); break;
+  case '?' : // Unrecognized option
+  default :
+   std::cout << "Try " << exe << "' --help' for more information" << std::endl;
+   exit( 1 );
+  }
+ } // end( while( true ) )
 
- if( optind < argc )  // last argument == [InvestmentBlock] filename
+ if( optind < argc ) // last argument == [InvestmentBlock] filename
   filename = std::string( argv[ optind ] );
  else {
- std::cout << exe << ": no input file" << std::endl
-            << "Try " << exe << "' --help' for more information" << std::endl;
+  std::cout << exe << ": no input file" << std::endl
+   << "Try " << exe << "' --help' for more information" << std::endl;
   exit( 1 );
-  }
- } // end( process_my_args )
+ }
+} // end( process_my_args )
 
 /*--------------------------------------------------------------------------*/
 
-void process_prob_file( const netCDF::NcFile & file )
-{
+void process_prob_file( const netCDF::NcFile & file ) {
  auto problems = file.getGroups();
 
- for( auto & problem : problems ) {  // for each problem descriptor:
+ for( auto & problem : problems ) { // for each problem descriptor:
   auto & problem_group = problem.second;
 
   // Deserialize block
@@ -141,7 +139,7 @@ void process_prob_file( const netCDF::NcFile & file )
   // Configure block
   auto block_config_group = problem_group.getGroup( "BlockConfig" );
   auto block_config = static_cast< BlockConfig * >(
-		     BlockConfig::new_Configuration( block_config_group ) );
+   BlockConfig::new_Configuration( block_config_group ) );
   if( ! block_config )
    throw( std::logic_error( "invalid BlockConfig group" ) );
 
@@ -151,7 +149,7 @@ void process_prob_file( const netCDF::NcFile & file )
   // Configure solver
   auto solver_config_group = problem_group.getGroup( "BlockSolver" );
   auto block_solver_config = static_cast< BlockSolverConfig * >(
-	      BlockSolverConfig::new_Configuration( solver_config_group ) );
+   BlockSolverConfig::new_Configuration( solver_config_group ) );
   if( ! block_solver_config )
    throw( std::logic_error( "invalid BlockSolver group" ) );
   block_solver_config->apply( tss_block );
@@ -163,44 +161,41 @@ void process_prob_file( const netCDF::NcFile & file )
   int status = solve_all( tss_block );
 
   // Print the results
-  if ( status == 0 )
+  if( status == 0 )
    print_UCBlock_solver_results( tss_block , solution_output_type );
 
-  // Destroy the Block and the Configurations
-  block_config->apply( tss_block );
+   // Destroy the Block and the Configurations
+   block_config->apply( tss_block );
   delete( block_config );
 
   block_solver_config->apply( tss_block );
   delete( block_solver_config );
 
   delete( tss_block );
-  }
  }
+}
 
 /*--------------------------------------------------------------------------*/
 
-void process_block_file( const netCDF::NcFile & file )
-{
+void process_block_file( const netCDF::NcFile & file ) {
  // BlockConfig
  BlockConfig * given_block_config = nullptr;
  if( bconf_file.empty() )
   std::cout << "Block configuration was not provided, "
-               "using default configuration" << std::endl;
- else
-  if( ( given_block_config = get_blockconfig( bconf_file ) ) )
-   std::cout << "Using Block configuration in " << bconf_file << std::endl;
-  else {
-   std::cerr << "Block Configuration " << bconf_file << " invalid"
-	     << std::endl;
-   delete( given_block_config );
-   exit( 1 );
-   }
+   "using default configuration" << std::endl;
+ else if( ( given_block_config = get_blockconfig( bconf_file ) ) )
+  std::cout << "Using Block configuration in " << bconf_file << std::endl;
+ else {
+  std::cerr << "Block Configuration " << bconf_file << " invalid" << std::endl;
+  delete( given_block_config );
+  exit( 1 );
+ }
 
  BlockConfig * block_config = nullptr;
  if( given_block_config ) {
   block_config = given_block_config->clone();
   block_config->clear();
-  }
+ }
 
  // BlockSolverConfig
  bool block_solver_config_provided = true;
@@ -208,13 +203,13 @@ void process_block_file( const netCDF::NcFile & file )
  if( ! solver_config ) {
   std::cerr << "The Solver configuration is not valid." << std::endl;
   exit( 1 );
-  }
+ }
 
  auto cleared_solver_config = solver_config->clone();
  cleared_solver_config->clear();
 
  auto blocks = file.getGroups();
- for( auto block_description : blocks ) {  // for each Block descriptor
+ for( auto block_description : blocks ) { // for each Block descriptor
   // Deserialize the TwoStageStochasticBlock
   auto tss_block = new TwoStageStochasticBlock;
   tss_block->deserialize( block_description.second );
@@ -239,12 +234,12 @@ void process_block_file( const netCDF::NcFile & file )
   int status = solve_all( tss_block );
 
   // Print the results
-  if ( status == 0 )
+  if( status == 0 )
    print_UCBlock_solver_results( tss_block , solution_output_type );
 
-  // Destroy the Block and the Configurations
-  if( block_config )
-   block_config->apply( tss_block );
+   // Destroy the Block and the Configurations
+   if( block_config )
+    block_config->apply( tss_block );
   if( ! given_block_config ) {
    delete( block_config );
    block_config = nullptr;
@@ -253,26 +248,25 @@ void process_block_file( const netCDF::NcFile & file )
   cleared_solver_config->apply( tss_block );
 
   delete( tss_block );
-  }
+ }
 
  delete( block_config );
  delete( given_block_config );
  delete( solver_config );
  delete( cleared_solver_config );
- }
+}
 
 /*--------------------------------------------------------------------------*/
 
-int main( int argc , char ** argv )
-{
+int main( int argc , char ** argv ) {
  // append new options to default ones- - - - - - - - - - - - - - - - - - - -
- // note that the last nullprr record in long_opts is overwritten since the
+ // note that the last nullptr record in long_opts is overwritten since the
  // new one is further down from there
 
  docopt_desc = "SMS++ TSSB solver.\n";
  short_opts.append( my_short_opts );
  long_opts.insert( std::prev( long_opts.end() ) ,
-		   my_long_opts.begin() , my_long_opts.end() );
+                   my_long_opts.begin() , my_long_opts.end() );
  help.append( my_help );
 
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
@@ -287,22 +281,19 @@ int main( int argc , char ** argv )
  // process the file- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
  switch( type ) {
-  case eProbFile: std::cout << filename << " is a problem file, "
-			    << "ignoring Block/Solver Configuration(s)..."
-			    << std::endl;
-                  process_prob_file( file );
-		  break;
-  case eBlockFile: std::cout << filename << " is a Block file" << std::endl;
-                   process_block_file( file );
-		   break;
-  default: std::cerr << filename << " is not a valid SMS++ file"
-		     << std::endl;
-           exit( 1 );
-  }
+ case eProbFile : std::cout << filename << " is a problem file, "
+   << "ignoring Block/Solver Configuration(s)..." << std::endl;
+  process_prob_file( file );
+  break;
+ case eBlockFile : std::cout << filename << " is a Block file" << std::endl;
+  process_block_file( file );
+  break;
+ default : std::cerr << filename << " is not a valid SMS++ file" << std::endl;
+  exit( 1 );
+ }
 
  return( 0 );
-
- }  // end( main )
+} // end( main )
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File tssb_solver.cpp ------------------------*/

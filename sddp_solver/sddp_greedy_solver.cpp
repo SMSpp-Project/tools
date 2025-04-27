@@ -446,7 +446,7 @@ void process_block_file( const netCDF::NcFile & file )
 int main( int argc , char ** argv )
 {
  // append new options to default ones- - - - - - - - - - - - - - - - - - - -
- // note that the last nullprr record in long_opts is overwritten since the
+ // note that the last nullptr record in long_opts is overwritten since the
  // new one is further down from there
 
  docopt_desc = "SMS++ SDDP greedy solver";
