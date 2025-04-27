@@ -51,7 +51,6 @@
 #include <iomanip>
 #include <iostream>
 
-#include <BendersBlock.h>
 #include <BlockSolverConfig.h>
 #include <TwoStageStochasticBlock.h>
 
