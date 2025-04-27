@@ -659,7 +659,7 @@ TSWLatexianTemp*
 *.lpz
 
 # sddp output files
-*.gsbd
-*.gsbmf
-*.csv
-*.txt
+sddp_solver/*.gsbd
+sddp_solver/*.gsbmf
+sddp_solver/*.csv
+sddp_solver/*.txt
