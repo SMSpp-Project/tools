@@ -37,7 +37,7 @@ if (TARGET SMS++::UCBlock AND
 
     add_executable(tssb_solver tssb_solver.cpp)
     target_compile_features(tssb_solver PUBLIC cxx_std_17)
-    target_include_directories(tssb_solver PRIVATE ../ucblock_solver)
+    target_include_directories(tssb_solver PRIVATE ../block_solver ../ucblock_solver)
     target_link_libraries(tssb_solver PRIVATE
                           SMS++::UCBlock
                           SMS++::TwoStageStochasticBlock)

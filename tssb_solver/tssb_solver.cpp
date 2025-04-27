@@ -48,15 +48,15 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-#include "common_utils.h"
-
 #include <iomanip>
 #include <iostream>
 
 #include <BendersBlock.h>
 #include <BlockSolverConfig.h>
-#include <StochasticBlock.h>
 #include <TwoStageStochasticBlock.h>
+
+#include "common_utils.h"
+#include "ucblock_utils.h"
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- USING -----------------------------------*/
@@ -161,8 +161,11 @@ void process_prob_file( const netCDF::NcFile & file )
   std::cout << "Problem: " << problem.first << std::endl;
 
   // Solve
+  int status = solve_all( tss_block );
 
-  // solve( tss_block );
+  // Print the results
+  if ( status == 0 )
+   print_UCBlock_solver_results( tss_block , solution_output_type );
 
   // Destroy the Block and the Configurations
   block_config->apply( tss_block );
@@ -180,7 +183,7 @@ void process_prob_file( const netCDF::NcFile & file )
 void process_block_file( const netCDF::NcFile & file )
 {
  // BlockConfig
- auto given_block_config = nullptr;
+ BlockConfig * given_block_config = nullptr;
  if( bconf_file.empty() )
   std::cout << "Block configuration was not provided, "
                "using default configuration" << std::endl;
@@ -190,7 +193,7 @@ void process_block_file( const netCDF::NcFile & file )
   else {
    std::cerr << "Block Configuration " << bconf_file << " invalid"
 	     << std::endl;
-   delete( config );
+   delete( given_block_config );
    exit( 1 );
    }
 
@@ -234,11 +237,13 @@ void process_block_file( const netCDF::NcFile & file )
   solver_config->apply( tss_block );
 
   // Solve
+  int status = solve_all( tss_block );
 
-  // solve( tss_block );
+  // Print the results
+  if ( status == 0 )
+   print_UCBlock_solver_results( tss_block , solution_output_type );
 
-  // Destroy the TwoStageStochasticBlock and the Configurations
-
+  // Destroy the Block and the Configurations
   if( block_config )
    block_config->apply( tss_block );
   if( ! given_block_config ) {
@@ -303,4 +308,3 @@ int main( int argc , char ** argv )
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File tssb_solver.cpp ------------------------*/
 /*--------------------------------------------------------------------------*/
-
