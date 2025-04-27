@@ -106,7 +106,7 @@ void process_my_args( int argc , char ** argv ) {
    continue; // next
 
   switch( opt ) { // non-standard options
-  case 'd': output_solution_directory = std::string( optarg ); break;
+  // case 'd': output_solution_directory = std::string( optarg ); break;
   case '?' : // Unrecognized option
   default :
    std::cout << "Try " << exe << "' --help' for more information" << std::endl;
@@ -161,11 +161,10 @@ void process_prob_file( const netCDF::NcFile & file ) {
   int status = solve_all( tss_block );
 
   // Print the results
-  if( status == 0 )
-   print_UCBlock_solver_results( tss_block , solution_output_type );
+  // if( status == 0 ) print_UCBlock_solver_results( tss_block , solution_output_type );
 
-   // Destroy the Block and the Configurations
-   block_config->apply( tss_block );
+  // Destroy the Block and the Configurations
+  block_config->apply( tss_block );
   delete( block_config );
 
   block_solver_config->apply( tss_block );
@@ -234,12 +233,11 @@ void process_block_file( const netCDF::NcFile & file ) {
   int status = solve_all( tss_block );
 
   // Print the results
-  if( status == 0 )
-   print_UCBlock_solver_results( tss_block , solution_output_type );
+  // if( status == 0 ) print_UCBlock_solver_results( tss_block , solution_output_type );
 
-   // Destroy the Block and the Configurations
-   if( block_config )
-    block_config->apply( tss_block );
+  // Destroy the Block and the Configurations
+  if( block_config )
+   block_config->apply( tss_block );
   if( ! given_block_config ) {
    delete( block_config );
    block_config = nullptr;
