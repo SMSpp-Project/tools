@@ -11,9 +11,9 @@
  *                 [-c PATH] < nc4-file >
  *
  * The only mandatory argument is the netCDF file containing the description
- * of the TwoStageStochasticBlock. This can be either a BlockFile or a
+ * of the TwoStageStochasticBlock. This can be either a BlockFile or
  * a ProbFile. The BlockFile can contain any number of child groups, each one
- * describing an TwoStageStochasticBlock, each of which is then solved with
+ * describing a TwoStageStochasticBlock, each of which is then solved with
  * the same BlockConfig and BlockSolverConfig. The ProbFile can also contain
  * any number of child groups, each one having the description of a
  * TwoStageStochasticBlock alongside the description of a BlockConfig and a
