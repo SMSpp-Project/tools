@@ -80,7 +80,7 @@ std::vector< option > long_opts = {
  { "inputsol"        , required_argument , nullptr , 'I' } ,
  { "outputsol"       , required_argument , nullptr , 'O' } ,
  { "outsolcfg"       , required_argument , nullptr , 'C' } ,
- { "dryrun"          , no_argument ,       nullptr , 'd' } ,
+ { "dryrun"          , no_argument ,       nullptr , 'D' } ,
  { "verbose"         , no_argument ,       nullptr , 'v' } ,
  { nullptr           , no_argument ,       nullptr , 0 }
  };
