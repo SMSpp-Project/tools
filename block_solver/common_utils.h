@@ -52,6 +52,7 @@ std::string bconf_file {};      ///< BlockConfig filename
 std::string sconf_file {};      ///< BlockSolverConfig filename
 std::string state_in_file {};   ///< State to be loaded into the Solver
 std::string state_out_file {};  ///< final State of the Solver
+std::string block_prefix {};    ///< prefix for all Block files
 std::string conf_prefix {};     ///< prefix for all Configuration files
 std::string exe {};             ///< name of the executable file
 std::string sol_input {};       ///< filename of input Solution
@@ -131,13 +132,15 @@ long get_long_option( char * end = nullptr )
  }
 
 /*--------------------------------------------------------------------------*/
-
 /// open a netCDF file for reeading, returns its type
 
-int read_open_netCDF( netCDF::NcFile & f , const std::string fn )
+int read_open_netCDF( netCDF::NcFile & f , std::string fn )
 {
+ if( ! block_prefix.empty() )
+  fn = block_prefix.append( fn );
+
  try {
-  f.open( fn, netCDF::NcFile::read );
+  f.open( fn , netCDF::NcFile::read );
   }
  catch( netCDF::exceptions::NcException & e ) {
   std::cerr << exe << ": cannot open nc4 file " << fn << std::endl;
@@ -164,8 +167,11 @@ int read_open_netCDF( netCDF::NcFile & f , const std::string fn )
 /*--------------------------------------------------------------------------*/
 /// open a netCDF file for appending (if exists) or writing (if not)
 
-void write_open_netCDF( netCDF::NcFile & f , const std::string fn )
+void write_open_netCDF( netCDF::NcFile & f , std::string fn )
 {
+ if( ! block_prefix.empty() )
+  fn = block_prefix.append( fn );
+
  try {  // first try to open an existing file
   f.open( fn , netCDF::NcFile::write );
   }
@@ -204,7 +210,9 @@ bool process_standard_arg( int opt )
   case 'a': state_out_file = std::string( optarg ); break;
   case 'B': bconf_file = std::string( optarg ); break;
   case 'b': state_in_file = std::string( optarg ); break;
-  case 'p': Block::set_filename_prefix( std::string( optarg ) ); break;
+  case 'p': block_prefix = std::string( optarg );
+            Block::set_filename_prefix( std::string( block_prefix ) );
+	    break;
   case 'S': sconf_file = std::string( optarg ); break;
   case 'c': conf_prefix = std::string( optarg );
             Configuration::set_filename_prefix( std::string( conf_prefix ) );
