@@ -29,7 +29,6 @@
 /*--------------------------------------------------------------------------*/
 
 #include <iostream>
-#include <iomanip>
 
 #include <Block.h>
 #include <BlockSolverConfig.h>
