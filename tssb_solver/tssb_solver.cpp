@@ -75,18 +75,6 @@ const std::string other_unit_config_filename = "OUBSCfg.txt";
 const std::string default_config_filename = "LPBSCfg.txt";
 
 /*--------------------------------------------------------------------------*/
-
-const std::string my_short_opts = "d:";
-
-const std::vector< option > my_long_opts = {
-  { "output-dir" ,               required_argument , nullptr , 'd' } ,
-  { nullptr ,                    no_argument ,       nullptr , 0 }
-  };
-
-const std::string my_help =
- "  -d, --output-dir                directory where solutions are written\n";
-
-/*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -106,7 +94,6 @@ void process_my_args( int argc , char ** argv ) {
    continue; // next
 
   switch( opt ) { // non-standard options
-  // case 'd': output_solution_directory = std::string( optarg ); break;
   case '?' : // Unrecognized option
   default :
    std::cout << "Try " << exe << "' --help' for more information" << std::endl;
@@ -262,10 +249,6 @@ int main( int argc , char ** argv ) {
  // new one is further down from there
 
  docopt_desc = "SMS++ TSSB solver.\n";
- short_opts.append( my_short_opts );
- long_opts.insert( std::prev( long_opts.end() ) ,
-                   my_long_opts.begin() , my_long_opts.end() );
- help.append( my_help );
 
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
 

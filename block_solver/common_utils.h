@@ -60,7 +60,7 @@ std::string sol_output {};      ///< filename of output Solution
 std::string sol_cfg_file {};    ///< filename of output Solution Configuration
 
 bool output_solution = false;   ///< true if solution has be output
-bool solvVerbose = false;       ///< if the Solver should be verbose
+bool sol_v_conderbose = false;       ///< if the Solver should be verbose
 bool writeprob = false;         ///< if the problem should be written back
 bool dryrun = false;            ///< if compute() need not really ba called
 
@@ -223,7 +223,7 @@ bool process_standard_arg( int opt )
   case 'C': sol_cfg_file = std::string( optarg ); break;
   case 'n': writeprob = true; break;
   case 'D': dryrun = true; break;
-  case 'v': solvVerbose = true; break;
+  case 'v': sol_v_conderbose = true; break;
   case 'h': docopt(); exit( 0 );
   case '?':
   default:  return( false );
