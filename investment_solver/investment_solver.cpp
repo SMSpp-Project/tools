@@ -168,7 +168,7 @@ std::vector< double > initial_point;
 
 /*--------------------------------------------------------------------------*/
 
-const std::string my_short_opts = "d:e:l:n:orsx:";
+const std::string my_short_opts = "d:e:l:n:rsx:";
 
 const std::vector< option > my_long_opts = {
   { "output-dir" ,               required_argument , nullptr , 'd' } ,
