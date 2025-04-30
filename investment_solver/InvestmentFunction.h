@@ -474,7 +474,7 @@ class InvestmentFunction : public C05Function , public Block {
   *
   * @param scfg a pointer to a ComputeConfig. */
 
- void set_ComputeConfig( const ComputeConfig *scfg = nullptr ) override;
+ void set_ComputeConfig( ComputeConfig *scfg = nullptr ) override;
 
 /*--------------------------------------------------------------------------*/
 

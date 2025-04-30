@@ -356,7 +356,7 @@ void InvestmentFunction::set_default_inner_Block_BlockSolverConfig() {
 
 /*--------------------------------------------------------------------------*/
 
-void InvestmentFunction::set_ComputeConfig( const ComputeConfig * scfg )
+void InvestmentFunction::set_ComputeConfig( ComputeConfig * scfg )
 {
  if( v_Block.empty() ||
      std::any_of( v_Block.cbegin() , v_Block.cend() ,

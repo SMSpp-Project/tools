@@ -64,8 +64,22 @@ bool sol_verbose = false;       ///< if the Solver should be verbose
 bool writeprob = false;         ///< if the problem should be written back
 bool dryrun = false;            ///< if compute() need not really ba called
 
+int solution_output_type = 1;
+/**< This indicates if and how a solution of the problem is output. If
+ *
+ * - solution_output_type = 0, then no solution is output;
+ *
+ * - solution_output_type = 1, then the solution is output to the screen;
+ *
+ * - solution_output_type = 2, then the solution is output to file(s);
+ *
+ * - solution_output_type = 3, then the solution is output to both the screen
+ *   and file(s);
+ */
+/// @}
+
 /// default short command-line options
-std::string short_opts = "a:B:b:p:S:c:on:I:O:C:Dvh";
+std::string short_opts = "a:B:b:p:S:c:o:n:I:O:C:Dvh";
 
 /// default long command-line options
 std::vector< option > long_opts = {
@@ -76,7 +90,7 @@ std::vector< option > long_opts = {
  { "prefix"          , required_argument , nullptr , 'p' } ,
  { "solvercfg"       , required_argument , nullptr , 'S' } ,
  { "configdir"       , required_argument , nullptr , 'c' } ,
- { "output-solution" , no_argument       , nullptr , 'o' } ,
+ { "output-solution" , required_argument , nullptr , 'o' } ,
  { "nc4problem"      , required_argument , nullptr , 'n' } ,
  { "inputsol"        , required_argument , nullptr , 'I' } ,
  { "outputsol"       , required_argument , nullptr , 'O' } ,
@@ -217,7 +231,9 @@ bool process_standard_arg( int opt )
   case 'c': conf_prefix = std::string( optarg );
             Configuration::set_filename_prefix( std::string( conf_prefix ) );
 	    break;
-  case 'o': output_solution = true; break;
+  case 'o': output_solution = true;
+            solution_output_type = std::string( optarg ).front() - '0';
+	    break;
   case 'I': sol_input = std::string( optarg ); break;
   case 'O': sol_output = std::string( optarg ); break;
   case 'C': sol_cfg_file = std::string( optarg ); break;
