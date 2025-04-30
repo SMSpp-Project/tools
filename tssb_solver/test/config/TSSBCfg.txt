@@ -14,7 +14,7 @@ BlockConfig # exact type of the ComputeConfig object
 
 # static_constraints
 SimpleConfiguration<int>
-1    # 0 = sequential constraints, 1 = anchor constraints
+0    # 0 = anchor constraints, 1 = sequential constraints
 
 # dynamic_constraints
 *    # [none]
