@@ -64,6 +64,7 @@ int main( int argc, char ** argv )
  auto groups = f.getGroups();
 
  for( auto & g : groups ) {
+  // get the Block and its BlockConfig, BlockSolverConfig
   Block * block = nullptr;
   BlockConfig * b_config = nullptr;
   BlockSolverConfig * s_config = nullptr;
@@ -78,17 +79,20 @@ int main( int argc, char ** argv )
 	    block , b_config , s_config );
    }
 
-  solve_all( block );
+  solve_all( block );  // compute()
+
+  // apply() the clear()-ed BlockSolverConfig to remove the Solver
   if( s_config )
    s_config->apply( block );
 
+  // cleanup
   delete s_config;
   delete b_config;
   delete block;
 
   }  // end( for( all group ) )
 
- return( 0 );
+ return( 0 );  // all done
 
  }  // end( main )
 

@@ -178,8 +178,7 @@ const std::vector< option > my_long_opts = {
   { "num-simulations" ,          required_argument , nullptr , 'm' } ,
   { "relax" ,                    no_argument ,       nullptr , 'r' } ,
   { "simulation" ,               no_argument ,       nullptr , 's' } ,
-  { "stage" ,                    required_argument , nullptr , 't' } ,
-  { nullptr ,                    no_argument ,       nullptr , 0 }
+  { "stage" ,                    required_argument , nullptr , 't' }
   };
 
 const std::string my_help =
@@ -641,34 +640,11 @@ void solve( SDDPBlock * sddp_block )
 
  solver->set_log( &std::cout );
 
- if( ! state_in_file.empty() ) {  // load the given State- - - - - - - - - - -
-  netCDF::NcFile file;
-  try {
-   file.open( state_in_file , netCDF::NcFile::read );
-   auto state = State::new_State( file );
-   solver->put_State( *state );
-   delete( state );
-   }
-  catch( netCDF::exceptions::NcException & e ) {
-   std::cout << "Warning: State file " << state_in_file
-	     << " could not be loaded" << std::endl;
-   }
-  catch( const std::exception& e ) {
-   std::cout << "Warning: error " << e.what()
-	     << " occurred while loading the Solver State" << std::endl;
-   }
-  }
+ // set initial Solution, if provided - - - - - - - - - - - - - - - - - - - -
+ get_initial_Solution( sddp_block );
 
- // set initial Solution, if provided- - - - - - - - - - - - - - - - - - - - -
- if( ! sol_input.empty() ) {
-  if( auto initsol = Solution::deserialize( sol_input ) ) {
-   initsol->write( sddp_block );
-   delete initsol;
-   }
-  else
-   std::cout << "Warning: input Solution " << sol_input << " invalid"
-	     << std::endl;
-  }
+ // load the given State, if provided - - - - - - - - - - - - - - - - - - - -
+ get_initial_State( solver );
 
  // solve the stochastic problem - - - - - - - - - - - - - - - - - - - - - - -
  if( ! dryrun ) {
@@ -676,39 +652,11 @@ void solve( SDDPBlock * sddp_block )
   show_status( status );
   }
 
-  // write final Solution, if required - - - - - - - - - - - - - - - - - - - -
-  if( ! sol_output.empty() ) {
-   netCDF::NcFile f;
-   write_open_netCDF( f , sol_output );
-   Configuration * outsolcfg = nullptr;
-   if( ! sol_cfg_file.empty() )
-    if( ! ( outsolcfg = Configuration::deserialize( sol_cfg_file ) ) )
-     std::cout << "Warning: output Solution Configuration "
-	       << sol_cfg_file << " invalid" << std::endl;
+ // write final Solution, if required - - - - - - - - - - - - - - - - - - - -
+ write_final_Solution( sddp_block );
 
-   if( auto sol = sddp_block->get_Solution( outsolcfg , false ) ) {
-    sol->serialize( f );
-    delete sol;
-    }
-   else
-    std::cout << "Warning: output Solution empty" << std::endl;
-
-   delete outsolcfg;
-   }
-
- if( ! state_out_file.empty() )  // if required, write out State - - - - - - -
-  try {
-   netCDF::NcFile file( state_out_file , netCDF::NcFile::replace );
-   solver->serialize_State( file );
-   }
-  catch( netCDF::exceptions::NcException & e ) {
-   std::cout << "Warning: State file " << state_out_file
-	     << " could not be opened" << std::endl;
-   }
-  catch( const std::exception & e ) {
-   std::cout << "Warning: error " << e.what()
-	     << " occurred while saving the Solver State" << std::endl;
-   }
+ // write final State, if required- - - - - - - - - - - - - - - - - - - - - -
+ write_final_State( solver );
 
  // output final cuts- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  SDDPBlockSolutionOutput o( output_solution_directory );
@@ -1901,8 +1849,8 @@ void check_consistency( void )
 int main( int argc , char ** argv )
 {
  // append new options to default ones- - - - - - - - - - - - - - - - - - - -
- // note that the last nullptr record in long_opts is overwritten since the
- // new one is further down from there
+ // note that the local options are inserted right before the last (nullptr)
+ // record in long_opts
  
  docopt_desc = "SMS++ SDDP solver";
  short_opts.append( my_short_opts );

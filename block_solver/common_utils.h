@@ -88,20 +88,20 @@ std::vector< option > long_opts = {
 
 /// default command-line options help string
 std::string help =
- "  -h, --help                    print this help\n"
- "  -a, --save-state <file>       save State of the Solver\n"
- "  -B, --blockcfg <file>         Block configuration\n"
- "  -b, --load-state <file>       load State for the Solver\n"
- "  -p, --prefix <path>           the prefix for all Block filenames\n"
- "  -S, --solvercfg <file>        Solver configuration\n"
- "  -c, --configdir <path>        the prefix for all Config filenames\n"
- "  -I, --inputsol <file>         input Solution\n"
- "  -O, --outputsol <file>        output Solution\n"
- "  -C, --outsolcfg <file>        output Solution Configuration\n"
- "  -o, --output-solution         output the solutions\n"
- "  -n, --nc4problem <file>       write nc4 problem on file\n"
- "  -D, --dryrun                  if the compute() call is skipped\n"
- "  -v, --verbose                 make the solver verbose\n";
+ "  -h, --help                      print this help\n"
+ "  -a, --save-state <file>         save State of the Solver\n"
+ "  -B, --blockcfg <file>           Block Configuration\n"
+ "  -b, --load-state <file>         load State for the Solver\n"
+ "  -p, --prefix <path>             the prefix for all Block filenames\n"
+ "  -S, --solvercfg <file>          Solver Configuration\n"
+ "  -c, --configdir <path>          the prefix for all Config filenames\n"
+ "  -I, --inputsol <file>           input Solution\n"
+ "  -O, --outputsol <file>          output Solution\n"
+ "  -C, --outsolcfg <file>          output Solution Configuration\n"
+ "  -o, --output-solution           output the solutions\n"
+ "  -n, --nc4problem <file>         write nc4 problem on file\n"
+ "  -D, --dryrun                    skip the compute() call\n"
+ "  -v, --verbose                   make the Solver verbose\n";
 
 /** @} ---------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -137,7 +137,7 @@ long get_long_option( char * end = nullptr )
 int read_open_netCDF( netCDF::NcFile & f , std::string fn )
 {
  if( ! block_prefix.empty() )
-  fn = block_prefix.append( fn );
+  fn.insert( 0 , block_prefix );
 
  try {
   f.open( fn , netCDF::NcFile::read );
@@ -164,13 +164,13 @@ int read_open_netCDF( netCDF::NcFile & f , std::string fn )
  return( type );
  }
 
-/*--------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------
 /// open a netCDF file for appending (if exists) or writing (if not)
 
 void write_open_netCDF( netCDF::NcFile & f , std::string fn )
 {
  if( ! block_prefix.empty() )
-  fn = block_prefix.append( fn );
+  fn.insert( 0 , block_prefix );
 
  try {  // first try to open an existing file
   f.open( fn , netCDF::NcFile::write );
@@ -188,7 +188,7 @@ void write_open_netCDF( netCDF::NcFile & f , std::string fn )
   }
  }
 
-/*--------------------------------------------------------------------------*/
+----------------------------------------------------------------------------*/
 /// prints the tool description and usage
 
 void docopt( void )
@@ -400,6 +400,98 @@ void print_status( int status )
  }
 
 /*--------------------------------------------------------------------------*/
+/// get and set the initial Solution
+
+void get_initial_Solution( Block * block )
+{
+ if( sol_input.empty() )
+  return;
+ 
+ if( auto initsol = Solution::deserialize( sol_input ) ) {
+  initsol->write( block );
+  delete initsol;
+  }
+ else
+  std::cout << "Warning: input Solution " << sol_input << " invalid"
+	    << std::endl;
+ }
+
+/*--------------------------------------------------------------------------*/
+/// get and set the initial State
+
+void get_initial_State( Solver * solver )
+{
+ if( state_in_file.empty() )
+  return;
+
+ try {
+  auto state = State::new_State( state_in_file );
+  solver->put_State( *state );
+  delete( state );
+  }
+ catch( netCDF::exceptions::NcException & e ) {
+  std::cout << "Warning: State file " << state_in_file
+	    << " could not be loaded" << std::endl;
+  }
+ catch( const std::exception & e ) {
+  std::cout << "Warning: error " << e.what()
+	    << " occurred while loading the Solver State" << std::endl;
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+/// write the final Solution, using given Configuration if provided
+/** Write the Solution currently in the given \p block, using given
+ * Configuration \p cfg (if provided, default not) to produce it; bu default
+ * append to the file with filename sol_output, rather than replacing it. */
+
+void write_final_Solution( Block * block , Configuration * cfg = nullptr ,
+			   bool replace = false  )
+{
+ if( sol_output.empty() )
+  return;
+
+ // use provided Configuration if any, otherwise (possibly) load one
+ Configuration * outsolcfg = cfg;
+ if( ( ! outsolcfg ) && ( ! sol_cfg_file.empty() ) )
+  if( ! ( outsolcfg = Configuration::deserialize( sol_cfg_file ) ) )
+   std::cout << "Warning: output Solution Configuration "
+	     << sol_cfg_file << " invalid" << std::endl;
+
+ if( auto sol = block->get_Solution( outsolcfg , false ) ) {
+  sol->serialize( sol_output , replace );
+  delete sol;
+  }
+ else
+  std::cout << "Warning: output Solution empty" << std::endl;
+
+ // if using a "local" Configuration, release it
+ if( ! cfg )
+  delete outsolcfg;
+ }
+
+/*--------------------------------------------------------------------------*/
+/// write the final State, by default appending rather than replacing
+
+void write_final_State( Solver * solver , bool replace = false )
+{
+ if( state_out_file.empty() )
+  return;
+
+ try {
+  solver->serialize_State( state_out_file , replace );
+  }
+ catch( netCDF::exceptions::NcException & e ) {
+  std::cout << "Warning: State file " << state_out_file
+	    << " could not be opened" << std::endl;
+  }
+ catch( const std::exception & e ) {
+  std::cout << "Warning: error " << e.what()
+	    << " occurred while saving the Solver State" << std::endl;
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
 /// compute() the Block with all available Solver(s) (unless dry run)
 
 int solve_all( Block * block )
@@ -413,15 +505,11 @@ int solve_all( Block * block )
 	      << std::endl;
 
  // prepare file and Configuration for final Solution(s) - - - - - - - - - - -
- netCDF::NcFile f;
  Configuration * outsolcfg = nullptr;
- if( ! sol_output.empty() ) {
-  write_open_netCDF( f , sol_output );
-  if( ! sol_cfg_file.empty() )
-   if( ! ( outsolcfg = Configuration::deserialize( sol_cfg_file ) ) )
-     std::cout << "Warning: output Solution Configuration "
-	       << sol_cfg_file << " invalid" << std::endl;
-  }
+ if( ( ! sol_output.empty() ) && ( ! sol_cfg_file.empty() ) )
+  if( ! ( outsolcfg = Configuration::deserialize( sol_cfg_file ) ) )
+   std::cout << "Warning: output Solution Configuration "
+	     << sol_cfg_file << " invalid" << std::endl;
 
  // for each of the registered Solver- - - - - - - - - - - - - - - - - - - - -
  //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -431,26 +519,11 @@ int solve_all( Block * block )
   if( initsol )  // set the initial Solution, if provided- - - - - - - - - - -
    initsol->write( block );
 
-  if( ! state_in_file.empty() ) {  // load the given State - - - - - - - - - -
-   // note: this is bound to fail if there are multiple Solver, since the
-   // State is supposed to be Solver-specific, unless all Solver but at
-   // most one ignore the State
-   netCDF::NcFile file;
-   try {
-    file.open( state_in_file , netCDF::NcFile::read );
-    auto state = State::new_State( file );
-    solver->put_State( *state );
-    delete( state );
-    }
-   catch( netCDF::exceptions::NcException & e ) {
-    std::cout << "Warning: State file " << state_in_file
-	      << " could not be loaded" << std::endl;
-    }
-   catch( const std::exception & e ) {
-    std::cout << "Warning: error " << e.what()
-	      << " occurred while loading the Solver State" << std::endl;
-    }
-   }
+  // load the initial State, if provided - - - - - - - - - - - - - - - - - - -
+  // note: this is bound to fail if there are multiple Solver, since the
+  // State is supposed to be Solver-specific, unless all Solver but at
+  // most one ignore the State
+  get_initial_State( solver );
 
   if( ! dryrun ) {  // compute() - - - - - - - - - - - - - - - - - - - - - - -
    std::chrono::time_point< std::chrono::system_clock > start , end;
@@ -476,28 +549,11 @@ int solve_all( Block * block )
     }
    }
 
-  if( ! sol_output.empty() ) {  // if required, write out Solution - - - - - -
-   if( auto sol = block->get_Solution( outsolcfg , false ) ) {
-    sol->serialize( f );
-    delete sol;
-    }
-   else
-    std::cout << "Warning: output Solution empty" << std::endl;
-   }
+  // write final Solution, if required - - - - - - - - - - - - - - - - - - - -
+  write_final_Solution( block , outsolcfg );
 
-  if( ! state_out_file.empty() )  // if required, write out State- - - - - - -
-   try {
-    netCDF::NcFile file( state_out_file , netCDF::NcFile::replace );
-    solver->serialize_State( file );
-    }
-   catch( netCDF::exceptions::NcException & e ) {
-    std::cout << "Warning: State file " << state_out_file
-	      << " could not be opened" << std::endl;
-    }
-   catch( const std::exception & e ) {
-    std::cout << "Warning: error " << e.what()
-	      << " occurred while saving the Solver State" << std::endl;
-    }
+  // write final State, if required- - - - - - - - - - - - - - - - - - - - - -
+  write_final_State( solver );
 
   }  // end( for( each Solver ) )- - - - - - - - - - - - - - - - - - - - - - -
      //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -510,7 +566,7 @@ int solve_all( Block * block )
  }  // end( solve_all )
 
 /*--------------------------------------------------------------------------*/
-/// writes a new nc4 problem using the Clock and its Configuration(s)
+/// writes a new nc4 problem using the Block and its Configuration(s)
 
 void write_nc4problem( Block * block , BlockConfig * b_config ,
                        BlockSolverConfig * s_config )
@@ -543,6 +599,7 @@ void write_nc4problem( Block * block , BlockConfig * b_config ,
  }
 
 /** @} ---------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------*/
 
 #endif  //__COMMON_UTILS
 

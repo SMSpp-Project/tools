@@ -1,3 +1,6 @@
+/*--------------------------------------------------------------------------*/
+/*-------------------------- File ucblock_utils.h --------------------------*/
+/*--------------------------------------------------------------------------*/
 /** @file
  * Utilities for the UC solver.
  *
@@ -15,6 +18,9 @@
  *
  * \copyright &copy; by Ali Ghezelsoflu, Niccolo' Iardella
  */
+/*--------------------------------------------------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
 
 #include <BatteryUnitBlock.h>
 #include <CDASolver.h>
@@ -29,13 +35,18 @@
 
 #include "UCBlockSolutionOutput.h"
 
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- USING -----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
 using namespace SMSpp_di_unipi_it;
 
 /*--------------------------------------------------------------------------*/
-
+/*--------------------------------------------------------------------------*/
 /// Returns a default UCBlock configuration
-BlockConfig * default_configure_UCBlock( Block * uc_block ) {
 
+BlockConfig * default_configure_UCBlock( Block * uc_block )
+{
  auto b_config = new RBlockConfig;
 
  for( auto sb : uc_block->get_nested_Blocks() ) {
@@ -66,11 +77,13 @@ BlockConfig * default_configure_UCBlock( Block * uc_block ) {
  }
 
  return( b_config );
-}
+ }
 
+/*--------------------------------------------------------------------------*/
 /// Prints the content of a solved UCBlock
-void print_UCBlock_solver_results( Block * block ) {
 
+void print_UCBlock_solver_results( Block * block )
+{
  auto solver = block->get_registered_solvers().front();
  solver->get_var_solution();
 
@@ -481,15 +494,15 @@ void print_UCBlock_solver_results( Block * block ) {
    }
   }
   std::cout << std::endl;
+  }
  }
-}
 
 /*--------------------------------------------------------------------------*/
-
 /// Prints the content of a solved UCBlock
-void print_UCBlock_solver_results( Block * block ,
-                                   int solution_output_type ) {
 
+void print_UCBlock_solver_results( Block * block ,
+                                   int solution_output_type )
+{
  if( ! ( solution_output_type > 0 && solution_output_type < 4 ) )
   return;
 
@@ -509,3 +522,7 @@ void print_UCBlock_solver_results( Block * block ,
   output.print( block );
  }
 }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------ End File ucblock_utils.h ------------------------*/
+/*--------------------------------------------------------------------------*/

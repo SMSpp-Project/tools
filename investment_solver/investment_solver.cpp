@@ -177,15 +177,14 @@ const std::vector< option > my_long_opts = {
   { "num-blocks" ,               required_argument , nullptr , 'n' } ,
   { "relax" ,                    no_argument ,       nullptr , 'r' } ,
   { "simulate" ,                 no_argument ,       nullptr , 's' } ,
-  { "initial-investment" ,       required_argument , nullptr , 'x' } ,
-  { nullptr ,                    no_argument ,       nullptr , 0 }
+  { "initial-investment" ,       required_argument , nullptr , 'x' }
   };
 
 const std::string my_help =
  "  -d, --output-dir                directory where solutions are written\n"
  "  -e, --eliminate-redundant-cuts  eliminate given redundant cuts\n"
  "  -l, --load-cuts <file>          load cuts from a file\n"
- "  -n, --num-blocks <number>       number of sub-Blocks per stage"
+ "  -n, --num-blocks <number>       number of sub-Blocks per stage\n"
  "  -s, --simulate                  simulate the given investment\n"
  "  -x, --initial-investment <file> initial investment\n";
 
@@ -695,24 +694,6 @@ void invest( InvestmentBlock * investment_block )
   investment_function->set_par( InvestmentFunction::strOutputFilename ,
                                 get_investment_candidates_filename() );
 
-  if( ! state_in_file.empty() ) {  // load the given State - - - - - - - - - -
-   netCDF::NcFile file;
-   try {
-    file.open( state_in_file , netCDF::NcFile::read );
-    auto state = State::new_State( file );
-    investment_solver->put_State( *state );
-    delete( state );
-    }
-   catch( netCDF::exceptions::NcException & e ) {
-   std::cout << "Warning: State file " << state_in_file
-	      << " could not be loaded" << std::endl;
-     }
-   catch( const std::exception& e ) {
-    std::cout << "Warning: error " << e.what()
-	      << " occurred while loading the Solver State" << std::endl;
-    }
-   }
-
   // register an event to save the State of the Solver - - - - - - - - - - - -
   if( ! state_out_file.empty() ) {
    investment_solver->set_par( ThinComputeInterface::intEverykIt , 1 );
@@ -722,8 +703,7 @@ void invest( InvestmentBlock * investment_block )
        static int i = 0;
        std::string filename = state_out_file + std::to_string( i++ ) + ".nc4";
        i %= 2;
-       netCDF::NcFile file( filename , netCDF::NcFile::replace );
-       investment_solver->serialize_State( file );
+       investment_solver->serialize_State( filename );
        return( ThinComputeInterface::eContinue );
       } );
    }
@@ -787,39 +767,20 @@ void invest( InvestmentBlock * investment_block )
       } );
 
   // set initial Solution, if provided - - - - - - - - - - - - - - - - - - - -
-  if( ! sol_input.empty() ) {
-   if( auto initsol = Solution::deserialize( sol_input ) ) {
-    initsol->write( investment_block );
-    delete initsol;
-    }
-   else
-    std::cout << "Warning: input Solution " << sol_input << " invalid"
-	      << std::endl;
-   }
+  get_initial_Solution( investment_block );
+
+  // load the given State, if provided - - - - - - - - - - - - - - - - - - - -
+  get_initial_State( investment_solver );
 
   // solve the investment problem- - - - - - - - - - - - - - - - - - - - - - -
   if( ! dryrun )
    investment_solver->compute();
 
   // write final Solution, if required - - - - - - - - - - - - - - - - - - - -
-  if( ! sol_output.empty() ) {
-   netCDF::NcFile f;
-   write_open_netCDF( f , sol_output );
-   Configuration * outsolcfg = nullptr;
-   if( ! sol_cfg_file.empty() )
-    if( ! ( outsolcfg = Configuration::deserialize( sol_cfg_file ) ) )
-     std::cout << "Warning: output Solution Configuration "
-	       << sol_cfg_file << " invalid" << std::endl;
+  write_final_Solution( investment_block );
 
-   if( auto sol = investment_block->get_Solution( outsolcfg , false ) ) {
-    sol->serialize( f );
-    delete sol;
-    }
-   else
-    std::cout << "Warning: output Solution empty" << std::endl;
-
-   delete outsolcfg;
-   }
+  // write final State, if required- - - - - - - - - - - - - - - - - - - - - -
+  write_final_State( investment_solver );
 
   // handling of solution files in parallel case - - - - - - - - - - - - - - -
  #ifdef USE_MPI
@@ -1728,8 +1689,8 @@ void check_consistency( void )
 int main( int argc , char ** argv )
 {
  // append new options to default ones- - - - - - - - - - - - - - - - - - - -
- // note that the last nullptr record in long_opts is overwritten since the
- // new one is further down from there
+ // note that the local options are inserted right before the last (nullptr)
+ // record in long_opts
 
  docopt_desc = "SMS++ investment solver";
  short_opts.append( my_short_opts );
