@@ -164,7 +164,7 @@ int read_open_netCDF( netCDF::NcFile & f , std::string fn )
  return( type );
  }
 
-----------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------*/
 /// prints the tool description and usage
 
 void docopt( void )
