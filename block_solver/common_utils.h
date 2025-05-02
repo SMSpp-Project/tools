@@ -193,7 +193,7 @@ bool process_standard_arg( int opt )
   case 'c': conf_prefix = std::string( optarg );
             Configuration::set_filename_prefix( std::string( conf_prefix ) );
 	    break;
-  case 'o': output_solution = true;
+  case 'o': output_solution = true; break;
   case 'I': sol_input = std::string( optarg ); break;
   case 'O': sol_output = std::string( optarg ); break;
   case 'C': sol_cfg_file = std::string( optarg ); break;
