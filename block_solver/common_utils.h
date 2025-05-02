@@ -164,30 +164,6 @@ int read_open_netCDF( netCDF::NcFile & f , std::string fn )
  return( type );
  }
 
-/*----------------------------------------------------------------------------
-/// open a netCDF file for appending (if exists) or writing (if not)
-
-void write_open_netCDF( netCDF::NcFile & f , std::string fn )
-{
- if( ! block_prefix.empty() )
-  fn.insert( 0 , block_prefix );
-
- try {  // first try to open an existing file
-  f.open( fn , netCDF::NcFile::write );
-  }
- catch( netCDF::exceptions::NcException & e ) {
-  try {  // upon failure, try to open a new one
-   f.open( fn , netCDF::NcFile::replace );
-   }
-  catch( netCDF::exceptions::NcException & e ) {
-   std::cerr << "Error: cannot write-open netCDF file " << fn << std::endl;
-   exit( 1 );
-   }
-  // upon success, put there the "SMS++_file_type" field
-  f.putAtt( "SMS++_file_type" , netCDF::NcInt() , eSolutionFile );
-  }
- }
-
 ----------------------------------------------------------------------------*/
 /// prints the tool description and usage
 
@@ -217,7 +193,7 @@ bool process_standard_arg( int opt )
   case 'c': conf_prefix = std::string( optarg );
             Configuration::set_filename_prefix( std::string( conf_prefix ) );
 	    break;
-  case 'o': output_solution = true; break;
+  case 'o': output_solution = true;
   case 'I': sol_input = std::string( optarg ); break;
   case 'O': sol_output = std::string( optarg ); break;
   case 'C': sol_cfg_file = std::string( optarg ); break;

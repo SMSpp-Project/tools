@@ -148,7 +148,8 @@ void process_prob_file( const netCDF::NcFile & file ) {
   int status = solve_all( tss_block );
 
   // Print the results
-  // if( status == 0 ) print_UCBlock_solver_results( tss_block , solution_output_type );
+  if( status == 0 )
+   print_UCBlock_solver_results( tss_block , solution_output_type );
 
   // Destroy the Block and the Configurations
   block_config->apply( tss_block );
@@ -220,7 +221,8 @@ void process_block_file( const netCDF::NcFile & file ) {
   int status = solve_all( tss_block );
 
   // Print the results
-  // if( status == 0 ) print_UCBlock_solver_results( tss_block , solution_output_type );
+  if( status == 0 )
+   print_UCBlock_solver_results( tss_block , solution_output_type );
 
   // Destroy the Block and the Configurations
   if( block_config )
