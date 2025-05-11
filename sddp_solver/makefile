@@ -105,10 +105,10 @@ MOBJ =  $(SMS++OBJ) $(SDDPBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) \
 MLIB =  $(SMS++LIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 
 $(DIR)/sddp_solver: $(DIR)/sddp_solver.o $(MOBJ)
-	$(CC) -o $(DIR)/sddp_solver $^ $(MLIB) -I../block_solver/ $(SW)
+	$(CC) -o $(DIR)/sddp_solver $^ $(MLIB) -I../block_solver $(SW)
 
 $(DIR)/sddp_greedy_solver: $(DIR)/sddp_greedy_solver.o $(MOBJ)
-	$(CC) -o $(DIR)/sddp_greedy_solver $^ $(MLIB) -I../block_solver/ $(SW)
+	$(CC) -o $(DIR)/sddp_greedy_solver $^ $(MLIB) -I../block_solver $(SW)
 
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 

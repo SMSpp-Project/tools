@@ -101,7 +101,7 @@ $(DIR)/$(NAME): $(DIR)/ucblock_solver.o $(MOBJ)
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
-MINC =  $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) -I$(DIR)/../block_solver/
+MINC =  $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) -I$(DIR)/../block_solver
 
 # includes
 MH =    $(BNDSLVH) $(LgDSLVH) $(UCBckH)
