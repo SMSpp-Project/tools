@@ -1536,8 +1536,8 @@ void process_block_file( const netCDF::NcFile & file )
  const auto is_using_lagrangian_dual_solver =
   using_lagrangian_dual_solver( solver_config );
 
- if( is_using_lagrangian_dual_solver && using_thermal_dp_solver
-     ( conf_prefix + thermal_config_filename ) )
+ if( is_using_lagrangian_dual_solver &&
+     using_thermal_dp_solver( thermal_config_filename ) )
   // The ThermalUnitDPSolver cannot currently deal with spinning
   // reserves. Thus, any reserve that is provided must be ignored.
   ThermalUnitBlock::ignore_reserve();
@@ -1669,7 +1669,7 @@ void multiple_simulations( const netCDF::NcFile & file )
   using_lagrangian_dual_solver( solver_config );
 
  if( is_using_lagrangian_dual_solver &&
-     using_thermal_dp_solver( conf_prefix + thermal_config_filename ) )
+     using_thermal_dp_solver( thermal_config_filename ) )
   // The ThermalUnitDPSolver cannot currently deal with spinning
   // reserves. Thus, any reserve that is provided must be ignored.
   ThermalUnitBlock::ignore_reserve();
