@@ -67,13 +67,8 @@ intForwardSolverIndex    0
 # now all the double parameters
 #dblRelAcc  1e-8    # relative accuracy required to solution
 
-<<<<<<< Updated upstream:ucblock_solver/BSPar.txt
-## All specific CPLEX parameter (uncomment based on Solver)
-#CPXPARAM_Simplex_Tolerances_Feasibility 1e-9
-=======
 #dblAccuracy 0.000001 # Relative accuracy for declaring a solution optimal
 dblAccuracy 0 # Relative accuracy for declaring a solution optimal
->>>>>>> Stashed changes:sddp_solver/config/sddp_solver-ld.txt
 
 ## All specific GUROBI parameter (uncomment based on Solver)
 #FeasibilityTol 1e-9
