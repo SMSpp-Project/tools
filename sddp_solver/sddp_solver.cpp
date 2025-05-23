@@ -95,10 +95,13 @@
  *
  * \copyright &copy; by Rafael Durbano Lobato
  */
+/*--------------------------------------------------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
 
-#include <getopt.h>
+#include "common_utils.h"
+
 #include <iomanip>
-#include <iostream>
 #include <queue>
 
 #include <BendersBlock.h>
@@ -118,31 +121,32 @@
 #include <boost/mpi/communicator.hpp>
 #endif
 
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- USING -----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
 using namespace SMSpp_di_unipi_it;
 
 /*--------------------------------------------------------------------------*/
+/*------------------------------- GLOBALS ----------------------------------*/
+/*--------------------------------------------------------------------------*/
 
-std::string filename{};
-std::string block_config_filename{};
-std::string solver_config_filename{};
-std::string config_filename_prefix{};
-std::string cuts_filename{};
 std::string output_solution_directory = ".";
-std::string cut_processing_solver_config_filename{};
+std::string cuts_filename {};
+std::string cut_processing_sconf_file {};
+
 long scenario_id = 0;
 long num_sub_blocks_per_stage = 1;
 long number_simulations = 1;
 long initial_solution_stage = -1;
 bool simulation_mode = false;
 bool eliminate_redundant_cuts = false;
+
 const bool force_hard_components = false;
 const bool continuous_relaxation = true;
 
 // This variable indicates whether negative prices may occur
 const bool negative_prices = false;
-
-std::string exe{};         ///< Name of the executable file
-std::string docopt_desc{}; ///< Tool description
 
 // It replaces any zero value that the IntermittentUnitBlock maximum power may
 // assume
@@ -163,136 +167,77 @@ const std::string default_config_filename = "LPBSCfg.txt";
 
 /*--------------------------------------------------------------------------*/
 
-// Gets the name of the executable from its full path
-std::string get_filename( const std::string & fullpath ) {
- std::size_t found = fullpath.find_last_of( "/\\" );
- return( fullpath.substr( found + 1 ) );
-}
+const std::string my_short_opts = "d:e:l:n:i:m:rst:";
+
+const std::vector< option > my_long_opts = {
+  { "output-dir" ,               required_argument , nullptr , 'd' } ,
+  { "eliminate-redundant-cuts" , required_argument , nullptr , 'e' } ,
+  { "load-cuts" ,                required_argument , nullptr , 'l' } ,
+  { "num-blocks" ,               required_argument , nullptr , 'n' } ,
+  { "scenario" ,                 required_argument , nullptr , 'i' } ,
+  { "num-simulations" ,          required_argument , nullptr , 'm' } ,
+  { "relax" ,                    no_argument ,       nullptr , 'r' } ,
+  { "simulation" ,               no_argument ,       nullptr , 's' } ,
+  { "stage" ,                    required_argument , nullptr , 't' }
+  };
+
+const std::string my_help =
+ "  -d, --output-dir                directory where solutions are written\n"
+ "  -e, --eliminate-redundant-cuts  eliminate given redundant cuts\n"
+ "  -l, --load-cuts <file>          load cuts from a file\n"
+ "  -n, --num-blocks <number>       number of sub-Blocks per stage\n"
+ "  -i, --scenario <index>          the index of the scenario\n"
+ "  -m, --num-simulations <number>  number of simulations to be performed\n"
+ "  -s, --simulation                simulation mode\n"
+ "  -t, --stage <stage>             stage from which initial state is taken";
 
 /*--------------------------------------------------------------------------*/
-
-void print_help() {
- // http://docopt.org
- std::cout << docopt_desc << std::endl;
- std::cout << "Usage:\n"
-           << "  " << exe << " [options] <file>\n"
-           << "  " << exe << " -h | --help\n"
-           << std::endl
-           << "Options:\n"
-           << "  -B, --blockcfg <file>           Block configuration.\n"
-           << "  -c, --configdir <path>          The prefix for all config filenames.\n"
-           << "  -d, --output-dir                Directory where solutions are written.\n"
-           << "  -e, --eliminate-redundant-cuts  Eliminate given redundant cuts.\n"
-           << "  -h, --help                      Print this help.\n"
-           << "  -i, --scenario <index>          The index of the scenario.\n"
-           << "  -l, --load-cuts <file>          Load cuts from a file.\n"
-           << "  -m, --num-simulations <number>  Number of simulations to be performed.\n"
-           << "  -n, --num-blocks <number>       Number of sub-Blocks per stage.\n"
-           << "  -p, --prefix <path>             The prefix for all Block filenames.\n"
-           << "  -s, --simulation                Simulation mode.\n"
-           << "  -S, --solvercfg <file>          Solver configuration.\n"
-           << "  -t, --stage <stage>             Stage from which initial state is taken."
-           << std::endl;
-}
-
+/*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-long get_long_option() {
- char * end = nullptr;
- errno = 0;
- long option = std::strtol( optarg , &end , 10 );
- if( ( ! optarg ) || ( ( option = std::strtol( optarg , &end , 10 ) ) ,
-                       ( errno || ( end && *end ) ) ) ) {
-  option = -1;
- }
- return( option );
-}
-
-/*--------------------------------------------------------------------------*/
-
-void process_args( int argc , char ** argv ) {
-
+void process_my_args( int argc , char ** argv )
+{
+ exe = get_filename( argv[ 0 ] );
  if( argc < 2 ) {
   std::cout << exe << ": no input file\n"
             << "Try " << exe << "' --help' for more information.\n";
   exit( 1 );
- }
-
- const char * const short_opts = "B:c:d:he:i:l:m:n:p:rsS:t:";
- const option long_opts[] = {
-  { "blockcfg" ,                 required_argument , nullptr , 'B' } ,
-  { "configdir" ,                required_argument , nullptr , 'c' } ,
-  { "output-dir" ,               required_argument , nullptr , 'd' } ,
-  { "help" ,                     no_argument ,       nullptr , 'h' } ,
-  { "eliminate-redundant-cuts" , required_argument , nullptr , 'e' } ,
-  { "scenario" ,                 required_argument , nullptr , 'i' } ,
-  { "load-cuts" ,                required_argument , nullptr , 'l' } ,
-  { "num-simulations" ,          required_argument , nullptr , 'm' } ,
-  { "num-blocks" ,               required_argument , nullptr , 'n' } ,
-  { "prefix" ,                   required_argument , nullptr , 'p' } ,
-  { "relax" ,                    no_argument ,       nullptr , 'r' } ,
-  { "simulation" ,               no_argument ,       nullptr , 's' } ,
-  { "solvercfg" ,                required_argument , nullptr , 'S' } ,
-  { "stage" ,                    required_argument , nullptr , 't' } ,
-  { nullptr ,                    no_argument ,       nullptr , 0 }
- };
-
- // Options
- while( true ) {
-  const auto opt = getopt_long( argc , argv , short_opts ,
-                                long_opts , nullptr );
-
-  if( opt == -1 ) {
-   break;
   }
 
-  switch( opt ) {
-   case 'B':
-    block_config_filename = std::string( optarg );
-    break;
-   case 'c':
-    config_filename_prefix = std::string( optarg );
-    Configuration::set_filename_prefix( std::string( optarg ) );
-    break;
-   case 'd':
-    output_solution_directory = std::string( optarg );
-    break;
-   case 'e':
-    cut_processing_solver_config_filename = std::string( optarg );
-    eliminate_redundant_cuts = true;
-    break;
-   case 'i': {
-    scenario_id = get_long_option();
-    if( scenario_id < 0 ) {
-     std::cout << "The index of the scenario must be a nonnegative integer."
-               << std::endl;
-     exit( 1 );
-    }
-    break;
-   }
-   case 'l':
-    cuts_filename = std::string( optarg );
-    break;
-   case 'm': {
-    number_simulations = get_long_option();
-    if( number_simulations < 1 ) {
-     std::cout << "The number of simulations must be at least 1." << std::endl;
-     exit( 1 );
-    }
-    break;
-   }
-   case 'n': {
-    num_sub_blocks_per_stage = get_long_option();
-    if( num_sub_blocks_per_stage <= 0 ) {
-     std::cout << "The number of sub-Blocks per stage must be a "
-               << "positive integer." << std::endl;
-     exit( 1 );
-    }
-    break;
-   }
-   case 'p':
-    Block::set_filename_prefix( std::string( optarg ) );
-    break;
+ while( true ) {  // options
+  auto opt = getopt_long( argc , argv , short_opts.data() ,
+			  long_opts.data() , nullptr );
+  if( opt == -1 ) break;
+  if( process_standard_arg( opt ) )  // if it is a standard one
+   continue;                         // next
+
+  switch( opt ) {  // non-standard options
+   case 'd': output_solution_directory = std::string( optarg ); break;
+   case 'e': cut_processing_sconf_file = std::string( optarg );
+             eliminate_redundant_cuts = true;
+	     break;
+   case 'i': scenario_id = get_long_option();
+             if( scenario_id < 0 ) {
+	      std::cerr << "scenario index  must be a nonnegative integer"
+			<< std::endl;
+	      exit( 1 );
+	      }
+	     break;
+   case 'l': cuts_filename = std::string( optarg ); break;
+   case 'm': number_simulations = get_long_option();
+             if( number_simulations < 1 ) {
+	      std::cerr << "number of simulations must be at least 1"
+			<< std::endl;
+	      exit( 1 );
+	      }
+	     break;
+   case 'n': num_sub_blocks_per_stage = get_long_option();
+             if( num_sub_blocks_per_stage <= 0 ) {
+	      std::cout << "number of sub-Blocks per stage must be a "
+			<< "positive integer" << std::endl;
+	      exit( 1 );
+	      }
+	     break;
    case 'r':
     std::cout << "The -r option no longer exists. In order relax the "
               << "integrality constraints,\nplease properly configure the "
@@ -301,42 +246,29 @@ void process_args( int argc , char ** argv ) {
               << "configuration file associated with the Block whose "
               << "constraints must be\nrelaxed." << std::endl;
     exit( 1 );
-   case 's':
-    simulation_mode = true;
-    break;
-   case 'S':
-    solver_config_filename = std::string( optarg );
-    break;
-   case 't':
-    initial_solution_stage = get_long_option();
-    break;
-   case 'h': // -h or --help
-    print_help();
-    exit( 0 );
+   case 's': simulation_mode = true; break;
+   case 't': initial_solution_stage = get_long_option(); break;
    case '?': // Unrecognized option
-   default:
-    std::cout << "Try " << exe << "' --help' for more information.\n";
-    exit( 1 );
-  }
- }
+   default:  std::cerr << "Try " << exe << "' --help' for more information"
+		       << std::endl;
+             exit( 1 );
+   }
+  }  // end( while( true ) )
 
- // Last argument
- if( optind < argc ) {
+ if( optind < argc )  // last argument == [SDDPBlock] filename
   filename = std::string( argv[ optind ] );
- }
  else {
-  std::cout << exe << ": no input file\n"
-            << "Try " << exe << "' --help' for more information.\n";
+ std::cout << exe << ": no input file" << std::endl
+            << "Try " << exe << "' --help' for more information" << std::endl;
   exit( 1 );
- }
-}
+  }
+ } // end( process_my_args )
 
 /*--------------------------------------------------------------------------*/
 
-void show_simulation_status( Index status , Index fault_stage ) {
-
+void show_simulation_status( Index status , Index fault_stage )
+{
  switch( status ) {
-
   case( SDDPGreedySolver::kError ):
    std::cout << "Error while solving the subproblem at stage "
              << fault_stage << std::endl;
@@ -376,36 +308,38 @@ void show_simulation_status( Index status , Index fault_stage ) {
    std::cout << "A solution for the subproblem at stage "
              << fault_stage << " has not been found." << std::endl;
    break;
+  }
  }
-}
 
 /*--------------------------------------------------------------------------*/
 
-std::string get_cut_processing_solver_config_filepath() {
- return( std::filesystem::path( config_filename_prefix ) /
-	  cut_processing_solver_config_filename ).string();
-}
+std::string get_cut_processing_solver_config_filepath()
+{
+ return( ( std::filesystem::path( conf_prefix ) /
+	   cut_processing_sconf_file ).string() );
+ }
 
 /*--------------------------------------------------------------------------*/
 
-Block * get_uc_block( const SDDPBlock * sddp_block , const Index stage ) {
+Block * get_uc_block( const SDDPBlock * sddp_block , const Index stage )
+{
+ auto benders_block = static_cast< BendersBlock * >(
+		     sddp_block->get_sub_Block( stage )->get_inner_block() );
 
- auto benders_block = static_cast< BendersBlock * >
-  ( sddp_block->get_sub_Block( stage )->get_inner_block() );
+ auto objective = static_cast< FRealObjective * >(
+					    benders_block->get_objective() );
 
- auto objective = static_cast< FRealObjective * >
-  ( benders_block->get_objective() );
-
- auto benders_function = static_cast< BendersBFunction * >
-  ( objective->get_function() );
+ auto benders_function = static_cast< BendersBFunction * >(
+						 objective->get_function() );
 
  return( benders_function->get_inner_block() );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
 bool update_hydro_unit( Block * previous_block , Block * block ,
-                        const Index stage ) {
+			Index stage )
+{
  auto unit = dynamic_cast< HydroUnitBlock * >( block );
  auto previous_unit = dynamic_cast< HydroUnitBlock * >( previous_block );
 
@@ -413,16 +347,16 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
   return( false );
 
  if( ( ! unit ) || ( ! previous_unit ) )
-  throw( std::logic_error
-         ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
+  throw( std::logic_error(
+	   "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
            " and " + std::to_string( stage ) +
-           " do not have the same structure." ) );
+           " do not have the same structure" ) );
 
  auto number_generators = previous_unit->get_number_generators();
 
  if( number_generators != unit->get_number_generators() )
-  throw( std::logic_error
-         ( "sddp_solver: HydroUnitBlock at stage " +
+  throw( std::logic_error(
+	   "sddp_solver: HydroUnitBlock at stage " +
            std::to_string( stage - 1 ) + " has " +
            std::to_string( number_generators ) +
            ", but corresponding HydroUnitBlock at stage " +
@@ -440,12 +374,13 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
  unit->set_initial_flow_rate( flow_rate.cbegin() );
 
  return( true );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
 bool update_battery_unit( Block * previous_block , Block * block ,
-                          const Index stage ) {
+                          Index stage )
+{
  auto unit = dynamic_cast< BatteryUnitBlock * >( block );
  auto previous_unit = dynamic_cast< BatteryUnitBlock * >( previous_block );
 
@@ -453,15 +388,15 @@ bool update_battery_unit( Block * previous_block , Block * block ,
   return( false );
 
  if( ( ! unit ) || ( ! previous_unit ) )
-  throw( std::logic_error
-         ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
+  throw( std::logic_error(
+	   "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
            " and " + std::to_string( stage ) +
            " do not have the same structure." ) );
 
  const auto time_horizon = previous_unit->get_time_horizon();
 
- std::vector< double > initial_power_data =
-  { ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
+ std::vector< double > initial_power_data = {
+  ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
 
  unit->set_initial_power( initial_power_data.cbegin() );
 
@@ -471,21 +406,20 @@ bool update_battery_unit( Block * previous_block , Block * block ,
  unit->set_initial_storage( initial_storage_data.cbegin() );
 
  return( true );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
 int compute_init_up_down_time( const SDDPBlock * sddp_block ,
                                ThermalUnitBlock * previous_unit ,
-                               ThermalUnitBlock * unit , const Index stage ) {
-
+                               ThermalUnitBlock * unit , Index stage )
+{
  auto time_horizon = previous_unit->get_time_horizon();
  auto commitment = previous_unit->get_commitment( 0 ) + time_horizon - 1;
 
  auto shutdown = previous_unit->get_shut_down( time_horizon - 1 );
- if( shutdown && shutdown->get_value() >= 0.5 ) {
+ if( shutdown && shutdown->get_value() >= 0.5 )
   return( 0 );
- }
 
  int init_up_down_time = 0;
  const bool on = commitment->get_value() >= 0.5;
@@ -497,14 +431,13 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
  AbstractPath path;
 
  for( Index outer_t = 0 ; outer_t < stage ; ++outer_t ) {
-
   for( Index t = 1 ; t < time_horizon ; ++t , --commitment ) {
    if( std::abs( commitment->get_value() -
                  ( commitment - 1 )->get_value() ) > 0.5 )
     return( init_up_down_time );
    if( on ) ++init_up_down_time;
    else --init_up_down_time;
-  }
+   }
 
   if( outer_t == stage - 1 )
    break;
@@ -512,17 +445,17 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
   if( path.empty() ) {
    auto uc_block = get_uc_block( sddp_block , stage );
    path.build( unit , uc_block );
-  }
+   }
 
   auto previous_uc_block = get_uc_block( sddp_block , stage - outer_t - 2 );
-  previous_unit = dynamic_cast< ThermalUnitBlock * >
-   ( path.get_element< Block >( previous_uc_block ) );
+  previous_unit = dynamic_cast< ThermalUnitBlock * >(
+			   path.get_element< Block >( previous_uc_block ) );
 
   time_horizon = previous_unit->get_time_horizon();
 
   if( ! previous_unit )
-   throw( std::logic_error
-          ( "sddp_solver::update_thermal_block: ThermalUnitBlock not found "
+   throw( std::logic_error(
+	    "sddp_solver::update_thermal_block: ThermalUnitBlock not found "
             "at stage " + std::to_string( stage - outer_t - 2 ) ) );
 
   commitment = previous_unit->get_commitment( 0 ) + time_horizon - 1;
@@ -530,22 +463,22 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
   if( on ) {
    if( commitment->get_value() >= 0.5 ) ++init_up_down_time;
    else break;
-  }
+   }
   else {
    if( commitment->get_value() < 0.5 ) --init_up_down_time;
    else break;
+   }
   }
- }
 
  return( init_up_down_time );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
 bool update_thermal_unit( const SDDPBlock * sddp_block ,
                           Block * previous_block , Block * block ,
-                          const Index stage ) {
-
+                          Index stage )
+{
  auto previous_unit = dynamic_cast< ThermalUnitBlock * >( previous_block );
  auto unit = dynamic_cast< ThermalUnitBlock * >( block );
 
@@ -553,32 +486,32 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
   return( false );
 
  if( ( ! unit ) || ( ! previous_unit ) )
-  throw( std::logic_error
-         ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
-           " and " + std::to_string( stage ) +
-           " do not have the same structure." ) );
+  throw( std::logic_error(
+	  "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
+          " and " + std::to_string( stage ) +
+          " do not have the same structure" ) );
 
  if( simulation_mode ) {
-  auto init_up_down_time = compute_init_up_down_time
-   ( sddp_block , previous_unit , unit , stage );
+  auto init_up_down_time = compute_init_up_down_time(
+				sddp_block , previous_unit , unit , stage );
 
   std::vector< int > init_up_down_time_data = { init_up_down_time };
   unit->set_init_updown_time( init_up_down_time_data.cbegin() );
- }
+  }
 
  const auto time_horizon = previous_unit->get_time_horizon();
 
- std::vector< double > active_power_data =
-  { ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
+ std::vector< double > active_power_data = {
+  ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
  unit->set_initial_power( active_power_data.cbegin() );
 
  return( true );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
-void callback( SDDPBlock * sddp_block , Block::Index stage ) {
-
+void callback( SDDPBlock * sddp_block , Block::Index stage )
+{
  if( stage == 0 )
   return;
 
@@ -600,192 +533,148 @@ void callback( SDDPBlock * sddp_block , Block::Index stage ) {
 
   auto n = block->get_number_nested_Blocks();
 
-  if( n != previous_block->get_number_nested_Blocks() ) {
-   throw( std::logic_error
-          ( "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
-            " and " + std::to_string( stage ) +
-            " do not have the same structure." ) );
-  }
+  if( n != previous_block->get_number_nested_Blocks() )
+   throw( std::logic_error(
+	   "sddp_solver: UCBlocks at stages " + std::to_string( stage - 1 ) +
+           " and " + std::to_string( stage ) +
+           " do not have the same structure" ) );
 
   for( decltype( n ) i = 0 ; i < n ; ++i ) {
    blocks.push( block->get_nested_Block( i ) );
    previous_blocks.push( previous_block->get_nested_Block( i ) );
-  }
+   }
 
   update_hydro_unit( previous_block , block , stage )
    || update_thermal_unit( sddp_block , previous_block , block , stage )
    || update_battery_unit( previous_block , block , stage );
+  }
  }
-}
 
 /*--------------------------------------------------------------------------*/
 
-BlockSolverConfig * load_BlockSolverConfig( const std::string & filename ) {
-
- if( filename.empty() ) {
-  std::cout << "Solver configuration was not provided. "
-   "Using default configuration." << std::endl;
-  return( nullptr );
- }
-
- std::ifstream solver_config_file;
- solver_config_file.open( filename , std::ifstream::in );
-
- if( ! solver_config_file.is_open() ) {
-  std::cerr << "Solver configuration " + filename +
-   " was not found." << std::endl;
-  exit( 1 );
- }
-
- std::cout << "Using Solver configuration in " << filename << "." << std::endl;
-
- std::string config_name;
- solver_config_file >> eatcomments >> config_name;
- auto config = Configuration::new_Configuration( config_name );
- auto solver_config = dynamic_cast< BlockSolverConfig * >( config );
-
- if( ! solver_config ) {
-  std::cerr << "Solver configuration is not valid: "
-            << config_name << std::endl;
-  delete( config );
-  exit( 1 );
- }
-
- try {
-  solver_config_file >> *solver_config;
- }
- catch( ... ) {
-  std::cout << "Solver configuration is not valid." << std::endl;
-  exit( 1 );
- }
-
- solver_config_file.close();
- return( solver_config );
-}
-
-/*--------------------------------------------------------------------------*/
-
-void simulate( SDDPBlock * sddp_block ) {
-
- auto solver = dynamic_cast< SDDPGreedySolver * >
-  ( sddp_block->get_registered_solvers().front() );
-
+void simulate( SDDPBlock * sddp_block )
+{
+ auto solver = dynamic_cast< SDDPGreedySolver * >(
+			     sddp_block->get_registered_solvers().front() );
  if( ! solver )
   throw( std::logic_error( "The Solver for the SDDPBlock must be a "
-                           "SDDPGreedySolver in simulation mode." ) );
+                           "SDDPGreedySolver in simulation mode" ) );
 
- solver->set_callback( [ sddp_block ]( Index stage ) {
-  callback( sddp_block , stage );
- });
+ solver->set_callback(
+       [ sddp_block ]( Index stage ) { callback( sddp_block , stage ); } );
 
  // Load possibly given cuts
-
  if( ! cuts_filename.empty() )
   solver->set_par( SDDPGreedySolver::strLoadCuts , cuts_filename );
 
  // Eliminate redundant cuts if it is desired
-
  if( eliminate_redundant_cuts )
-  CutProcessing(
-   load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
-  ).remove_redundant_cuts( sddp_block );
+  CutProcessing( get_blocksolverconfig(
+			     get_cut_processing_solver_config_filepath() )
+		 ).remove_redundant_cuts( sddp_block );
 
  solver->set_scenario_id( scenario_id );
 
  auto status = solver->compute();
 
-#ifdef USE_MPI
- boost::mpi::communicator world;
- if( world.rank() == 0 ) {
-#endif
+ #ifdef USE_MPI
+  boost::mpi::communicator world;
+  if( world.rank() == 0 ) {
+ #endif
+   show_simulation_status( status , solver->get_fault_stage() );
 
- show_simulation_status( status , solver->get_fault_stage() );
+   SDDPBlockSolutionOutput output( output_solution_directory );
 
- SDDPBlockSolutionOutput output( output_solution_directory );
+   if( solver->has_var_solution() ) {
+    solver->get_var_solution();
+    output.print( sddp_block , scenario_id , true );
+    }
+   else
+    output.print( sddp_block , solver->get_fault_stage() );
 
- if( solver->has_var_solution() ) {
-  solver->get_var_solution();
-  output.print( sddp_block , scenario_id , true );
+   auto lb = solver->get_lb();
+   auto ub = solver->get_ub();
+
+   std::cout << "Lower bound: " << std::setprecision( 20 ) << lb << std::endl;
+   std::cout << "Upper bound: " << std::setprecision( 20 ) << ub << std::endl;
+
+ #ifdef USE_MPI
+   }
+ #endif
  }
- else
-  output.print( sddp_block , solver->get_fault_stage() );
-
- auto lb = solver->get_lb();
- auto ub = solver->get_ub();
-
- std::cout << "Lower bound: " << std::setprecision( 20 ) << lb << std::endl;
- std::cout << "Upper bound: " << std::setprecision( 20 ) << ub << std::endl;
-
-#ifdef USE_MPI
- }
-#endif
-}
 
 /*--------------------------------------------------------------------------*/
 
-void show_status( Index status ) {
-
+void show_status( Index status )
+{
  switch( status ) {
+  case( SDDPSolver::kOK ): std::cout << "Optimal solution found" << std::endl;
+                           break;
+  case( SDDPSolver::kError ): std::cout << "Error" << std::endl; break;
+  case( SDDPSolver::kUnbounded ): std::cout << "A subproblem is unbounded"
+					    << std::endl;
+                                  break;
 
-  case( SDDPSolver::kOK ):
-   std::cout << "Optimal solution found." << std::endl;
-   break;
-
-  case( SDDPSolver::kError ):
-   std::cout << "Error" << std::endl;
-   break;
-
-  case( SDDPSolver::kUnbounded ):
-   std::cout << "A subproblem is unbounded." << std::endl;
-   break;
-
-  case( SDDPSolver::kInfeasible ):
-   std::cout << "A subproblem is infeasible." << std::endl;
-   break;
-
-  case( SDDPSolver::kStopTime ):
-   std::cout << "The solution process terminated due a time limit."
-             << std::endl;
-   break;
-
-  case( SDDPSolver::kStopIter ):
-   std::cout << "The solution process terminated due to an iteration limit."
-             << std::endl;
-   break;
+  case( SDDPSolver::kInfeasible ): std::cout << "A subproblem is infeasible"
+					     << std::endl;
+                                   break;
+  case( SDDPSolver::kStopTime ): std::cout << "Terminated due to time limit"
+					   << std::endl;
+                                 break;
+  case( SDDPSolver::kStopIter ): std::cout << "Terminated due to iter limit"
+					   << std::endl;
+                                 break;
+  }
  }
-}
 
 /*--------------------------------------------------------------------------*/
 
-void solve( SDDPBlock * sddp_block ) {
-
- auto solver = dynamic_cast< SDDPSolver * >
-  ( sddp_block->get_registered_solvers().front() );
-
+void solve( SDDPBlock * sddp_block )
+{
+ // retrieve SDDPSolver- - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ auto solver = dynamic_cast< SDDPSolver * >(
+			       sddp_block->get_registered_solvers().front() );
  if( ! solver )
   throw( std::logic_error( "The Solver for the SDDPBlock must be a "
-                           "SDDPSolver in optimization mode." ) );
+                           "SDDPSolver in optimization mode" ) );
 
  solver->set_log( &std::cout );
 
- auto status = solver->compute();
+ // set initial Solution, if provided - - - - - - - - - - - - - - - - - - - -
+ get_initial_Solution( sddp_block );
 
- show_status( status );
+ // load the given State, if provided - - - - - - - - - - - - - - - - - - - -
+ get_initial_State( solver );
 
+ // solve the stochastic problem - - - - - - - - - - - - - - - - - - - - - - -
+ if( ! dryrun ) {
+  auto status = solver->compute();
+  show_status( status );
+  }
+
+ // write final Solution, if required - - - - - - - - - - - - - - - - - - - -
+ write_final_Solution( sddp_block );
+
+ // write final State, if required- - - - - - - - - - - - - - - - - - - - - -
+ write_final_State( solver );
+
+ // output final cuts- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  SDDPBlockSolutionOutput o( output_solution_directory );
  o.print_cuts( sddp_block , "BellmanValuesAllOUT.csv" );
 
  if( eliminate_redundant_cuts )
-  CutProcessing(
-   load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
-  ).remove_redundant_cuts( sddp_block );
+  CutProcessing( get_blocksolverconfig(
+			      get_cut_processing_solver_config_filepath() )
+		 ).remove_redundant_cuts( sddp_block );
 
  o.print_cuts( sddp_block , "BellmanValuesOUT.csv" );
-}
+
+ }  // end( solve )
 
 /*--------------------------------------------------------------------------*/
 
-void load_cuts( SDDPBlock * sddp_block ) {
+void load_cuts( SDDPBlock * sddp_block )
+{
  if( cuts_filename.empty() )
   return;
 
@@ -798,11 +687,10 @@ void load_cuts( SDDPBlock * sddp_block ) {
 
  const auto time_horizon = sddp_block->get_time_horizon();
 
- std::vector< PolyhedralFunction::MultiVector > A
-  ( time_horizon , PolyhedralFunction::MultiVector{} );
- std::vector< PolyhedralFunction::RealVector > b
-  ( time_horizon , PolyhedralFunction::RealVector{} );
-
+ std::vector< PolyhedralFunction::MultiVector > A( time_horizon ,
+					PolyhedralFunction::MultiVector{} );
+ std::vector< PolyhedralFunction::RealVector > b( time_horizon ,
+					PolyhedralFunction::RealVector{} );
  std::string line;
 
  if( cuts_file.good() )
@@ -812,7 +700,6 @@ void load_cuts( SDDPBlock * sddp_block ) {
  int line_number = 0;
 
  // Read the cuts
-
  while( std::getline( cuts_file , line ) ) {
   ++line_number;
 
@@ -824,17 +711,17 @@ void load_cuts( SDDPBlock * sddp_block ) {
    break;
 
   if( stage >= time_horizon )
-   throw( std::logic_error( "File \"" + cuts_filename + "\" contains an invalid"
-                            " stage: " + std::to_string( stage ) + "." ) );
+   throw( std::logic_error( "File " + cuts_filename + "contains an invalid"
+                            " stage: " + std::to_string( stage ) ) );
 
   if( line_stream.peek() != ',' )
-   throw( std::logic_error( "File \"" + cuts_filename +
-                            "\" has an invalid format." ) );
+   throw( std::logic_error( "File " + cuts_filename + " has invalid forma" )
+	  );
   line_stream.ignore();
 
   // Read the cut
-
-  const auto polyhedral_function = sddp_block->get_polyhedral_function( stage );
+  const auto polyhedral_function = sddp_block->get_polyhedral_function(
+								    stage );
   const auto num_active_var = polyhedral_function->get_num_active_var();
   PolyhedralFunction::RealVector a( num_active_var );
 
@@ -842,10 +729,9 @@ void load_cuts( SDDPBlock * sddp_block ) {
   double value;
   while( line_stream >> value ) {
    if( i > num_active_var )
-    throw( std::logic_error
-           ( "File \"" + cuts_filename + "\" contains an invalid"
-             " cut at line " + std::to_string( line_number ) + "." ) );
-
+    throw( std::logic_error( "File " + cuts_filename + " contains an invalid"
+			     " cut at line " + std::to_string( line_number )
+			     ) );
    if( i < num_active_var )
     a[ i ] = value;
    else
@@ -855,26 +741,25 @@ void load_cuts( SDDPBlock * sddp_block ) {
 
    if( line_stream.peek() == ',' )
     line_stream.ignore();
-  }
+   }
 
   if( i < num_active_var )
-   throw( std::logic_error
-          ( "File \"" + cuts_filename + "\" contains an invalid"
-            " cut at line " + std::to_string( line_number ) + "." ) );
+   throw( std::logic_error( "File " + cuts_filename + " contains an invalid"
+			    " cut at line " + std::to_string( line_number )
+			    ) );
 
   A[ stage ].push_back( a );
- }
+  }
 
  cuts_file.close();
 
  // Now, add the cuts to all PolyhedralFunctions
-
  const auto num_sub_blocks_per_stage =
   sddp_block->get_num_sub_blocks_per_stage();
 
- for( Index stage = 0 ; stage < time_horizon ; ++stage ) {
-  for( Index sub_block_index = 0 ; sub_block_index < num_sub_blocks_per_stage ;
-       ++sub_block_index ) {
+ for( Index stage = 0 ; stage < time_horizon ; ++stage )
+  for( Index sub_block_index = 0 ;
+       sub_block_index < num_sub_blocks_per_stage ; ++sub_block_index ) {
 
    if( b[ stage ].empty() )
     continue; // no cut for this stage
@@ -887,60 +772,38 @@ void load_cuts( SDDPBlock * sddp_block ) {
    auto A_stage = A[ stage ];
 
    polyhedral_function->add_rows( std::move( A_stage ) , b[ stage ] );
-  }
+   }
  }
-}
 
 /*--------------------------------------------------------------------------*/
 
-bool using_thermal_dp_solver( const std::string & config_filename ) {
- std::ifstream stream( config_filename );
-
- if( ! stream.is_open() ) {
-  std::cerr << "Solver configuration " + config_filename +
-   " was not found." << std::endl;
-  exit( 1 );
- }
-
- std::string config_name;
- stream >> eatcomments >> config_name;
- auto config = Configuration::new_Configuration( config_name );
- auto solver_config = dynamic_cast< BlockSolverConfig * >( config );
-
+bool using_thermal_dp_solver( const std::string & config_filename )
+{
+ auto solver_config = get_blocksolverconfig( config_filename );
  if( ! solver_config ) {
-  std::cerr << "Solver configuration is not valid: "
-            << config_name << std::endl;
-  delete( config );
+  std::cerr << "Solver configuration " << config_filename << " is invalid"
+	    << std::endl;
   exit( 1 );
- }
-
- try {
-  stream >> *solver_config;
- }
- catch( ... ) {
-  std::cout << "Error while loading Solver configuration: "
-            << config_name << std::endl;
-  delete( config );
-  exit( 1 );
- }
+  }
 
  for( const auto & solver_name : solver_config->get_SolverNames() )
   if( solver_name == "ThermalUnitDPSolver" ) {
-   delete( config );
+   delete( solver_config );
    return( true );
-  }
+   }
 
- delete( config );
+ delete( solver_config );
  return( false );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
 void configure_Blocks( SDDPBlock * sddp_block ,
                        bool add_reserve_variables_to_objective ,
-                       double feasibility_tolerance , bool relative_violation ,
-                       bool is_using_lagrangian_dual_solver ) {
-
+                       double feasibility_tolerance ,
+		       bool relative_violation ,
+                       bool is_using_lagrangian_dual_solver )
+{
  const SimpleConfiguration< std::pair< double , int > >
   is_feasible_config( { feasibility_tolerance , relative_violation } );
 
@@ -949,12 +812,12 @@ void configure_Blocks( SDDPBlock * sddp_block ,
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
   auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
-  auto benders_block = static_cast< BendersBlock * >
-   ( stochastic_block-> get_nested_Blocks().front() );
-  auto objective = static_cast< FRealObjective * >
-   ( benders_block->get_objective() );
-  auto benders_function = static_cast< BendersBFunction * >
-   ( objective->get_function() );
+  auto benders_block = static_cast< BendersBlock * >(
+			   stochastic_block-> get_nested_Blocks().front() );
+  auto objective = static_cast< FRealObjective * >(
+					   benders_block->get_objective() );
+  auto benders_function = static_cast< BendersBFunction * >(
+						objective->get_function() );
   auto inner_block = benders_function->get_inner_block();
 
   std::queue< Block * > blocks;
@@ -969,87 +832,89 @@ void configure_Blocks( SDDPBlock * sddp_block ,
    }
 
    // Configure PolyhedralFunctionBlock
-   if( auto polyhedral = dynamic_cast< PolyhedralFunctionBlock * >( block ) ) {
-    auto config = new BlockConfig;
-    config->f_static_variables_Configuration = new SimpleConfiguration< int >( 1 );
-    config->f_is_feasible_Configuration = is_feasible_config.clone();
-    polyhedral->set_BlockConfig( config );
-   }
-
-   else if( auto unit = dynamic_cast< SlackUnitBlock * >( block ) ) {
-    auto config = new BlockConfig;
-    config->f_static_constraints_Configuration =
-     new SimpleConfiguration< int >( cons_type );
-    config->f_is_feasible_Configuration = is_feasible_config.clone();
-    unit->set_BlockConfig( config );
-   }
-
-   else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
+   if( auto polyhedral = dynamic_cast< PolyhedralFunctionBlock * >( block )
+       ) {
     auto config = new BlockConfig;
     config->f_static_variables_Configuration =
-      new SimpleConfiguration< int >( negative_prices );
-    config->f_static_constraints_Configuration =
-     new SimpleConfiguration< int >( cons_type );
+                                       new SimpleConfiguration< int >( 1 );
     config->f_is_feasible_Configuration = is_feasible_config.clone();
-    unit->set_BlockConfig( config );
+    polyhedral->set_BlockConfig( config );
+    }
+   else
+    if( auto unit = dynamic_cast< SlackUnitBlock * >( block ) ) {
+     auto config = new BlockConfig;
+     config->f_static_constraints_Configuration =
+                              new SimpleConfiguration< int >( cons_type );
+     config->f_is_feasible_Configuration = is_feasible_config.clone();
+     unit->set_BlockConfig( config );
+     }
+    else
+     if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
+      auto config = new BlockConfig;
+      config->f_static_variables_Configuration =
+                        new SimpleConfiguration< int >( negative_prices );
+      config->f_static_constraints_Configuration =
+                              new SimpleConfiguration< int >( cons_type );
+      config->f_is_feasible_Configuration = is_feasible_config.clone();
+      unit->set_BlockConfig( config );
+      }
+     else
+      if( auto unit = dynamic_cast< ThermalUnitBlock * >( block ) ) {
+       auto config = new BlockConfig;
+       config->f_static_constraints_Configuration =
+	                      new SimpleConfiguration< int >( cons_type );
+
+       if( add_reserve_variables_to_objective )
+	config->f_objective_Configuration =
+	                             new SimpleConfiguration< int >( 3 );
+
+       config->f_is_feasible_Configuration = is_feasible_config.clone();
+       unit->set_BlockConfig( config );
+       }
+      else
+       if( auto unit = dynamic_cast< IntermittentUnitBlock * >( block ) ;
+	   unit && is_using_lagrangian_dual_solver ) {
+	auto config = new BlockConfig;
+	config->f_is_feasible_Configuration = is_feasible_config.clone();
+	config->f_extra_Configuration =
+	           new SimpleConfiguration< double >( epsilon_max_power );
+	unit->set_BlockConfig( config );
+        }
+       else {
+	auto config = new BlockConfig;
+	config->f_is_feasible_Configuration = is_feasible_config.clone();
+	block->set_BlockConfig( config );
+        }
    }
-
-   else if( auto unit = dynamic_cast< ThermalUnitBlock * >( block ) ) {
-    auto config = new BlockConfig;
-    config->f_static_constraints_Configuration =
-     new SimpleConfiguration< int >( cons_type );
-
-    if( add_reserve_variables_to_objective )
-     config->f_objective_Configuration = new SimpleConfiguration< int >( 3 );
-
-    config->f_is_feasible_Configuration = is_feasible_config.clone();
-
-    unit->set_BlockConfig( config );
-   }
-   else if( auto unit = dynamic_cast< IntermittentUnitBlock * >( block ) ;
-            unit && is_using_lagrangian_dual_solver ) {
-    auto config = new BlockConfig;
-    config->f_is_feasible_Configuration = is_feasible_config.clone();
-    config->f_extra_Configuration =
-     new SimpleConfiguration< double >( epsilon_max_power );
-    unit->set_BlockConfig( config );
-   }
-
-   else {
-    auto config = new BlockConfig;
-    config->f_is_feasible_Configuration = is_feasible_config.clone();
-    block->set_BlockConfig( config );
-   }
-
   }
  }
-}
 
 /*--------------------------------------------------------------------------*/
 
-void set_log( SDDPBlock * sddp_block , std::ostream * output_stream ) {
+void set_log( SDDPBlock * sddp_block , std::ostream * output_stream )
+{
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
   auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
-  auto benders_block = static_cast< BendersBlock * >
-   ( stochastic_block-> get_nested_Blocks().front() );
-  auto objective = static_cast< FRealObjective * >
-   ( benders_block->get_objective() );
-  auto benders_function = static_cast< BendersBFunction * >
-   ( objective->get_function() );
+  auto benders_block = static_cast< BendersBlock * >(
+			   stochastic_block-> get_nested_Blocks().front() );
+  auto objective = static_cast< FRealObjective * >(
+					   benders_block->get_objective() );
+  auto benders_function = static_cast< BendersBFunction * >(
+						objective->get_function() );
   auto inner_block = benders_function->get_inner_block();
   for( auto solver : inner_block->get_registered_solvers() )
    if( solver )
     solver->set_log( output_stream );
+  }
  }
-}
 
 /*--------------------------------------------------------------------------*/
 
-void process_prob_file( const netCDF::NcFile & file ) {
- std::multimap< std::string , netCDF::NcGroup > problems = file.getGroups();
+void process_prob_file( const netCDF::NcFile & file )
+{
+ auto problems = file.getGroups();
  // for each problem descriptor:
  for( auto & problem : problems ) {
-
   auto & problem_group = problem.second;
 
   // Deserialize block
@@ -1060,42 +925,38 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   // Configure block
   auto block_config_group = problem_group.getGroup( "BlockConfig" );
-  auto block_config = static_cast< BlockConfig * >
-   ( BlockConfig::new_Configuration( block_config_group ) );
+  auto block_config = static_cast< BlockConfig * >(
+		      BlockConfig::new_Configuration( block_config_group ) );
   if( ! block_config )
-   throw( std::logic_error( "BlockConfig group was not properly provided." ) );
+   throw( std::logic_error( "BlockConfig group was not properly provided" ) );
   block_config->apply( sddp_block );
   block_config->clear();
 
   // Configure solver
   auto solver_config_group = problem_group.getGroup( "BlockSolver" );
-  auto block_solver_config = static_cast< BlockSolverConfig * >
-   ( BlockSolverConfig::new_Configuration( solver_config_group ) );
+  auto block_solver_config = static_cast< BlockSolverConfig * >(
+	       BlockSolverConfig::new_Configuration( solver_config_group ) );
   if( ! block_solver_config )
-   throw( std::logic_error( "BlockSolver group was not properly provided." ) );
+   throw( std::logic_error( "BlockSolver group was not properly provided" ) );
   block_solver_config->apply( sddp_block );
   block_solver_config->clear();
 
   // Set the output stream for the log of the inner Solvers
-
   set_log( sddp_block , &std::cout );
 
   // Load possibly given cuts
-
   if( ! simulation_mode )
    load_cuts( sddp_block );
 
   // Eliminate redundant cuts if it is desired
-
   if( eliminate_redundant_cuts )
-   CutProcessing(
-    load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
-   ).remove_redundant_cuts( sddp_block );
+   CutProcessing( get_blocksolverconfig(
+			      get_cut_processing_solver_config_filepath() )
+		  ).remove_redundant_cuts( sddp_block );
 
   std::cout << "Problem: " << problem.first << std::endl;
 
   // Solve
-
   if( simulation_mode )
    simulate( sddp_block );
   else
@@ -1108,43 +969,43 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   block_solver_config->apply( sddp_block );
   delete( block_solver_config );
-
   delete( sddp_block );
+  }
  }
-}
 
 /*--------------------------------------------------------------------------*/
 
-BlockSolverConfig * build_BlockSolverConfig() {
+BlockSolverConfig * build_BlockSolverConfig( void )
+{
  auto block_solver_config = new BlockSolverConfig;
  if( simulation_mode ) {
   auto config = new ComputeConfig;
   config->set_par( "intLogVerb" , 1 );
   block_solver_config->add_ComputeConfig( "SDDPGreedySolver" , config );
- }
+  }
  else {
   auto config = new ComputeConfig;
   config->set_par( "intLogVerb" , 1 );
   block_solver_config->add_ComputeConfig( "SDDPSolver" , config );
- }
+  }
 
  return( block_solver_config );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
-BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block ) {
+BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block )
+{
  // TODO configure all PolyhedralFunctionBlock
  auto sddp_config = new RBlockConfig;
  auto num_stochastic_blocks = sddp_block->get_number_nested_Blocks();
 
  for( Block::Index index = 0 ; index < num_stochastic_blocks ; ++index ) {
-
   auto cpx_compute_config = new ComputeConfig;
   if( continuous_relaxation ) {
    cpx_compute_config->set_par( "CPXPARAM_Preprocessing_Presolve" , 0 );
    cpx_compute_config->set_par( "intThrowReducedCostException" , 1 );
-  }
+   }
 
   auto inner_benders_function_solver = new BlockSolverConfig;
   inner_benders_function_solver->add_ComputeConfig( "CPXMILPSolver" ,
@@ -1152,9 +1013,9 @@ BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block ) {
 
   auto benders_function_config = new ComputeConfig;
   benders_function_config->f_extra_Configuration =
-   new SimpleConfiguration< std::map< std::string , Configuration * > >
-   ( { { "BlockConfig" , nullptr } ,
-       { "BlockSolverConfig" , inner_benders_function_solver } } );
+   new SimpleConfiguration< std::map< std::string , Configuration * > >(
+              { { "BlockConfig" , nullptr } ,
+              { "BlockSolverConfig" , inner_benders_function_solver } } );
 
   auto stochastic_block_config = new RBlockConfig;
   sddp_config->add_sub_BlockConfig( stochastic_block_config , index );
@@ -1163,82 +1024,38 @@ BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block ) {
   stochastic_block_config->add_sub_BlockConfig( benders_block_config , 0 );
 
   benders_block_config->set_Config_Objective( benders_function_config );
- }
+  }
 
  return( sddp_config );
-}
-
-/*--------------------------------------------------------------------------*/
-
-BlockConfig * load_BlockConfig() {
-
- if( block_config_filename.empty() ) {
-  std::cout << "Block configuration was not provided. "
-   "Using default configuration." << std::endl;
-  return( nullptr );
  }
-
- std::ifstream block_config_file;
- block_config_file.open( block_config_filename , std::ifstream::in );
-
- if( ! block_config_file.is_open() ) {
-  std::cerr << "Block configuration " + block_config_filename +
-   " was not found." << std::endl;
-  exit( 1 );
- }
-
- std::cout << "Using Block configuration in " << block_config_filename
-           << "." << std::endl;
-
- std::string config_name;
- block_config_file >> eatcomments >> config_name;
- auto config = Configuration::new_Configuration( config_name );
- auto block_config = dynamic_cast< BlockConfig * >( config );
-
- if( ! block_config ) {
-  std::cerr << "Block configuration is not valid: "
-            << config_name << std::endl;
-  delete( config );
-  exit( 1 );
- }
-
- try {
-  block_config_file >> *block_config;
- }
- catch( const std::exception& e ) {
-  std::cerr << "Block configuration is not valid: " << e.what() << std::endl;
-  exit( 1 );
- }
-
- block_config_file.close();
- return( block_config );
-}
 
 /*--------------------------------------------------------------------------*/
 
 std::string get_str_par( ComputeConfig * compute_config ,
-                         std::string par_name ) {
- for( const auto & pair : compute_config->str_pars ) {
+                         std::string par_name )
+{
+ for( const auto & pair : compute_config->str_pars )
   if( pair.first == par_name )
    return( pair.second );
- }
+
  return( "" );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
-int get_int_par( ComputeConfig * compute_config , std::string par_name ) {
- for( const auto & pair : compute_config->int_pars ) {
+int get_int_par( ComputeConfig * compute_config , std::string par_name )
+{
+ for( const auto & pair : compute_config->int_pars )
   if( pair.first == par_name )
    return( pair.second );
- }
+
  return( Inf< int >() );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
-bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
-
+bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config )
+{
  if( ! sddp_solver_config )
   return( false );
 
@@ -1255,7 +1072,6 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
   compute_config = sddp_solver_config->get_SolverConfig( i );
 
   // Check if strInnerBSC is present
-
   auto strInnerBSC = get_str_par( compute_config , "strInnerBSC" );
 
   if( strInnerBSC.empty() )
@@ -1263,9 +1079,8 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
 
   // If it is, check if it is a config for a LagrangianDualSolver
 
-  std::ifstream inner_solver_config_file
-   ( config_filename_prefix + strInnerBSC , std::ifstream::in );
-
+  std::ifstream inner_solver_config_file(
+			    conf_prefix + strInnerBSC , std::ifstream::in );
   if( ! inner_solver_config_file.is_open() )
    continue;
 
@@ -1278,16 +1093,16 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
    inner_solver_config_file.close();
    delete( inner_config );
    continue;
-  }
+   }
 
   try {
    inner_solver_config_file >> *inner_solver_config;
-  }
+   }
   catch( ... ) {
    inner_solver_config_file.close();
    delete( inner_config );
    continue;
-  }
+   }
 
   inner_solver_config_file.close();
 
@@ -1295,18 +1110,19 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config ) {
    if( inner_solver_config->get_SolverName( j ) == "LagrangianDualSolver" ) {
     delete( inner_config );
     return( true );
+    }
    }
-  }
   delete( inner_config );
- }
+  }
+
  return( false );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
 void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
-                             SDDPBlock * sddp_block ) {
-
+                             SDDPBlock * sddp_block )
+{
  if( sddp_block->get_number_nested_Blocks() == 0 )
   // The SDDPBlock has no sub-Block. There is nothing to be configured.
   return;
@@ -1324,7 +1140,6 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
  int hydro_system_index = -1;
 
  for( Index i = 0 ; i < sddp_solver_config->num_ComputeConfig() ; ++i ) {
-
   if( sddp_solver_config->get_SolverName( i ) != "SDDPSolver" &&
       sddp_solver_config->get_SolverName( i ) != "ParallelSDDPSolver" &&
       sddp_solver_config->get_SolverName( i ) != "SDDPGreedySolver" )
@@ -1333,16 +1148,13 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   compute_config = sddp_solver_config->get_SolverConfig( i );
 
   // Check if strInnerBSC is present
-
   auto strInnerBSC = get_str_par( compute_config , "strInnerBSC" );
-
   if( strInnerBSC.empty() )
    return;
 
   // If it is, check if it is a config for a LagrangianDualSolver
-
-  std::ifstream inner_solver_config_file
-   ( config_filename_prefix + strInnerBSC , std::ifstream::in );
+  std::ifstream inner_solver_config_file(
+			  conf_prefix + strInnerBSC , std::ifstream::in );
 
   if( ! inner_solver_config_file.is_open() )
    return;
@@ -1356,16 +1168,16 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    inner_solver_config_file.close();
    delete( inner_config );
    return;
-  }
+   }
 
   try {
    inner_solver_config_file >> *inner_solver_config;
-  }
+   }
   catch( ... ) {
    inner_solver_config_file.close();
    delete( inner_config );
    return;
-  }
+   }
 
   inner_solver_config_file.close();
 
@@ -1562,31 +1374,31 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
  if( ! vintNoEasy.empty() ) {
   // Remove any vintNoEasy parameter that is possibly there
-  lagrangian_dual_compute_config->vint_pars.erase
-   ( std::remove_if( lagrangian_dual_compute_config->vint_pars.begin() ,
+  lagrangian_dual_compute_config->vint_pars.erase(
+     std::remove_if( lagrangian_dual_compute_config->vint_pars.begin() ,
                      lagrangian_dual_compute_config->vint_pars.end() ,
                      []( const auto & pair ) {
                       return( pair.first == "vintNoEasy" ); } ) ,
      lagrangian_dual_compute_config->vint_pars.end() );
 
   // Add the vintNoEasy parameter that was constructed here
-  lagrangian_dual_compute_config->vint_pars.push_back
-   ( std::make_pair( "vintNoEasy" , std::move( vintNoEasy ) ) );
- }
+  lagrangian_dual_compute_config->vint_pars.push_back(
+	       std::make_pair( "vintNoEasy" , std::move( vintNoEasy ) ) );
+  }
 
- lagrangian_dual_compute_config->vint_pars.push_back
-  ( std::make_pair( "vint_LDSl_WBSCfg" , std::move( vint_LDSl_WBSCfg ) ) );
+ lagrangian_dual_compute_config->vint_pars.push_back(
+    std::make_pair( "vint_LDSl_WBSCfg" , std::move( vint_LDSl_WBSCfg ) ) );
 
- lagrangian_dual_compute_config->vstr_pars.push_back
-  ( std::make_pair( "vstr_LDSl_Cfg" , std::move( vstr_LDSl_Cfg ) ) );
+ lagrangian_dual_compute_config->vstr_pars.push_back(
+	  std::make_pair( "vstr_LDSl_Cfg" , std::move( vstr_LDSl_Cfg ) ) );
 
  // Configuration for the sub-Blocks may need to be cloned since the same
  // Configuration is used to configure multiple Blocks.
- lagrangian_dual_compute_config->int_pars.push_back
-  ( std::make_pair( "int_LDSlv_CloneCfg" , 1 ) );
+ lagrangian_dual_compute_config->int_pars.push_back(
+			     std::make_pair( "int_LDSlv_CloneCfg" , 1 ) );
 
- compute_config->str_pars.erase
-  ( std::remove_if( compute_config->str_pars.begin() ,
+ compute_config->str_pars.erase(
+    std::remove_if( compute_config->str_pars.begin() ,
                     compute_config->str_pars.end() ,
                     []( const auto & pair ) {
                      return( pair.first == "strInnerBSC" ); } ) ,
@@ -1619,8 +1431,8 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   * consecutive stages, which are HydroSystemUnitBlock, BatteryUnitBlock, and
   * ThermalUnitBlock. */
 
- get_var_solution_config = new SimpleConfiguration< std::vector< int > >
-  ( required_primal_solution );
+ get_var_solution_config = new SimpleConfiguration< std::vector< int > >(
+						  required_primal_solution );
 
  if( simulation_mode ) {
   /* In simulation mode, the only part of the dual Solution that is required
@@ -1630,24 +1442,21 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    * sub-Blocks of the UCBlock and requires the dual solutions of the linking
    * constraints. */
 
-  get_dual_solution_config = new SimpleConfiguration
-   < std::vector< std::pair< int , int > > >
-   ( { std::make_pair< int , int >( -1 , -1 ) } );
+  get_dual_solution_config =
+   new SimpleConfiguration< std::vector< std::pair< int , int > > >(
+			       { std::make_pair< int , int >( -1 , -1 ) } );
 
   // Create the extra Configuration for SDDPGreedySolver.
 
-  extra_config = new SimpleConfiguration< std::vector< Configuration * > >
-   ( { nullptr , inner_solver_config , get_var_solution_config ,
-      get_dual_solution_config } );
- }
- else {
-  // Create the extra Configuration for SDDPSolver.
-  extra_config = new SimpleConfiguration< std::vector< Configuration * > >
-   ( { nullptr , inner_solver_config , get_var_solution_config } );
- }
+  extra_config = new SimpleConfiguration< std::vector< Configuration * > >(
+                 { nullptr , inner_solver_config , get_var_solution_config ,
+	           get_dual_solution_config } );
+  }
+ else // Create the extra Configuration for SDDPSolver.
+  extra_config = new SimpleConfiguration< std::vector< Configuration * > >(
+	       { nullptr , inner_solver_config , get_var_solution_config } );
 
  compute_config->f_extra_Configuration = extra_config;
-
 
  if( ( ! simulation_mode ) && ( hydro_system_index >= 0 ) ) {
   // Configure all BendersBFunction to retrieve the right portion of the dual
@@ -1657,8 +1466,9 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   // HydroSystemUnitBlock are needed, as all constraints handled by the
   // BendersBFunction belong to it.
   auto get_dual_config =
-   new SimpleConfiguration< std::vector< std::pair< int , Configuration * > > >
-   ( { std::make_pair( hydro_system_index , nullptr ) } );
+   new SimpleConfiguration< std::vector< std::pair< int ,
+						    Configuration * > > >(
+		       { std::make_pair( hydro_system_index , nullptr ) } );
 
   auto benders_function_config = new ComputeConfig;
 
@@ -1672,17 +1482,17 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
   for( auto sub_block : sddp_block->get_nested_Blocks() ) {
    auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
-   auto benders_block = static_cast< BendersBlock * >
-    ( stochastic_block-> get_nested_Blocks().front() );
-   auto objective = static_cast< FRealObjective * >
-    ( benders_block->get_objective() );
-   auto benders_function = static_cast< BendersBFunction * >
-    ( objective->get_function() );
+   auto benders_block = static_cast< BendersBlock * >(
+			   stochastic_block-> get_nested_Blocks().front() );
+   auto objective = static_cast< FRealObjective * >(
+					   benders_block->get_objective() );
+   auto benders_function = static_cast< BendersBFunction * >(
+						objective->get_function() );
    benders_function->set_ComputeConfig( benders_function_config );
-  }
+   }
 
   delete( benders_function_config );
- }
+  }
 
  // OSIMPSolver is currently not able to deal with some changes in a Block
  // (for instance, when some bound structure changes). In order to try to
@@ -1695,29 +1505,30 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
  for( Index t = 0 ; t < sddp_block->get_time_horizon() ; ++t )
   for( Index i = 0 ; i < sddp_block->get_num_sub_blocks_per_stage() ; ++i )
    sddp_block->set_scenario( 0 , t , i );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
-void process_block_file( const netCDF::NcFile & file ) {
+void process_block_file( const netCDF::NcFile & file )
+{
  std::multimap< std::string , netCDF::NcGroup > blocks = file.getGroups();
 
  // BlockConfig
- auto given_block_config = load_BlockConfig();
+ auto given_block_config = get_blockconfig( bconf_file );
 
  BlockConfig * block_config = nullptr;
  if( given_block_config ) {
   block_config = given_block_config->clone();
   block_config->clear();
- }
+  }
 
  // BlockSolverConfig
  bool block_solver_config_provided = true;
- auto solver_config = load_BlockSolverConfig( solver_config_filename );
+ auto solver_config = get_blocksolverconfig( sconf_file );
  if( ! solver_config ) {
   block_solver_config_provided = false;
   solver_config = build_BlockSolverConfig();
- }
+  }
 
  auto cleared_solver_config = solver_config->clone();
  cleared_solver_config->clear();
@@ -1725,8 +1536,8 @@ void process_block_file( const netCDF::NcFile & file ) {
  const auto is_using_lagrangian_dual_solver =
   using_lagrangian_dual_solver( solver_config );
 
- if( is_using_lagrangian_dual_solver && using_thermal_dp_solver
-     ( config_filename_prefix + thermal_config_filename ) )
+ if( is_using_lagrangian_dual_solver &&
+     using_thermal_dp_solver( thermal_config_filename ) )
   // The ThermalUnitDPSolver cannot currently deal with spinning
   // reserves. Thus, any reserve that is provided must be ignored.
   ThermalUnitBlock::ignore_reserve();
@@ -1735,13 +1546,11 @@ void process_block_file( const netCDF::NcFile & file ) {
  for( auto block_description : blocks ) {
 
   // Deserialize the SDDPBlock
-
   auto sddp_block = new SDDPBlock;
   sddp_block->set_num_sub_blocks_per_stage( num_sub_blocks_per_stage );
   sddp_block->deserialize( block_description.second );
 
   // Configure the SDDPBlock
-
   if( given_block_config )
    given_block_config->apply( sddp_block );
   else {
@@ -1753,40 +1562,35 @@ void process_block_file( const netCDF::NcFile & file ) {
     block_config = build_BlockConfig( sddp_block );
     block_config->apply( sddp_block );
     block_config->clear();
+    }
    }
-  }
 
   // Configure the Solver
-
   if( is_using_lagrangian_dual_solver )
    config_Lagrangian_dual( solver_config , sddp_block );
 
   solver_config->apply( sddp_block );
 
   // Set the output stream for the log of the inner Solvers
-
   set_log( sddp_block , &std::cout );
 
   // Load possibly given cuts
-
   if( ! simulation_mode )
    load_cuts( sddp_block );
 
   // Eliminate redundant cuts if it is desired
-
   if( eliminate_redundant_cuts )
-   CutProcessing(
-    load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
-   ).remove_redundant_cuts( sddp_block );
+   CutProcessing( get_blocksolverconfig(
+			      get_cut_processing_solver_config_filepath() )
+		  ).remove_redundant_cuts( sddp_block );
 
   // Solve
-
   if( simulation_mode ) {
    auto solver = sddp_block->get_registered_solvers().front();
    if( solver->get_int_par( solver->int_par_str2idx( "intLogVerb" ) ) )
     solver->set_log( & std::cout );
    simulate( sddp_block );
-  }
+   }
   else
    solve( sddp_block );
 
@@ -1802,61 +1606,61 @@ void process_block_file( const netCDF::NcFile & file ) {
   cleared_solver_config->apply( sddp_block );
 
   delete( sddp_block );
- }
+  }
 
  delete( block_config );
  delete( given_block_config );
  delete( solver_config );
  delete( cleared_solver_config );
-}
-
-/*--------------------------------------------------------------------------*/
-
-/// returns the final state (solution) of the system at the given \p stage
-std::vector< double > get_final_state( SDDPBlock * block , Index stage ) {
-
- Index state_size = 0;
- for( Index i = 0 ; i < block->get_num_polyhedral_function_per_sub_block() ;
-      ++i ) {
-  state_size +=
-   block->get_polyhedral_function( stage , i )->get_num_active_var();
  }
 
+/*--------------------------------------------------------------------------*/
+/// returns the final state (solution) of the system at the given \p stage
+
+std::vector< double > get_final_state( SDDPBlock * block , Index stage )
+{
+ Index state_size = 0;
+ for( Index i = 0 ; i < block->get_num_polyhedral_function_per_sub_block() ;
+      ++i )
+  state_size += block->get_polyhedral_function( stage , i
+						)->get_num_active_var();
  std::vector< double > state;
  state.reserve( state_size );
 
  for( Index i = 0 ; i < block->get_num_polyhedral_function_per_sub_block() ;
       ++i ) {
-  const auto polyhedral_function = block->get_polyhedral_function( stage , i );
-  for( const auto & variable : * polyhedral_function ) {
-   state.push_back
-    ( static_cast< const ColVariable & >( variable ).get_value() );
+  const auto polyhedral_function = block->get_polyhedral_function( stage ,
+								   i );
+  for( const auto & variable : * polyhedral_function )
+   state.push_back(
+	       static_cast< const ColVariable & >( variable ).get_value() );
   }
- }
+
  return( state );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
-void multiple_simulations( const netCDF::NcFile & file ) {
- std::multimap< std::string , netCDF::NcGroup > blocks = file.getGroups();
+void multiple_simulations( const netCDF::NcFile & file )
+{
+ auto blocks = file.getGroups();
 
  // BlockConfig
- auto given_block_config = load_BlockConfig();
+ auto given_block_config = get_blockconfig( bconf_file );
 
  BlockConfig * block_config = nullptr;
  if( given_block_config ) {
   block_config = given_block_config->clone();
   block_config->clear();
- }
+  }
 
  // BlockSolverConfig
  bool block_solver_config_provided = true;
- auto solver_config = load_BlockSolverConfig( solver_config_filename );
+ auto solver_config = get_blocksolverconfig( sconf_file );
  if( ! solver_config ) {
   block_solver_config_provided = false;
   solver_config = build_BlockSolverConfig();
- }
+  }
 
  auto cleared_solver_config = solver_config->clone();
  cleared_solver_config->clear();
@@ -1864,8 +1668,8 @@ void multiple_simulations( const netCDF::NcFile & file ) {
  const auto is_using_lagrangian_dual_solver =
   using_lagrangian_dual_solver( solver_config );
 
- if( is_using_lagrangian_dual_solver && using_thermal_dp_solver
-     ( config_filename_prefix + thermal_config_filename ) )
+ if( is_using_lagrangian_dual_solver &&
+     using_thermal_dp_solver( thermal_config_filename ) )
   // The ThermalUnitDPSolver cannot currently deal with spinning
   // reserves. Thus, any reserve that is provided must be ignored.
   ThermalUnitBlock::ignore_reserve();
@@ -1874,7 +1678,6 @@ void multiple_simulations( const netCDF::NcFile & file ) {
  for( auto block_description : blocks ) {
 
   // Simulate
-
   std::mt19937 random_number_engine;
   std::vector< double > initial_state;
 
@@ -1908,7 +1711,6 @@ void multiple_simulations( const netCDF::NcFile & file ) {
     * simulation. */
 
    // Deserialize the SDDPBlock
-
    auto sddp_block = new SDDPBlock;
    sddp_block->set_num_sub_blocks_per_stage( num_sub_blocks_per_stage );
    sddp_block->deserialize( block_description.second );
@@ -1917,7 +1719,6 @@ void multiple_simulations( const netCDF::NcFile & file ) {
     ( initial_solution_stage < sddp_block->get_time_horizon() );
 
    // Configure the SDDPBlock
-
    if( given_block_config )
     given_block_config->apply( sddp_block );
    else {
@@ -1929,25 +1730,21 @@ void multiple_simulations( const netCDF::NcFile & file ) {
      block_config = build_BlockConfig( sddp_block );
      block_config->apply( sddp_block );
      block_config->clear();
+     }
     }
-   }
 
    // Configure the Solver
-
    if( is_using_lagrangian_dual_solver )
     config_Lagrangian_dual( solver_config , sddp_block );
 
    solver_config->apply( sddp_block );
 
    // Set the output stream for the log of the inner Solvers
-
    set_log( sddp_block , &std::cout );
 
    // Set some parameters of SDDPGreedySolver
-
-   auto solver = dynamic_cast< SDDPGreedySolver * >
-    ( sddp_block->get_registered_solvers().front() );
-
+   auto solver = dynamic_cast< SDDPGreedySolver * >(
+			     sddp_block->get_registered_solvers().front() );
    if( ! solver )
     throw( std::logic_error( "The Solver for the SDDPBlock must be a "
                              "SDDPGreedySolver in simulation mode." ) );
@@ -1958,9 +1755,8 @@ void multiple_simulations( const netCDF::NcFile & file ) {
    auto subgradients_filename_prefix =
     solver->get_str_par( SDDPGreedySolver::strSimulationData );
 
-   solver->set_callback( [ sddp_block ]( Index stage ) {
-    callback( sddp_block , stage );
-   });
+   solver->set_callback(
+       [ sddp_block ]( Index stage ) { callback( sddp_block , stage ); } );
 
    if( i > 0 ) {
     // Set the random number engine
@@ -1971,33 +1767,28 @@ void multiple_simulations( const netCDF::NcFile & file ) {
      // the final solution of the last iteration.
      solver->set_par( SDDPGreedySolver::vdblInitialState ,
                       std::move( initial_state ) );
+     }
     }
-   }
 
    // Load possibly given cuts
-
    if( ! cuts_filename.empty() )
     solver->set_par( SDDPGreedySolver::strLoadCuts , cuts_filename );
 
    // Eliminate redundant cuts if it is desired
-
    if( eliminate_redundant_cuts )
-    CutProcessing(
-     load_BlockSolverConfig( get_cut_processing_solver_config_filepath() )
-    ).remove_redundant_cuts( sddp_block );
+    CutProcessing( get_blocksolverconfig(
+			       get_cut_processing_solver_config_filepath() )
+		   ).remove_redundant_cuts( sddp_block );
 
    // Set the name of the file that will output the subgradients
-
    if( ! subgradients_filename_prefix.empty()  )
     solver->set_par( SDDPGreedySolver::strSimulationData ,
-                     subgradients_filename_prefix + "." + std::to_string( i ) );
+                     subgradients_filename_prefix + "." + std::to_string( i )
+		     );
 
    // Try to solve the SDDPBlock
-
    while( true ) {
-
-    // Simulate
-    const auto status = solver->compute();
+    const auto status = solver->compute();  // Simulate
 
     if( solver->has_var_solution() ) {
      // A feasible solution has been found
@@ -2006,7 +1797,7 @@ void multiple_simulations( const netCDF::NcFile & file ) {
       // Retrieve the solution
       solver->get_var_solution();
       initial_state = get_final_state( sddp_block , initial_solution_stage );
-     }
+      }
 
      // Save the random number engine
      random_number_engine = solver->get_random_number_engine();
@@ -2015,99 +1806,96 @@ void multiple_simulations( const netCDF::NcFile & file ) {
      show_simulation_status( status , solver->get_fault_stage() );
      const auto lb = solver->get_lb();
      const auto ub = solver->get_ub();
-     std::cout << "Lower bound: " << std::setprecision( 20 ) << lb << std::endl;
-     std::cout << "Upper bound: " << std::setprecision( 20 ) << ub << std::endl;
-
+     std::cout << "Lower bound: " << std::setprecision( 20 ) << lb
+	       << std::endl;
+     std::cout << "Upper bound: " << std::setprecision( 20 ) << ub
+	       << std::endl;
      break;
+     }
     }
-   }
 
    // Destroy the SDDPBlock and the Configurations
-
    if( block_config )
     block_config->apply( sddp_block );
    if( ! given_block_config ) {
     delete( block_config );
     block_config = nullptr;
-   }
+    }
 
    cleared_solver_config->apply( sddp_block );
    delete( sddp_block );
-
+   }
   }
- }
 
  delete( block_config );
  delete( given_block_config );
  delete( solver_config );
  delete( cleared_solver_config );
-}
-
-/*--------------------------------------------------------------------------*/
-
-void check_consistency() {
- if( ! std::filesystem::is_directory( output_solution_directory ) ) {
-  std::cerr << "Directory '" << output_solution_directory
-	    << "' does not exist." << std::endl;
-  exit( 1 );
  }
-}
 
 /*--------------------------------------------------------------------------*/
 
-int main( int argc , char ** argv ) {
+void check_consistency( void )
+{
+ if( ! std::filesystem::is_directory( output_solution_directory ) ) {
+  std::cerr << "Directory " << output_solution_directory
+	    << " does not exist" << std::endl;
+  exit( 1 );
+  }
+ }
 
-#ifdef USE_MPI
- boost::mpi::environment env(argc, argv);
-#endif
+/*--------------------------------------------------------------------------*/
 
- docopt_desc = "SMS++ SDDP solver.\n";
- exe = get_filename( argv[ 0 ] );
- process_args( argc , argv );
+int main( int argc , char ** argv )
+{
+ // append new options to default ones- - - - - - - - - - - - - - - - - - - -
+ // note that the local options are inserted right before the last (nullptr)
+ // record in long_opts
+ 
+ docopt_desc = "SMS++ SDDP solver";
+ short_opts.append( my_short_opts );
+ long_opts.insert( std::prev( long_opts.end() ) ,
+		   my_long_opts.begin() , my_long_opts.end() );
+ help.append( my_help );
+
+ // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
+
+ process_my_args( argc , argv );
 
  check_consistency();
 
+ // open the file - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
  netCDF::NcFile file;
- try {
-  file.open( filename , netCDF::NcFile::read );
- } catch( netCDF::exceptions::NcException & e ) {
-  std::cerr << "Cannot open nc4 file " << filename << std::endl;
-  exit( 1 );
- }
+ auto type = read_open_netCDF( file , filename );
 
- netCDF::NcGroupAtt gtype = file.getAtt( "SMS++_file_type" );
- if( gtype.isNull() ) {
-  std::cerr << filename << " is not an SMS++ nc4 file." << std::endl;
-  exit( 1 );
- }
+ // process the file- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
- int type;
- gtype.getValues( &type );
+ #ifdef USE_MPI
+  boost::mpi::environment env( argc , argv );
+ #endif
 
  switch( type ) {
-  case eProbFile: {
-   std::cout << filename << " is a problem file, "
-    "ignoring Block/Solver configurations..." << std::endl;
-   process_prob_file( file );
-   break;
+  case eProbFile: std::cout << filename << " is a problem file, "
+			    << "ignoring Block/Solver Configuration(s)..."
+			    << std::endl;
+                  process_prob_file( file );
+		  break;
+
+  case eBlockFile: std::cout << filename << " is a block file" << std::endl;
+                   if( simulation_mode && ( number_simulations > 1 ) )
+		    multiple_simulations( file );
+		   else
+		    process_block_file( file );
+		   break;
+  default: std::cerr << filename << " is not a valid SMS++ file" << std::endl;
+           exit( 1 );
   }
 
-  case eBlockFile: {
-   std::cout << filename << " is a block file." << std::endl;
-
-   if( simulation_mode && ( number_simulations > 1 ) )
-    multiple_simulations( file );
-   else
-    process_block_file( file );
-
-   break;
-  }
-
-  default:
-   std::cerr << filename << " is not a valid SMS++ file." << std::endl;
-   exit( 1 );
- }
-
- file.close();
  return( 0 );
-}
+
+ }  // end( main )
+
+/*--------------------------------------------------------------------------*/
+/*------------------------ End File sddp_solver.cpp ------------------------*/
+/*--------------------------------------------------------------------------*/

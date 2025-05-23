@@ -39,7 +39,7 @@ if (TARGET SMS++::UCBlock AND
                    investment_solver.cpp ../sddp_solver/CutProcessing.cpp
                    InvestmentFunction.cpp InvestmentBlock.cpp)
     target_compile_features(investment_solver PUBLIC cxx_std_17)
-    target_include_directories(investment_solver PRIVATE ../ucblock_solver)
+    target_include_directories(investment_solver PRIVATE ../block_solver ../ucblock_solver)
     target_include_directories(investment_solver PRIVATE ../sddp_solver)
     target_link_libraries(investment_solver PRIVATE
                           SMS++::UCBlock

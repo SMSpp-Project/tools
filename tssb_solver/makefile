@@ -17,7 +17,7 @@ DIR = .
 NAME = $(DIR)/tssb_solver
 
 # common flags
-COMMON_SW = -std=c++17 -ferror-limit=1 -Wno-enum-compare -Wno-backslash-newline-escape
+COMMON_SW = -std=c++20 -ferror-limit=1 -Wno-enum-compare -Wno-backslash-newline-escape
 
 # debug switches
 SW_DEBUG = -g3 -glldb -fno-inline $(COMMON_SW)
@@ -88,7 +88,7 @@ LgDSLVSDR = ../../LagrangianDualSolver
 include $(LgDSLVSDR)/makefile
 
 # define input macros for TwoStageStochasticBlock makefile + dependencies, then include it
-TSSBkSDR = ../../TSSBlock
+TSSBkSDR = ../../TwoStageStochasticBlock
 include $(TSSBkSDR)/makefile-s
 
 # define input macros for UCBlock makefile, then include it
@@ -110,14 +110,15 @@ $(DIR)/tssb_solver: $(DIR)/tssb_solver.o $(MOBJ)
 
 # include directives
 MINC =  $(SMS++INC) $(TSSBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) \
-	-I$(DIR) -I../ucblock_solver
+	-I$(DIR) -I../ucblock_solver -I../block_solver
 
 # includes
 MH =    $(SMS++H) $(TSSBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH)
 
 # compile command
 
-$(DIR)/tssb_solver.o: $(DIR)/tssb_solver.cpp $(MH)
+$(DIR)/tssb_solver.o: $(DIR)/tssb_solver.cpp \
+    $(DIR)/../block_solver/common_utils.h $(MH)
 	$(CC) -c $(DIR)/tssb_solver.cpp -o $@ $(MINC) $(SW)
 
 # install/uninstall - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -17,16 +17,16 @@ NAME = investment_solver
 DIR = .
 
 # common flags
-COMMON_SW = -std=c++20 -ferror-limit=1 -Wno-enum-compare -Wno-backslash-newline-escape
+COMMON_SW = -std=c++20 -ferror-limit=1 -Wno-enum-compare -Wno-backslash-newline-escape -DNDEBUG -DCLANG_1200_0_32_27_PATCH
 
 # debug switches
 SW_DEBUG = -g3 -glldb -fno-inline $(COMMON_SW)
 # debug switches with address sanitizer and extra pedantic warning
-SW_DEBUG_ASAN = -g3 -glldb -fno-inline $(COMMON_SW) -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -Wpedantic -Wextra -Wno-unused-parameter -DCLANG_1200_0_32_27_PATCH
+SW_DEBUG_ASAN = -g3 -glldb -fno-inline $(COMMON_SW) -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -Wpedantic -Wextra -Wno-unused-parameter
 # production switches with address sanitizer
 SW_RELEASE_ASAN = -O3 $(COMMON_SW) -DNDEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined
 # production switches
-SW_RELEASE = -O3 $(COMMON_SW) -DNDEBUG -DCLANG_1200_0_32_27_PATCH
+SW_RELEASE = -O3 $(COMMON_SW)
 
 # compiler
 CC = clang++
@@ -139,10 +139,12 @@ $(DIR)/CutProcessing.o: \
 
 # include directives
 MINC =  $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) $(SDDPBkINC) \
-	-I$(DIR)/../sddp_solver -I$(DIR)/../ucblock_solver
+	-I$(DIR)/../sddp_solver -I$(DIR)/../ucblock_solver \
+	-I$(DIR)/../block_solver
 
 # includes
-MH =    $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(SDDPBkH)
+MH =    $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(SDDPBkH) \
+	$(DIR)/../block_solver/common_utils.h
 
 # compile command
 
