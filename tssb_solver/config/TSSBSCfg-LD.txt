@@ -29,9 +29,10 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-23 # number of integer parameters
+24 # number of integer parameters
 
 # now all the integer parameters
+intPushCostToOwner 0
 intDoEasy 	 1      # do easy components for (some) LagBFunction
 intMaxIter 	 10000  # max number of iterations for each call
 intMaxThread 1	    # MaxThread, max number of new tasks to spawn
