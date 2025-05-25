@@ -1,0 +1,4 @@
+SimpleConfiguration<std::vector<std::pair<int,int>>>
+1 # number of elements in this vector
+0 # component
+1 # get duals
