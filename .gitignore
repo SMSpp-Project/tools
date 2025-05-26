@@ -664,3 +664,5 @@ sddp_solver/*.gsbd
 sddp_solver/*.gsbmf
 sddp_solver/*.csv
 sddp_solver/*.txt
+sddp_solver/sub-log-*
+sddp_solver/*.btr
