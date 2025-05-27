@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - BSPar.txt - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -BSPar-greedy-LD.txt- - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a UCBlock to be solved by a
 # LagrangianDualSolver using a BundleSolver as the inner Solver
@@ -22,7 +22,7 @@ LagrangianDualSolver    # name of 2nd Solver
 1  # number of ComputeConfig in this BlockSolverConfig
 
 # now all the ComputeConfig
-# 1st ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # ComputeConfig of the LagrangianDualSolver; it mostly is the
 # ComputeConfig of the inner Solver, which is a [Parallel]BundleSolver
 
@@ -49,15 +49,12 @@ intBPar7   11     # how to deal with the global pools
 intMnSSC    0     # min number of consecutive SS with the same t for a t increase
 intMnNSC    1     # min number of consecutive NS with the same t for a t decrease
 inttSPar1  12     # long-term t-strategy (0 = none, 4 = soft, 8 = hard, 12 = balancing)
-
-intMaxNrEvls 2    # maximum number of function evaluations at each iteration 
-
+intMaxNrEvls 2    # maximum number of function evaluations at each iteration
 intMPName  15     # MP solver: 0 = QPP, 7 = Cplex with quadratic stabilization
                   # + 8 = check for duplicate linearizations
 
 # QPPenalty's parameters : - - - - - -
 intMPlvl   2      # log verbosity of Master Problem
-                  
 intQPmp1   0	  # MxAdd, how many variables can be added to the base at each
       	          # iteration in BMinQuad (0 = at will)
 intQPmp2   0      # MxRmv, how many variables can be removed from the base at each
@@ -67,7 +64,6 @@ intQPmp2   0      # MxRmv, how many variables can be removed from the base at ea
 intOSImp1  4      # CPLEX algorithm
 intOSImp2  1      # pre-processing (reduction)
 intOSImp3  1      # threads
-
 intRstAlg   2     # parameter to handle the reset of the algorithm
 
 16 # number of double parameters
@@ -99,8 +95,6 @@ str_LDSlv_ISName	ParallelBundleSolver  # the inner Solver used by LagrangianDual
 #str_LagBF_BSCfg		LPBSCfg.txt   # BlockSolverConfig for the LagBFunctions
 # not needed if intDoEasy >= 1 && USE_BundleSolver > 0, this is done "by hand"
 
-# note that we could eof() the file here since the rest is all empty
-
 0 # number of vector-of-int parameters
 
 # now all the vector-of-int parameters
@@ -124,5 +118,5 @@ str_LDSlv_ISName	ParallelBundleSolver  # the inner Solver used by LagrangianDual
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END BSPar.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -END BSPar-greedy-LD.txt- - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

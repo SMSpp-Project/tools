@@ -21,7 +21,7 @@ SDDPGreedySolver    # name of 1st Solver
 1  # number of ComputeConfig in this BlockSolverConfig
 
 # now all the ComputeConfig
-# 1st ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # ComputeConfig of the SDDPGreedySolver
 
 ComputeConfig # exact type of the ComputeConfig object
@@ -51,8 +51,6 @@ strInnerBSC     uc_solverconfig.txt   # BlockSolverConfig for the UCBlock
 #strRandomCutsFile random-cuts.nc4
 #strLoadCuts cuts.txt
 #strSimulationData simulation-data-1.txt
-
-# note that we could eof() the file here since the rest is all empty
 
 1 # number of vector-of-int parameters
 

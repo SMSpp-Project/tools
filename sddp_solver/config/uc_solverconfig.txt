@@ -8,8 +8,8 @@ CPXMILPSolver
 
 1  # The number of ComputeConfigs
 
-# now all the ComputeConfigs
-# 1st --------------------------------------
+# now all the ComputeConfig
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ComputeConfig  # Type of the object
 1  # differential
 
@@ -31,4 +31,4 @@ intRelaxIntVars 1
 
 # Pointer to the "extra" Configuration
 * # [none]
-# 1st END ----------------------------------
+# end of 1st ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - -

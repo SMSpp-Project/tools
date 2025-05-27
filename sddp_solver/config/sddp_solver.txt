@@ -21,7 +21,7 @@ ParallelSDDPSolver    # name of 1st Solver
 1  # number of ComputeConfig in this BlockSolverConfig
 
 # now all the ComputeConfig
-# 1st ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # ComputeConfig of the SDDPSolver
 
 ComputeConfig # exact type of the ComputeConfig object
@@ -32,7 +32,6 @@ ComputeConfig # exact type of the ComputeConfig object
 8 # number of integer parameters
 
 # now all the integer parameters
-
 intMaxIter            5
 intLogVerb            1 # log verbosity
 intNStepConv            5 # Frequency at which the convergence is checked
@@ -45,25 +44,18 @@ intOutputFrequency      1
 0 # number of double parameters
 
 # now all the double parameters
-
 #dblAccuracy 0.01 # Relative accuracy for declaring a solution optimal
 
 3 # number of string parameters
 
 # now all the string parameters
-
 strInnerBSC   uc_solverconfig.txt   # BlockSolverConfig for the UCBlock
-
 #strInnerBSC   BSPar-LD.txt          # BlockSolverConfig for the UCBlock
-
 #strInnerBC   uc_blockconfig.txt    # BlockConfig for the UCBlock
-
 #strStateFile state.nc4
 strOutputFile cuts.txt
 strFilenameSuffix .0
 #strRandomCutsFile random-cuts.nc4
-
-# note that we could eof() the file here since the rest is all empty
 
 0 # number of vector-of-int parameters
 
