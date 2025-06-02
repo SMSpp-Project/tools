@@ -31,34 +31,17 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-6 # number of integer parameters
+3 # number of integer parameters
 
 # now all the integer parameters
 intLogVerb      	0    # log verbosity of the MILPSolver
 intRelaxIntVars 	1    # nonzero if the continuous relaxation is solved
 intCutSepPar        7    # separate user cuts + lazy constraints
 
-## All specific CPLEX parameter (uncomment based on Solver)
-#CPXPARAM_Threads    1
-CPX_PARAM_MIPCBREDLP 0
-CPX_PARAM_PRELINEAR  0
-CPX_PARAM_REDUCE     1
-#CPXPARAM_LPMethod	 1    # 0 = auto (default), 1 = primal, 2 = dual, 3 = network, 4 = barrier, 5 = sifting, 6 = concurrent
-
-## All specific GUROBI parameter (uncomment based on Solver)
-#Threads     1
-#Method      0  # -1 = auto (default), 0 = primal, 1 = dual, 2 = barrier, 3 = barrier + crossover, 4 = network
-
 0 # number of double parameters
 
 # now all the double parameters
-#dblRelAcc  1e-8    # relative accuracy required to solution
-
-#dblAccuracy 0.000001 # Relative accuracy for declaring a solution optimal
-dblAccuracy 0 # Relative accuracy for declaring a solution optimal
-
-## All specific GUROBI parameter (uncomment based on Solver)
-#FeasibilityTol 1e-9
+# [none]
 
 0 # number of string parameters
 
