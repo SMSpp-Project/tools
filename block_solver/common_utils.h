@@ -518,7 +518,12 @@ int solve_all( Block * block )
    std::cout << "Lower bound = " << lb << std::endl;
 
    if( ! sol_output.empty() ) {
-    solver->get_var_solution();
+    if( solver->has_var_solution() )
+     solver->get_var_solution();
+    else
+     std::cout << "Warning: var solution required but not available"
+	       << std::endl;
+
     if( auto cdas = dynamic_cast< CDASolver * >( solver ) )
      if( cdas->has_dual_solution() )
       cdas->get_dual_solution();
