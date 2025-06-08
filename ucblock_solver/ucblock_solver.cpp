@@ -173,7 +173,7 @@ int main( int argc, char ** argv )
  int status = solve_all( block );
 
  // print the results - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- if( status == 0 )
+ if( ( ! dryrun ) && ( status == 0 ) )
   print_UCBlock_solver_results( block , solution_output_type );
 
  return( 0 );
