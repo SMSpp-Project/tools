@@ -42,6 +42,12 @@
 #include <omp.h>
 #endif
 
+#ifdef USE_MPI
+#include <boost/mpi/communicator.hpp>
+#include <boost/mpi/collectives.hpp>
+#include <boost/serialization/vector.hpp>
+#endif
+
 /*--------------------------------------------------------------------------*/
 /*------------------------- NAMESPACE AND USING ----------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -1059,12 +1065,31 @@ int InvestmentFunction::compute( bool changedvars ) {
  // linearization.
  bool interrupt_loop = false;
 
- int error_status = kError;
+ int local_error = 0;
 
  auto simulation_value = decltype( f_value )( 0 );
 
+ std::vector< double > local_linearization( v_linearization.size() , 0 );
+
+#ifdef USE_MPI
+ boost::mpi::communicator world;
+ const auto world_rank = world.rank();
+ const auto world_size = world.size();
+
+ const int chunk_size = (int)( num_scenarios / world_size );
+ const int remainder = num_scenarios % world_size;
+
+ const auto scenario_start = world_rank * chunk_size +
+  std::min( world_rank , remainder );
+ const auto scenario_end = scenario_start + chunk_size +
+  ( world_rank < remainder ? 1 : 0 );
+#else
+ const auto scenario_start = 0;
+ const auto scenario_end = num_scenarios;
+#endif
+
  #pragma omp parallel for reduction( + : simulation_value )
- for( int scenario = 0 ; scenario < int( num_scenarios ) ; ++scenario ) {
+ for( int scenario = scenario_start ; scenario < scenario_end ; ++scenario ) {
 
   if( interrupt_loop )
    continue;
@@ -1079,7 +1104,7 @@ int InvestmentFunction::compute( bool changedvars ) {
    #pragma omp critical( InvestmentFunction )
    {
     interrupt_loop = true;
-    error_status = status;
+    local_error = 1;
    }
    continue;
   }
@@ -1089,7 +1114,7 @@ int InvestmentFunction::compute( bool changedvars ) {
    {
     f_status = status;
     if( f_compute_linearization )
-     update_linearization( sub_block_index );
+     update_linearization( sub_block_index , local_linearization );
    }
   }
   catch( const std::exception & e ) {
@@ -1099,8 +1124,8 @@ int InvestmentFunction::compute( bool changedvars ) {
    unlock_sub_block( sub_block_index );
    #pragma omp critical( InvestmentFunction )
    {
-    error_status = kError;
     interrupt_loop = true;
+    local_error = 1;
    }
    continue;
   }
@@ -1121,7 +1146,18 @@ int InvestmentFunction::compute( bool changedvars ) {
 
  } // end( for each scenario )
 
- if( interrupt_loop ) {
+#ifdef USE_MPI
+ // Check whether there was an error in computing any scenario
+ int global_error = 0;
+ boost::mpi::reduce( world , local_error , global_error ,
+		     boost::mpi::maximum< int >() , 0 );
+ boost::mpi::broadcast( world , global_error , 0 );
+
+ if( global_error == 1 )
+   local_error = 1;
+#endif
+
+ if( local_error ) {
   // The loop was interrupted due to an error. Unlock the sub-Blocks and
   // return.
 
@@ -1137,26 +1173,38 @@ int InvestmentFunction::compute( bool changedvars ) {
 
   f_status = kError;
   f_value = worst_value();
+
+#ifdef USE_MPI
+  if( ! world.rank() ) {
+#endif
   output_function_value();
   handle_events( eBeforeTermination );
+#ifdef USE_MPI
+  }
+#endif
+
   return( f_status );
  }
 
- f_value = simulation_value;
+ auto local_value = simulation_value;
 
  f_ignore_modifications = saved_f_ignore_modifications;
 
  // Compute the expectation of the operational costs
 
- f_value /= num_scenarios;
+ local_value /= num_scenarios;
 
  // Compute the expectation of the linearization
 
- for( Index i = 0 ; i < v_linearization.size() ; ++i ) {
-  v_linearization[ i ] /= num_scenarios;
+ for( Index i = 0 ; i < local_linearization.size() ; ++i ) {
+  local_linearization[ i ] /= num_scenarios;
  }
 
  // Consider the linear term of the objective
+
+#ifdef USE_MPI
+ if( ! world.rank() ) {
+#endif
 
  for( Index i = 0 ; i < v_x.size() ; ++i ) {
 
@@ -1168,16 +1216,36 @@ int InvestmentFunction::compute( bool changedvars ) {
   if( x > installed_quantity ) {
    // An investment is being made in asset i
    const auto cost = get_cost( i );
-   f_value += cost * ( x - installed_quantity );
-   v_linearization[ i ] += cost;
+   local_value += cost * ( x - installed_quantity );
+   local_linearization[ i ] += cost;
   }
   else {
    // A disinvestment is being made in asset i
    const auto disinvestment_cost = get_disinvestment_cost( i );
-   f_value += disinvestment_cost * ( installed_quantity - x );
-   v_linearization[ i ] -= disinvestment_cost;
+   local_value += disinvestment_cost * ( installed_quantity - x );
+   local_linearization[ i ] -= disinvestment_cost;
   }
  }
+
+#ifdef USE_MPI
+ }
+#endif
+
+ f_value = 0.0;
+
+#ifdef USE_MPI
+ boost::mpi::reduce( world , local_value , f_value ,
+		     std::plus< double >() , 0 );
+ boost::mpi::broadcast( world , f_value , 0 );
+
+ std::vector< double > global_vector(10, 0.0);
+ boost::mpi::reduce( world , local_linearization , v_linearization ,
+		     std::plus< double >() , 0 );
+ boost::mpi::broadcast( world , v_linearization , 0 );
+#else
+ f_value = local_value;
+ v_linearization = local_linearization;
+#endif
 
  // Unlock the inner Block if it is necessary
  for( Index i = 0 ; i < v_Block.size() ; ++i ) {
@@ -1193,9 +1261,17 @@ int InvestmentFunction::compute( bool changedvars ) {
 
  f_has_value = true;
 
- output_function_value();
  f_status = kOK;
+
+#ifdef USE_MPI
+ if( ! world.rank() ) {
+#endif
+ output_function_value();
  handle_events( eBeforeTermination );
+#ifdef USE_MPI
+ }
+#endif
+
  return( f_status );
 
  }  // end( InvestmentFunction::compute )
@@ -2241,7 +2317,8 @@ double InvestmentFunction::compute_kappa_linearization
 
 void InvestmentFunction::update_linearization_unit_blocks
 ( Index stage , Index sub_block_index ,
-  const std::vector< std::pair< Index , Index > > & block_indices ) {
+  const std::vector< std::pair< Index , Index > > & block_indices ,
+  std::vector< double > & linearization ) {
 
  /* The UnitBlocks that are subject to investment can be divided into two
   * groups, depending on how the investment is represented.
@@ -2266,23 +2343,23 @@ void InvestmentFunction::update_linearization_unit_blocks
   auto block = ucblock->get_unit_block( block_index );
 
   if( dynamic_cast< const ThermalUnitBlock * >( block ) ) {
-   v_linearization[ var_index ] +=
+   linearization[ var_index ] +=
     compute_scale_linearization( block_index , stage , sub_block_index );
   }
   else if( auto unit = dynamic_cast< BatteryUnitBlock * >( block ) ) {
    if( f_replicate_battery )
-    v_linearization[ var_index ] +=
+    linearization[ var_index ] +=
      compute_scale_linearization( block_index , stage , sub_block_index );
    else
-    v_linearization[ var_index ] +=
+    linearization[ var_index ] +=
      compute_kappa_linearization( unit , var_index );
   }
   else if( auto unit = dynamic_cast< IntermittentUnitBlock * >( block ) ) {
    if( f_replicate_intermittent )
-    v_linearization[ var_index ] +=
+    linearization[ var_index ] +=
      compute_scale_linearization( block_index , stage , sub_block_index );
    else
-    v_linearization[ var_index ] +=
+    linearization[ var_index ] +=
      compute_kappa_linearization( unit , var_index );
   }
   else {
@@ -2301,7 +2378,8 @@ void InvestmentFunction::update_linearization_unit_blocks
 
 void InvestmentFunction::update_linearization_network_blocks
 ( Index stage , Index sub_block_index ,
-  const std::vector< std::pair< Index , Index > > & line_indices ) {
+  const std::vector< std::pair< Index , Index > > & line_indices ,
+  std::vector< double > & linearization ) {
 
  // Update the linearization with respect to the lines
 
@@ -2359,7 +2437,7 @@ void InvestmentFunction::update_linearization_network_blocks
 
     // Finally, update the linearization.
 
-    v_linearization[ var_index ] += - dual * bound;
+    linearization[ var_index ] += - dual * bound;
    } // end( for each line )
   } // end( dynamic_cast< const DCNetworkBlock * > )
   else {
@@ -2374,7 +2452,8 @@ void InvestmentFunction::update_linearization_network_blocks
 
 /*--------------------------------------------------------------------------*/
 
-void InvestmentFunction::update_linearization( Index sub_block_index ) {
+void InvestmentFunction::update_linearization
+( Index sub_block_index , std::vector< double > & linearization ) {
 
  const auto sddp_block = get_sddp_block( sub_block_index );
  const auto num_stages = sddp_block->get_time_horizon();
@@ -2427,8 +2506,10 @@ void InvestmentFunction::update_linearization( Index sub_block_index ) {
  }
 
  for( Index stage = 0 ; stage < num_stages ; ++stage ) {
-  update_linearization_unit_blocks( stage , sub_block_index , block_indices );
-  update_linearization_network_blocks( stage , sub_block_index , line_indices );
+  update_linearization_unit_blocks( stage , sub_block_index , block_indices ,
+                                    linearization );
+  update_linearization_network_blocks( stage , sub_block_index , line_indices ,
+                                       linearization );
  } // end( for each stage )
 
 }  // end( InvestmentFunction::update_linearization() )

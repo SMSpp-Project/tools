@@ -31,6 +31,10 @@ if (NOT hasParent)
     find_package(MILPSolver)
 endif ()
 
+find_package(OpenMP)
+find_package(MPI)
+find_package(Boost COMPONENTS mpi)
+
 # ----- investment_solver --------------------------------------------------- #
 if (TARGET SMS++::UCBlock AND
     TARGET SMS++::SDDPBlock)
@@ -56,6 +60,15 @@ if (TARGET SMS++::UCBlock AND
 
     if (TARGET SMS++::MILPSolver)
         target_link_libraries(investment_solver PRIVATE SMS++::MILPSolver)
+    endif ()
+
+    if (OPENMP_FOUND)
+      target_link_libraries(investment_solver PUBLIC OpenMP::OpenMP_CXX)
+    endif ()
+
+    if (MPI_CXX_FOUND AND Boost_MPI_FOUND)
+      target_compile_definitions(investment_solver PRIVATE USE_MPI)
+      target_link_libraries(investment_solver PUBLIC Boost::mpi MPI::MPI_CXX)
     endif ()
 
     # Install

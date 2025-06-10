@@ -2164,23 +2164,28 @@ class InvestmentFunction : public C05Function , public Block {
   * the sub-Block whose index is \p sub_block_index.
   *
   * @param sub_block_index The index of the sub-Block which will be used to
-  *        update the linearization. */
+  *        update the linearization.
+  * @param linearization The vector to which the linearization terms
+  *        will be added. */
 
- void update_linearization( Index sub_block_index );
+ void update_linearization( Index sub_block_index ,
+                            std::vector< double > & linearization );
 
 /*--------------------------------------------------------------------------*/
 
  /// updates the linearization with respect to the set of UnitBlock
  void update_linearization_unit_blocks
  ( Index stage , Index sub_block_index ,
-   const std::vector< std::pair< Index , Index > > & block_indices );
+   const std::vector< std::pair< Index , Index > > & block_indices ,
+   std::vector< double > & linearization );
 
 /*--------------------------------------------------------------------------*/
 
  /// updates the linearization with respect to the set of NetworkBlock
  void update_linearization_network_blocks
  ( Index stage , Index sub_block_index ,
-   const std::vector< std::pair< Index , Index > > & line_indices );
+   const std::vector< std::pair< Index , Index > > & line_indices ,
+   std::vector< double > & linearization );
 
 /*--------------------------------------------------------------------------*/
 
