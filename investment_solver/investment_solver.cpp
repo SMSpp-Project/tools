@@ -1607,7 +1607,7 @@ void process_block_file( const netCDF::NcFile & file )
    }
 
   // TODO This config file must be indicated in some appropriate way
-  const auto filename = conf_prefix + "sddp_greedy_investment.txt";
+  const auto filename = "sddp_greedy_investment.txt";
 
   auto sddp_solver_config = get_blocksolverconfig( filename );
 
