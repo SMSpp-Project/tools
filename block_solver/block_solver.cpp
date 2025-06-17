@@ -46,6 +46,9 @@ using namespace SMSpp_di_unipi_it;
 
 int main( int argc, char ** argv )
 {
+ // override the default terminate handler to print the exception message
+ std::set_terminate( smspp_terminate );
+ 
  // manage options and help, see common_utils.h- - - - - - - - - - - - - - - -
  docopt_desc = "SMS++ generic Block solver";
  process_args( argc , argv );

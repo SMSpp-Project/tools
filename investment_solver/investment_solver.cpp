@@ -1688,6 +1688,9 @@ void check_consistency( void )
 
 int main( int argc , char ** argv )
 {
+ // override the default terminate handler to print the exception message
+ std::set_terminate( smspp_terminate );
+ 
  // append new options to default ones- - - - - - - - - - - - - - - - - - - -
  // note that the local options are inserted right before the last (nullptr)
  // record in long_opts
