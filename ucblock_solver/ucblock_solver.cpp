@@ -24,6 +24,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include <iostream>
+#include <exception>
 #include <iomanip>
 
 #include <Block.h>
@@ -108,6 +109,9 @@ void process_my_args( int argc , char ** argv )
 
 int main( int argc, char ** argv )
 {
+ // override the default terminate handler to print the exception message
+ std::set_terminate( smspp_terminate );
+ 
  // append new options to default ones- - - - - - - - - - - - - - - - - - - -
  // note that the local options are inserted right before the last (nullptr)
  // record in long_opts
