@@ -144,6 +144,8 @@ void process_prob_file( const netCDF::NcFile & file ) {
 
   std::cout << "Problem: " << problem.first << std::endl;
 
+  set_solver_logs( tss_block );
+
   // Solve
   solve_all( tss_block );
 
@@ -212,6 +214,8 @@ void process_block_file( const netCDF::NcFile & file ) {
 
   // Configure the Solver
   solver_config->apply( tss_block );
+
+  set_solver_logs( tss_block );
 
   // Solve
   solve_all( tss_block );

@@ -82,6 +82,8 @@ int main( int argc, char ** argv )
 	    block , b_config , s_config );
    }
 
+  set_solver_logs( block );
+
   solve_all( block );  // compute()
 
   // apply() the clear()-ed BlockSolverConfig to remove the Solver

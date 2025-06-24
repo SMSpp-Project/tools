@@ -64,8 +64,10 @@ bool sol_verbose = false;       ///< if the Solver should be verbose
 bool writeprob = false;         ///< if the problem should be written back
 bool dryrun = false;            ///< if compute() need not really ba called
 
+int verbosity_level = 0;        ///< verbosity level (0 = silent, >0 = verbose output)
+
 /// default short command-line options
-std::string short_opts = "a:B:b:p:S:c:on:I:O:C:Dvh";
+std::string short_opts = "a:B:b:p:S:c:on:I:O:C:Dv:h";
 
 /// default long command-line options
 std::vector< option > long_opts = {
@@ -81,9 +83,9 @@ std::vector< option > long_opts = {
  { "inputsol"        , required_argument , nullptr , 'I' } ,
  { "outputsol"       , required_argument , nullptr , 'O' } ,
  { "outsolcfg"       , required_argument , nullptr , 'C' } ,
- { "dryrun"          , no_argument ,       nullptr , 'D' } ,
- { "verbose"         , no_argument ,       nullptr , 'v' } ,
- { nullptr           , no_argument ,       nullptr , 0 }
+ { "dryrun"          , no_argument       , nullptr , 'D' } ,
+ { "verbose"         , optional_argument , nullptr , 'v' } ,
+ { nullptr           , no_argument       , nullptr , 0 }
  };
 
 /// default command-line options help string
@@ -101,7 +103,7 @@ std::string help =
  "  -o, --output-solution           output the solutions\n"
  "  -n, --nc4problem <file>         write nc4 problem on file\n"
  "  -D, --dryrun                    skip the compute() call\n"
- "  -v, --verbose                   make the Solver verbose\n";
+ "  -v, --verbose[=N]              verbose output (0 = silent, 1 = basic, 2 = debug)\n";
 
 /** @} ---------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -109,6 +111,15 @@ std::string help =
 /** @name Utility functions 
  *  @{ */
 
+/// sets solver log to std::cout if verbosity_level >= 2
+
+static void set_solver_logs( Block * block ) {
+ if( ( verbosity_level >= 2 ) && block )
+  for( auto solver : block->get_registered_solvers() )
+   solver->set_log( &std::cout );
+}
+
+/*--------------------------------------------------------------------------*/
 /// gets the name of the executable from its full path
 
 std::string get_filename( const std::string & fullpath )
@@ -199,7 +210,11 @@ bool process_standard_arg( int opt )
   case 'C': sol_cfg_file = std::string( optarg ); break;
   case 'n': writeprob = true; break;
   case 'D': dryrun = true; break;
-  case 'v': sol_verbose = true; break;
+  case 'v': {
+   sol_verbose = true;
+   verbosity_level = optarg ? std::atoi( optarg ) : 1;
+   break;
+  }
   case 'h': docopt(); exit( 0 );
   case '?':
   default:  return( false );
