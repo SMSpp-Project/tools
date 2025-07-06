@@ -31,6 +31,8 @@ using namespace SMSpp_di_unipi_it;
 
 SMSpp_insert_in_factory_cpp_1( InvestmentBlock );
 
+SMSpp_insert_in_factory_cpp_0( InvestmentBlockSolution );
+
 /*--------------------------------------------------------------------------*/
 /*------------------------- METHODS of InvestmentBlock ---------------------*/
 /*--------------------------------------------------------------------------*/
@@ -203,6 +205,42 @@ void InvestmentBlock::generate_abstract_constraints( Configuration * stcc ) {
 }
 
 /*--------------------------------------------------------------------------*/
+/*----------------------- Methods for handling Solution --------------------*/
+/*--------------------------------------------------------------------------*/
+
+Solution * InvestmentBlock::get_Solution( Configuration *solc , bool emptys )
+{
+ int wsol = 1;
+ Configuration * innr_cfg = nullptr;
+
+ if( ( ! solc ) && f_BlockConfig )
+  solc = f_BlockConfig->f_solution_Configuration;
+
+ if( auto tsolc = dynamic_cast< SimpleConfiguration< int > * >( solc ) )
+  wsol = tsolc->f_value;
+
+ if( auto tsolc = dynamic_cast< SimpleConfiguration<
+                                    std::pair< int ,  Configuration * > > *
+                              >( solc ) ) {
+  wsol = tsolc->f_value.first;
+  innr_cfg = tsolc->f_value.second;
+  }
+
+ auto sol = new InvestmentBlockSolution();
+
+ // if wsol != 0 allocate a placeholder Solution object meant to say "do
+ // read the Solution of the inner Block when you are asked to"
+ sol->f_inner_Solution = wsol ? new Solution() : nullptr;
+ sol->f_inner_Configuration = innr_cfg;
+
+ if( ! emptys )
+  sol->read( this );
+
+ return( sol );
+
+ }  // end( InvestmentBlock::get_Solution )
+
+/*--------------------------------------------------------------------------*/
 /*------------- METHODS FOR Saving THE DATA OF THE InvestmentBlock ---------*/
 /*--------------------------------------------------------------------------*/
 
@@ -276,7 +314,186 @@ bool InvestmentBlock::is_feasible( bool useabstract , Configuration * fsbc ) {
     return( false );
 
  return( true );
-}
+ }
+
+/*--------------------------------------------------------------------------*/
+/*----------------- METHODS OF InvestmentBlockSolution ---------------------*/
+/*--------------------------------------------------------------------------*/
+
+void InvestmentBlockSolution::deserialize( const netCDF::NcGroup & group )
+{
+ // "NumDesignVariables" is mandatory - - - - - - - - - - - - - - - - - - - -
+ Index num_design;
+ deserialize_dim( group , "NumDesignVariables" , num_design , false );
+
+ // deserialize the DesignVariables - - - - - - - - - - - - - - - - - - - - -
+ ::deserialize< double >( group , "DesignVariables" , num_design ,
+			  v_design , false );
+
+ // deserialize the InnerSolution - - - - - - - - - - - - - - - - - - - - - -
+ delete f_inner_Solution;  // just to be on the safe side
+ auto sub_group = group.getGroup( "InnerSolution" );
+ if( sub_group.isNull() )
+  f_inner_Solution = nullptr;
+ else
+  f_inner_Solution = Solution::new_Solution( sub_group );
+ 
+ }  // end( InvestmentBlockSolution::deserialize )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentBlockSolution::read( const Block * block )
+{
+ auto IB = dynamic_cast< const InvestmentBlock * >( block );
+ if( ! IB )
+  throw( std::invalid_argument(
+	"InvestmentBlockSolution::read: block is not a InvestmentBlock" ) );
+
+ v_design = IB->get_variable_values();
+ if( ( ! IB->get_variable_lower_bound().empty() ) &&
+     IB->get_reformulate_bounds() ) {
+  for( Index i = 0 ; i < v_design.size() ; ++i )
+   if( IB->get_variable_lower_bound()[ i ] > -Inf< double >() )
+    v_design[ i ] += IB->get_variable_lower_bound()[ i ];
+  }
+
+ if( f_inner_Solution ) {  // if the inner Solution need be saved
+  delete f_inner_Solution;
+  f_inner_Solution = nullptr;
+  auto IF = dynamic_cast< InvestmentFunction * >( IB->get_function() );
+  if( ! IF )
+   throw( std::invalid_argument(
+	      "InvestmentBlockSolution::read: empty InvestmentFunction" ) );
+  if( IF->get_nested_Blocks().empty() )
+    throw( std::invalid_argument(
+		     "InvestmentBlockSolution::read: empty inner Block" ) );
+  f_inner_Solution = ( ( IF->get_nested_Blocks() ).front()
+			)->get_Solution( f_inner_Configuration , false );
+  if( ! f_inner_Solution )
+   throw( std::invalid_argument(
+	  "InvestmentBlockSolution::read: cannot read desired inner Solution"
+				) );
+  }
+ }  // end( InvestmentBlockSolution::read )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentBlockSolution::write( Block * block )
+{
+ auto IB = dynamic_cast< InvestmentBlock * >( block );
+ if( ! IB )
+  throw( std::invalid_argument(
+         "InvestmentBlockSolution::write: block is not a InvestmentBlock" ) );
+
+ if( v_design.size() != IB->get_number_variables() )
+  throw( std::invalid_argument(
+	    "InvestmentBlockSolution::write: inconsistent variables size" ) );
+
+ if( ( ! IB->get_variable_lower_bound().empty() ) &&
+     IB->get_reformulate_bounds() ) {
+  auto td = v_design;
+  for( Index i = 0 ; i < td.size() ; ++i )
+   if( IB->get_variable_lower_bound()[ i ] > -Inf< double >() )
+    td[ i ] -= IB->get_variable_lower_bound()[ i ];
+
+  IB->set_variable_values< double >( td );
+  }
+ else
+  IB->set_variable_values< double >( v_design );
+
+ if( f_inner_Solution ) {
+  auto IF = dynamic_cast< InvestmentFunction * >( IB->get_function() );
+  if( ! IF )
+   throw( std::invalid_argument(
+	      "InvestmentBlockSolution::write: empty InvestmentFunction" ) );
+  if( IF->get_nested_Blocks().empty() )
+    throw( std::invalid_argument(
+		     "InvestmentBlockSolution::write: empty inner Block" ) );
+  f_inner_Solution->write( IF->get_nested_Blocks().front() );
+  }
+ }  // end( InvestmentBlockSolution::write )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentBlockSolution::serialize( netCDF::NcGroup & group ) const
+{
+ Solution::serialize( group );
+
+ auto ndv = group.addDim( "NumDesignVariables" , v_design.size() );
+
+ ::serialize< double >( group , "DesignVariables" , netCDF::NcDouble() ,
+			ndv , v_design );
+
+ if( f_inner_Solution ) {
+  auto sub_group = group.addGroup( "InnerSolution" );
+  f_inner_Solution->serialize( sub_group );
+  }
+ }  // end( InvestmentBlockSolution::serialize )
+
+/*--------------------------------------------------------------------------*/
+
+InvestmentBlockSolution * InvestmentBlockSolution::scale( double factor )
+ const
+{
+ auto sol = clone();
+
+ if( factor == 1 )
+  return( sol );
+
+ for( auto & i : sol->v_design )
+  i *= factor;
+
+ if( sol->f_inner_Solution )
+  sol->f_inner_Solution->scale( factor );
+ 
+ return( sol );
+
+ }  // end( InvestmentBlockSolution::scale )
+
+/*--------------------------------------------------------------------------*/
+
+void InvestmentBlockSolution::sum( const Solution * solution ,
+				   double multiplier )
+{
+ auto IBS = dynamic_cast< const InvestmentBlockSolution * >( solution );
+ if( ! IBS )
+  throw( std::invalid_argument( "InvestmentBlockSolution::sum: solution is "
+				"not a InvestmentBlockSolution" ) );
+
+ if( v_design.size() != IBS->v_design.size() )
+  throw( std::invalid_argument(
+	    "InvestmentBlockSolution::sum: inconsistent variables size" ) );
+
+ if( ( f_inner_Solution && ( ! IBS->f_inner_Solution ) ) ||
+     ( ( ! f_inner_Solution ) && IBS->f_inner_Solution )  )
+  throw( std::invalid_argument(
+	    "InvestmentBlockSolution::sum: inconsistent inner Solution" ) );
+
+ auto dit = IBS->v_design.begin();
+ for( auto & i : v_design )
+  i += *(dit++) * multiplier;
+
+ if( f_inner_Solution )
+  f_inner_Solution->sum( IBS->f_inner_Solution , multiplier );
+
+ }  // end( InvestmentBlockSolution::sum )
+
+/*--------------------------------------------------------------------------*/
+
+InvestmentBlockSolution * InvestmentBlockSolution::clone( bool empty ) const
+{
+ auto sol = new InvestmentBlockSolution();
+
+ if( ! empty ) {
+  sol->v_design = v_design;
+
+  if( f_inner_Solution )
+   sol->f_inner_Solution = f_inner_Solution->clone();
+  }
+
+ return( sol );
+
+ }  // end( InvestmentBlockSolution::clone )
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File InvestmentBlock.cpp -----------------------*/
