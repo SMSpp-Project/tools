@@ -433,7 +433,7 @@ void get_initial_State( Solver * solver )
   return;
 
  try {
-  auto state = State::new_State( state_in_file );
+  auto state = State::deserialize( state_in_file );
   solver->put_State( *state );
   delete( state );
   }
