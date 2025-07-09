@@ -29,9 +29,10 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-23 # number of integer parameters
+24 # number of integer parameters
 
 # now all the integer parameters
+intPushCostToOwner 1 # whether sub-Block Objective are changed
 intDoEasy 	 0      # do easy components for (some) LagBFunction
 intMaxIter 	 10000  # max number of iterations for each call
 intMaxThread 1	    # MaxThread, max number of new tasks to spawn
@@ -85,12 +86,13 @@ dbltInit   1e-3   # initial value for t
 dbltSPar2  1e-2   # parameter for the long-term t-strategy
 dblCtOff   0.01   # cut-off factor for pricing in MinQuad
 
-2 # number of string parameters
+1 # number of string parameters
 
 # now all the string parameters
-#str_LDSlv_ISName   ParallelBundleSolver  # the inner Solver used by LagrangianDualSolver
+#strLogFileName      unit.log              # filename for the inner Solver log
+#str_LDSlv_ISName   ParallelBundleSolver   # the inner Solver used by LagrangianDualSolver
 str_LDSlv_ISName    BundleSolver          # the inner Solver used by LagrangianDualSolver
-str_LagBF_BSCfg    LPBSCfg.txt   	      # BlockSolverConfig for the LagBFunctions
+#str_LagBF_BSCfg    LPBSCfg.txt   	       # BlockSolverConfig for the LagBFunctions
 # not needed if intDoEasy >= 1 && USE_BundleSolver > 0, this is done "by hand"
 
 0 # number of vector-of-int parameters
