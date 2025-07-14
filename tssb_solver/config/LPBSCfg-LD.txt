@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - BSPar.txt - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - LPBSCfg-LD.txt- - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a TSSBlock to be solved by a
 # LagrangianDualSolver using a BundleSolver as the inner Solver
@@ -7,6 +7,7 @@
 #   Enrico Gorgone, Antonio Frangioni
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 BlockSolverConfig     # exact type of the Configuration object
@@ -86,13 +87,13 @@ dbltInit   1e-3   # initial value for t
 dbltSPar2  1e-2   # parameter for the long-term t-strategy
 dblCtOff   0.01   # cut-off factor for pricing in MinQuad
 
-2 # number of string parameters
+3 # number of string parameters
 
 # now all the string parameters
-#strLogFileName      tssb.log              # filename for the Solver log
+strLogFileName      unit.log              # filename for the Solver log
 #str_LDSlv_ISName   ParallelBundleSolver   # the inner Solver used by LagrangianDualSolver
 str_LDSlv_ISName    BundleSolver          # the inner Solver used by LagrangianDualSolver
-str_LagBF_BSCfg     LPBSCfg-LD.txt   	  # BlockSolverConfig for the LagBFunctions
+str_LagBF_BSCfg     LPBSCfg.txt   	  # BlockSolverConfig for the LagBFunctions
 
 0 # number of vector-of-int parameters
 
@@ -117,5 +118,5 @@ str_LagBF_BSCfg     LPBSCfg-LD.txt   	  # BlockSolverConfig for the LagBFunction
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END BSPar.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END LPBSCfg-LD.txt- - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

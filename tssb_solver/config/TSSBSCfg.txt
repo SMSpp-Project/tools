@@ -37,10 +37,10 @@ intLogVerb               1 # log verbosity
 # now all the double parameters
 # [none]
 
-1 # number of string parameters
+0 # number of string parameters
 
 # now all the string parameters
-strOutputFile	tssb.lp
+#strOutputFile	tssb.lp
 
 0 # number of vector-of-int parameters
 
