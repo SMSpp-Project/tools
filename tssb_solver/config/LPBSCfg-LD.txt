@@ -37,7 +37,7 @@ intPushCostToOwner 1 # whether sub-Block Objective are changed
 intDoEasy 	 0      # do easy components for (some) LagBFunction
 intMaxIter 	 10000  # max number of iterations for each call
 intMaxThread 1	    # MaxThread, max number of new tasks to spawn
-intLogVerb 	 2      # log verbosity of main Bundle algorithm
+intLogVerb 	 7      # log verbosity of main Bundle algorithm
 intWZNorm   2     # which norm to use in the norm-based stopping condition
 intBPar1   20     # discard items when they have been useless for <this> iterations
 intBPar2  100     # max bundle size per component
@@ -54,7 +54,7 @@ intMPName  15     # MP solver: 0 = QPP, 7 = Cplex with quadratic stabilization
 
 # QPPenalty's parameters :- - - - - - - - - - - - - - - - - - - - - - - - - -
 
-intMPlvl   4      # log verbosity of Master Problem
+intMPlvl   7      # log verbosity of Master Problem
 intQPmp1   0	  # MxAdd, how many variables can be added to the base at each
       	          # iteration in BMinQuad (0 = at will)
 intQPmp2   0      # MxRmv, how many variables can be removed from the base at each
