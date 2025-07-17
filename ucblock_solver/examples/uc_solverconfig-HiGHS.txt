@@ -1,34 +1,75 @@
-BlockSolverConfig # The name of the configuration
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - BSPar.txt - - - - - - - - - - - - - - - - -
+#
+# A txt description of a BlockSolverConfig for a UCBlock to be solved by a
+# :MILPSolver
+#
+#   Enrico Gorgone, Antonio Frangioni
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-0  # The BlockSolverConfig is not "differential"
-1  # The number of Solvers
+BlockSolverConfig     # exact type of the Configuration object
 
+1  # the BlockSolverConfig is a "differential" one
+
+1  # number of (the names of) Solver in this BlockSolverConfig
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
-HiGHSMILPSolver
+#CPXMILPSolver    # name of Solver
+#GRBMILPSolver   # name of Solver
+#SCIPMILPSolver  # name of Solver
+HiGHSMILPSolver # name of Solver
 
-1  # The number of ComputeConfigs
+1  # number of ComputeConfig in this BlockSolverConfig
 
-# now all the ComputeConfigs
-# 1st --------------------------------------
-ComputeConfig  # Type of the object
-0  # Not differential
+# now all the ComputeConfig
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# ComputeConfig of the :MILPSolver
 
-1  # Number of integer parameters
-intLogVerb 0
+ComputeConfig # exact type of the ComputeConfig object
 
-2  # Number of double parameters
-dblAAccSol 1e-04
-dblMaxTime 20000
+1  # f_diff == 0 ==> all non-provided parameters are set to the default value
+   # f_diff == 1 ==> all non-provided parameters are not changed
 
-0  # Number of string parameters
-#strOutputFile uc_lp.lp
+3 # number of integer parameters
+
+# now all the integer parameters
+intLogVerb      	0    # log verbosity of the MILPSolver
+intRelaxIntVars 	1    # nonzero if the continuous relaxation is solved
+intCutSepPar        7    # separate user cuts + lazy constraints
+
+0 # number of double parameters
+
+# now all the double parameters
+# [none]
+
+0 # number of string parameters
+
+# now all the string parameters
+#strOutputFile	uc.lp
 
 0 # number of vector-of-int parameters
 
+# now all the vector-of-int parameters
+# [none]
+
 0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
 
 0 # number of vector-of-string parameters
 
-# Pointer to the "extra" Configuration
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
 * # [none]
-# 1st END ----------------------------------
+
+# end of 1st ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - END BSPar.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
