@@ -37,7 +37,7 @@ intPushCostToOwner 1 # whether sub-Block Objective are changed
 intDoEasy 	 0      # do easy components for (some) LagBFunction
 intMaxIter 	 10000  # max number of iterations for each call
 intMaxThread 1	    # MaxThread, max number of new tasks to spawn
-intLogVerb 	 7      # log verbosity of main Bundle algorithm
+intLogVerb 	 4      # log verbosity of main Bundle algorithm
 intWZNorm   2     # which norm to use in the norm-based stopping condition
 intBPar1   20     # discard items when they have been useless for <this> iterations
 intBPar2  100     # max bundle size per component
