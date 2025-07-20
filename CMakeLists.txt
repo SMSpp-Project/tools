@@ -7,9 +7,6 @@
 #        $ cmake -S <source-path> -B <build-path>                             #
 #        $ cmake --build <build-path>                                         #
 #                                                                             #
-#    Note: this file tries to respect the principles of Modern CMake,         #
-#          keep it in mind when editing it.                                   #
-#                                                                             #
 #                                Donato Meoli                                 #
 #                         Dipartimento di Informatica                         #
 #                             Universita' di Pisa                             #

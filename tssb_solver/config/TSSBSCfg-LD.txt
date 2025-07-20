@@ -50,7 +50,11 @@ inttSPar1  12     # long-term t-strategy (0 = none, 4 = soft, 8 = hard, 12 = bal
 intMaxNrEvls 2    # maximum number of function evaluations at each iteration
 intMPName  15     # MP solver: 0 = QPP, 7 = Cplex with quadratic stabilization
                   # + 8 = check for duplicate linearizations
-intTrgtMng  31
+intTrgtMng  31    # bit-wise encoding targets and accuracies management:
+                  # bit 0: if lower/upper target is set to each convex/concave component
+                  # bit 1: if upper/lower target is set to each convex/concave component
+                  # bit 2-3: if accuracy is set (2 = upper - lower, 3 = using EpsU)
+                  # bit 4: if Lipschitz constant is used to compute the upper model
 
 # QPPenalty's parameters :- - - - - - - - - - - - - - - - - - - - - - - - - -
 
