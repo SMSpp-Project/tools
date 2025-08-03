@@ -106,6 +106,8 @@
 
 #include <BendersBlock.h>
 #include <BlockSolverConfig.h>
+#include <IntermittentUnitBlock.h>
+#include <ThermalUnitBlock.h>
 #include <HydroSystemUnitBlock.h>
 #include <RBlockConfig.h>
 #include <SDDPBlock.h>
