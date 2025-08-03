@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - BSPar.txt - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - BSPar-LD.txt- - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a UCBlock to be solved by a
 # LagrangianDualSolver using a BundleSolver as the inner Solver
@@ -116,5 +116,5 @@ str_LDSlv_ISName    BundleSolver          # the inner Solver used by LagrangianD
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END BSPar.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END BSPar-LD.txt- - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

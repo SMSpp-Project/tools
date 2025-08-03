@@ -152,14 +152,11 @@
 #include "BatteryUnitBlock.h"
 #include "DCNetworkBlock.h"
 #include "HydroSystemUnitBlock.h"
-#include "IntermittentUnitBlock.h"
 #include "SlackUnitBlock.h"
-#include "ThermalUnitBlock.h"
 #include "UCBlock.h"
 
 #include <filesystem>
 #include <iomanip>
-#include <iostream>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
