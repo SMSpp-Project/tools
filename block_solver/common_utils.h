@@ -103,7 +103,7 @@ std::string help =
  "  -o, --output-solution           output the solutions\n"
  "  -n, --nc4problem <file>         write nc4 problem on file\n"
  "  -D, --dryrun                    skip the compute() call\n"
- "  -v, --verbose[=N]              verbose output (0 = silent, 1 = basic, 2 = debug)\n";
+ "  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic, 2 = debug)\n";
 
 /** @} ---------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
