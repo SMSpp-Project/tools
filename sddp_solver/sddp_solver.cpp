@@ -317,8 +317,7 @@ void show_simulation_status( Index status , Index fault_stage )
 
 std::string get_cut_processing_solver_config_filepath()
 {
- return( ( std::filesystem::path( conf_prefix ) /
-	   cut_processing_sconf_file ).string() );
+ return( cut_processing_sconf_file );
  }
 
 /*--------------------------------------------------------------------------*/
