@@ -592,8 +592,7 @@ std::string get_investment_candidates_filename( void )
 
 std::string get_cut_processing_solver_config_filepath( void )
 {
- return( ( std::filesystem::path( conf_prefix ) /
-	   cut_processing_sconf_file ).string() );
+ return(cut_processing_sconf_file);
  }
 
 /*--------------------------------------------------------------------------*/
