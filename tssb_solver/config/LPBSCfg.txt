@@ -41,10 +41,11 @@ intRelaxIntVars 1    # nonzero if the continuous relaxation is solved
 # now all the double parameters
 # [none]
 
-0 # number of string parameters
+1 # number of string parameters
 
 # now all the string parameters
 #strOutputFile	unit.lp
+strLogFileName      unit-milp.log              # filename for the Solver log
 
 0 # number of vector-of-int parameters
 
