@@ -503,13 +503,13 @@ void print_UCBlock_solver_results( Block * block )
 void print_UCBlock_solver_results( Block * block ,
                                    int solution_output_type )
 {
- if( ! ( solution_output_type > 0 && solution_output_type < 4 ) )
+ if( ! ( ( solution_output_type > 0 ) && ( solution_output_type < 4 ) ) )
   return;
 
- if( solution_output_type == 1 || solution_output_type == 3 )
+ if( ( solution_output_type == 1 ) || ( solution_output_type == 3 ) )
   print_UCBlock_solver_results( block );
 
- if( solution_output_type == 2 || solution_output_type == 3 ) {
+ if( ( solution_output_type == 2 ) || ( solution_output_type == 3 ) ) {
   auto solver = block->get_registered_solvers().front();
   solver->get_var_solution();
 

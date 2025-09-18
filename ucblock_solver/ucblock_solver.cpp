@@ -71,30 +71,31 @@ void process_my_args( int argc , char ** argv )
   exit( 1 );
   }
 
- while( true ) {  // options
+ while( true ) { // options
   auto opt = getopt_long( argc , argv , short_opts.data() ,
-			  long_opts.data() , nullptr );
+                          long_opts.data() , nullptr );
   if( opt == -1 ) break;
-  if( process_standard_arg( opt ) )  // if it is a standard one
-   continue;                         // next
+  if( process_standard_arg( opt ) ) // if it is a standard one
+   continue; // next
 
-  switch( opt ) {  // non-standard options
-   case 't': { auto s = std::string( optarg );
-               if( s.size() != 1 || s.front() < '0' || s.front() > '3' ) {
-		std::cout << "Invalid output solution type " << s << std::endl
-			  << "Try " << exe << "' --help' for more information"
-			  << std::endl;
-		exit( 1 );
-	        }
-	       solution_output_type = s.front() - '0';
-	       break;
-               }
-     case '?': // Unrecognized option
-   default: std::cout << "Try " << exe << "' --help' for more information"
-		      << std::endl;
-            exit( 1 );
+  switch( opt ) { // non-standard options
+  case 't' : {
+   auto s = std::string( optarg );
+   if( ( s.size() != 1 ) || ( s.front() < '0' ) || ( s.front() > '3' ) ) {
+    std::cout << "Invalid output solution type " << s << std::endl
+     << "Try " << exe << "' --help' for more information"
+     << std::endl;
+    exit( 1 );
    }
-  }  // end( while( true ) )
+   solution_output_type = s.front() - '0';
+   break;
+  }
+  case '?' : // Unrecognized option
+  default : std::cout << "Try " << exe << "' --help' for more information"
+    << std::endl;
+   exit( 1 );
+  }
+ } // end( while( true ) )
 
  if( optind < argc )  // last argument == [UCBlock] filename
   filename = std::string( argv[ optind ] );
