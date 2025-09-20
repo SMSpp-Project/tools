@@ -123,7 +123,7 @@ void print_UCBlock_solver_results( Block * block )
     std::cout << "Commitment     = [";
     for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
      std::cout << std::setw( 2 )
-               << ( unsigned int ) round( commitment[ t ].get_value() );
+               << ( unsigned int ) std::round( commitment[ t ].get_value() );
     std::cout << " ]" << std::endl;
 
     // Generate init_t
@@ -142,14 +142,14 @@ void print_UCBlock_solver_results( Block * block )
     std::cout << "Start up       = [";
     for( Index t = 0 ; t < unit_block->get_time_horizon() - init_t ; ++t )
      std::cout << std::setw( 2 )
-               << ( unsigned int ) round( startup[ t ].get_value() );
+               << ( unsigned int ) std::round( startup[ t ].get_value() );
     std::cout << " ]" << std::endl;
 
     auto shutdown = thermal_unit_block->get_shut_down();
     std::cout << "Shut down      = [";
     for( Index t = 0 ; t < unit_block->get_time_horizon() - init_t ; ++t )
      std::cout << std::setw( 2 )
-               << ( unsigned int ) round( shutdown[ t ].get_value() );
+               << ( unsigned int ) std::round( shutdown[ t ].get_value() );
     std::cout << " ]" << std::endl;
 
     auto active_power = thermal_unit_block->get_active_power( 0 );
@@ -214,13 +214,13 @@ void print_UCBlock_solver_results( Block * block )
     auto intake_level = battery_unit_block->get_intake_level();
     std::cout << "Intake level   = [";
     for( auto & t : intake_level )
-     std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value() );
+     std::cout << std::setw( 20 ) << t.get_value();
     std::cout << " ]" << std::endl;
 
     auto outtake_level = battery_unit_block->get_outtake_level();
     std::cout << "Outtake level  = [";
     for( auto & t : outtake_level )
-     std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value() );
+     std::cout << std::setw( 20 ) << t.get_value();
     std::cout << " ]" << std::endl;
 
     auto storage_level = battery_unit_block->get_storage_level();
@@ -233,7 +233,7 @@ void print_UCBlock_solver_results( Block * block )
     if( ! binary_var.empty() ) {
      std::cout << "Binary var   = [";
      for( auto & t : binary_var )
-      std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value() );
+      std::cout << std::setw( 2 ) << ( unsigned int ) std::round( t.get_value() );
      std::cout << " ]" << std::endl;
     }
    }
@@ -395,7 +395,7 @@ void print_UCBlock_solver_results( Block * block )
      std::cout << "Commitment     = [";
      for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
       std::cout << std::setw( 2 )
-                << ( unsigned int ) round( commitment[ t ].get_value() );
+                << ( unsigned int ) std::round( commitment[ t ].get_value() );
      std::cout << " ]" << std::endl;
     }
 
