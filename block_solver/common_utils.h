@@ -541,7 +541,7 @@ int solve_all( Block * block )
    std::chrono::duration< double > compute_time = end - start;
    std::cout << "Elapsed time: " << compute_time.count() << " s" << std::endl;
 
-   if ( status != Solver::kOK ) retval = 1;
+   if( status != Solver::kOK ) retval = 1;
 
    auto ub = solver->get_ub();
    auto lb = solver->get_lb();
