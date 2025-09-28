@@ -28,9 +28,17 @@ include ../makefile_common
 # *H   is the list of all include files
 # *INC is the -I< include directories >
 
+# define input macros for SDDPBlock makefile, then include it
+SDDPBkSDR = ../../SDDPBlock
+include $(SDDPBkSDR)/makefile-c
+
+# define input macros for UCBlock makefile, then include it
+UCBckDIR = ../../UCBlock
+include $(UCBckDIR)/lib/makefile
+
 # BundleSolver
 BNDSLVSDR = ../../BundleSolver
-include $(BNDSLVSDR)/makefile-c
+include $(BNDSLVSDR)/makefile-s
 
 # not necessary, BundleSolver does that already
 # MILPSolver
@@ -40,14 +48,6 @@ include $(BNDSLVSDR)/makefile-c
 # LagrangianDualSolver
 LgDSLVSDR = ../../LagrangianDualSolver
 include $(LgDSLVSDR)/makefile
-
-# define input macros for UCBlock makefile, then include it
-UCBckDIR = ../../UCBlock
-include $(UCBckDIR)/lib/makefile
-
-# define input macros for SDDPBlock makefile, then include it
-SDDPBkSDR = ../../SDDPBlock
-include $(SDDPBkSDR)/makefile-s
 
 # define InvestmentBlock stuff
 InvsBkSDR = .
