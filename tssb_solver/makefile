@@ -32,6 +32,14 @@ include ../makefile_common
 SMS++SDR = ../../SMS++
 include $(SMS++SDR)/lib/makefile-c
 
+# TwoStageStochasticBlock
+TSSBkSDR = ../../TwoStageStochasticBlock
+include $(TSSBkSDR)/makefile-s
+
+# define input macros for UCBlock makefile, then include it
+UCBckDIR = ../../UCBlock
+include $(UCBckDIR)/lib/makefile
+
 # BundleSolver
 BNDSLVSDR = ../../BundleSolver
 include $(BNDSLVSDR)/makefile-s
@@ -39,14 +47,6 @@ include $(BNDSLVSDR)/makefile-s
 # LagrangianDualSolver
 LgDSLVSDR = ../../LagrangianDualSolver
 include $(LgDSLVSDR)/makefile
-
-# define input macros for TwoStageStochasticBlock makefile + dependencies, then include it
-TSSBkSDR = ../../TwoStageStochasticBlock
-include $(TSSBkSDR)/makefile-s
-
-# define input macros for UCBlock makefile, then include it
-UCBckDIR = ../../UCBlock
-include $(UCBckDIR)/lib/makefile
 
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
