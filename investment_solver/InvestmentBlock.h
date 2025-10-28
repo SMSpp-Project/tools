@@ -639,7 +639,7 @@ class InvestmentBlockSolution : public Solution
 /*---------- CONSTRUCTING AND DESTRUCTING InvestmentBlockSolution ----------*/
 
  explicit InvestmentBlockSolution( void ) :
-           f_inner_Solution( nullptr ) , f_inner_Configuration( nullptr ) { }
+           f_inner_Solution( nullptr ) , f_inner_Configuration( nullptr ) {}
  /// constructor, it has nothing to do
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
