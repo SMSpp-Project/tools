@@ -45,7 +45,7 @@ using namespace SMSpp_di_unipi_it;
 /*--------------------------------------------------------------------------*/
 /// Returns a default UCBlock configuration
 
-BlockConfig * default_configure_UCBlock( Block * uc_block )
+inline BlockConfig * default_configure_UCBlock( const Block * uc_block )
 {
  auto b_config = new RBlockConfig;
 
@@ -82,7 +82,7 @@ BlockConfig * default_configure_UCBlock( Block * uc_block )
 /*--------------------------------------------------------------------------*/
 /// Prints the content of a solved UCBlock
 
-void print_UCBlock_solver_results( Block * block )
+inline void print_UCBlock_solver_results( Block * block )
 {
  auto solver = block->get_registered_solvers().front();
  solver->get_var_solution();
@@ -123,7 +123,7 @@ void print_UCBlock_solver_results( Block * block )
     std::cout << "Commitment     = [";
     for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
      std::cout << std::setw( 2 )
-               << ( unsigned int ) std::round( commitment[ t ].get_value() );
+               << static_cast< unsigned int >( std::round( commitment[ t ].get_value() ) );
     std::cout << " ]" << std::endl;
 
     // Generate init_t
@@ -142,14 +142,14 @@ void print_UCBlock_solver_results( Block * block )
     std::cout << "Start up       = [";
     for( Index t = 0 ; t < unit_block->get_time_horizon() - init_t ; ++t )
      std::cout << std::setw( 2 )
-               << ( unsigned int ) std::round( startup[ t ].get_value() );
+               << static_cast< unsigned int >( std::round( startup[ t ].get_value() ) );
     std::cout << " ]" << std::endl;
 
     auto shutdown = thermal_unit_block->get_shut_down();
     std::cout << "Shut down      = [";
     for( Index t = 0 ; t < unit_block->get_time_horizon() - init_t ; ++t )
      std::cout << std::setw( 2 )
-               << ( unsigned int ) std::round( shutdown[ t ].get_value() );
+               << static_cast< unsigned int >( std::round( shutdown[ t ].get_value() ) );
     std::cout << " ]" << std::endl;
 
     auto active_power = thermal_unit_block->get_active_power( 0 );
@@ -183,12 +183,12 @@ void print_UCBlock_solver_results( Block * block )
     if( battery_unit_block->get_batt_investment_cost() != 0 )
      std::cout << "Batt Capacity  = " <<
                battery_unit_block->get_batt_design().get_value() *
-               battery_unit_block->get_batt_max_capacity() << std::endl;
+               battery_unit_block->get_batt_max_capacity_design() << std::endl;
 
     if( battery_unit_block->get_conv_investment_cost() != 0 )
      std::cout << "Conv Capacity  = " <<
                battery_unit_block->get_conv_design().get_value() *
-               battery_unit_block->get_conv_max_capacity() << std::endl;
+               battery_unit_block->get_conv_max_capacity_design() << std::endl;
 
     auto active_power = battery_unit_block->get_active_power( 0 );
     std::cout << "Active power   = [";
@@ -233,7 +233,7 @@ void print_UCBlock_solver_results( Block * block )
     if( ! binary_var.empty() ) {
      std::cout << "Binary var   = [";
      for( auto & t : binary_var )
-      std::cout << std::setw( 2 ) << ( unsigned int ) std::round( t.get_value() );
+      std::cout << std::setw( 2 ) << static_cast< unsigned int >( std::round( t.get_value() ) );
      std::cout << " ]" << std::endl;
     }
    }
@@ -353,7 +353,7 @@ void print_UCBlock_solver_results( Block * block )
     if( intermittent_unit_block->get_investment_cost() != 0 )
      std::cout << "Capacity       = " <<
                intermittent_unit_block->get_design().get_value() *
-               intermittent_unit_block->get_max_capacity() << std::endl;
+               intermittent_unit_block->get_max_capacity_design() << std::endl;
 
     auto active_power = intermittent_unit_block->get_active_power( 0 );
     std::cout << "Active power   = [";
@@ -395,7 +395,7 @@ void print_UCBlock_solver_results( Block * block )
      std::cout << "Commitment     = [";
      for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
       std::cout << std::setw( 2 )
-                << ( unsigned int ) std::round( commitment[ t ].get_value() );
+                << static_cast< unsigned int >( std::round( commitment[ t ].get_value() ) );
      std::cout << " ]" << std::endl;
     }
 
@@ -500,8 +500,8 @@ void print_UCBlock_solver_results( Block * block )
 /*--------------------------------------------------------------------------*/
 /// Prints the content of a solved UCBlock
 
-void print_UCBlock_solver_results( Block * block ,
-                                   int solution_output_type )
+inline void print_UCBlock_solver_results( Block * block ,
+                                          int solution_output_type )
 {
  if( ! ( ( solution_output_type > 0 ) && ( solution_output_type < 4 ) ) )
   return;
