@@ -492,7 +492,7 @@ class UCBlockSolutionOutput
   auto get_active_power =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( const auto active_power = block->get_active_power( g ) )
-     return( active_power + t )->get_value();
+     return( active_power + t )->get_value() * block->get_scale();
     return( 0 );
    };
 
@@ -509,7 +509,7 @@ class UCBlockSolutionOutput
 			open_mode() );
 
   auto get_max_power = []( UnitBlock * block , Index g , Index t ) {
-   return( block->get_max_power( t , g ) );
+   return( block->get_max_power( t , g ) * block->get_scale() );
   };
 
   print_generator_data( output , blocks , get_max_power );
@@ -529,7 +529,7 @@ class UCBlockSolutionOutput
   auto get_primary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_primary_spinning_reserve( g ) )
-     return( reserve + t )->get_value();
+     return( reserve + t )->get_value() * block->get_scale();
     return( 0 );
    };
 
@@ -550,7 +550,7 @@ class UCBlockSolutionOutput
   auto get_secondary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_secondary_spinning_reserve( g ) )
-     return( reserve + t )->get_value();
+     return( reserve + t )->get_value() * block->get_scale();
     return( 0 );
    };
 
@@ -639,7 +639,7 @@ class UCBlockSolutionOutput
     } else if( auto battery = dynamic_cast< BatteryUnitBlock * >( block ) ) {
      const auto & storage = battery->get_storage_level();
      if( t < storage.size() )
-      return( storage[ t ].get_value() );
+      return( storage[ t ].get_value() * block->get_scale() );
      return( 0 );
     } else
      throw( std::invalid_argument(
