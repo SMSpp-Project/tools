@@ -24,6 +24,7 @@
 
 #include <BatteryUnitBlock.h>
 #include <CDASolver.h>
+#include <DesignNetworkBlock.h>
 #include <DCNetworkBlock.h>
 #include <ECNetworkBlock.h>
 #include <HydroSystemUnitBlock.h>
@@ -429,6 +430,51 @@ inline void print_UCBlock_solver_results( Block * block )
     auto fun = obj->get_function();
     fun->compute();
     std::cout << "Function value   = " << fun->get_value() << std::endl;
+   }
+
+   if( auto design_network_block =
+    dynamic_cast< DesignNetworkBlock * >( network_block ) ) {
+    const auto & design_vars = design_network_block->get_const_design();
+    const auto & design_lines = design_network_block->get_design_lines();
+    const bool has_subset = ! design_lines.empty();
+
+    if( ! design_vars.empty() ) {
+     std::cout << "Design variables = [" << std::endl;
+     for( Index k = 0 ;
+          k < static_cast< Index >( design_vars.size() ) ; ++k ) {
+      Index line = has_subset ? design_lines[ k ] : k;
+      const auto & var = design_vars[ k ];
+      auto val = static_cast< unsigned int >( std::round( var.get_value() ) );
+      std::cout << "  line " << std::setw( 4 ) << line
+                << " : " << val << std::endl;
+     }
+     std::cout << "]" << std::endl << std::endl;
+    }
+
+    Index sub_net_idx = 0;
+    for( auto * sb : design_network_block->get_nested_Blocks() ) {
+     if( auto dc_sub = dynamic_cast< DCNetworkBlock * >( sb ) ) {
+      std::cout << "  --- " << dc_sub->classname()
+                << " " << sub_net_idx++ << " ---" << std::endl;
+
+      auto power_flow = dc_sub->get_power_flow();
+      if( ! power_flow.empty() ) {
+       std::cout << "  Power flow       = [";
+       for( auto & n : power_flow )
+        std::cout << std::setw( 20 ) << n.get_value();
+       std::cout << " ]" << std::endl;
+      }
+
+      auto auxiliary_var = dc_sub->get_auxiliary_variable();
+      if( ! auxiliary_var.empty() ) {
+       std::cout << "  Auxiliary variable     = [";
+       for( auto & n : auxiliary_var )
+        std::cout << std::setw( 20 ) << n.get_value();
+       std::cout << " ]" << std::endl;
+      }
+     }
+     std::cout << std::endl;
+    }
    }
 
    /* std::cout << "Node injection   = [" << std::endl;
