@@ -9,9 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added 
 
-### Changed 
+### Changed
 
 ### Fixed 
+
+## [0.5.4] - 2025-12-xx
+
+### Added 
+
+- support fir set\_solver\_log() in all solvers
+
+- std::set_terminate() support in all solvers
+
+- MPI support to the computation of InvestmentFunction
+
+- support for  reading initial State and writing the final one
+
+- support for dry runs
+
+- support for reading initial Solution and writing the final one
+
+### Changed 
+
+- all things that can be changed, and the common definitions, are
+  now in makefile\_common to reduce code duplication within makefiles
+  and to make adapting to one's environment quicker
+
+- all *\_solver executables share the same baisc set of command-line
+  options, then can add upon it
+
+- updated block solver handling in CutProcessing
+
+### Fixed 
+
+- consider UnitBlock scaling when outputting the solution
+
+- get\_installed\_quantity in investment\_solver
+
 
 ## [0.5.3] - 2024-02-29
 
@@ -111,7 +145,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First test release.
 
-[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.5.3...develop
+[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.5.4...develop
+[0.5.4]: https://gitlab.com/smspp/tools/-/compare/0.5.3...0.5.3
 [0.5.3]: https://gitlab.com/smspp/tools/-/compare/0.5.2...0.5.3
 [0.5.2]: https://gitlab.com/smspp/tools/-/compare/0.5.1...0.5.2
 [0.5.1]: https://gitlab.com/smspp/tools/-/compare/0.5.0...0.5.1

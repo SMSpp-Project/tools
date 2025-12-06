@@ -4,10 +4,15 @@ A set of tools and examples that use SMS++ library and other modules.
 At the moment we provide:
 
 - a generic Block Solver with some example input files
+
 - a single Thermal Unit solver
+
 - a UCBlock solver
+
 - an SDDPBlock solver
+
 - an InvestmentBlock solver
+
 - a small utility to change some parameters in a configuration
   file while leaving all the rest unchanged
 
@@ -19,8 +24,16 @@ These instructions will let you build SMS++ Tools on your system.
 ### Requirements
 
 - [SMS++ core library](https://gitlab.com/smspp/smspp)
+
+- [InvestmentBlock](https://gitlab.com/smspp/investmentblock)
+
 - [MILPSolver](https://gitlab.com/smspp/milpsolver)
-- [SDDPBlock](https://gitlab.com/smspp/sddpblock)
+
+- [SDDPBlock](https://gitlab.com/smspp/sddpblock) and its
+  dependencies
+
+- [TwoStageStochasticBlock](https://gitlab.com/smspp/twostagestochasticblock)
+
 - [UCBlock](https://gitlab.com/smspp/ucblock)
 
 ### Build and install with CMake
@@ -52,17 +65,31 @@ cmake --build .
 
 ## Usage
 
+All the `*_solver` share a large part of the command-line interface:
+
 The Block solver (`block_solver`) and the Unit Commitment solver (`ucblock_solver`)
 share the same interface:
 
 ```sh
-Usage: <solver-name> [options] <nc4-file>
+Usage:
+  <*_solver> [options] <file>
+  <*_solver> -h | --help
 
-  -B <file>, --blockcfg <file>    Block configuration.
-  -S <file>, --solvercfg <file>   Solver configuration.
-  -n <file>, --nc4problem <file>  Write nc4 problem on file.
-  -v, --verbose                   Make the solver verbose.
-  -h, --help                      Print this help.
+Options:
+  -h, --help                      print this help
+  -a, --save-state <file>         save State of the Solver
+  -B, --blockcfg <file>           Block Configuration
+  -b, --load-state <file>         load State for the Solver
+  -p, --prefix <path>             the prefix for all Block filenames
+  -S, --solvercfg <file>          Solver Configuration
+  -c, --configdir <path>          the prefix for all Config filenames
+  -I, --inputsol <file>           input Solution
+  -O, --outputsol <file>          output Solution
+  -C, --outsolcfg <file>          output Solution Configuration
+  -o, --output-solution           output the solutions
+  -n, --nc4problem <file>         write nc4 problem on file
+  -D, --dryrun                    skip the compute() call
+  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic, 2 = debug)
 ```
 
 See the [`examples`](ucblock_solver/examples) directory for sample
@@ -83,21 +110,15 @@ files and configurations.
 
 ### InvestmentBlock Solver
 
-```sh
-Usage: investment_solver [options] <nc4-file>
+`investment_solver` adds the following command-line options to the basic ones:
 
-Options:
-  -B, --blockcfg <file>            Block configuration.
-  -c, --configdir <path>           The prefix for all config filenames.
-  -e, --eliminate-redundant-cuts   Eliminate given redundant cuts.
-  -h, --help                       Print this help.
-  -l, --load-cuts <file>           Load cuts from a file.
-  -n, --num-blocks <number>        Number of sub-Blocks per stage.
-  -o, --output-solution            Output the solutions.
-  -p, --prefix <path>              The prefix for all Block filenames.
-  -S, --solvercfg <file>           Solver configuration.
-  -s, --simulate                   Simulate the given investment.
-  -x, --initial-investment <file>  Initial investment.
+```sh
+  -d, --output-dir                directory where solutions are written
+  -e, --eliminate-redundant-cuts  eliminate given redundant cuts
+  -l, --load-cuts <file>          load cuts from a file
+  -n, --num-blocks <number>       number of sub-Blocks per stage
+  -s, --simulate                  simulate the given investment
+  -x, --initial-investment <file> initial investment
 ```
 
 The input netCDF file can be a problem file or a block file:
@@ -171,22 +192,17 @@ SDDPBlock or by setting the initial state parameter of SDDPGreedySolver.
 
 ### SDDPBlock Solver
 
-```sh
-Usage: sddp_solver [options] <nc4-file>
+`sddp_solver` adds the following command-line options to the basic ones:
 
-Options:
-  -B, --blockcfg <file>           Block configuration.
-  -c, --configdir <path>          The prefix for all config filenames.
-  -e, --eliminate-redundant-cuts  Eliminate given redundant cuts.
-  -h, --help                      Print this help.
-  -i, --scenario <index>          The index of the scenario.
-  -l, --load-cuts <file>          Load cuts from a file.
-  -m, --num-simulations <number>  Number of simulations to be performed.
-  -n, --num-blocks <number>       Number of sub-Blocks per stage.
-  -p, --prefix <path>             The prefix for all Block filenames.
-  -s, --simulation                Simulation mode.
-  -S, --solvercfg <file>          Solver configuration.
-  -t, --stage <stage>             Stage from which initial state is taken.
+```sh
+  -d, --output-dir                directory where solutions are written
+  -e, --eliminate-redundant-cuts  eliminate given redundant cuts
+  -l, --load-cuts <file>          load cuts from a file
+  -n, --num-blocks <number>       number of sub-Blocks per stage
+  -i, --scenario <index>          the index of the scenario
+  -m, --num-simulations <number>  number of simulations to be performed
+  -s, --simulation                simulation mode
+  -t, --stage <stage>             stage from which initial state is taken
 ```
 
 The input netCDF file can be a problem file or a block file:
@@ -269,8 +285,19 @@ the initial state is specified.
 
 ### Thermal Unit solver / Unit Commitment solver
 
+`ucblock_solver` adds the following command-line options to the basic ones:
+
+```sh
+  -t, --output <type>             solution output type [1]
+                                  (0 none, 1 screen, 2 files, 3 both)
+```
+
 The input netCDF file must be a Block file. If you don't provide Block
 or Solver configurations, default configurations will be used.
+
+### TwoStageStochasticBlock solver
+
+`tssb_solver` does not add any command-line options to the basic ones.
 
 ### The `chgcfg` utility
 
