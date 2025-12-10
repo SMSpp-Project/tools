@@ -39,7 +39,7 @@ intRelaxIntVars 1    # nonzero if the continuous relaxation is solved
 3 # number of double parameters
 # now all the double parameters
 dblAAccSol 1e-04     # absolute accuracy of the solution    
-dblEAccSol 1e-04     # relative accuracy of the solution 
+dblRAccSol 1e-04     # relative accuracy of the solution 
 dblMaxTime 3600      # max running time (seconds)
 
 0 # number of string parameters

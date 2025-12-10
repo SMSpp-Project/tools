@@ -1,10 +1,10 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - LPBSCfg.txt - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - BSCfg.txt - - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for any Block that is a simple
-# LP / QP (continuous, convex, separable) and can be solved by a :MILPSolver
+# MILP / MIQP / MIQCQP and can be solved by a :MILPSolver
 #
-#   Enrico Gorgone, Antonio Frangioni
+#   Antonio Frangioni
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -16,10 +16,10 @@ BlockSolverConfig     # exact type of the Configuration object
 
 1  # number of (the names of) Solver in this BlockSolverConfig
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
-CPXMILPSolver
+#CPXMILPSolver
 #HiGHSMILPSolver
 #SCIPMILPSolver
-#GRBMILPSolver
+GRBMILPSolver
 
 1  # number of ComputeConfig in this BlockSolverConfig
 
@@ -36,29 +36,26 @@ ComputeConfig # exact type of the ComputeConfig object
 intLogVerb      0    # log verbosity of the MILPSolver
 intRelaxIntVars 1    # nonzero if the continuous relaxation is solved
 
-0 # number of double parameters
-
+3 # number of double parameters
 # now all the double parameters
-# [none]
+dblAAccSol 1e-04     # absolute accuracy of the solution    
+dblRAccSol 1e-04     # relative accuracy of the solution 
+dblMaxTime 3600      # max running time (seconds)
 
-1 # number of string parameters
-
+0 # number of string parameters
 # now all the string parameters
-#strOutputFile	unit.lp
-strLogFileName      unit-milp.log              # filename for the Solver log
+#strOutputFile	 uc.lp                    # filename for .lp file 
+#strLogFileName  uc-milp.log              # filename for the Solver log
 
 0 # number of vector-of-int parameters
-
 # now all the vector-of-int parameters
 # [none]
 
 0 # number of vector-of-double parameters
-
 # now all the vector-of-double parameters
 # [none]
 
 0 # number of vector-of-string parameters
-
 # now all the vector-of-string parameters
 # [none]
 
@@ -66,5 +63,5 @@ strLogFileName      unit-milp.log              # filename for the Solver log
 * # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END LPBSCfg.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - END BSCfg.txt - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
