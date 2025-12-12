@@ -143,7 +143,7 @@
 /*--------------------------------------------------------------------------*/
 
 #ifndef __UCBlockSolutionOutput
-#define __UCBlockSolutionOutput
+ #define __UCBlockSolutionOutput
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -152,14 +152,11 @@
 #include "BatteryUnitBlock.h"
 #include "DCNetworkBlock.h"
 #include "HydroSystemUnitBlock.h"
-#include "IntermittentUnitBlock.h"
 #include "SlackUnitBlock.h"
-#include "ThermalUnitBlock.h"
 #include "UCBlock.h"
 
 #include <filesystem>
 #include <iomanip>
-#include <iostream>
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -190,7 +187,9 @@ class UCBlockSolutionOutput
 /*--------------------- PUBLIC METHODS OF THE CLASS ------------------------*/
 /*--------------------------------------------------------------------------*/
 
- UCBlockSolutionOutput() {
+ UCBlockSolutionOutput( std::string output_directory = "" ) :
+  output_directory( output_directory ) {
+
   filenames.resize( number_of_files );
 
   auto extension = "OUT.csv";
@@ -227,7 +226,8 @@ class UCBlockSolutionOutput
 
   const auto & blocks = uc_block->get_network_blocks();
 
-  std::ofstream output( filenames[ flow ].name() , open_mode() );
+  std::ofstream output( get_filepath( filenames[ flow ].name() ) ,
+			open_mode() );
 
   auto get_power_flow =
    []( NetworkBlock * block , Index line ) -> double {
@@ -262,7 +262,8 @@ class UCBlockSolutionOutput
 
  void print_node_injection( const UCBlock * uc_block ) const {
 
-  std::ofstream output( filenames[ node_injection ].name() , open_mode() );
+  std::ofstream output( get_filepath( filenames[ node_injection ].name() ) ,
+			open_mode() );
 
   auto get_node_injection =
    []( NetworkBlock * block , Index node ) -> double {
@@ -283,8 +284,9 @@ class UCBlockSolutionOutput
 
  void print_node_injection_duals( UCBlock * uc_block ) const {
 
-  std::ofstream output( filenames[ marginal_cost_active_power_demand ].name() ,
-                        open_mode() );
+  std::ofstream output
+   ( get_filepath( filenames[ marginal_cost_active_power_demand ].name() ) ,
+     open_mode() );
 
   auto get_node_injection_dual =
    []( UCBlock * block , Index time , Index node ) -> double {
@@ -305,8 +307,8 @@ class UCBlockSolutionOutput
  /// dual values for the primary demand constraints
  void print_primary_demand_duals( UCBlock * uc_block ) const {
 
-  std::ofstream output( filenames[ marginal_cost_primary ].name() ,
-                        open_mode() );
+  std::ofstream output
+   ( get_filepath( filenames[ marginal_cost_primary ].name() ) , open_mode() );
 
   auto get_primary_demand_dual =
    []( UCBlock * block , Index time , Index zone ) -> double {
@@ -327,8 +329,9 @@ class UCBlockSolutionOutput
 
  /// dual values for the secondary demand constraints
  void print_secondary_demand_duals( UCBlock * uc_block ) const {
-  std::ofstream output( filenames[ marginal_cost_secondary ].name() ,
-                        open_mode() );
+  std::ofstream output
+   ( get_filepath( filenames[ marginal_cost_secondary ].name() ) ,
+     open_mode() );
 
   auto get_secondary_demand_dual =
    []( UCBlock * block , Index time , Index zone ) -> double {
@@ -349,8 +352,9 @@ class UCBlockSolutionOutput
 
  /// dual values for the inertia demand constraints
  void print_inertia_demand_duals( UCBlock * uc_block ) const {
-  std::ofstream output( filenames[ marginal_cost_inertia ].name() ,
-                        open_mode() );
+  std::ofstream output
+   ( get_filepath( filenames[ marginal_cost_inertia ].name() ) ,
+     open_mode() );
 
   auto get_inertia_demand_dual =
    []( UCBlock * block , Index time , Index zone ) -> double {
@@ -376,7 +380,8 @@ class UCBlockSolutionOutput
 
   for( Index p = 0 ; p < number_pollutants ; ++p ) {
 
-   std::ofstream output( get_marginal_pollutant_filename( p ) , open_mode() );
+   std::ofstream output( get_filepath( get_marginal_pollutant_filename( p ) ) ,
+			 open_mode() );
 
    // Header
 
@@ -399,7 +404,8 @@ class UCBlockSolutionOutput
  /// dual values for the power flow limit constraints
  void print_power_flow_limit_duals( UCBlock * uc_block ) const {
 
-  std::ofstream output( filenames[ marginal_cost_flows ].name() , open_mode() );
+  std::ofstream output
+   ( get_filepath( filenames[ marginal_cost_flows ].name() ) , open_mode() );
 
   auto get_power_flow_limit_dual =
    []( NetworkBlock * block , Index line ) -> double {
@@ -455,7 +461,8 @@ class UCBlockSolutionOutput
 
  void print_demand( UCBlock * block ) const {
 
-  std::ofstream output( filenames[ demand ].name() , open_mode() );
+  std::ofstream output( get_filepath( filenames[ demand ].name() ) ,
+			open_mode() );
 
   auto get_demand =
    []( UCBlock * block , Index time , Index node ) {
@@ -479,12 +486,13 @@ class UCBlockSolutionOutput
 
  void print_active_power( const std::vector< UnitBlock * > & blocks ) const {
 
-  std::ofstream output( filenames[ active_power ].name() , open_mode() );
+  std::ofstream output( get_filepath( filenames[ active_power ].name() ) ,
+			open_mode() );
 
   auto get_active_power =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( const auto active_power = block->get_active_power( g ) )
-     return( active_power + t )->get_value();
+     return( active_power + t )->get_value() * block->get_scale();
     return( 0 );
    };
 
@@ -497,10 +505,11 @@ class UCBlockSolutionOutput
 
  void print_max_power( const std::vector< UnitBlock * > & blocks ) const {
 
-  std::ofstream output( filenames[ max_power ].name() , open_mode() );
+  std::ofstream output( get_filepath( filenames[ max_power ].name() ) ,
+			open_mode() );
 
   auto get_max_power = []( UnitBlock * block , Index g , Index t ) {
-   return( block->get_max_power( t , g ) );
+   return( block->get_max_power( t , g ) * block->get_scale() );
   };
 
   print_generator_data( output , blocks , get_max_power );
@@ -513,13 +522,14 @@ class UCBlockSolutionOutput
  void print_primary_spinning_reserve(
   const std::vector< UnitBlock * > & blocks ) const {
 
-  std::ofstream output( filenames[ primary_spinning_reserve ].name() ,
-                        open_mode() );
+  std::ofstream output
+   ( get_filepath( filenames[ primary_spinning_reserve ].name() ) ,
+     open_mode() );
 
   auto get_primary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_primary_spinning_reserve( g ) )
-     return( reserve + t )->get_value();
+     return( reserve + t )->get_value() * block->get_scale();
     return( 0 );
    };
 
@@ -533,13 +543,14 @@ class UCBlockSolutionOutput
  void print_secondary_spinning_reserve(
   const std::vector< UnitBlock * > & blocks ) const {
 
-  std::ofstream output( filenames[ secondary_spinning_reserve ].name() ,
-                        open_mode() );
+  std::ofstream output
+   ( get_filepath( filenames[ secondary_spinning_reserve ].name() ) ,
+     open_mode() );
 
   auto get_secondary_spinning_reserve =
    []( UnitBlock * block , Index g , Index t ) -> double {
     if( auto reserve = block->get_secondary_spinning_reserve( g ) )
-     return( reserve + t )->get_value();
+     return( reserve + t )->get_value() * block->get_scale();
     return( 0 );
    };
 
@@ -552,7 +563,8 @@ class UCBlockSolutionOutput
 
  void print_volume( const std::vector< HydroUnitBlock * > & blocks ) const {
 
-  std::ofstream output( filenames[ volume ].name() , open_mode() );
+  std::ofstream output( get_filepath( filenames[ volume ].name() ) ,
+			open_mode() );
 
   auto get_volume =
    []( HydroUnitBlock * block , Index r , Index t ) -> double {
@@ -570,7 +582,8 @@ class UCBlockSolutionOutput
 
  void print_inflows( const std::vector< HydroUnitBlock * > & blocks ) const {
 
-  std::ofstream output( filenames[ inflow ].name() , open_mode() );
+  std::ofstream output( get_filepath( filenames[ inflow ].name() ) ,
+			open_mode() );
 
   auto get_inflow =
    []( HydroUnitBlock * block , Index r , Index t ) -> double {
@@ -589,7 +602,8 @@ class UCBlockSolutionOutput
 
  void print_flow_rate( const std::vector< HydroUnitBlock * > & blocks ) const {
 
-  std::ofstream output( filenames[ flow_rate ].name() , open_mode() );
+  std::ofstream output( get_filepath( filenames[ flow_rate ].name() ) ,
+			open_mode() );
 
   auto get_flow_rate =
    []( UnitBlock * block , Index g , Index t ) -> double {
@@ -613,7 +627,8 @@ class UCBlockSolutionOutput
 
  void print_storage( const std::vector< UnitBlock * > & blocks ) const {
 
-  std::ofstream output( filenames[ volume ].name() , open_mode() );
+  std::ofstream output( get_filepath( filenames[ volume ].name() ) ,
+			open_mode() );
 
   auto get_storage =
    []( UnitBlock * block , Index r , Index t ) -> double {
@@ -624,7 +639,7 @@ class UCBlockSolutionOutput
     } else if( auto battery = dynamic_cast< BatteryUnitBlock * >( block ) ) {
      const auto & storage = battery->get_storage_level();
      if( t < storage.size() )
-      return( storage[ t ].get_value() );
+      return( storage[ t ].get_value() * block->get_scale() );
      return( 0 );
     } else
      throw( std::invalid_argument(
@@ -689,18 +704,22 @@ class UCBlockSolutionOutput
     const auto number_pollutants = uc_block->get_number_pollutants();
     for( Index p = 0 ; p < number_pollutants ; ++p ) {
      const auto filename = get_marginal_pollutant_filename( p );
-     if( std::filesystem::is_regular_file( filename ) ) {
-      const auto new_filename = filename + suffix;
-      std::filesystem::copy( filename , new_filename , copy_options );
+     const auto filepath = get_filepath( filename );
+     if( std::filesystem::is_regular_file( filepath ) ) {
+      const auto new_filepath = get_filepath( filename + suffix );
+      std::filesystem::copy( filepath , new_filepath , copy_options );
      }
     }
    }
    else {
-    auto new_filename = filename;
-    new_filename.suffix += suffix;
-    if( std::filesystem::is_regular_file( filename.name() ) )
-     std::filesystem::copy( filename.name() , new_filename.name() ,
+    auto filepath = get_filepath( filename.name() );
+    if( std::filesystem::is_regular_file( filepath ) ) {
+     auto new_filename = filename;
+     new_filename.suffix += suffix;
+     auto new_filepath = get_filepath( new_filename.name() );
+     std::filesystem::copy( filepath , new_filepath ,
                             copy_options );
+    }
    }
   }
  }
@@ -716,16 +735,20 @@ class UCBlockSolutionOutput
     const auto number_pollutants = uc_block->get_number_pollutants();
     for( Index p = 0 ; p < number_pollutants ; ++p ) {
      const auto new_filename = get_marginal_pollutant_filename( p );
-     const auto old_filename = new_filename + suffix_to_remove;
-     if( std::filesystem::is_regular_file( old_filename ) )
-      std::filesystem::rename( old_filename , new_filename );
+     const auto old_filepath = get_filepath( new_filename + suffix_to_remove );
+     if( std::filesystem::is_regular_file( old_filepath ) ) {
+      const auto new_filepath = get_filepath( new_filename );
+      std::filesystem::rename( old_filepath , new_filepath );
+     }
     }
    }
    else {
     const auto new_filename = filename.name();
-    const auto old_filename = new_filename + suffix_to_remove;
-    if( std::filesystem::is_regular_file( old_filename ) )
-     std::filesystem::rename( old_filename , new_filename );
+    const auto old_filepath = get_filepath( new_filename + suffix_to_remove );
+    if( std::filesystem::is_regular_file( old_filepath ) ) {
+     const auto new_filepath = get_filepath( new_filename );
+     std::filesystem::rename( old_filepath , new_filepath );
+    }
    }
   }
  }
@@ -1157,6 +1180,12 @@ class UCBlockSolutionOutput
  }
 
 /*--------------------------------------------------------------------------*/
+
+ std::filesystem::path get_filepath( const std::string & filename ) const {
+  return std::filesystem::path( output_directory ) / filename;
+ }
+
+/*--------------------------------------------------------------------------*/
 /*---------------------------- PRIVATE TYPES  ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -1196,6 +1225,7 @@ class UCBlockSolutionOutput
  char separator_character = ',';
  bool append = false;
  Index initial_time = 0;
+ std::string output_directory{};
  std::vector< Filename > filenames;
 
 /*--------------------------------------------------------------------------*/

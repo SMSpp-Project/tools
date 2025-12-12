@@ -45,6 +45,7 @@ investment_solver/investment_solver
 sddp_solver/sddp_greedy_solver
 sddp_solver/sddp_solver
 ucblock_solver/ucblock_solver
+tssb_solver/tssb_solver
 chgcfg/chgcfg
 
 # Debug files
@@ -659,7 +660,9 @@ TSWLatexianTemp*
 *.lpz
 
 # sddp output files
-*.gsbd
-*.gsbmf
-*.csv
-*.txt
+sddp_solver/*.gsbd
+sddp_solver/*.gsbmf
+sddp_solver/*.csv
+sddp_solver/*.txt
+sddp_solver/sub-log-*
+sddp_solver/*.btr

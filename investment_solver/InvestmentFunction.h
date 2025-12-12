@@ -17,7 +17,7 @@
 /*--------------------------------------------------------------------------*/
 
 #ifndef __InvestmentFunction
-#define __InvestmentFunction
+ #define __InvestmentFunction
                       /* self-identification: #endif at the end of the file */
 
 /*--------------------------------------------------------------------------*/
@@ -271,6 +271,13 @@ class InvestmentFunction : public C05Function , public Block {
    * compute()-ed. If it is empty, then the variable and function values are
    * not output. The default value for this parameter is the empty string. */
 
+  strOutputSolutionDirectory ,
+  ///< path to the directory where the solution should be output
+  /**< If the solution must be output (see #intOutputSolution) then this is
+   * the path to the directory where the solution will be output. If it is
+   * empty, then the solution is output to the working directory. The default
+   * value of this parameter is empty. */
+
   strLastParInvestmentF
   ///< first allowed new string parameter for derived classes
   /**< Convenience value for easily allow derived classes to extend the set of
@@ -467,7 +474,7 @@ class InvestmentFunction : public C05Function , public Block {
   *
   * @param scfg a pointer to a ComputeConfig. */
 
- void set_ComputeConfig( ComputeConfig *scfg = nullptr ) override;
+ void set_ComputeConfig( const ComputeConfig *scfg = nullptr ) override;
 
 /*--------------------------------------------------------------------------*/
 
@@ -660,6 +667,8 @@ class InvestmentFunction : public C05Function , public Block {
   *
   * - #strOutputFilename
   *
+  * - #strOutputSolutionDirectory
+  *
   * @param par The parameter to be set.
   *
   * @return The value of the parameter. */
@@ -668,6 +677,9 @@ class InvestmentFunction : public C05Function , public Block {
   switch( par ) {
    case( strOutputFilename ):
     f_output_filename = std::move( value );
+    break;
+   case( strOutputSolutionDirectory ):
+    f_output_solution_directory = std::move( value );
     break;
    default: C05Function::set_par( par , value );
   }
@@ -762,6 +774,7 @@ class InvestmentFunction : public C05Function , public Block {
  const std::string & get_str_par( const idx_type par ) const override {
   switch( par ) {
    case( strOutputFilename ): return( f_output_filename );
+   case( strOutputSolutionDirectory ): return( f_output_solution_directory );
   }
   return( C05Function::get_str_par( par ) );
  }
@@ -823,7 +836,10 @@ class InvestmentFunction : public C05Function , public Block {
 
  [[nodiscard]] idx_type str_par_str2idx( const std::string & name )
   const override {
-  if( name == "strOutputFilename" ) return( strOutputFilename );
+  if( name == "strOutputFilename" )
+   return( strOutputFilename );
+  if( name == "strOutputSolutionDirectory" )
+   return( strOutputSolutionDirectory );
   return( C05Function::str_par_str2idx( name ) );
  }
 
@@ -852,7 +868,7 @@ class InvestmentFunction : public C05Function , public Block {
  const std::string & str_par_idx2str( const idx_type idx ) const override {
 
   static const std::vector< std::string > parameter_names =
-   { "strOutputFilename" };
+    { "strOutputFilename" , "strOutputSolutionDirectory"};
 
   if( idx >= str_par_type_C05F::strLastParC05F &&
       idx < str_par_type_InvestmentF::strLastParInvestmentF )
@@ -1256,28 +1272,28 @@ class InvestmentFunction : public C05Function , public Block {
   * not have a sub-Block or its sub-Block does not have a Solver attached to
   * it, then an exception is thrown. */
 
- FunctionValue get_value() const override;
+ FunctionValue get_value( void ) override;
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
  /// returns a lower estimate of the InvestmentFunction
  /** This method simply returns get_value(). */
 
- FunctionValue get_lower_estimate() const override {
+ FunctionValue get_lower_estimate( void ) override {
   return( get_value() );
- }
+  }
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
  /// returns an upper estimate of the InvestmentFunction
  /** This method simply returns get_value(). */
 
- FunctionValue get_upper_estimate() const override {
+ FunctionValue get_upper_estimate( void ) override {
   return( get_value() );
- }
+  }
 
 /*--------------------------------------------------------------------------*/
  /// returns the "constant term" of the InvestmentFunction
 
- FunctionValue get_constant_term() const override;
+ FunctionValue get_constant_term( void ) const override;
 
 /*--------------------------------------------------------------------------*/
  /// returns true only if this InvestmentFunction is convex
@@ -1286,7 +1302,7 @@ class InvestmentFunction : public C05Function , public Block {
   * its sub-Block is maximization, then this method returns false. Otherwise,
   * it returns true. */
 
- bool is_convex() const override;
+ bool is_convex( void ) override;
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
  /// returns true only if this InvestmentFunction is concave
@@ -1295,7 +1311,7 @@ class InvestmentFunction : public C05Function , public Block {
   * its sub-Block is minimization, then this method returns false. Otherwise,
   * it returns true. */
 
- bool is_concave() const override;
+ bool is_concave( void ) override;
 
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
  /// returns true only if this InvestmentFunction is linear
@@ -1304,7 +1320,7 @@ class InvestmentFunction : public C05Function , public Block {
   * linear. We do not attempt to find this out and this method simply returns
   * \c false. */
 
- bool is_linear() const override { return( false ); }
+ bool is_linear( void ) override { return( false ); }
 
 /*--------------------------------------------------------------------------*/
  /// tells whether a linearization is available
@@ -1326,13 +1342,13 @@ class InvestmentFunction : public C05Function , public Block {
 
  bool is_linearization_there( Index name ) const override final {
   return( global_pool.is_linearization_there( name ) );
- }
+  }
 
 /*--------------------------------------------------------------------------*/
 
  bool is_linearization_vertical( Index name ) const override final {
   return( global_pool.is_linearization_vertical( name ) );
- }
+  }
 
 /*--------------------------------------------------------------------------*/
  /// stores a combination of the given linearizations
@@ -1484,7 +1500,7 @@ class InvestmentFunction : public C05Function , public Block {
 
  double get_installed_quantity( Index asset ) const {
   if( v_installed_quantity.empty() )
-   return( 1 );
+   return( 0 );
   assert( asset < v_installed_quantity.size() );
   return( v_installed_quantity[ asset ] );
  }
@@ -1525,11 +1541,12 @@ class InvestmentFunction : public C05Function , public Block {
   * InvestmentFunction; it is virtual so that derived classes can print their
   * specific information in the format they choose. */
 
- void print( std::ostream &output ) const override {
+ void print( std::ostream &output ) override {
   output << "InvestmentFunction [" << this << "]"
          << " with " << get_num_active_var() << " active variables";
- }
+  }
 
+/*--------------------------------------------------------------------------*/
  /// load the InvestmentFunction out of an input stream
  /** This method loads the InvestmentFunction out of an input stream. */
 
@@ -1644,6 +1661,9 @@ class InvestmentFunction : public C05Function , public Block {
 
  std::string f_output_filename;
  ///< name of the file into which the variable and function values are output
+
+ std::string f_output_solution_directory;
+ ///< path to the directory where the solution will be output
 
  std::vector< std::vector< EventHandler > > v_events;
  ///< container of event handlers
@@ -2144,23 +2164,28 @@ class InvestmentFunction : public C05Function , public Block {
   * the sub-Block whose index is \p sub_block_index.
   *
   * @param sub_block_index The index of the sub-Block which will be used to
-  *        update the linearization. */
+  *        update the linearization.
+  * @param linearization The vector to which the linearization terms
+  *        will be added. */
 
- void update_linearization( Index sub_block_index );
+ void update_linearization( Index sub_block_index ,
+                            std::vector< double > & linearization );
 
 /*--------------------------------------------------------------------------*/
 
  /// updates the linearization with respect to the set of UnitBlock
  void update_linearization_unit_blocks
  ( Index stage , Index sub_block_index ,
-   const std::vector< std::pair< Index , Index > > & block_indices );
+   const std::vector< std::pair< Index , Index > > & block_indices ,
+   std::vector< double > & linearization );
 
 /*--------------------------------------------------------------------------*/
 
  /// updates the linearization with respect to the set of NetworkBlock
  void update_linearization_network_blocks
  ( Index stage , Index sub_block_index ,
-   const std::vector< std::pair< Index , Index > > & line_indices );
+   const std::vector< std::pair< Index , Index > > & line_indices ,
+   std::vector< double > & linearization );
 
 /*--------------------------------------------------------------------------*/
 

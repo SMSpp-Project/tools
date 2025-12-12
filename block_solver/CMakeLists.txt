@@ -1,48 +1,71 @@
 # ----- Settings ------------------------------------------------------------ #
-# An option is an ON/OFF user-settable cache variable.
-option(tools_USE_DL "Use dynamic loading" ON)
+# Since we are using the block factory, objects from linked libraries
+# may wrongly appear unused, and by default the linker does not include them,
+# so we have to force the linking.
+if (BUILD_SHARED_LIBS)
+    if (MSVC)
+        add_link_options("/OPT:NOREF")
+    elseif (UNIX AND (NOT APPLE))
+        add_link_options("-Wl,--no-as-needed")
+    endif ()
+else ()
+    if (MSVC)
+        add_link_options("/WHOLEARCHIVE" "/FORCE:MULTIPLE")
+    else () # Unix
+        if (APPLE)
+            add_link_options("-Wl,-all_load")
+        else ()
+            add_link_options("-Wl,--whole-archive,--allow-multiple-definition")
+        endif ()
+    endif ()
+endif ()
 
 # ----- Requirements -------------------------------------------------------- #
 # If it's not being called by the umbrella, we need to
 # look for the system-installed libraries.
 if (NOT hasParent)
+    # Blocks
     find_package(SMS++)
-    find_package(UCBlock)
+    find_package(MCFBlock)
+    find_package(InvestmentBlock)
+    # Solvers
+    find_package(LagrangianDualSolver)
+    find_package(BundleSolver)
     find_package(MILPSolver)
+    find_package(LEMONSolver)
 endif ()
 
 # ----- block_solver -------------------------------------------------------- #
 add_executable(block_solver block_solver.cpp)
-target_compile_features(block_solver PUBLIC cxx_std_17)
+target_link_libraries(block_solver PRIVATE SMS++::SMS++)
 
-if (BUILD_SHARED_LIBS AND tools_USE_DL)
-    # If shared libraries have been built and the option is ON,
-    # block_solver will be using dynamic loading.
-    # It only needs SMS++ core library.
-    if (TARGET SMS++::SMS++)
-        # Runtime path with the build tree directories
-        # containing the libraries.
-        set(CMAKE_BUILD_RPATH ${SMSPP_BUILD_RPATH})
-
-        # Enable DL in the code.
-        target_compile_definitions(block_solver PRIVATE USE_DL)
-        target_link_libraries(block_solver PRIVATE SMS++::SMS++ dl)
-    endif ()
-else ()
-    # Otherwise, link all the supported libraries.
-    if (TARGET SMS++::UCBlock AND
-        TARGET SMS++::MILPSolver)
-        target_link_libraries(block_solver PRIVATE
-                              SMS++::UCBlock
-                              SMS++::MILPSolver)
-    endif ()
+if (TARGET SMS++::MCFBlock)
+    target_link_libraries(block_solver PRIVATE SMS++::MCFBlock)
 endif ()
 
-# ----- Install ------------------------------------------------------------- #
+if (TARGET SMS++::InvestmentBlock)
+    target_link_libraries(block_solver PRIVATE SMS++::InvestmentBlock)
+endif ()
+
+if (TARGET SMS++::LagrangianDualSolver)
+    target_link_libraries(block_solver PRIVATE SMS++::LagrangianDualSolver)
+endif ()
+
+if (TARGET SMS++::BundleSolver)
+    target_link_libraries(block_solver PRIVATE SMS++::BundleSolver)
+endif ()
+
+if (TARGET SMS++::MILPSolver)
+    target_link_libraries(block_solver PRIVATE SMS++::MILPSolver)
+endif ()
+
+if (TARGET SMS++::LEMONSolver)
+    target_link_libraries(block_solver PRIVATE SMS++::LEMONSolver)
+endif ()
+
 install(TARGETS block_solver
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-# ----- Generate and install shell completion scripts ----------------------- #
 configure_file(../cmake/completion.bash.in block_solver-completion.bash)
 configure_file(../cmake/completion.zsh.in block_solver-completion.zsh)
 

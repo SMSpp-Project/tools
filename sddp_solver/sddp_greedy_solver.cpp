@@ -34,116 +34,95 @@
  *
  * \copyright &copy; by Rafael Durbano Lobato
  */
+/*--------------------------------------------------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
 
-#include <getopt.h>
+#include "common_utils.h"
+
 #include <iostream>
 #include <queue>
 
 #include <BendersBlock.h>
-#include <BlockSolverConfig.h>
-#include <CPXMILPSolver.h>
 #include <HydroSystemUnitBlock.h>
 #include <RBlockConfig.h>
 #include <SDDPBlock.h>
 #include <StochasticBlock.h>
 #include <SDDPGreedySolver.h>
 
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- USING -----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
 using namespace SMSpp_di_unipi_it;
 
 /*--------------------------------------------------------------------------*/
+/*------------------------------- GLOBALS ----------------------------------*/
+/*--------------------------------------------------------------------------*/
 
-std::string filename{};
-std::string block_config_filename{};
-std::string solver_config_filename{};
 long scenario_id = 0;
 
 /*--------------------------------------------------------------------------*/
 
-void print_help() {
- // http://docopt.org
- std::cout
-  << "Usage: sddp_greedy_solver [options] <nc4-file>\n\n"
-  << "Options:\n"
-  << "  -i <index>, --scenario <index>  The index of the scenario.\n"
-  << "  -b <file>,  --blockcfg <file>   Block configuration.\n"
-  << "  -s <file>,  --solvercfg <file>  Solver configuration.\n"
-  << "  -h, --help                      Print this help." << std::endl;
-}
+const std::string my_short_opts = "i:";
+
+const std::vector< option > my_long_opts = {
+  { "scenario" ,                 required_argument , nullptr , 'i' } ,
+  { nullptr ,                    no_argument ,       nullptr , 0 }
+  };
+
+const std::string my_help =
+ "  -i, --scenario <index>          the index of the scenario\n";
 
 /*--------------------------------------------------------------------------*/
+/*------------------------------ FUNCTIONS ---------------------------------*/
+/*--------------------------------------------------------------------------*/
 
-void process_args( int argc , char ** argv ) {
-
+void process_my_args( int argc , char ** argv )
+{
+ exe = get_filename( argv[ 0 ] );
  if( argc < 2 ) {
-  print_help();
+  std::cout << exe << ": no input file\n"
+            << "Try " << exe << "' --help' for more information.\n";
   exit( 1 );
- }
-
- const char * const short_opts = "b:s:i:h";
- const option long_opts[] = {
-  { "blockcfg" ,  required_argument , nullptr , 'b' } ,
-  { "solvercfg" , required_argument , nullptr , 's' } ,
-  { "scenario" ,  required_argument , nullptr , 'i' } ,
-  { "help" ,      no_argument ,       nullptr , 'h' } ,
-  { nullptr ,     no_argument ,       nullptr , 0 }
- };
-
- // Options
- while( true ) {
-  const auto opt = getopt_long( argc , argv , short_opts ,
-                                long_opts , nullptr );
-
-  if( opt == -1 ) {
-   break;
   }
 
-  switch( opt ) {
-   case 'b':
-    block_config_filename = std::string( optarg );
-    break;
-   case 's':
-    solver_config_filename = std::string( optarg );
-    break;
-   case 'i': {
-    char * end = nullptr;
-    errno = 0;
-    scenario_id = std::strtol( optarg , &end , 10 );
+ while( true ) {  // options
+  auto opt = getopt_long( argc , argv , short_opts.data() ,
+			  long_opts.data() , nullptr );
+  if( opt == -1 ) break;
+  if( process_standard_arg( opt ) )  // if it is a standard one
+   continue;                         // next
 
-    if( ( ! optarg ) || ( ( scenario_id = std::strtol( optarg , &end , 10 ) ) ,
-                          ( errno || ( end && *end ) ) ) ||
-        ( scenario_id < 0 ) ) {
-     std::cout << "The index of the scenario must be a nonnegative integer."
-               << std::endl;
-     exit( 1 );
-    }
-    break;
-   }
-   case 'h': // -h or --help
-    print_help();
-    exit( 0 );
+  switch( opt ) {  // non-standard options
+   case 'i': scenario_id = get_long_option();
+             if( scenario_id < 0 ) {
+	      std::cerr << "scenario index  must be a nonnegative integer"
+			<< std::endl;
+	      exit( 1 );
+	      }
+	     break;
    case '?': // Unrecognized option
-   default:
-    print_help();
-    exit( 1 );
-  }
- }
+   default:  std::cerr << "Try " << exe << "' --help' for more information"
+		       << std::endl;
+             exit( 1 );
+   }
+  }  // end( while( true ) )
 
- // Last argument
- if( optind < argc ) {
+ if( optind < argc )  // last argument == [SDDPBlock] filename
   filename = std::string( argv[ optind ] );
- }
  else {
-  print_help();
+ std::cout << exe << ": no input file" << std::endl
+            << "Try " << exe << "' --help' for more information" << std::endl;
   exit( 1 );
- }
-}
+  }
+ } // end( process_my_args )
 
 /*--------------------------------------------------------------------------*/
 
 void show_status( Index status , Index fault_stage ) {
 
  switch( status ) {
-
   case( SDDPGreedySolver::kError ):
    std::cout << "Error while solving the subproblem at stage "
              << fault_stage << std::endl;
@@ -183,45 +162,56 @@ void show_status( Index status , Index fault_stage ) {
    std::cout << "A solution for the subproblem at stage "
              << fault_stage << " has not been found." << std::endl;
    break;
+  }
  }
-}
 
 /*--------------------------------------------------------------------------*/
 
-void solve( SDDPBlock * sddp_block ) {
-
- auto solver = dynamic_cast< SDDPGreedySolver * >
-  ( sddp_block->get_registered_solvers().front() );
-
+void solve( SDDPBlock * sddp_block )
+{
+ auto solver = dynamic_cast< SDDPGreedySolver * >(
+			     sddp_block->get_registered_solvers().front() );
  if( ! solver )
   throw( std::logic_error( "The Solver for the SDDPBlock must be a "
-                           "SDDPGreedySolver." ) );
+                           "SDDPGreedySolver" ) );
 
  solver->set_scenario_id( scenario_id );
 
- auto status = solver->compute();
+ // set initial Solution, if provided - - - - - - - - - - - - - - - - - - - -
+ get_initial_Solution( sddp_block );
 
- show_status( status , solver->get_fault_stage() );
+ // load the given State, if provided - - - - - - - - - - - - - - - - - - - -
+ get_initial_State( solver );
 
- auto lb = solver->get_lb();
- auto ub = solver->get_ub();
+ // greedily solve the scenario - - - - - - - - - - - - - - - - - - - - - - -
+ if( ! dryrun ) {
+  auto status = solver->compute();
+  show_status( status , solver->get_fault_stage() );
+  std::cout << "Lower bound: " << solver->get_lb() << std::endl;
+  std::cout << "Upper bound: " << solver->get_ub() << std::endl;
+  }
 
- std::cout << "Lower bound: " << lb << std::endl;
- std::cout << "Upper bound: " << ub << std::endl;
-}
+ // write final Solution, if required - - - - - - - - - - - - - - - - - - - -
+ write_final_Solution( sddp_block );
+
+ // write final State, if required- - - - - - - - - - - - - - - - - - - - - -
+ write_final_State( solver );
+
+ }  // end( solve )
 
 /*--------------------------------------------------------------------------*/
 
-void configure_PolyhedralFunctionBlock( SDDPBlock * sddp_block ) {
+void configure_PolyhedralFunctionBlock( SDDPBlock * sddp_block )
+{
  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
 
   auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
-  auto benders_block = static_cast< BendersBlock * >
-   ( stochastic_block-> get_nested_Blocks().front() );
-  auto objective = static_cast< FRealObjective * >
-   ( benders_block->get_objective() );
-  auto benders_function = static_cast< BendersBFunction * >
-   ( objective->get_function() );
+  auto benders_block = static_cast< BendersBlock * >(
+			    stochastic_block-> get_nested_Blocks().front() );
+  auto objective = static_cast< FRealObjective * >(
+					    benders_block->get_objective() );
+  auto benders_function = static_cast< BendersBFunction * >(
+						 objective->get_function() );
   auto inner_block = benders_function->get_inner_block();
 
   std::queue< Block * > blocks;
@@ -235,53 +225,54 @@ void configure_PolyhedralFunctionBlock( SDDPBlock * sddp_block ) {
     blocks.push( block->get_nested_Block( i ) );
    }
 
-   if( auto polyhedral = dynamic_cast< PolyhedralFunctionBlock * >( block ) ) {
+   if( auto polyhedral = dynamic_cast< PolyhedralFunctionBlock * >( block )
+       ) {
     auto config = new BlockConfig;
-    config->f_static_variables_Configuration = new SimpleConfiguration< int >(1);
+    config->f_static_variables_Configuration =
+                                         new SimpleConfiguration< int >( 1 );
     polyhedral->set_BlockConfig( config );
+    }
    }
   }
  }
-}
 
 /*--------------------------------------------------------------------------*/
 
-void process_prob_file( const netCDF::NcFile & file ) {
- std::multimap< std::string , netCDF::NcGroup > problems = file.getGroups();
- // for each problem descriptor:
- for( auto & problem : problems ) {
+void process_prob_file( const netCDF::NcFile & file )
+{
+ auto problems = file.getGroups();
 
+ for( auto & problem : problems ) {  // for each problem descriptor:
   auto & problem_group = problem.second;
 
   // Deserialize block
   auto block_group = problem_group.getGroup( "Block" );
-  auto sddp_block = dynamic_cast< SDDPBlock * >( Block::new_Block( block_group ) );
+  auto sddp_block = dynamic_cast< SDDPBlock * >(
+					  Block::new_Block( block_group ) );
   if( ! sddp_block )
-   throw( std::logic_error( "Error while deserializing the SDDPBlock." ) );
+   throw( std::logic_error( "Error while deserializing the SDDPBlock" ) );
 
   // Configure block
   auto block_config_group = problem_group.getGroup( "BlockConfig" );
-  auto block_config = static_cast< BlockConfig * >
-   ( BlockConfig::new_Configuration( block_config_group ) );
+  auto block_config = static_cast< BlockConfig * >(
+		     BlockConfig::new_Configuration( block_config_group ) );
   if( ! block_config )
-   throw( std::logic_error("BlockConfig group was not properly provided.") );
+   throw( std::logic_error( "BlockConfig group not present" ) );
   block_config->apply( sddp_block );
   block_config->clear();
 
   // Configure solver
   auto solver_config_group = problem_group.getGroup( "BlockSolver" );
-  auto block_solver_config = static_cast< BlockSolverConfig * >
-   ( BlockSolverConfig::new_Configuration( solver_config_group ) );
+  auto block_solver_config = static_cast< BlockSolverConfig * >(
+	       BlockSolverConfig::new_Configuration( solver_config_group ) );
   if( ! block_solver_config )
-   throw( std::logic_error("BlockSolver group was not properly provided.") );
+   throw( std::logic_error( "BlockSolver group not present" ) );
   block_solver_config->apply( sddp_block );
   block_solver_config->clear();
 
   std::cout << "Problem: " << problem.first << std::endl;
 
-  // Solve
-
-  solve( sddp_block );
+  solve( sddp_block );  // Solve
 
   // Destroy the Block and the Configurations
 
@@ -292,26 +283,27 @@ void process_prob_file( const netCDF::NcFile & file ) {
   delete( block_solver_config );
 
   delete( sddp_block );
+  }
  }
-}
 
 /*--------------------------------------------------------------------------*/
 
-BlockSolverConfig * build_BlockSolverConfig() {
+BlockSolverConfig * build_BlockSolverConfig( void )
+{
  auto block_solver_config = new BlockSolverConfig;
  block_solver_config->add_ComputeConfig( "SDDPGreedySolver" );
  return( block_solver_config );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
-BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block ) {
+BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block )
+{
  // TODO configure all PolyhedralFunctionBlock
  auto sddp_config = new RBlockConfig;
  auto num_stochastic_blocks = sddp_block->get_number_nested_Blocks();
 
  for( Block::Index index = 0 ; index < num_stochastic_blocks ; ++index ) {
-
   auto inner_benders_function_solver = new BlockSolverConfig;
   inner_benders_function_solver->add_ComputeConfig( "CPXMILPSolver" );
 
@@ -328,119 +320,42 @@ BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block ) {
   stochastic_block_config->add_sub_BlockConfig( benders_block_config , 0 );
 
   benders_block_config->set_Config_Objective( benders_function_config );
- }
+  }
 
  return( sddp_config );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
-BlockConfig * load_BlockConfig() {
- BlockConfig * block_config = nullptr;
- std::ifstream block_config_file;
- block_config_file.open( block_config_filename , std::ifstream::in );
-
- if( block_config_file.is_open() ) {
-  std::cout << "Using Block configuration in " << block_config_filename
-            << "." << std::endl;
-
-  std::string config_name;
-  block_config_file >> eatcomments >> config_name;
-  block_config = dynamic_cast< BlockConfig * >
-   ( Configuration::new_Configuration( config_name ) );
-
-  if( ! block_config ) {
-   std::cerr << "Block configuration is not valid: "
-             << config_name << std::endl;
-   exit( 1 );
-  }
-
-  try {
-   block_config_file >> *block_config;
-  }
-  catch( const std::exception& e ) {
-   std::cerr << "Block configuration is not valid: " << e.what() << std::endl;
-   exit( 1 );
-  }
- }
- else {
-  std::cout << "Block configuration was not provided. "
-   "Using default configuration." << std::endl;
- }
- return( block_config );
-}
-
-/*--------------------------------------------------------------------------*/
-
-BlockSolverConfig * load_BlockSolverConfig() {
- BlockSolverConfig * solver_config = nullptr;
- std::ifstream solver_config_file;
- solver_config_file.open( solver_config_filename , std::ifstream::in );
-
- if( solver_config_file.is_open() ) {
-  std::cout << "Using Solver configuration in " << solver_config_filename
-            << "." << std::endl;
-
-  std::string config_name;
-  solver_config_file >> eatcomments >> config_name;
-  solver_config = dynamic_cast< BlockSolverConfig * >
-   ( Configuration::new_Configuration( config_name ) );
-
-  if( ! solver_config ) {
-   std::cerr << "Solver configuration is not valid: " << config_name << std::endl;
-   exit( 1 );
-  }
-
-  try {
-   solver_config_file >> *solver_config;
-  }
-  catch( ... ) {
-   std::cout << "Solver configuration is not valid." << std::endl;
-   exit( 1 );
-  }
- }
- else {
-  std::cout << "Solver configuration was not provided. "
-   "Using default configuration." << std::endl;
- }
- return( solver_config );
-}
-
-/*--------------------------------------------------------------------------*/
-
-void process_block_file( const netCDF::NcFile & file ) {
- std::multimap< std::string , netCDF::NcGroup > blocks = file.getGroups();
+void process_block_file( const netCDF::NcFile & file )
+{
+ auto blocks = file.getGroups();
 
  // BlockConfig
- auto given_block_config = load_BlockConfig();
+ auto given_block_config = get_blockconfig( bconf_file );
 
  BlockConfig * block_config = nullptr;
  if( given_block_config ) {
   block_config = given_block_config->clone();
   block_config->clear();
- }
+  }
 
  // BlockSolverConfig
- auto solver_config = load_BlockSolverConfig();
+ auto solver_config = get_blocksolverconfig( sconf_file );
  if( ! solver_config )
   solver_config = build_BlockSolverConfig();
 
  auto cleared_solver_config = solver_config->clone();
  cleared_solver_config->clear();
 
- // For each Block descriptor
- for( auto block_description : blocks ) {
-
+ for( auto block_description : blocks ) {  // for each Block descriptor
   // Deserialize the SDDPBlock
-
-  auto sddp_block = dynamic_cast< SDDPBlock * >
-   ( Block::new_Block( block_description.second ) );
-
+  auto sddp_block = dynamic_cast< SDDPBlock * >(
+			    Block::new_Block( block_description.second ) );
   if( ! sddp_block )
    throw( std::logic_error( "Error while deserializing the SDDPBlock." ) );
 
   // Configure the SDDPBlock
-
   if( given_block_config )
    given_block_config->apply( sddp_block );
   else {
@@ -448,75 +363,73 @@ void process_block_file( const netCDF::NcFile & file ) {
    block_config = build_BlockConfig( sddp_block );
    block_config->apply( sddp_block );
    block_config->clear();
-  }
+   }
 
   // Configure the Solver
-
   solver_config->apply( sddp_block );
 
-  // Solve
-
-  solve( sddp_block );
+  solve( sddp_block );  // Solve
 
   // Destroy the SDDPBlock and the Configurations
-
   block_config->apply( sddp_block );
   if( ! given_block_config ) {
    delete( block_config );
    block_config = nullptr;
-  }
+   }
 
   cleared_solver_config->apply( sddp_block );
   delete( sddp_block );
- }
+  }
 
  delete( block_config );
  delete( given_block_config );
  delete( solver_config );
  delete( cleared_solver_config );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 
-int main( int argc , char ** argv ) {
+int main( int argc , char ** argv )
+{
+ // append new options to default ones- - - - - - - - - - - - - - - - - - - -
+ // note that the last nullptr record in long_opts is overwritten since the
+ // new one is further down from there
 
- process_args( argc , argv );
+ docopt_desc = "SMS++ SDDP greedy solver";
+ short_opts.append( my_short_opts );
+ long_opts.insert( std::prev( long_opts.end() ) ,
+		   my_long_opts.begin() , my_long_opts.end() );
+ help.append( my_help );
+
+ // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
+
+ process_my_args( argc , argv );
+
+ // open the file - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
  netCDF::NcFile file;
- try {
-  file.open( filename , netCDF::NcFile::read );
- } catch( netCDF::exceptions::NcException & e ) {
-  std::cerr << "Cannot open nc4 file " << filename << std::endl;
-  exit( 1 );
- }
+ auto type = read_open_netCDF( file , filename );
 
- netCDF::NcGroupAtt gtype = file.getAtt( "SMS++_file_type" );
- if( gtype.isNull() ) {
-  std::cerr << filename << " is not an SMS++ nc4 file." << std::endl;
-  exit( 1 );
- }
-
- int type;
- gtype.getValues( &type );
+ // process the file- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
  switch( type ) {
-  case eProbFile: {
-   std::cout << filename << " is a problem file, "
-    "ignoring Block/Solver configurations..." << std::endl;
-   process_prob_file( file );
-   break;
-  }
+  case eProbFile: std::cout << filename << " is a problem file, "
+			    << "ignoring Block/Solver Configuration(s)..."
+			    << std::endl;
+                  process_prob_file( file );
+		  break;
 
-  case eBlockFile: {
-   std::cout << filename << " is a block file." << std::endl;
-   process_block_file( file );
-   break;
+  case eBlockFile: std::cout << filename << " is a block file" << std::endl;
+                   process_block_file( file );
+		   break;
+  default: std::cerr << filename << " is not a valid SMS++ file" << std::endl;
+           exit( 1 );
   }
-
-  default:
-   std::cerr << filename << " is not a valid SMS++ file." << std::endl;
-   exit( 1 );
- }
 
  return( 0 );
-}
+
+ }  // end( main )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------- End File sddp_greedy_solver.cpp ---------------------*/
+/*--------------------------------------------------------------------------*/

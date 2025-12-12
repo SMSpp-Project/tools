@@ -15,7 +15,7 @@
 /*--------------------------------------------------------------------------*/
 
 #ifndef __SDDPBlockSolutionOutput
-#define __SDDPBlockSolutionOutput
+ #define __SDDPBlockSolutionOutput
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -56,12 +56,17 @@ public:
 /*--------------------- PUBLIC METHODS OF THE CLASS ------------------------*/
 /*--------------------------------------------------------------------------*/
 
+ SDDPBlockSolutionOutput( std::string output_directory = "" ) :
+  f_output_directory( output_directory ) { }
+
+/*--------------------------------------------------------------------------*/
+
  void print_cuts( SDDPBlock * block , const std::string & filename ) const {
 
   if( block->get_polyhedral_functions().empty() )
    return;
 
-  std::ofstream output( filename , std::ios::out );
+  std::ofstream output( get_filepath( filename ) , std::ios::out );
 
   const auto num_var =
    block->get_polyhedral_functions().front()->get_num_active_var();
@@ -95,7 +100,7 @@ public:
 
  void print( SDDPBlock * block , Index fault_stage = Inf< Index >() ) const {
 
-  UCBlockSolutionOutput solution_output;
+  UCBlockSolutionOutput solution_output( f_output_directory );
   solution_output.set_separator_character( separator_character );
 
   Index initial_time = 0;
@@ -153,7 +158,7 @@ public:
 
  void print( SDDPBlock * block , Index scenario , bool append ) const {
 
-  UCBlockSolutionOutput solution_output;
+  UCBlockSolutionOutput solution_output( f_output_directory );
   solution_output.set_separator_character( separator_character );
 
   Index initial_inner_time = 0;
@@ -167,7 +172,7 @@ public:
     solution_output.set_filenames_suffix
      ( get_filename_suffix( scenario , stage ) );
    }
-   else if( append ) {
+   else {
     solution_output.set_filenames_suffix( get_filename_suffix( scenario ) );
     if( stage == 0 )
      solution_output.set_append( false );
@@ -203,10 +208,10 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- static void copy( const SDDPBlock * block , std::string suffix ,
-                   bool append = true ) {
+ void copy( const SDDPBlock * block , std::string suffix ,
+	    bool append = true ) const {
   const auto num_scenarios = block->get_scenario_set().size();
-  UCBlockSolutionOutput solution_output;
+  UCBlockSolutionOutput solution_output( f_output_directory );
   for( Index scenario = 0 ; scenario < num_scenarios ; ++scenario ) {
    if( append )
     solution_output.copy( get_filename_suffix( scenario ) , suffix ,
@@ -220,10 +225,10 @@ public:
 
 /*--------------------------------------------------------------------------*/
 
- static void rename( const SDDPBlock * block , std::string suffix_to_remove ,
-                     bool append = true ) {
+ void rename( const SDDPBlock * block , std::string suffix_to_remove ,
+	      bool append = true ) {
   const auto num_scenarios = block->get_scenario_set().size();
-  UCBlockSolutionOutput solution_output;
+  UCBlockSolutionOutput solution_output( f_output_directory );
   for( Index scenario = 0 ; scenario < num_scenarios ; ++scenario ) {
    if( append )
     solution_output.rename( get_filename_suffix( scenario ) ,
@@ -242,10 +247,20 @@ public:
 private:
 
 /*--------------------------------------------------------------------------*/
+/*--------------------------- PRIVATE METHODS ------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+ std::filesystem::path get_filepath( const std::string & filename ) const {
+  return std::filesystem::path( f_output_directory ) / filename;
+ }
+
+/*--------------------------------------------------------------------------*/
 /*---------------------------- PRIVATE FIELDS  -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
  char separator_character = ',';
+
+ std::string f_output_directory{};
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/

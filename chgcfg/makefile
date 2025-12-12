@@ -16,22 +16,8 @@ NAME = chgcfg
 # basic directory
 DIR = .
 
-# debug switches
-#SW = -g3 -glldb -fno-inline -std=c++17 -ferror-limit=1
-# production switches
-SW = -O3 -std=c++17 -DNDEBUG -ferror-limit=1
-
-# compiler
-CC = clang++
-
-# default target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-default: $(DIR)/$(NAME)
-
-# clean - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-clean::
-	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/$(NAME)
+# common stuff
+include ../makefile_common
 
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 

@@ -1,3 +1,6 @@
+/*--------------------------------------------------------------------------*/
+/*-------------------------- File ucblock_utils.h --------------------------*/
+/*--------------------------------------------------------------------------*/
 /** @file
  * Utilities for the UC solver.
  *
@@ -15,26 +18,36 @@
  *
  * \copyright &copy; by Ali Ghezelsoflu, Niccolo' Iardella
  */
+/*--------------------------------------------------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
+/*--------------------------------------------------------------------------*/
 
 #include <BatteryUnitBlock.h>
 #include <CDASolver.h>
+#include <DesignNetworkBlock.h>
 #include <DCNetworkBlock.h>
 #include <ECNetworkBlock.h>
 #include <HydroSystemUnitBlock.h>
 #include <HydroUnitBlock.h>
 #include <SlackUnitBlock.h>
 #include <IntermittentUnitBlock.h>
+#include <RBlockConfig.h>
 #include <ThermalUnitBlock.h>
 
 #include "UCBlockSolutionOutput.h"
 
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- USING -----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
 using namespace SMSpp_di_unipi_it;
 
 /*--------------------------------------------------------------------------*/
-
+/*--------------------------------------------------------------------------*/
 /// Returns a default UCBlock configuration
-BlockConfig * default_configure_UCBlock( Block * uc_block ) {
 
+inline BlockConfig * default_configure_UCBlock( const Block * uc_block )
+{
  auto b_config = new RBlockConfig;
 
  for( auto sb : uc_block->get_nested_Blocks() ) {
@@ -65,11 +78,13 @@ BlockConfig * default_configure_UCBlock( Block * uc_block ) {
  }
 
  return( b_config );
-}
+ }
 
+/*--------------------------------------------------------------------------*/
 /// Prints the content of a solved UCBlock
-void print_UCBlock_solver_results( Block * block ) {
 
+inline void print_UCBlock_solver_results( Block * block )
+{
  auto solver = block->get_registered_solvers().front();
  solver->get_var_solution();
 
@@ -109,7 +124,7 @@ void print_UCBlock_solver_results( Block * block ) {
     std::cout << "Commitment     = [";
     for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
      std::cout << std::setw( 2 )
-               << ( unsigned int ) round( commitment[ t ].get_value() );
+               << static_cast< unsigned int >( std::round( commitment[ t ].get_value() ) );
     std::cout << " ]" << std::endl;
 
     // Generate init_t
@@ -128,14 +143,14 @@ void print_UCBlock_solver_results( Block * block ) {
     std::cout << "Start up       = [";
     for( Index t = 0 ; t < unit_block->get_time_horizon() - init_t ; ++t )
      std::cout << std::setw( 2 )
-               << ( unsigned int ) round( startup[ t ].get_value() );
+               << static_cast< unsigned int >( std::round( startup[ t ].get_value() ) );
     std::cout << " ]" << std::endl;
 
     auto shutdown = thermal_unit_block->get_shut_down();
     std::cout << "Shut down      = [";
     for( Index t = 0 ; t < unit_block->get_time_horizon() - init_t ; ++t )
      std::cout << std::setw( 2 )
-               << ( unsigned int ) round( shutdown[ t ].get_value() );
+               << static_cast< unsigned int >( std::round( shutdown[ t ].get_value() ) );
     std::cout << " ]" << std::endl;
 
     auto active_power = thermal_unit_block->get_active_power( 0 );
@@ -169,12 +184,12 @@ void print_UCBlock_solver_results( Block * block ) {
     if( battery_unit_block->get_batt_investment_cost() != 0 )
      std::cout << "Batt Capacity  = " <<
                battery_unit_block->get_batt_design().get_value() *
-               battery_unit_block->get_batt_max_capacity() << std::endl;
+               battery_unit_block->get_batt_max_capacity_design() << std::endl;
 
     if( battery_unit_block->get_conv_investment_cost() != 0 )
      std::cout << "Conv Capacity  = " <<
                battery_unit_block->get_conv_design().get_value() *
-               battery_unit_block->get_conv_max_capacity() << std::endl;
+               battery_unit_block->get_conv_max_capacity_design() << std::endl;
 
     auto active_power = battery_unit_block->get_active_power( 0 );
     std::cout << "Active power   = [";
@@ -200,13 +215,13 @@ void print_UCBlock_solver_results( Block * block ) {
     auto intake_level = battery_unit_block->get_intake_level();
     std::cout << "Intake level   = [";
     for( auto & t : intake_level )
-     std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value() );
+     std::cout << std::setw( 20 ) << t.get_value();
     std::cout << " ]" << std::endl;
 
     auto outtake_level = battery_unit_block->get_outtake_level();
     std::cout << "Outtake level  = [";
     for( auto & t : outtake_level )
-     std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value() );
+     std::cout << std::setw( 20 ) << t.get_value();
     std::cout << " ]" << std::endl;
 
     auto storage_level = battery_unit_block->get_storage_level();
@@ -219,7 +234,7 @@ void print_UCBlock_solver_results( Block * block ) {
     if( ! binary_var.empty() ) {
      std::cout << "Binary var   = [";
      for( auto & t : binary_var )
-      std::cout << std::setw( 2 ) << ( unsigned int ) round( t.get_value() );
+      std::cout << std::setw( 2 ) << static_cast< unsigned int >( std::round( t.get_value() ) );
      std::cout << " ]" << std::endl;
     }
    }
@@ -339,7 +354,7 @@ void print_UCBlock_solver_results( Block * block ) {
     if( intermittent_unit_block->get_investment_cost() != 0 )
      std::cout << "Capacity       = " <<
                intermittent_unit_block->get_design().get_value() *
-               intermittent_unit_block->get_max_capacity() << std::endl;
+               intermittent_unit_block->get_max_capacity_design() << std::endl;
 
     auto active_power = intermittent_unit_block->get_active_power( 0 );
     std::cout << "Active power   = [";
@@ -381,7 +396,7 @@ void print_UCBlock_solver_results( Block * block ) {
      std::cout << "Commitment     = [";
      for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
       std::cout << std::setw( 2 )
-                << ( unsigned int ) round( commitment[ t ].get_value() );
+                << static_cast< unsigned int >( std::round( commitment[ t ].get_value() ) );
      std::cout << " ]" << std::endl;
     }
 
@@ -415,6 +430,51 @@ void print_UCBlock_solver_results( Block * block ) {
     auto fun = obj->get_function();
     fun->compute();
     std::cout << "Function value   = " << fun->get_value() << std::endl;
+   }
+
+   if( auto design_network_block =
+    dynamic_cast< DesignNetworkBlock * >( network_block ) ) {
+    const auto & design_vars = design_network_block->get_const_design();
+    const auto & design_lines = design_network_block->get_design_lines();
+    const bool has_subset = ! design_lines.empty();
+
+    if( ! design_vars.empty() ) {
+     std::cout << "Design variables = [" << std::endl;
+     for( Index k = 0 ;
+          k < static_cast< Index >( design_vars.size() ) ; ++k ) {
+      Index line = has_subset ? design_lines[ k ] : k;
+      const auto & var = design_vars[ k ];
+      auto val = static_cast< unsigned int >( std::round( var.get_value() ) );
+      std::cout << "  line " << std::setw( 4 ) << line
+                << " : " << val << std::endl;
+     }
+     std::cout << "]" << std::endl << std::endl;
+    }
+
+    Index sub_net_idx = 0;
+    for( auto * sb : design_network_block->get_nested_Blocks() ) {
+     if( auto dc_sub = dynamic_cast< DCNetworkBlock * >( sb ) ) {
+      std::cout << "  --- " << dc_sub->classname()
+                << " " << sub_net_idx++ << " ---" << std::endl;
+
+      auto power_flow = dc_sub->get_power_flow();
+      if( ! power_flow.empty() ) {
+       std::cout << "  Power flow       = [";
+       for( auto & n : power_flow )
+        std::cout << std::setw( 20 ) << n.get_value();
+       std::cout << " ]" << std::endl;
+      }
+
+      auto auxiliary_var = dc_sub->get_auxiliary_variable();
+      if( ! auxiliary_var.empty() ) {
+       std::cout << "  Auxiliary variable     = [";
+       for( auto & n : auxiliary_var )
+        std::cout << std::setw( 20 ) << n.get_value();
+       std::cout << " ]" << std::endl;
+      }
+     }
+     std::cout << std::endl;
+    }
    }
 
    /* std::cout << "Node injection   = [" << std::endl;
@@ -480,22 +540,22 @@ void print_UCBlock_solver_results( Block * block ) {
    }
   }
   std::cout << std::endl;
+  }
  }
-}
 
 /*--------------------------------------------------------------------------*/
-
 /// Prints the content of a solved UCBlock
-void print_UCBlock_solver_results( Block * block ,
-                                   int solution_output_type ) {
 
- if( ! ( solution_output_type > 0 && solution_output_type < 4 ) )
+inline void print_UCBlock_solver_results( Block * block ,
+                                          int solution_output_type )
+{
+ if( ! ( ( solution_output_type > 0 ) && ( solution_output_type < 4 ) ) )
   return;
 
- if( solution_output_type == 1 || solution_output_type == 3 )
+ if( ( solution_output_type == 1 ) || ( solution_output_type == 3 ) )
   print_UCBlock_solver_results( block );
 
- if( solution_output_type == 2 || solution_output_type == 3 ) {
+ if( ( solution_output_type == 2 ) || ( solution_output_type == 3 ) ) {
   auto solver = block->get_registered_solvers().front();
   solver->get_var_solution();
 
@@ -508,3 +568,7 @@ void print_UCBlock_solver_results( Block * block ,
   output.print( block );
  }
 }
+
+/*--------------------------------------------------------------------------*/
+/*------------------------ End File ucblock_utils.h ------------------------*/
+/*--------------------------------------------------------------------------*/

@@ -16,26 +16,8 @@ DIR = .
 # module name
 NAME = $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
 
-# debug switches
-#SW = -g3 -glldb -fno-inline -std=c++17 -ferror-limit=1 -Wno-enum-compare
-# debug switches with address sanitizer and extra pedantic warning
-SW = -g3 -glldb -fno-inline -std=c++17 -ferror-limit=1 -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -Wpedantic -Wextra -Wno-unused-parameter -DCLANG_1200_0_32_27_PATCH -Wno-enum-compare
-# production switches with address sanitizer
-#SW = -O3 -std=c++17 -DNDEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined -Wno-enum-compare
-# production switches
-#SW = -O3 -std=c++17 -DNDEBUG -DCLANG_1200_0_32_27_PATCH -Wno-enum-compare
-
-# compiler
-CC = clang++
-
-# default target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-default: $(DIR)/$(NAME)
-
-# clean - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-clean::
-	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/$(NAME)
+# common stuff
+include ../makefile_common
 
 # define & include the necessary modules- - - - - - - - - - - - - - - - - - -
 # if a module is not used in the current configuration, just comment out the
@@ -58,11 +40,6 @@ include $(BNDSLVSDR)/makefile-s
 LgDSLVSDR = ../../LagrangianDualSolver
 include $(LgDSLVSDR)/makefile
 
-# not necessary, BundleSolver does that already
-# MILPSolver
-#MILPSSDR = ../../../MILPSolver
-#include $(MILPSSDR)/makefile
-
 # define input macros for SDDPBlock makefile + dependencies, then include it
 SDDPBkSDR = ../../SDDPBlock
 include $(SDDPBkSDR)/makefile-s
@@ -81,20 +58,20 @@ MOBJ =  $(SMS++OBJ) $(SDDPBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) \
 MLIB =  $(SMS++LIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 
 $(DIR)/sddp_solver: $(DIR)/sddp_solver.o $(MOBJ)
-	$(CC) -o $(DIR)/sddp_solver $^ $(MLIB) $(SW)
+	$(CC) -o $(DIR)/sddp_solver $^ $(MLIB) -I../block_solver $(SW)
 
 $(DIR)/sddp_greedy_solver: $(DIR)/sddp_greedy_solver.o $(MOBJ)
-	$(CC) -o $(DIR)/sddp_greedy_solver $^ $(MLIB) $(SW)
+	$(CC) -o $(DIR)/sddp_greedy_solver $^ $(MLIB) -I../block_solver $(SW)
 
-# dependencies: every .o from its .C + every recursively included .h- - - - -
+# dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
 MINC =  $(SMS++INC) $(SDDPBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) \
-	-I$(DIR) -I../ucblock_solver
+	-I$(DIR) -I$(DIR)/../block_solver -I$(DIR)/../ucblock_solver
 
 # includes
 MH =    $(SMS++H) $(SDDPBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) \
-	$(DIR)/CutProcessing.h
+	$(DIR)/CutProcessing.h	$(DIR)/../block_solver/common_utils.h
 
 # compile command
 

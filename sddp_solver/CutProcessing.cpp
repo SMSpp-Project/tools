@@ -23,7 +23,6 @@
 #include <FRealObjective.h>
 #include <FRowConstraint.h>
 #include <LinearFunction.h>
-#include <CPXMILPSolver.h>
 #include <PolyhedralFunction.h>
 #include <SDDPBlock.h>
 
@@ -45,12 +44,11 @@ using Subset = Block::Subset;
 
 namespace {
 
- double get_sign( const PolyhedralFunction * function ) {
+ double get_sign( PolyhedralFunction * function ) {
   return( function->is_convex() ? - 1.0 : 1.0 );
- }
+  }
 
 /*--------------------------------------------------------------------------*/
-
  /** Given a pointer to a PolyhedralFunction representing the function
   *
   *     f( x ) = max { a_i x + b_i : i = 0, ... , m - 1 }
@@ -67,7 +65,8 @@ namespace {
   *
   * where s = - 1 in the convex case and s = 1 in the concave case.
   */
- AbstractBlock * build_lp( const PolyhedralFunction * function ) {
+
+ AbstractBlock * build_lp( PolyhedralFunction * function ) {
 
   const auto & A = function->get_A();
 
@@ -178,9 +177,7 @@ namespace {
   }
 
   // remove the first constraint
-
   lp->remove_dynamic_constraint( * constraints , ( * constraints ).begin() );
-
  }
 
 }  // end( unnamed namespace )
@@ -204,7 +201,7 @@ void CutProcessing::remove_parallel_cuts( PolyhedralFunction * function )
  const auto sign = get_sign( function );
 
  Subset rows_to_remove;
- std::vector< bool > remove( A.size() , false );
+ std::vector remove( A.size() , false );
 
  for( Index i = 0 ; i < A.size() ; ++i ) {
   if( remove[ i ] ) continue;
@@ -231,10 +228,8 @@ void CutProcessing::remove_parallel_cuts( PolyhedralFunction * function )
      rows_to_remove.push_back( i );
      break;
     }
-    else {
-     remove[ k ] = true;
-     rows_to_remove.push_back( k );
-    }
+    remove[ k ] = true;
+    rows_to_remove.push_back( k );
    }
   }
  }
@@ -252,24 +247,9 @@ void CutProcessing::remove_redundant_cuts( PolyhedralFunction * function )
  if( num_rows <= 1 )
   return;
 
- auto lp = ::build_lp( function );
+ auto lp = build_lp( function );
 
- if( config_filename.empty() ) {
-  auto solver = new CPXMILPSolver;
-  solver->set_par( solver->int_par_str2idx( "intLogVerb" ) , 0 );
-  solver->set_par( solver->dbl_par_str2idx( "dblFAccSol" ) , 1.0e-15 );
-  solver->set_par( solver->dbl_par_str2idx( "dblRelAcc" ) , 1.0e-15 );
-  lp->register_Solver( solver );
- }
- else {
-  auto solver_config = dynamic_cast< BlockSolverConfig * >
-   ( BlockSolverConfig::new_Configuration( config_filename ) );
-  if( ! solver_config )
-   throw( std::logic_error("CutProcessing::remove_redundant_cuts: invalid or "
-                           "inexistent configuration file: " +
-                           config_filename ) );
-  solver_config->apply( lp );
- }
+ solver_config->apply( lp );
 
  auto solver = lp->get_registered_solvers().front();
 
@@ -296,7 +276,7 @@ void CutProcessing::remove_redundant_cuts( PolyhedralFunction * function )
   }
 
   if( i < num_rows - 1 )
-   ::update_lp( lp , function , i , ! remove );
+   update_lp( lp , function , i , ! remove );
  }
 
  function->delete_rows( std::move( rows_to_remove ) );
@@ -309,9 +289,8 @@ void CutProcessing::remove_redundant_cuts( PolyhedralFunction * function )
 
 void CutProcessing::remove_parallel_cuts( SDDPBlock * sddp_block ) const {
  auto functions = sddp_block->get_polyhedral_functions();
- for( auto function : functions ) {
+ for( auto function : functions )
   remove_parallel_cuts( function );
- }
 }
 
 /*--------------------------------------------------------------------------*/

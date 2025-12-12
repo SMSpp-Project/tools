@@ -26,7 +26,7 @@
 /*--------------------------------------------------------------------------*/
 
 #ifndef __InvestmentBlock
-#define __InvestmentBlock
+ #define __InvestmentBlock
                       /* self-identification: #endif at the end of the file */
 
 /*--------------------------------------------------------------------------*/
@@ -37,6 +37,8 @@
 #include "ColVariable.h"
 #include "FRealObjective.h"
 #include "InvestmentFunction.h"
+#include "OneVarConstraint.h"
+#include "Solution.h"
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- NAMESPACE ----------------------------------*/
@@ -46,7 +48,7 @@
 namespace SMSpp_di_unipi_it
 {
 
- class BoxConstraint;   // forward declaration of BoxConstraint
+ // class BoxConstraint;   // forward declaration of BoxConstraint
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- CLASSES ----------------------------------*/
@@ -267,7 +269,53 @@ public:
 
  void serialize( netCDF::NcGroup & group ) const override;
 
-/**@} ----------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------*/
+/*----------------------- Methods for handling Solution --------------------*/
+/*--------------------------------------------------------------------------*/
+ /// returns a InvestmentBlockSolution with the current solution
+ /** Returns a InvestmentBlockSolution representing the current solution
+  * status of this InvestmentBlock. What kind of solution is saved depends
+  * on the \p solc Configuration and/or on its default value to be found in
+  * the f_BlockConfig (if any). That is, we denote by curr_cfg the
+  * Configuration * obtained as follows:
+  *
+  * - if solc != nullptr, then curr_cfg == solc
+  *
+  * - if solc == nullptr, f_BlockConfig != nullptr,
+  *   f_BlockConfig->f_solution_Configuration != nullptr, then
+  *   curr_cfg == f_BlockConfig->f_solution_Configuration
+  *
+  * Now, curr_cfg (if not nullptr) can be of two different types:
+  *
+  * - a SimpleConfiguration< int >
+  *
+  * - a SimpleConfiguration< std::pair< int , Configuration * > >
+  *
+  * Let ws = curr_cfg->f_value in the first case and
+  * ws = curr_cfg->f_value.first in the second (1 if curr_cfg == nullptr),
+  * and innr_cfg = curr_cfg->f_value.second in the second case (nullptr
+  * in the first case or if curr_cfg == nullptr). Then, in all cases the
+  * value of the design variables is saved. If ws is nonzero, then the
+  * Solution of the inner Block in the InvestmentFunction is saved as well,
+  * passing innr_cfg (which may be nullptr) when read()-ing it.
+  *
+  * Note that InvestmentBlock may not contain some or all of the required
+  * solution, if the corresponding Variable/InvestmentFunction have not
+  * been constructed yet: this throws an exception, unless emptys = true, in
+  * which case the InvestmentBlockSolution object is only prepped for
+  * getting a solution, but it is not really getting one now.
+  *
+  * Note that, although the method clearly returns a InvestmentBlockSolution,
+  * formally the return type is Solution *. This is because it is not
+  * possible to forward declare InvestmentBlockSolution as a derived class
+  * from Solution, nor to define InvestmentBlockSolution before
+  * InvestmentBlock because the former uses some type information declared
+  * in the latter. */ 
+
+ Solution * get_Solution( Configuration *solc = nullptr ,
+			  bool emptys = true ) override;
+
+/** @} ---------------------------------------------------------------------*/
 /*----------- METHODS FOR READING THE DATA OF THE InvestmentBlock ----------*/
 /*--------------------------------------------------------------------------*/
 /** @name Reading the data of the InvestmentBlock
@@ -332,7 +380,12 @@ public:
   return( v_constraints );
  }
 
-/**@} ----------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------*/
+ /// returns true if the Variable are shifted by their lower bound
+
+ bool get_reformulate_bounds() const { return( f_reformulate_bounds ); }
+
+/** @} ---------------------------------------------------------------------*/
 /*----------- METHODS DESCRIBING THE BEHAVIOR OF A InvestmentBlock ---------*/
 /*--------------------------------------------------------------------------*/
 /** @name Methods describing the behavior of a InvestmentBlock
@@ -545,7 +598,126 @@ private:
 
 };   // end( class InvestmentBlock )
 
-/** @} end( group( InvestmentBlock_CLASSES ) ) */
+/*--------------------------------------------------------------------------*/
+/*--------------------- CLASS InvestmentBlockSolution ----------------------*/
+/*--------------------------------------------------------------------------*/
+/*--------------------------- GENERAL NOTES --------------------------------*/
+/*--------------------------------------------------------------------------*/
+/// a Solution of a InvestmentBlock
+/** The InvestmentBlockSolution class, derived from Solution, represents a
+ * solution of a InvestmentBlock, i.e.:
+ *
+ * - the values of the design variables
+ *
+ * - optionally, the :Solution to the inner Block in the InvestmentFunction
+ *   of the InvestmentBlock
+ *
+ * Note that the InvestmentBlockSolution can be provided with an inner
+ * Configuration that is passed to the inner Block in the InvestmentFunction
+ * of the InvestmentBlock when retrieving its :Solution. This Configuration
+ * is *not* serialize()-d and deserialize()-d because it is only useful when
+ * the InvestmentBlockSolution is first read(); when it is deserialize()-d the
+ * exact details of the inner :Solution are already known, and therefore there
+ * is no point in serialize()-ing the Configuration. */
+
+class InvestmentBlockSolution : public Solution
+{
+/*--------------------------------------------------------------------------*/
+/*----------------------- PUBLIC PART OF THE CLASS -------------------------*/
+/*--------------------------------------------------------------------------*/
+
+ public:
+
+/*------------------------------- FRIENDS ----------------------------------*/
+
+ using Index = Block::Index;  // "import" Index
+ 
+/*------------------------------- FRIENDS ----------------------------------*/
+
+ friend InvestmentBlock;  ///< make InvestmentBlock friend
+
+/*---------- CONSTRUCTING AND DESTRUCTING InvestmentBlockSolution ----------*/
+
+ explicit InvestmentBlockSolution( void ) :
+           f_inner_Solution( nullptr ) , f_inner_Configuration( nullptr ) {}
+ /// constructor, it has nothing to do
+
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+ void deserialize( const netCDF::NcGroup & group ) override final;
+
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+ ~InvestmentBlockSolution() {
+  delete f_inner_Configuration;
+  delete f_inner_Solution;
+  }
+
+/*------- METHODS DESCRIBING THE BEHAVIOR OF A InvestmentBlockSolution -----*/
+
+ void read( const Block * block ) override final;
+
+ void write( Block * block ) override final;
+
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+ /// serialize a InvestmentBlockSolution into a netCDF::NcGroup
+ /** Serialize a InvestmentBlockSolution into a netCDF::NcGroup, with the
+  * following format:
+  *
+  * - The mandatory dimension "NumDesignVariables" containing the number of
+  *   design variables in the InvestmentBlock
+  *
+  * - The mandatory variable "DesignVariables", of type netCDF::NcDouble and
+  *   indexed over the dimension "NumDesignVariables"; DesignVariables[ i ]
+  *   is assumed to contain the vaule of the i-th design variable
+  *
+  * - The group "InnerSolution" containing the [:Solution] of the inner
+  *   Block of the InvestmentBlock corresponding to the value of the design
+  *   variables. The group is optional. */
+
+ void serialize( netCDF::NcGroup & group ) const override final;
+
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+
+ InvestmentBlockSolution * scale( double factor ) const override final;
+
+ void sum( const Solution * solution , double multiplier ) override final;
+
+ InvestmentBlockSolution * clone( bool empty = false ) const override final;
+
+/*-------------------- PROTECTED PART OF THE CLASS -------------------------*/
+
+ protected:
+
+/*-------------------------- PROTECTED METHODS -----------------------------*/
+
+ void print( std::ostream &output ) const override final {
+  output << "InvestmentBlockSolution [" << this << "]: " << std::endl;
+  }
+
+/*---------------------- PRIVATE PART OF THE CLASS -------------------------*/
+
+ private:
+
+/*---------------------------- PRIVATE FIELDS ------------------------------*/
+
+ std::vector< double > v_design;  ///< the design variables
+
+ Solution * f_inner_Solution;  ///< the :Solution of the InnerBlock
+
+ Configuration * f_inner_Configuration;
+             ///< the Configuration for the inner :Solution of the InnerBlock
+
+/*--------------------------------------------------------------------------*/
+
+ SMSpp_insert_in_factory_h;
+
+/*--------------------------------------------------------------------------*/
+
+ };  // end( class( InvestmentBlockSolution ) )
+
+/** @} end( group( InvestmentBlock_CLASSES ) ) -----------------------------*/
+/*--------------------------------------------------------------------------*/
 
 }  // end( namespace SMSpp_di_unipi_it )
 
