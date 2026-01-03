@@ -1474,7 +1474,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
   auto benders_function_config = new ComputeConfig;
 
   // Differential mode to keep the previous configuration.
-  benders_function_config->f_diff = true;
+  benders_function_config->set_diff( true );
 
   benders_function_config->f_extra_Configuration =
    new SimpleConfiguration< std::map< std::string , Configuration * > >
