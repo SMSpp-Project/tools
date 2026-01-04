@@ -110,21 +110,10 @@ str_LagBF_BSCfg     BSCfg.txt   	  # BlockSolverConfig for the LagBFunctions
 # now all the vector-of-double parameters
 # [none]
 
-4 # number of vector-of-string parameters
+0 # number of vector-of-string parameters
 
 # now all the vector-of-string parameters
-vstr_C05_SPAR_Names
-1
-strLogFileName
-vstr_C05_SPAR_Vals
-1
-logLD.txt
-vstr_C05_EI_SPAR_Names
-1
-strOutputFile
-vstr_C05_EI_SPAR_Vals
-1
-uc.lp
+# [none]
 
 # pointer to the "extra" Configuration
 * # [none]
