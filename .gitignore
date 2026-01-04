@@ -1,5 +1,6 @@
-### CPLEX output files
+### output files
 *.lp
+log*.txt
 
 ### C/C++ template
 # Prerequisites
