@@ -72,7 +72,7 @@ intRstAlg  2      # parameter to handle the reset of the algorithm
 # now all the double parameters
 dblRelAcc  1e-6   # relative accuracy required to solution
 dblNZEps   1e-2   # stopping parameter: threshold to declare 0 the || residual ||
-dbltStar   1e+0   # stopping parameter: multiplied to || residual || to estimate gap
+dbltStar   -1e+0   # stopping parameter: multiplied to || residual || to estimate gap
 dblBPar5   4      # first parameter for dynamic max n. of items per iteration
 dblm1      -0.30  # a NS is possible if (~) Fi( Lambda1 ) >= Fi( Lambda ) + | m1 | v*
 dblm2      0.90   # a SS is possible if Fi( Lambda1 ) <= Fi( Lambda ) + ( 1 - m2 ) v*
