@@ -1,6 +1,7 @@
 ### output files
 *.lp
 log*.txt
+LD*.txt
 
 ### C/C++ template
 # Prerequisites
