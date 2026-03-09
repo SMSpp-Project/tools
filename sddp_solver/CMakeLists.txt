@@ -3,9 +3,7 @@
 # may wrongly appear unused, and by default the linker does not include them,
 # so we have to force the linking.
 if (BUILD_SHARED_LIBS)
-    if (MSVC)
-        add_link_options("/OPT:NOREF")
-    else () # Unix
+    if (UNIX)
         if (APPLE)
             add_link_options("-Wl,-dead_strip_dylibs")
         else ()
@@ -59,6 +57,17 @@ if (TARGET SMS++::UCBlock AND
     if (TARGET SMS++::MILPSolver)
         target_link_libraries(sddp_solver PRIVATE SMS++::MILPSolver)
     endif ()
+
+    if (WIN32 AND BUILD_SHARED_LIBS)
+        # copy runtime DLLs next to the exe after build
+        add_custom_command(TARGET sddp_solver POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_RUNTIME_DLLS:sddp_solver>
+                $<TARGET_FILE_DIR:sddp_solver>
+                COMMAND_EXPAND_LISTS
+                COMMENT "Copying runtime DLLs next to sddp_solver.exe"
+        )
+    endif()
 
     # Install
     install(TARGETS sddp_solver

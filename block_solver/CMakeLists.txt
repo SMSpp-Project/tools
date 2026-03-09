@@ -3,9 +3,7 @@
 # may wrongly appear unused, and by default the linker does not include them,
 # so we have to force the linking.
 if (BUILD_SHARED_LIBS)
-    if (MSVC)
-        add_link_options("/OPT:NOREF")
-    else () # Unix
+    if (UNIX)
         if (APPLE)
             add_link_options("-Wl,-dead_strip_dylibs")
         else ()
@@ -42,6 +40,17 @@ endif ()
 # ----- block_solver -------------------------------------------------------- #
 add_executable(block_solver block_solver.cpp)
 target_link_libraries(block_solver PRIVATE SMS++::SMS++)
+
+if (WIN32 AND BUILD_SHARED_LIBS)
+    # copy runtime DLLs next to the exe after build
+    add_custom_command(TARGET block_solver POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_RUNTIME_DLLS:block_solver>
+            $<TARGET_FILE_DIR:block_solver>
+            COMMAND_EXPAND_LISTS
+            COMMENT "Copying runtime DLLs next to block_solver.exe"
+    )
+endif()
 
 if (TARGET SMS++::MCFBlock)
     target_link_libraries(block_solver PRIVATE SMS++::MCFBlock)
