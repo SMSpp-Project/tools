@@ -125,7 +125,7 @@ void process_prob_file( const netCDF::NcFile & file )
   auto block = Block::new_Block( block_group );
   auto tss_block = dynamic_cast< TwoStageStochasticBlock * >( block );
   if( ! tss_block ) {
-   std::cout << "Error: " << problem.first << "not a TwoStageStochasticBlock"
+   std::cout << "Error: " << problem.first << " not a TwoStageStochasticBlock"
 	     << std::endl;
    exit( 1 );
    }
@@ -210,7 +210,7 @@ void process_block_file( const netCDF::NcFile & file )
   auto tss_block = dynamic_cast< TwoStageStochasticBlock * >( block );
   if( ! tss_block ) {
    std::cout << "Error: " << block_description.first
-	     << "not a TwoStageStochasticBlock" << std::endl;
+	     << " not a TwoStageStochasticBlock" << std::endl;
    exit( 1 );
    }
 
