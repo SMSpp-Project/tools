@@ -54,15 +54,14 @@ if (TARGET SMS++::UCBlock AND
         target_link_libraries(sddp_solver PRIVATE SMS++::MILPSolver)
     endif ()
 
-    if (WIN32 AND BUILD_SHARED_LIBS)
+    if (WIN32 AND BUILD_SHARED_LIBS AND NOT DEFINED ENV{CONDA_BUILD})
         # copy runtime DLLs next to the exe after build
         add_custom_command(TARGET sddp_solver POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_RUNTIME_DLLS:sddp_solver>
-                $<TARGET_FILE_DIR:sddp_solver>
-                COMMAND_EXPAND_LISTS
-                COMMENT "Copying runtime DLLs next to sddp_solver.exe"
-        )
+                           COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                           $<TARGET_RUNTIME_DLLS:sddp_solver>
+                           $<TARGET_FILE_DIR:sddp_solver>
+                           COMMAND_EXPAND_LISTS
+                           COMMENT "Copying runtime DLLs next to sddp_solver.exe")
     endif()
 
     # Install
