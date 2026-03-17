@@ -20,7 +20,7 @@ BlockConfig # exact type of the ComputeConfig object
 
 # static_variables
 SimpleConfiguration<int>
-0    # 0 = PTDF, 1 = cycle, 2 = Kirchoff, cycle by default
+0    # 0 = PTDF, 1 = cycle, 2 = Kirchhoff, cycle by default
 
 # dynamic_variables
 *    # [none]
