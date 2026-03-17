@@ -1,0 +1,45 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - -NBCfg.txt- - - - - - - - - - - - - - - - -
+#
+# A txt description of a BlockConfig for a NetworkBlock
+#
+#   Donato Meoli
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockConfig # exact type of the ComputeConfig object
+
+1  # the BlockConfig is a "differential" one
+
+# static_constraints
+*    # [none]
+
+# dynamic_constraints
+*    # [none]
+
+# static_variables
+SimpleConfiguration<int>
+0    # 0 = PTDF, 1 = cycle, 2 = Kirchoff, cycle by default
+
+# dynamic_variables
+*    # [none]
+
+# objective
+*    # [none]
+
+# is_feasible
+*    # [none]
+
+# is_optimal
+*    # [none]
+
+# solution
+*    # [none]
+
+# extra
+*    # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - -NBCfg.txt- - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
