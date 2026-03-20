@@ -28,17 +28,21 @@ include ../makefile_common
 # *H   is the list of all include files
 # *INC is the -I< include directories >
 
-# BundleSolver
-BNDSLVSDR = ../../BundleSolver
-include $(BNDSLVSDR)/makefile-c
-
-# LagrangianDualSolver
-LgDSLVSDR = ../../LagrangianDualSolver
-include $(LgDSLVSDR)/makefile
+# define input macros for SMS++ complete makefile, then include it
+SMS++SDR = ../../SMS++
+include $(SMS++SDR)/lib/makefile-c
 
 # define input macros for UCBlock makefile, then include it
 UCBckDIR = ../../UCBlock
 include $(UCBckDIR)/lib/makefile
+
+# BundleSolver
+BNDSLVSDR = ../../BundleSolver
+include $(BNDSLVSDR)/makefile-s
+
+# LagrangianDualSolver
+LgDSLVSDR = ../../LagrangianDualSolver
+include $(LgDSLVSDR)/makefile-s
 
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 

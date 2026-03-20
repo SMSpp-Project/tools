@@ -404,25 +404,26 @@ class UCBlockSolutionOutput
  /// dual values for the power flow limit constraints
  void print_power_flow_limit_duals( UCBlock * uc_block ) const {
 
-  std::ofstream output
-   ( get_filepath( filenames[ marginal_cost_flows ].name() ) , open_mode() );
+  std::ofstream output(
+    get_filepath( filenames[ marginal_cost_flows ].name() ) , open_mode() );
 
   auto get_power_flow_limit_dual =
    []( NetworkBlock * block , Index line ) -> double {
     if( auto dc = dynamic_cast< DCNetworkBlock * >( block ) ) {
      if( auto network_data = dc->get_NetworkData() ) {
-      if( static_cast< DCNetworkBlock::DCNetworkData * >(network_data)
-           ->get_lines_type() == DCNetworkBlock::kHVDC ) {
+      if( static_cast< DCNetworkBlock::DCNetworkData * >(
+					      network_data )->is_HVDC() ) {
        const auto & constraints = dc->get_power_flow_limit_HVDC_bounds();
        if( line < constraints.size() )
         return( constraints[ line ].get_dual() );
-      } else {
+       }
+      else {
        const auto & constraints = dc->get_power_flow_limit_constraints();
        if( line < constraints.size() )
         return( constraints[ line ].get_dual() );
+       }
       }
      }
-    }
     return( 0 );
    };
 
@@ -437,14 +438,14 @@ class UCBlockSolutionOutput
     get_line_name = [ &line_names ]( Index line ) {
      assert( line < line_names.size() );
      return( line_names[ line ] );
-    };
-  }
+     };
+   }
 
   print_line_data( output , uc_block->get_network_blocks() ,
                    get_power_flow_limit_dual , get_line_name );
 
   output.close();
- }
+  }
 
 /*--------------------------------------------------------------------------*/
 

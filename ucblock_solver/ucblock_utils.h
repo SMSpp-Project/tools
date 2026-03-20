@@ -396,7 +396,8 @@ inline void print_UCBlock_solver_results( Block * block )
      std::cout << "Commitment     = [";
      for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
       std::cout << std::setw( 2 )
-                << static_cast< unsigned int >( std::round( commitment[ t ].get_value() ) );
+                << static_cast< unsigned int >(
+			       std::round( commitment[ t ].get_value() ) );
      std::cout << " ]" << std::endl;
     }
 
@@ -405,13 +406,14 @@ inline void print_UCBlock_solver_results( Block * block )
       ->get_primary_spinning_reserve( 0 );
      std::cout << "Primary reserve     = [";
      for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
-      std::cout << std::setw( 20 ) << primary_spinning_reserve[ t ].get_value();
+      std::cout << std::setw( 20 )
+		<< primary_spinning_reserve[ t ].get_value();
      std::cout << " ]" << std::endl;
     }
 
     if( number_secondary_zones > 0 ) {
-     auto secondary_spinning_reserve = slack_unit_block
-      ->get_secondary_spinning_reserve( 0 );
+     auto secondary_spinning_reserve =
+                      slack_unit_block->get_secondary_spinning_reserve( 0 );
      std::cout << "Secondary reserve     = [";
      for( Index t = 0 ; t < unit_block->get_time_horizon() ; ++t )
       std::cout << std::setw( 20 )
@@ -419,8 +421,9 @@ inline void print_UCBlock_solver_results( Block * block )
      std::cout << " ]" << std::endl;
     }
    }
-
-  } else if( auto network_block = dynamic_cast< NetworkBlock * >( i ) ) {
+  }
+  else
+   if( auto network_block = dynamic_cast< NetworkBlock * >( i ) ) {
 
    std::cout << "----- " << network_block->classname() << " " <<
              n_net_blocks++ << " -----" << std::endl;
