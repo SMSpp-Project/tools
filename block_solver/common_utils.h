@@ -4,6 +4,42 @@
 /** @file
  * Some common utilities for SMS++ tools.
  *
+ * The file defines a common standard for the command-line arguments that can
+ * be used by SMS++ "main" files that need to load some Block, its
+ * corresponding BlockConfig and BlockSolverConfig, make the configuration,
+ * run some Solver, collect the results. Specific support is given for
+ * operations like:
+ *
+ * - set the initial State of the Solver;
+ *
+ * - load an initial Solution into the Block, save the final Solution;
+ *
+ * - do not really run the optimization ("dry run")
+ *
+ * Also, a special "meta-configuration" mode is supported for both the
+ * BlockConfig and the BlockSolverConfig: if the specified Configuration is
+ * not really a BlockConfig / BlockSolverConfig, but rather a
+ *
+ *   SimpleConfiguration< std::vector< std::pair< std::string ,
+ *                                                Configuration * > > >
+ *
+ * then this is interpreted as "the BlockConfig / BlockSolverConfig that are
+ * to be set to the Block / all its sub-Block that have that specific
+ * classname()". That is, if the SimpleConfiguration< ... > contains, say,
+ *
+ *    { { "UCBlock" , < pointer to BC1 > } ,
+ *      { "DCNetworkBlock" , < pointer to BC2 > } }
+ *
+ * then the Block is scanned, and all its sub-Block (possibly, itself) that
+ * are UCBlock are BlockConfig-ured with (a clone() to) BC1 while all the its
+ * sub-Block (...) that are DCNetworkBlock are BlockConfig-ured with (...)
+ * BC2; analogously for the BlockSolverConfig (except there is no need for
+ * clone()-ing).
+ *
+ * Note: in the  "meta-configuration" mode, BlockSolverConfig are not properly
+ * clear()-ed and used for the final cleanup, which is supposed to be
+ * acceptable since typically the executable terminates right after it.
+ *
  * \author Antonio Frangioni \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
@@ -308,12 +344,73 @@ BlockSolverConfig * get_blocksolverconfig( const std::string & conf_file )
 void config_Block( Block * block , BlockConfig * b_config ,
 		   BlockSolverConfig * s_config )
 {
- if( b_config )
-  b_config->apply( block );
- 
+ std::vector< Block * > BFS;
+
+ if( b_config ) {
+  // handle the special case of a "meta" BlockConfig
+  if( auto * mb =
+      dynamic_cast< SimpleConfiguration< std::vector< std::pair< std::string ,
+                                     Configuration * > > > * >( b_config ) ) {
+   // copy the elements to a map for efficient retrieval, and checking they
+   // actually contain BlockConfig
+   std::map< std::string , BlockConfig * > m;
+   for( auto & el : mb->f_value )
+    if( auto bc = dynamic_cast< BlockConfig * >( el.second ) )
+     m.insert( { el.first , bc } );
+    else
+     throw( std::invalid_argument( "config_Block: meta-BlockConfig does not"
+				   " contain a BlockConfig" ) );
+
+   // construct the vector of all Block inside block
+   BFS.push_back( block );
+   for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
+    for( auto el : (*bit)->get_nested_Blocks() )
+     BFS.push_back( el );
+
+   // now BlockConfig-ure all Block whose classname() matches
+   for( auto b : BFS )
+    if( auto bcit = m.find( b->classname() ); bcit != m.end() ) {
+     auto cbc = bcit->second->clone();
+     cbc->apply( b );
+     delete cbc;
+     }
+   }
+  else  // an "ordinary" BlockConfig, just apply() it
+   b_config->apply( block );
+  }
+
  if( s_config ) {
-  s_config->apply( block );
-  s_config->clear();
+  // handle the special case of a "meta" BlockSolverConfig
+  if( auto * mb =
+      dynamic_cast< SimpleConfiguration< std::vector< std::pair< std::string ,
+                                     Configuration * > > > * >( b_config ) ) {
+   // copy the elements to a map for efficient retrieval, and checking they
+   // actually contain BlockSolverConfig
+   std::map< std::string , BlockSolverConfig * > m;
+   for( auto & el : mb->f_value )
+    if( auto bsc = dynamic_cast< BlockSolverConfig * >( el.second ) )
+     m.insert( { el.first , bsc } );
+    else
+     throw( std::invalid_argument( "config_Block: meta-BlockSolverConfig"
+				   " does not contain a BlockSolverConfig" ) );
+
+   // construct the vector of all Block inside block (if not there already)
+   if( BFS.empty() ) {	       
+    BFS.push_back( block );
+    for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
+     for( auto el : (*bit)->get_nested_Blocks() )
+      BFS.push_back( el );
+    }
+
+   // now BlockSolverConfig-ure all Block whose classname() matches
+   for( auto b : BFS )
+    if( auto bscit = m.find( b->classname() ); bscit != m.end() )
+     bscit->second->apply( b );
+   }
+  else {  // an "ordinary" BlockSolverConfig, just apply() it
+   s_config->apply( block );
+   s_config->clear();
+   }
   }
  }
 
