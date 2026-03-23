@@ -349,17 +349,9 @@ void config_Block( Block * block , BlockConfig * b_config ,
  if( b_config ) {
   // handle the special case of a "meta" BlockConfig
   if( auto * mb =
-      dynamic_cast< SimpleConfiguration< std::vector< std::pair< std::string ,
-                                     Configuration * > > > * >( b_config ) ) {
-   // copy the elements to a map for efficient retrieval, and checking they
-   // actually contain BlockConfig
-   std::map< std::string , BlockConfig * > m;
-   for( auto & el : mb->f_value )
-    if( auto bc = dynamic_cast< BlockConfig * >( el.second ) )
-     m.insert( { el.first , bc } );
-    else
-     throw( std::invalid_argument( "config_Block: meta-BlockConfig does not"
-				   " contain a BlockConfig" ) );
+      dynamic_cast< SimpleConfiguration< std::map< std::string ,
+                                                   Configuration * > >
+                                         * >( b_config ) ) {
 
    // construct the vector of all Block inside block
    BFS.push_back( block );
@@ -367,13 +359,16 @@ void config_Block( Block * block , BlockConfig * b_config ,
     for( auto el : (*bit)->get_nested_Blocks() )
      BFS.push_back( el );
 
+   auto & map = mb->f_value;
+   
    // now BlockConfig-ure all Block whose classname() matches
    for( auto b : BFS )
-    if( auto bcit = m.find( b->classname() ); bcit != m.end() ) {
-     auto cbc = bcit->second->clone();
-     cbc->apply( b );
-     delete cbc;
-     }
+    if( auto bcit = map.find( b->classname() ); bcit != map.end() )
+     if( auto bc = dynamic_cast< BlockConfig * >( bcit->second ) ) {
+      auto cbc = bc->clone();
+      cbc->apply( b );
+      delete cbc;
+      }
    }
   else  // an "ordinary" BlockConfig, just apply() it
    b_config->apply( block );
@@ -382,17 +377,9 @@ void config_Block( Block * block , BlockConfig * b_config ,
  if( s_config ) {
   // handle the special case of a "meta" BlockSolverConfig
   if( auto * mb =
-      dynamic_cast< SimpleConfiguration< std::vector< std::pair< std::string ,
-                                     Configuration * > > > * >( b_config ) ) {
-   // copy the elements to a map for efficient retrieval, and checking they
-   // actually contain BlockSolverConfig
-   std::map< std::string , BlockSolverConfig * > m;
-   for( auto & el : mb->f_value )
-    if( auto bsc = dynamic_cast< BlockSolverConfig * >( el.second ) )
-     m.insert( { el.first , bsc } );
-    else
-     throw( std::invalid_argument( "config_Block: meta-BlockSolverConfig"
-				   " does not contain a BlockSolverConfig" ) );
+      dynamic_cast< SimpleConfiguration< std::map< std::string ,
+                                                   Configuration * > >
+                                         * >( b_config ) ) {
 
    // construct the vector of all Block inside block (if not there already)
    if( BFS.empty() ) {	       
@@ -402,10 +389,13 @@ void config_Block( Block * block , BlockConfig * b_config ,
       BFS.push_back( el );
     }
 
+   auto & map = mb->f_value;
+
    // now BlockSolverConfig-ure all Block whose classname() matches
    for( auto b : BFS )
-    if( auto bscit = m.find( b->classname() ); bscit != m.end() )
-     bscit->second->apply( b );
+    if( auto bscit = map.find( b->classname() ); bscit != map.end() )
+     if( auto bsc = dynamic_cast< BlockSolverConfig * >( bscit->second ) )
+      bsc->apply( b );
    }
   else {  // an "ordinary" BlockSolverConfig, just apply() it
    s_config->apply( block );
