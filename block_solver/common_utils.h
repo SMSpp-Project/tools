@@ -20,8 +20,7 @@
  * BlockConfig and the BlockSolverConfig: if the specified Configuration is
  * not really a BlockConfig / BlockSolverConfig, but rather a
  *
- *   SimpleConfiguration< std::vector< std::pair< std::string ,
- *                                                Configuration * > > >
+ *   SimpleConfiguration< std::map< std::string , Configuration * > >
  *
  * then this is interpreted as "the BlockConfig / BlockSolverConfig that are
  * to be set to the Block / all its sub-Block that have that specific
