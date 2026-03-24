@@ -516,7 +516,7 @@ void write_final_Solution( Block * block , Configuration * cfg ,
   return;
 
  // use provided Configuration if any, otherwise (possibly) load one
- Configuration * outsolcfg = nullptr;
+ Configuration * outsolcfg = cfg;
  if( ( ! sol_output.empty() ) && ( ! sol_cfg_file.empty() ) )
   if( ! ( outsolcfg = Configuration::deserialize(
           resolve_with_prefix( conf_prefix , sol_cfg_file ) ) ) )
@@ -572,7 +572,8 @@ int solve_all( Block * block )
  // prepare file and Configuration for final Solution(s) - - - - - - - - - - -
  Configuration * outsolcfg = nullptr;
  if( ( ! sol_output.empty() ) && ( ! sol_cfg_file.empty() ) )
-  if( ! ( outsolcfg = Configuration::deserialize( sol_cfg_file ) ) )
+  if( ! ( outsolcfg = Configuration::deserialize(
+          resolve_with_prefix( conf_prefix , sol_cfg_file ) ) ) )
    std::cout << "Warning: output Solution Configuration "
 	     << sol_cfg_file << " invalid" << std::endl;
 
