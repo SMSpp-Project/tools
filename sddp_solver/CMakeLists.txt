@@ -35,7 +35,8 @@ endif ()
 if (TARGET SMS++::UCBlock AND
     TARGET SMS++::SDDPBlock)
 
-    add_executable(sddp_solver sddp_solver.cpp CutProcessing.cpp)
+    add_executable(sddp_solver ../block_solver/common_utils.cpp
+                               CutProcessing.cpp sddp_solver.cpp)
     target_compile_features(sddp_solver PUBLIC cxx_std_17)
     target_include_directories(sddp_solver PRIVATE ../block_solver ../ucblock_solver)
     target_link_libraries(sddp_solver PRIVATE

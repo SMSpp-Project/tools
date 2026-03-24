@@ -40,6 +40,7 @@ if (TARGET SMS++::UCBlock AND
     TARGET SMS++::SDDPBlock)
 
     add_executable(investment_solver
+                   ../block_solver/common_utils.cpp
                    investment_solver.cpp ../sddp_solver/CutProcessing.cpp
                    InvestmentFunction.cpp InvestmentBlock.cpp)
     target_compile_features(investment_solver PUBLIC cxx_std_17)

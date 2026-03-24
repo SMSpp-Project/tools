@@ -34,7 +34,8 @@ if (NOT hasParent)
 endif ()
 
 # ----- block_solver -------------------------------------------------------- #
-add_executable(block_solver block_solver.cpp)
+add_executable(block_solver ../block_solver/common_utils.cpp
+                            block_solver.cpp)
 target_link_libraries(block_solver PRIVATE SMS++::SMS++)
 
 if (WIN32 AND BUILD_SHARED_LIBS AND NOT DEFINED ENV{CONDA_BUILD})
