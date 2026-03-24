@@ -517,7 +517,7 @@ void write_final_Solution( Block * block , Configuration * cfg ,
 
  // use provided Configuration if any, otherwise (possibly) load one
  Configuration * outsolcfg = cfg;
- if( ( ! sol_output.empty() ) && ( ! sol_cfg_file.empty() ) )
+ if( ( ! outsolcfg ) && ( ! sol_cfg_file.empty() ) )
   if( ! ( outsolcfg = Configuration::deserialize(
           resolve_with_prefix( conf_prefix , sol_cfg_file ) ) ) )
    std::cout << "Warning: output Solution Configuration "
