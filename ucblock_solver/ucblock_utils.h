@@ -58,24 +58,21 @@ inline BlockConfig * default_configure_UCBlock( const Block * uc_block )
 
   // If HydroSystemUnitBlock, we configure its PolyhedralFunctionBlocks
   if( auto hsub = dynamic_cast< HydroSystemUnitBlock * >( sb ) ) {
-
    for( auto ssb : hsub->get_nested_Blocks() ) {
-
     if( auto pf_block = dynamic_cast< PolyhedralFunctionBlock * >( ssb ) ) {
-
      auto ssbc = new BlockConfig();
      ssbc->f_static_variables_Configuration =
       new SimpleConfiguration< int >( 1 );
 
      int idx = sb->get_nested_Block_index( ssb );
      sbc->add_sub_BlockConfig( ssbc , idx );
+     }
     }
    }
-  }
 
   int idx = uc_block->get_nested_Block_index( sb );
   b_config->add_sub_BlockConfig( sbc , idx );
- }
+  }
 
  return( b_config );
  }

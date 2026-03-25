@@ -129,46 +129,27 @@ int main( int argc , char ** argv )
  process_my_args( argc , argv );
 
  // deserialize UCBlock - - - - - - - - - - - - - - - - - - - - - - - - - - -
- Block * block = Block::deserialize( filename );
- if( ! block ) { 
-  std::cerr << exe << ": Block::deserialize() failed" << std::endl;
-  exit( 1 );
-  }
+ Block * block = get_Block( filename );
 
  if( ! dynamic_cast< UCBlock * >( block ) ) {
   std::cerr << exe << ": " << filename << " is not a UCBlock" << std::endl;
   exit( 1 );
   }
 
- // Configure Block - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- BlockConfig * b_config;
- if( ! bconf_file.empty() ) {
-  b_config = get_blockconfig( bconf_file );
-  if( b_config == nullptr ) {
-   std::cerr << exe << ": Block configuration \"" <<  bconf_file
-	     << "\" not valid" << std::endl;
-   exit( 1 );
-   }
-  }
+ // BlockConfig-ure and BlockSolverConfig-ure the [UC]Block - - - - - - - - -
+ Configuration * b_config;
+ if( ! bconf_file.empty() )
+  b_config = get_config( bconf_file );
  else {
   // TODO: Try to remove this
   std::cout << "Using a default Block configuration" << std::endl;
   b_config = default_configure_UCBlock( block );
   }
 
- b_config->apply( block );
+ auto s_config = get_config( sconf_file );
 
- // Configure Solver- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- BlockSolverConfig * s_config;
- s_config = get_blocksolverconfig( sconf_file );
- if( s_config == nullptr ) {
-  std::cerr << exe << ": Solver configuration \"" << sconf_file
-	    << "\" not valid" << std::endl;
-  exit( 1 );
-  }
-
- s_config->apply( block );
-
+ config_Block( block , b_config , s_config );
+	      
  // write nc4 problem - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  if( writeprob )
   write_nc4problem( block , b_config , s_config );
@@ -181,6 +162,11 @@ int main( int argc , char ** argv )
  // print the results - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  if( ( ! dryrun ) && ( status == 0 ) )
   print_UCBlock_solver_results( block , solution_output_type );
+
+ // cleanup - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+ cleanup_bsc( block , s_config );
+ delete s_config;
+ delete block;
 
  return( 0 );
 

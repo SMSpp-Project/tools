@@ -1,0 +1,13 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - MetaCfg.txt - - - - - - - - - - - - - - - -
+#
+# A txt description of a BlockConfig to select specific formulations
+#
+#
+# Some indication of parameters, for instance the file pointing to the
+# parameters for AC Network scaling factors
+#
+# -- to be MetaConfig is to just have this:
+SimpleConfiguration<std::map<std::string,Configuration*>>
+1          		# the number of elements in the map
+ACNetworkBlock	*config/ACBCfg.txt # the simple config to apply to AC Networks

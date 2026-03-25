@@ -28,9 +28,11 @@ include ../makefile_common
 # *H   is the list of all include files
 # *INC is the -I< include directories >
 
+# note that the SMS++ complete makefile isincluded in makefile_common
+
 # define input macros for SDDPBlock makefile, then include it
 SDDPBkSDR = ../../SDDPBlock
-include $(SDDPBkSDR)/makefile-c
+include $(SDDPBkSDR)/makefile-s
 
 # define input macros for UCBlock makefile, then include it
 UCBckDIR = ../../UCBlock
@@ -63,15 +65,25 @@ InvsBkH   = $(InvsBkSDR)/InvestmentBlock.h \
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(UCBckOBJ) $(SDDPBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(InvsBkOBJ)
+MOBJ =  $(SMS++OBJ) $(UCBckOBJ) $(SDDPBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) \
+	$(InvsBkOBJ) $(CMMNUOBJ)
 
 # libraries
-MLIB =  $(UCBckLIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB)
+MLIB =   $(SMS++LIB) $(UCBckLIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB)
 
 $(DIR)/$(NAME): $(DIR)/investment_solver.o $(DIR)/CutProcessing.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
 
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
+
+# include directives
+MINC =  $(SMS++INC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) $(SDDPBkINC) \
+	-I$(DIR)/../sddp_solver -I$(DIR)/../ucblock_solver $(CMMNUINC)
+
+# includes
+MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(SDDPBkH) $(CMMNUH)
+
+# compile command
 
 $(InvsBkSDR)/InvestmentBlock.o: $(InvsBkSDR)/InvestmentBlock.cpp \
 	$(InvsBkSDR)/InvestmentFunction.h $(SDDPBkH) $(UCBckH) $(SMS++OBJ)
@@ -89,17 +101,6 @@ $(DIR)/CutProcessing.o: \
 	$(DIR)/../sddp_solver/CutProcessing.cpp $(MH)
 	$(CC) -c $(DIR)/../sddp_solver/CutProcessing.cpp \
 	-o $(DIR)/CutProcessing.o $(MINC) $(SW)
-
-# include directives
-MINC =  $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) $(SDDPBkINC) \
-	-I$(DIR)/../sddp_solver -I$(DIR)/../ucblock_solver \
-	-I$(DIR)/../block_solver
-
-# includes
-MH =    $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(SDDPBkH) \
-	$(DIR)/../block_solver/common_utils.h
-
-# compile command
 
 $(DIR)/investment_solver.o: $(DIR)/investment_solver.cpp \
 	$(DIR)/../ucblock_solver/UCBlockSolutionOutput.h \

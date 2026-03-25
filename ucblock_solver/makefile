@@ -28,9 +28,7 @@ include ../makefile_common
 # *H   is the list of all include files
 # *INC is the -I< include directories >
 
-# define input macros for SMS++ complete makefile, then include it
-SMS++SDR = ../../SMS++
-include $(SMS++SDR)/lib/makefile-c
+# note that the SMS++ complete makefile isincluded in makefile_common
 
 # define input macros for UCBlock makefile, then include it
 UCBckDIR = ../../UCBlock
@@ -47,7 +45,7 @@ include $(LgDSLVSDR)/makefile-s
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ)
+MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) $(CMMNUOBJ)
 
 # libraries
 MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
@@ -58,15 +56,14 @@ $(DIR)/$(NAME): $(DIR)/ucblock_solver.o $(MOBJ)
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
-MINC =  $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) -I$(DIR)/../block_solver
+MINC =  $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) $(CMMNUINC)
 
 # includes
-MH =    $(BNDSLVH) $(LgDSLVH) $(UCBckH)
+MH =    $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(CMMNUH)
 
 # compile command
 
 $(DIR)/ucblock_solver.o: $(DIR)/ucblock_solver.cpp \
-	$(DIR)/../block_solver/common_utils.h \
 	$(DIR)/UCBlockSolutionOutput.h $(MH)
 	$(CC) -c $(DIR)/ucblock_solver.cpp -o $@ $(MINC) $(SW)
 

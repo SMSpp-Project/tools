@@ -126,7 +126,7 @@ inline void set_solver_logs( Block * block ) {
  if( ( verbosity_level >= 2 ) && block )
   for( auto solver : block->get_registered_solvers() )
    solver->set_log( &std::cout );
-}
+ }
 
 /*--------------------------------------------------------------------------*/
 /// normalizes a directory prefix in a portable way
@@ -165,7 +165,8 @@ inline std::string resolve_with_prefix( const std::string & prefix ,
  if( prefix.empty() )
   return( p.lexically_normal().string() );
 
- return( ( std::filesystem::path( prefix ) / p ).lexically_normal().string() );
+ return( ( std::filesystem::path( prefix ) / p ).lexically_normal().string()
+	 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -196,47 +197,136 @@ inline long get_long_option( char * end = nullptr )
 
 int read_open_netCDF( netCDF::NcFile & f , std::string fn );
 
+/*--------------------------------------------------------------------------*/
+/// prints the tool description and usage
+
 void docopt( void );
+
+/*--------------------------------------------------------------------------*/
+/// processes any one of the default command-line arguments
 
 bool process_standard_arg( int opt );
 
+/*--------------------------------------------------------------------------*/
+/// processes all default command-line arguments
+
 void process_args( int argc , char ** argv );
+
+/*--------------------------------------------------------------------------*/
+/// custom terminate function to print the exception message
 
 void smspp_terminate( void );
 
+/*--------------------------------------------------------------------------*/
+/// get Block from file
+
+Block * get_Block( const std::string & b_file );
+
+/*--------------------------------------------------------------------------*/
+/// get Block from group
+
+Block * get_Block( const netCDF::NcGroup & group );
+
+/*--------------------------------------------------------------------------*/
+/// gets a Configuration from a Configuration file
+
+Configuration * get_config( const std::string & conf_file );
+
+/*--------------------------------------------------------------------------*/
+/// gets a BlockConfig from a BlockConfig file
+
 BlockConfig * get_blockconfig( const std::string & conf_file );
+
+/*--------------------------------------------------------------------------*/
+/// gets a BlockSolverConfig from a BlockSolverConfig file
 
 BlockSolverConfig * get_blocksolverconfig( const std::string & conf_file );
 
-void config_Block( Block * block , BlockConfig * b_config ,
-                   BlockSolverConfig * s_config );
+/*--------------------------------------------------------------------------*/
+/// BlockConfig-ure and BlockSolverConfig-ure a Block
+/** \p b_config and \p s_config can be either a, respectively, BlockConfig or
+ * BlockSolverConfig, or a "meta" Configuration, i.e., a
+ *
+ *   SimpleConfiguration< std::map< std::string , Configuration * > >
+ *
+ * then this is interpreted as "the BlockConfig / BlockSolverConfig that are
+ * to be set to the Block / all its sub-Block that have that specific
+ * classname()". These are all properly apply()-ed to \p block. The
+ * BlockSolverConfig[s] are also properly clear()-ed for final cleanup. */
+
+void config_Block( Block * block ,
+		   Configuration * b_config , Configuration * s_config );
+
+/*--------------------------------------------------------------------------*/
+/// final cleanup by a clear()-ed [meta]BlockSolverConfig
+/** This handles both the case where \p s_config is a BlockSolverConfig or
+ * a "meta BlockSolverConfig", i.e., a
+ *
+ *   SimpleConfiguration< std::map< std::string , Configuration * > >
+ */
+
+void cleanup_bsc( Block * block , Configuration * s_config );
+
+/*--------------------------------------------------------------------------*/
+/// get Block, BlockConfig and BlockSolverConfig from files, configure all
 
 void get_all( const std::string & b_file , const std::string & bc_file ,
               const std::string & bsc_file , Block * & block ,
-              BlockConfig * & b_config , BlockSolverConfig * & s_config );
+              Configuration * & s_config );
+
+/*--------------------------------------------------------------------------*/
+/**get Block from group, BlockConfig and BlockSolverConfig from files,
+ * configure all */
 
 void get_all( const netCDF::NcGroup & group , const std::string & bc_file ,
               const std::string & bsc_file , Block * & block ,
-              BlockConfig * & b_config , BlockSolverConfig * & s_config );
+              Configuration * & s_config );
+
+/*--------------------------------------------------------------------------*/
+/// get Block, BlockConfig and BlockSolverConfig from group, configure all
 
 void get_all( const netCDF::NcGroup & group , Block * & block ,
-              BlockConfig * & b_config , BlockSolverConfig * & s_config );
+              Configuration * & s_config );
+
+/*--------------------------------------------------------------------------*/
+/// prints the status in a human-readable form
 
 void print_status( int status );
 
+/*--------------------------------------------------------------------------*/
+/// get and set the initial Solution
+
 void get_initial_Solution( Block * block );
 
+/*--------------------------------------------------------------------------*/
+/// get and set the initial State
+
 void get_initial_State( Solver * solver );
+
+/*--------------------------------------------------------------------------*/
+/// write the final Solution, using given Configuration if provided
+/** Write the Solution currently in the given \p block, using given
+ * Configuration \p cfg (if provided, default not) to produce it; bu default
+ * append to the file with filename sol_output, rather than replacing it. */
 
 void write_final_Solution( Block * block , Configuration * cfg = nullptr ,
                            bool replace = false );
 
+/*--------------------------------------------------------------------------*/
+/// write the final State, by default appending rather than replacing
+
 void write_final_State( Solver * solver , bool replace = false );
+
+/*--------------------------------------------------------------------------*/
+/// compute() the Block with all available Solver(s) (unless dry run)
 
 int solve_all( Block * block );
 
-void write_nc4problem( Block * block , BlockConfig * b_config ,
-                       BlockSolverConfig * s_config );
+/*--------------------------------------------------------------------------*/
+/// writes a new nc4 problem using the Block and its Configuration(s)
+
+void write_nc4problem( Block * block ,
+		       Configuration * b_config , Configuration * s_config );
 
 /** @} ---------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/

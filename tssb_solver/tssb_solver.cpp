@@ -117,53 +117,28 @@ void process_prob_file( const netCDF::NcFile & file )
 {
  auto problems = file.getGroups();
 
- for( auto & problem : problems ) { // for each problem descriptor:
-  auto & problem_group = problem.second;
+ for( auto & problem : problems ) {  // for each problem descriptor:
+  Block * block;
+  Configuration * s_config;
+  get_all( problem.second , block , s_config );
 
-  // Deserialize block
-  auto block_group = problem_group.getGroup( "Block" );
-  auto block = Block::new_Block( block_group );
-  auto tss_block = dynamic_cast< TwoStageStochasticBlock * >( block );
-  if( ! tss_block ) {
-   std::cout << "Error: " << problem.first << " not a TwoStageStochasticBlock"
-	     << std::endl;
+  if( ! dynamic_cast< TwoStageStochasticBlock * >( block ) ) {
+   std::cout << "Error: " << problem.first
+	     << " not a TwoStageStochasticBlock" << std::endl;
    exit( 1 );
    }
 
-  // Configure block
-  auto block_config_group = problem_group.getGroup( "BlockConfig" );
-  auto block_config = static_cast< BlockConfig * >(
-   BlockConfig::new_Configuration( block_config_group ) );
-  if( ! block_config )
-   throw( std::logic_error( "invalid BlockConfig group" ) );
-
-  block_config->apply( tss_block );
-  block_config->clear();
-
-  // Configure solver
-  auto solver_config_group = problem_group.getGroup( "BlockSolver" );
-  auto block_solver_config = static_cast< BlockSolverConfig * >(
-   BlockSolverConfig::new_Configuration( solver_config_group ) );
-  if( ! block_solver_config )
-   throw( std::logic_error( "invalid BlockSolver group" ) );
-  block_solver_config->apply( tss_block );
-  block_solver_config->clear();
-
   std::cout << "Problem: " << problem.first << std::endl;
 
-  set_solver_logs( tss_block );
+  set_solver_logs( block );
 
   // Solve
-  solve_all( tss_block );
+  solve_all( block );
 
-  // Destroy the Block and the Configurations
-  block_config->apply( tss_block );
-  delete( block_config );
-
-  block_solver_config->apply( tss_block );
-  delete( block_solver_config );
-
-  delete( tss_block );
+  // cleanup
+  cleanup_bsc( block , s_config );
+  delete s_config;
+  delete block;
   }
  }
 
@@ -171,84 +146,29 @@ void process_prob_file( const netCDF::NcFile & file )
 
 void process_block_file( const netCDF::NcFile & file )
 {
- // BlockConfig
- BlockConfig * given_block_config = nullptr;
- if( bconf_file.empty() )
-  std::cout << "Block configuration was not provided, "
-               "using default configuration" << std::endl;
- else
-  if( ( given_block_config = get_blockconfig( bconf_file ) ) )
-   std::cout << "Using Block configuration in " << bconf_file << std::endl;
-  else {
-   std::cerr << "Block Configuration " << bconf_file << " invalid"
-	     << std::endl;
-   delete( given_block_config );
-   exit( 1 );
-   }
-
- BlockConfig * block_config = nullptr;
- if( given_block_config ) {
-  block_config = given_block_config->clone();
-  block_config->clear();
-  }
-
- // BlockSolverConfig
- bool block_solver_config_provided = true;
- auto solver_config = get_blocksolverconfig( sconf_file );
- if( ! solver_config ) {
-  std::cerr << "The Solver configuration is not valid." << std::endl;
-  exit( 1 );
-  }
-
- auto cleared_solver_config = solver_config->clone();
- cleared_solver_config->clear();
-
  auto blocks = file.getGroups();
- for( auto block_description : blocks ) { // for each Block descriptor
-  // Deserialize the TwoStageStochasticBlock
-  auto block = Block::new_Block( block_description.second );
-  auto tss_block = dynamic_cast< TwoStageStochasticBlock * >( block );
-  if( ! tss_block ) {
-   std::cout << "Error: " << block_description.first
+
+ for( auto & blocki : blocks ) {  // for each Block descriptor
+  Block * block;
+  Configuration * s_config;
+  get_all( blocki.second , bconf_file , sconf_file , block , s_config );
+
+  if( ! dynamic_cast< TwoStageStochasticBlock * >( block ) ) {
+   std::cout << "Error: " << blocki.first
 	     << " not a TwoStageStochasticBlock" << std::endl;
    exit( 1 );
    }
 
-  // Configure the TwoStageStochasticBlock
-  if( given_block_config )
-   given_block_config->apply( tss_block );
-  else {
-   if( ! block_solver_config_provided ) {
-    block_config->apply( tss_block );
-    block_config->clear();
-    }
-   }
-
-  // Configure the Solver
-  solver_config->apply( tss_block );
-
-  set_solver_logs( tss_block );
+  set_solver_logs( block );
 
   // Solve
-  solve_all( tss_block );
+  solve_all( block );
 
-  // Destroy the Block and the Configurations
-  if( block_config )
-   block_config->apply( tss_block );
-  if( ! given_block_config ) {
-   delete( block_config );
-   block_config = nullptr;
-   }
-
-  cleared_solver_config->apply( tss_block );
-
-  delete( tss_block );
+  // cleanup
+  cleanup_bsc( block , s_config );
+  delete s_config;
+  delete block;
   }
-
- delete( block_config );
- delete( given_block_config );
- delete( solver_config );
- delete( cleared_solver_config );
  }
 
 /*--------------------------------------------------------------------------*/

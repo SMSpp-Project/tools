@@ -2,42 +2,8 @@
 /*--------------------------- common_utils.cpp -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * Some common utilities for SMS++ tools.
- *
- * The file defines a common standard for the command-line arguments that can
- * be used by SMS++ "main" files that need to load some Block, its
- * corresponding BlockConfig and BlockSolverConfig, make the configuration,
- * run some Solver, collect the results. Specific support is given for
- * operations like:
- *
- * - set the initial State of the Solver;
- *
- * - load an initial Solution into the Block, save the final Solution;
- *
- * - do not really run the optimization ("dry run")
- *
- * Also, a special "meta-configuration" mode is supported for both the
- * BlockConfig and the BlockSolverConfig: if the specified Configuration is
- * not really a BlockConfig / BlockSolverConfig, but rather a
- *
- *   SimpleConfiguration< std::map< std::string , Configuration * > >
- *
- * then this is interpreted as "the BlockConfig / BlockSolverConfig that are
- * to be set to the Block / all its sub-Block that have that specific
- * classname()". That is, if the SimpleConfiguration< ... > contains, say,
- *
- *    { { "UCBlock" , < pointer to BC1 > } ,
- *      { "DCNetworkBlock" , < pointer to BC2 > } }
- *
- * then the Block is scanned, and all its sub-Block (possibly, itself) that
- * are UCBlock are BlockConfig-ured with (a clone() to) BC1 while all the its
- * sub-Block (...) that are DCNetworkBlock are BlockConfig-ured with (...)
- * BC2; analogously for the BlockSolverConfig (except there is no need for
- * clone()-ing).
- *
- * Note: in the  "meta-configuration" mode, BlockSolverConfig are not properly
- * clear()-ed and used for the final cleanup, which is supposed to be
- * acceptable since typically the executable terminates right after it.
+ * Implementation of some common utilities for SMS++ tools whose API is
+ * defined in common_utils.h.
  *
  * \author Antonio Frangioni \n
  *         Dipartimento di Informatica \n
@@ -144,7 +110,6 @@ std::string help =
  *  @{ */
 
 /*--------------------------------------------------------------------------*/
-/// open a netCDF file for reading, returns its type
 
 int read_open_netCDF( netCDF::NcFile & f , std::string fn )
 {
@@ -176,7 +141,6 @@ int read_open_netCDF( netCDF::NcFile & f , std::string fn )
  }
 
 /*--------------------------------------------------------------------------*/
-/// prints the tool description and usage
 
 void docopt( void )
 {
@@ -189,7 +153,6 @@ void docopt( void )
  }
 
 /*--------------------------------------------------------------------------*/
-/// processes any one of the default command-line arguments
 
 bool process_standard_arg( int opt )
 {
@@ -222,7 +185,6 @@ bool process_standard_arg( int opt )
  }
 
 /*--------------------------------------------------------------------------*/
-/// processes all default command-line arguments
 
 void process_args( int argc , char ** argv )
 {
@@ -256,10 +218,10 @@ void process_args( int argc , char ** argv )
  bconf_file = resolve_with_prefix( conf_prefix , bconf_file );
  sconf_file = resolve_with_prefix( conf_prefix , sconf_file );
  sol_cfg_file = resolve_with_prefix( conf_prefix , sol_cfg_file );
+
  }  // end( process_args )
 
 /*--------------------------------------------------------------------------*/
-/// Custom terminate function to print the exception message
 
 void smspp_terminate( void ) {
  std::cerr << "Uncaught exception in executing SMS++:\n";
@@ -276,15 +238,49 @@ void smspp_terminate( void ) {
  }
 
 /*--------------------------------------------------------------------------*/
-/// gets a BlockConfig from a BlockConfig file
 
-BlockConfig * get_blockconfig( const std::string & conf_file )
+Block * get_Block( const std::string & b_file )
+{
+ auto block = Block::deserialize( b_file );
+ if( ! block ) {
+  std::cerr << "Error: " << b_file << " does not contain a valid Block"
+	    << std::endl;
+  exit( 1 );
+  }
+
+ return( block );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+Block * get_Block( const netCDF::NcGroup & group )
+{
+ auto block = Block::new_Block( group );
+ if( ! block ) {
+  std::cerr << "Error: group does not contain a valid Block" << std::endl;
+  exit( 1 );
+  }
+
+ return( block );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+Configuration * get_config( const std::string & conf_file )
 {
  if( conf_file.empty() )
   return( nullptr );
 
  auto cfg = Configuration::deserialize(
-             resolve_with_prefix( conf_prefix , conf_file ) );
+                            resolve_with_prefix( conf_prefix , conf_file ) );
+ return( cfg );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+BlockConfig * get_blockconfig( const std::string & conf_file )
+{
+ auto cfg = get_config( conf_file );
  auto bcfg = dynamic_cast< BlockConfig * >( cfg );
  if( ! bcfg )
   delete cfg;
@@ -292,15 +288,10 @@ BlockConfig * get_blockconfig( const std::string & conf_file )
  }
 
 /*--------------------------------------------------------------------------*/
-/// gets a BlockSolverConfig from a BlockSolverConfig file
 
 BlockSolverConfig * get_blocksolverconfig( const std::string & conf_file )
 {
- if( conf_file.empty() )
-  return( nullptr );
-
- auto cfg = Configuration::deserialize(
-             resolve_with_prefix( conf_prefix , conf_file ) );
+ auto cfg = get_config( conf_file );
  auto bscfg = dynamic_cast< BlockSolverConfig * >( cfg );
  if( ! bscfg )
   delete cfg;
@@ -308,12 +299,13 @@ BlockSolverConfig * get_blocksolverconfig( const std::string & conf_file )
  }
 
 /*--------------------------------------------------------------------------*/
-/// BlockConfig-ure and BlockSolverConfig-ure a Block
 
-void config_Block( Block * block , BlockConfig * b_config ,
-		   BlockSolverConfig * s_config )
+void config_Block( Block * block ,
+		   Configuration * b_config , Configuration * s_config )
 {
- std::vector< Block * > BFS;
+ // std::list rather than std::vector since it's built by push_back and
+ // only trasversed head-to-tail
+ std::list< Block * > BFS;
 
  if( b_config ) {
   // handle the special case of a "meta" BlockConfig
@@ -322,7 +314,7 @@ void config_Block( Block * block , BlockConfig * b_config ,
                                                    Configuration * > >
                                          * >( b_config ) ) {
 
-   // construct the vector of all Block inside block
+   // construct the list of all Block inside block
    BFS.push_back( block );
    for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
     for( auto el : (*bit)->get_nested_Blocks() )
@@ -339,8 +331,12 @@ void config_Block( Block * block , BlockConfig * b_config ,
       delete cbc;
       }
    }
-  else  // an "ordinary" BlockConfig, just apply() it
-   b_config->apply( block );
+  else  // must be an "ordinary" BlockConfig, just apply() it
+   if( auto * bc = dynamic_cast< BlockConfig * >( b_config ) )
+    bc->apply( block );
+   else
+    throw( std::invalid_argument( "config_Block: b_config is not a valid "
+				  "[meta]BlockConfig" ) );
   }
 
  if( s_config ) {
@@ -350,7 +346,7 @@ void config_Block( Block * block , BlockConfig * b_config ,
                                                    Configuration * > >
                                          * >( s_config ) ) {
 
-   // construct the vector of all Block inside block (if not there already)
+   // construct the list of all Block inside block (if not there already)
    if( BFS.empty() ) {
     BFS.push_back( block );
     for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
@@ -365,86 +361,106 @@ void config_Block( Block * block , BlockConfig * b_config ,
     if( auto bscit = map.find( b->classname() ); bscit != map.end() )
      if( auto bsc = dynamic_cast< BlockSolverConfig * >( bscit->second ) )
       bsc->apply( b );
+
+   // finally, clear() all the BlockSolverConfig for final cleanup
+   for( auto & el : map )
+    (el.second)->clear();
    }
-  else {  // an "ordinary" BlockSolverConfig, just apply() it
-   s_config->apply( block );
-   s_config->clear();
+  else {  // must be an "ordinary" BlockSolverConfig, just apply() it
+   if( auto * sc = dynamic_cast< BlockSolverConfig * >( s_config ) ) {
+    sc->apply( block );
+    sc->clear();
+    }
+   else
+    throw( std::invalid_argument( "config_Block: s_config is not a valid "
+				  "[meta]BlockSolverConfig" ) );
    }
   }
  }
 
 /*--------------------------------------------------------------------------*/
-/// get Block, BlockConfig and BlockSolverConfig from files, configure all
+
+void cleanup_bsc( Block * block , Configuration * s_config )
+{
+ if( ! s_config )
+  return;
+
+  // handle the special case of a "meta" BlockSolverConfig
+  if( auto * mb =
+      dynamic_cast< SimpleConfiguration< std::map< std::string ,
+                                                   Configuration * > >
+                                         * >( s_config ) ) {
+   std::list< Block * > BFS;
+   BFS.push_back( block );
+   for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
+    for( auto el : (*bit)->get_nested_Blocks() )
+     BFS.push_back( el );
+
+   auto & map = mb->f_value;
+
+   // now apply the clear()-ed BlockSolverConfig to all Block whose
+   // classname() matches
+   for( auto b : BFS )
+    if( auto bscit = map.find( b->classname() ); bscit != map.end() )
+     if( auto bsc = dynamic_cast< BlockSolverConfig * >( bscit->second ) )
+      bsc->apply( b );
+   }
+  else  // it *must* be a BlockSolverConfig, it has been checked before
+   static_cast< BlockSolverConfig * >( s_config )->apply( block );
+ }
+
+/*--------------------------------------------------------------------------*/
 
 void get_all( const std::string & b_file , const std::string & bc_file ,
 	      const std::string & bsc_file , Block * & block ,
-	      BlockConfig * & b_config , BlockSolverConfig * & s_config )
+	      Configuration * & s_config )
 {
- block = Block::deserialize( b_file );
- if( ! block ) {
-  std::cerr << "Error: " << b_file << " does not contain a valid Block"
-	    << std::endl;
-  exit( 1 );
-  }
-
- b_config = get_blockconfig( bc_file );
- s_config = get_blocksolverconfig( bsc_file );
+ block = get_Block( b_file );
+ auto b_config = get_config( bc_file );
+ s_config = get_config( bsc_file );
  config_Block( block , b_config , s_config );
+ delete b_config;
  }
 
 /*--------------------------------------------------------------------------*/
-/// get Block from group, BlockConfig and BlockSolverConfig from files
 
 void get_all( const netCDF::NcGroup & group , const std::string & bc_file ,
 	      const std::string & bsc_file , Block * & block ,
-	      BlockConfig * & b_config , BlockSolverConfig * & s_config )
+	      Configuration * & s_config )
 {
- block = Block::new_Block( group );
- if( ! block ) {
-  std::cerr << "Error: group does not contain a valid Block" << std::endl;
-  exit( 1 );
-  }
-
- b_config = get_blockconfig( bc_file );
- s_config = get_blocksolverconfig( bsc_file );
+ block = get_Block( group );
+ auto b_config = get_config( bc_file );
+ s_config = get_config( bsc_file );
  config_Block( block , b_config , s_config );
+ delete b_config;
  }
 
 /*--------------------------------------------------------------------------*/
 /// get Block, BlockConfig and BlockSolverConfig from group
 
 void get_all( const netCDF::NcGroup & group , Block * & block ,
-	      BlockConfig * & b_config , BlockSolverConfig * & s_config )
+	      Configuration * & s_config )
 {
  // deserialize Block
- auto gb = group.getGroup( "Block" );
- block = Block::new_Block( gb );
+ block = Block::new_Block( group.getGroup( "Block" ) );
  if( ! block ) {
   std::cerr << "Error: group does not contain a valid Block" << std::endl;
   exit( 1 );
   }
 
  // deserialize BlockConfig
- auto bgc = group.getGroup( "BlockConfig" );
- auto c = BlockConfig::new_Configuration( bgc );
- if( auto bc = dynamic_cast< BlockConfig * >( c ) )
-  b_config = bc;
- else
-  delete c;
+ auto b_config = BlockConfig::new_Configuration(
+					  group.getGroup( "BlockConfig" ) );
 
  // deserialize BlockSolverConfig
- auto bgs = group.getGroup( "BlockSolver" );
- c = BlockSolverConfig::new_Configuration( bgs );
- if( auto bsc = dynamic_cast< BlockSolverConfig * >( c ) )
-  s_config = bsc;
- else
-  delete c;
+ s_config = BlockSolverConfig::new_Configuration(
+					   group.getGroup( "BlockSolver" ) );
 
  config_Block( block , b_config , s_config );
+ delete b_config;
  }
 
 /*--------------------------------------------------------------------------*/
-/// prints the status in a human-readable form
 
 void print_status( int status )
 {
@@ -464,7 +480,6 @@ void print_status( int status )
  }
 
 /*--------------------------------------------------------------------------*/
-/// get and set the initial Solution
 
 void get_initial_Solution( Block * block )
 {
@@ -481,7 +496,6 @@ void get_initial_Solution( Block * block )
  }
 
 /*--------------------------------------------------------------------------*/
-/// get and set the initial State
 
 void get_initial_State( Solver * solver )
 {
@@ -504,10 +518,6 @@ void get_initial_State( Solver * solver )
  }
 
 /*--------------------------------------------------------------------------*/
-/// write the final Solution, using given Configuration if provided
-/** Write the Solution currently in the given \p block, using given
- * Configuration \p cfg (if provided, default not) to produce it; bu default
- * append to the file with filename sol_output, rather than replacing it. */
 
 void write_final_Solution( Block * block , Configuration * cfg ,
 			   bool replace )
@@ -536,7 +546,6 @@ void write_final_Solution( Block * block , Configuration * cfg ,
  }
 
 /*--------------------------------------------------------------------------*/
-/// write the final State, by default appending rather than replacing
 
 void write_final_State( Solver * solver , bool replace )
 {
@@ -557,7 +566,6 @@ void write_final_State( Solver * solver , bool replace )
  }
 
 /*--------------------------------------------------------------------------*/
-/// compute() the Block with all available Solver(s) (unless dry run)
 
 int solve_all( Block * block )
 {
@@ -637,10 +645,9 @@ int solve_all( Block * block )
  }  // end( solve_all )
 
 /*--------------------------------------------------------------------------*/
-/// writes a new nc4 problem using the Block and its Configuration(s)
 
-void write_nc4problem( Block * block , BlockConfig * b_config ,
-                       BlockSolverConfig * s_config )
+void write_nc4problem( Block * block ,
+		       Configuration * b_config , Configuration * s_config )
 {
  std::size_t found = filename.find_last_of( '.' );
  std::string nc4_file = filename.substr( 0 , found ) + "_problem.nc4";

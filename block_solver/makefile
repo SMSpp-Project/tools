@@ -28,9 +28,7 @@ include ../makefile_common
 # *H   is the list of all include files
 # *INC is the -I< include directories >
 
-# define input macros for SMS++ complete makefile, then include it
-SMS++SDR = ../../SMS++
-include $(SMS++SDR)/lib/makefile-c
+# note that the SMS++ complete makefile isincluded in makefile_common
 
 # MCFBlock
 # this has to be before BundleSolver because there are two definitions of
@@ -71,7 +69,7 @@ include $(InvsBkSDR)/makefile-s
 
 # object files
 MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) $(SMS++OBJ) $(MCFLEOBJ) \
-	$(MCFBkOBJ) $(InvsBkOBJ)
+	$(MCFBkOBJ) $(InvsBkOBJ) $(CMMNUOBJ)
 
 # libraries
 MLIB =  $(SMS++LIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB) $(MCFBkLIB) \
@@ -84,11 +82,11 @@ $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 
 # include directives
 MINC =  $(SMS++INC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) $(MCFBkINC) \
-	$(MCFLEINC) $(InvsBkINC)
+	$(MCFLEINC) $(InvsBkINC) $(CMMNUINC)
 
 # includes
 MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(MCFBkH) $(MCFLEH) \
-	$(InvsBkH)
+	$(InvsBkH) $(CMMNUH)
 
 # compile command
 
