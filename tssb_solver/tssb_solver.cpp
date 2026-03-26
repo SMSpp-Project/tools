@@ -51,7 +51,6 @@
 #include <iomanip>
 #include <iostream>
 
-#include <BlockSolverConfig.h>
 #include <TwoStageStochasticBlock.h>
 
 #include "common_utils.h"

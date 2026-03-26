@@ -83,7 +83,7 @@
  * simulation can be specified by the -t option. This option must be followed
  * by an integer number STAGE. If STAGE is between 0 and T-1, where T is the
  * time horizon of the problem, then the solution (final state) of the
- * subproblem associated with stage STAGE of a simulation will serve as the
+ * subproblem associated with stage of a simulation will serve as the
  * initial state for the first stage subproblem of the next simulation. If
  * STAGE does not belong to that interval (that is, if it is negative or
  * greater than or equal to T) or if the -t option is not used, then no

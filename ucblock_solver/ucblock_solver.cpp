@@ -30,7 +30,6 @@
 #include <iomanip>
 
 #include <Block.h>
-#include <BlockSolverConfig.h>
 
 #include "common_utils.h"
 #include "ucblock_utils.h"
@@ -149,7 +148,7 @@ int main( int argc , char ** argv )
  auto s_config = get_config( sconf_file );
 
  config_Block( block , b_config , s_config );
-	      
+
  // write nc4 problem - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  if( writeprob )
   write_nc4problem( block , b_config , s_config );
