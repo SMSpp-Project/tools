@@ -72,19 +72,8 @@ if (TARGET SMS++::UCBlock AND
       target_link_libraries(investment_solver PUBLIC Boost::mpi MPI::MPI_CXX)
     endif ()
 
-    if (WIN32 AND BUILD_SHARED_LIBS AND NOT DEFINED ENV{CONDA_BUILD})
-        # copy runtime DLLs next to the exe after build
-        add_custom_command(TARGET investment_solver POST_BUILD
-                           COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                           $<TARGET_RUNTIME_DLLS:investment_solver>
-                           $<TARGET_FILE_DIR:investment_solver>
-                           COMMAND_EXPAND_LISTS
-                           COMMENT "Copying runtime DLLs next to investment_solver.exe")
-    endif()
-
     # Install
-    install(TARGETS investment_solver
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    smspp_install(investment_solver)
 
     # Generate and install shell completion scripts
     configure_file(../cmake/completion.bash.in investment_solver-completion.bash)

@@ -50,19 +50,8 @@ if (TARGET SMS++::UCBlock)
         target_link_libraries(ucblock_solver PRIVATE SMS++::MILPSolver)
     endif ()
 
-    if (WIN32 AND BUILD_SHARED_LIBS AND NOT DEFINED ENV{CONDA_BUILD})
-        # copy runtime DLLs next to the exe after build
-        add_custom_command(TARGET ucblock_solver POST_BUILD
-                           COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                           $<TARGET_RUNTIME_DLLS:ucblock_solver>
-                           $<TARGET_FILE_DIR:ucblock_solver>
-                           COMMAND_EXPAND_LISTS
-                           COMMENT "Copying runtime DLLs next to ucblock_solver.exe")
-    endif()
-
     # Install
-    install(TARGETS ucblock_solver
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    smspp_install(ucblock_solver)
 
     # Generate and install shell completion scripts
     configure_file(../cmake/completion.bash.in ucblock_solver-completion.bash)
