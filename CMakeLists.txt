@@ -23,19 +23,13 @@ project(SMS++_tools
 get_directory_property(hasParent PARENT_DIRECTORY)
 
 # Utility function to standardize installation and runtime dependency handling
-# for SMS++ tools (executables).
+# for SMS++ tools.
 function(smspp_install target_name)
     if (WIN32 AND BUILD_SHARED_LIBS AND NOT DEFINED ENV{CONDA_BUILD})
         # On Windows with shared libraries enabled:
         # 1. copies all runtime DLL dependencies next to the executable in the
         #    build directory (POST_BUILD), using CMake's TARGET_RUNTIME_DLLS
         #    generator expression
-        # 2. installs the executable and automatically resolves its runtime
-        #    dependencies using RUNTIME_DEPENDENCY_SET
-        # 3. provides additional search paths (DIRECTORIES) to help CMake locate
-        #    transitive runtime dependencies (e.g., solver DLLs such as SCIP,
-        #    CPLEX and GUROBI) that are not always discoverable automatically
-        # 4. filters out system and irrelevant DLLs via regex exclusions
         add_custom_command(TARGET ${target_name} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 $<TARGET_RUNTIME_DLLS:${target_name}>
@@ -43,6 +37,12 @@ function(smspp_install target_name)
                 COMMAND_EXPAND_LISTS
                 COMMENT "Copying runtime DLLs next to ${target_name}.exe")
 
+        # 2. installs the executable and automatically resolves its runtime
+        #    dependencies using RUNTIME_DEPENDENCY_SET
+        # 3. provides additional search paths (DIRECTORIES) to help CMake locate
+        #    transitive runtime dependencies (e.g., solver DLLs such as SCIP,
+        #    CPLEX and GUROBI) that are not always discoverable automatically
+        # 4. filters out system and irrelevant DLLs via regex exclusions
         install(TARGETS ${target_name}
                 RUNTIME_DEPENDENCY_SET ${target_name}_deps
                 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
