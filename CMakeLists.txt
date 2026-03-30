@@ -68,7 +68,8 @@ function(smspp_install target_name)
                 "^wpaxholder\\.dll$"
                 POST_EXCLUDE_REGEXES
                 ".*[\\/]system32[\\/].*"
-                ".*[\\/]windows[\\/].*")
+                ".*[\\/]windows[\\/].*"
+                ".*[\\/]build[\\/]tools[\\/].*\\.dll$")
     else ()
         # On other platforms, or Windows with static builds, performs a standard
         # installation of the executable without additional runtime dependency
