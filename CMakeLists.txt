@@ -57,7 +57,6 @@ function(smspp_install target_name)
                 # explicit search directories are provided
                 DIRECTORIES
                 "${SCIP_ROOT}/bin"
-                "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/bin"
                 PRE_EXCLUDE_REGEXES
                 "api-ms-.*"
                 "ext-ms-.*"
