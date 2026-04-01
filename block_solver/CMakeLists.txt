@@ -62,8 +62,11 @@ if (TARGET SMS++::LEMONSolver)
     target_link_libraries(block_solver PRIVATE SMS++::LEMONSolver)
 endif ()
 
-smspp_install(block_solver)
+# Install
+install(TARGETS block_solver
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+# Generate and install shell completion scripts
 configure_file(../cmake/completion.bash.in block_solver-completion.bash)
 configure_file(../cmake/completion.zsh.in block_solver-completion.zsh)
 
