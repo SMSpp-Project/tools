@@ -32,6 +32,7 @@
 #include <Block.h>
 
 #include "common_utils.h"
+#include "UCBlock.h"
 #include "ucblock_utils.h"
 
 /*--------------------------------------------------------------------------*/
@@ -44,19 +45,11 @@ using namespace SMSpp_di_unipi_it;
 /*------------------------------- GLOBALS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-int solution_output_type = 1;
+// const std::string my_short_opts = "";
 
-/*--------------------------------------------------------------------------*/
+// const std::vector< option > my_long_opts = {};
 
-const std::string my_short_opts = "t:";
-
-const std::vector< option > my_long_opts = {
-  { "output   " ,                required_argument , nullptr , 't' }
-  };
-
-const std::string my_help =
- "  -t, --output <type>             solution output type [1]\n"
- "                                  (0 none, 1 screen, 2 files, 3 both)\n";
+// const std::string my_help = "";
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -79,17 +72,6 @@ void process_my_args( int argc , char ** argv )
    continue; // next
 
   switch( opt ) { // non-standard options
-  case 't' : {
-   auto s = std::string( optarg );
-   if( ( s.size() != 1 ) || ( s.front() < '0' ) || ( s.front() > '3' ) ) {
-    std::cout << "Invalid output solution type " << s << std::endl
-     << "Try " << exe << "' --help' for more information"
-     << std::endl;
-    exit( 1 );
-   }
-   solution_output_type = s.front() - '0';
-   break;
-  }
   case '?' : // Unrecognized option
   default : std::cout << "Try " << exe << "' --help' for more information"
     << std::endl;
@@ -112,16 +94,16 @@ int main( int argc , char ** argv )
 {
  // override the default terminate handler to print the exception message
  std::set_terminate( smspp_terminate );
- 
+
  // append new options to default ones- - - - - - - - - - - - - - - - - - - -
  // note that the local options are inserted right before the last (nullptr)
  // record in long_opts
 
  docopt_desc = "SMS++ UCBlock solver\n";
- short_opts.append( my_short_opts );
+ /*short_opts.append( my_short_opts );
  long_opts.insert( std::prev( long_opts.end() ) ,
 		   my_long_opts.begin() , my_long_opts.end() );
- help.append( my_help );
+ help.append( my_help );*/
 
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
 
@@ -156,11 +138,7 @@ int main( int argc , char ** argv )
  // solve - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  std::cout.setf( std::ios::scientific, std::ios::floatfield );
  std::cout << std::setprecision( 8 );
- int status = solve_all( block );
-
- // print the results - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- if( ( ! dryrun ) && ( status == 0 ) )
-  print_UCBlock_solver_results( block , solution_output_type );
+ solve_all( block );
 
  // cleanup - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  cleanup_bsc( block , s_config );
