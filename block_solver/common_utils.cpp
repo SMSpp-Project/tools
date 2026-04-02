@@ -161,7 +161,6 @@ bool process_standard_arg( int opt )
   case 'B': bconf_file = std::string( optarg ); break;
   case 'b': state_in_file = std::string( optarg ); break;
   case 'p' : block_prefix = normalize_prefix( std::string( optarg ) );
-             Block::set_filename_prefix( std::string( block_prefix ) );
              break;
   case 'S': sconf_file = std::string( optarg ); break;
   case 'c': conf_prefix = normalize_prefix( std::string( optarg ) );
@@ -241,9 +240,10 @@ void smspp_terminate( void ) {
 
 Block * get_Block( const std::string & b_file )
 {
- auto block = Block::deserialize( b_file );
+ auto resolved = resolve_with_prefix( block_prefix , b_file );
+ auto block = Block::deserialize( resolved );
  if( ! block ) {
-  std::cerr << "Error: " << b_file << " does not contain a valid Block"
+  std::cerr << "Error: " << resolved << " does not contain a valid Block"
 	    << std::endl;
   exit( 1 );
   }
