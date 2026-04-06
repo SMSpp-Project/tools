@@ -160,8 +160,11 @@ bool process_standard_arg( int opt )
   case 'a': state_out_file = std::string( optarg ); break;
   case 'B': bconf_file = std::string( optarg ); break;
   case 'b': state_in_file = std::string( optarg ); break;
-  case 'p' : block_prefix = normalize_prefix( std::string( optarg ) );
-             break;
+  case 'p' : {
+   block_prefix = normalize_prefix( std::string( optarg ) );
+   Block::set_filename_prefix( std::string( block_prefix ) );
+   break;
+  }
   case 'S': sconf_file = std::string( optarg ); break;
   case 'c': conf_prefix = normalize_prefix( std::string( optarg ) );
             break;
@@ -240,10 +243,9 @@ void smspp_terminate( void ) {
 
 Block * get_Block( const std::string & b_file )
 {
- auto resolved = resolve_with_prefix( block_prefix , b_file );
- auto block = Block::deserialize( resolved );
+ auto block = Block::deserialize( b_file );
  if( ! block ) {
-  std::cerr << "Error: " << resolved << " does not contain a valid Block"
+  std::cerr << "Error: " << b_file << " does not contain a valid Block"
 	    << std::endl;
   exit( 1 );
   }
@@ -317,7 +319,7 @@ void config_Block( Block * block ,
    // construct the list of all Block inside block
    BFS.push_back( block );
    for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
-    for( auto el : (*bit)->get_nested_Blocks() )
+    for( auto el : ( *bit )->get_nested_Blocks() )
      BFS.push_back( el );
 
    auto & map = mb->f_value;
@@ -350,7 +352,7 @@ void config_Block( Block * block ,
    if( BFS.empty() ) {
     BFS.push_back( block );
     for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
-     for( auto el : (*bit)->get_nested_Blocks() )
+     for( auto el : ( *bit )->get_nested_Blocks() )
       BFS.push_back( el );
     }
 
@@ -393,7 +395,7 @@ void cleanup_bsc( Block * block , Configuration * s_config )
    std::list< Block * > BFS;
    BFS.push_back( block );
    for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
-    for( auto el : (*bit)->get_nested_Blocks() )
+    for( auto el : ( *bit )->get_nested_Blocks() )
      BFS.push_back( el );
 
    auto & map = mb->f_value;

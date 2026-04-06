@@ -73,8 +73,7 @@ if (TARGET SMS++::UCBlock AND
     endif ()
 
     # Install
-    install(TARGETS investment_solver
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    smspp_install(investment_solver)
 
     # Generate and install shell completion scripts
     configure_file(../cmake/completion.bash.in investment_solver-completion.bash)

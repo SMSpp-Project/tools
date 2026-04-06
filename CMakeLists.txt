@@ -22,6 +22,25 @@ project(SMS++_tools
 # Find out if it's being called by the umbrella.
 get_directory_property(hasParent PARENT_DIRECTORY)
 
+# Utility function to standardize installation and runtime dependency handling
+# for SMS++ tools.
+function(smspp_install target_name)
+    if (WIN32 AND BUILD_SHARED_LIBS AND NOT DEFINED ENV{CONDA_BUILD})
+        # On Windows with shared libraries enabled copies all runtime DLL
+        # dependencies next to the executable in the build directory
+        # (POST_BUILD), using CMake's TARGET_RUNTIME_DLLS generator expression
+        add_custom_command(TARGET ${target_name} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_RUNTIME_DLLS:${target_name}>
+                $<TARGET_FILE_DIR:${target_name}>
+                COMMAND_EXPAND_LISTS
+                COMMENT "Copying runtime DLLs next to ${target_name}.exe")
+    endif ()
+
+    install(TARGETS ${target_name}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endfunction()
+
 # ----- Settings ------------------------------------------------------------ #
 # This is needed for setting the runtime path when installing.
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)

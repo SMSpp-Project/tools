@@ -2,8 +2,7 @@
 add_executable(chgcfg chgcfg.cpp)
 target_compile_features(chgcfg PUBLIC cxx_std_17)
 
-install(TARGETS chgcfg
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+smspp_install(chgcfg)
 
 configure_file(../cmake/completion.bash.in chgcfg-completion.bash)
 configure_file(../cmake/completion.zsh.in chgcfg-completion.zsh)

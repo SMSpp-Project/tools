@@ -147,13 +147,13 @@ void process_block_file( const netCDF::NcFile & file )
 {
  auto blocks = file.getGroups();
 
- for( auto & blocki : blocks ) {  // for each Block descriptor
+ for( auto & b : blocks ) {  // for each Block descriptor
   Block * block;
   Configuration * s_config;
-  get_all( blocki.second , bconf_file , sconf_file , block , s_config );
+  get_all( b.second , bconf_file , sconf_file , block , s_config );
 
   if( ! dynamic_cast< TwoStageStochasticBlock * >( block ) ) {
-   std::cout << "Error: " << blocki.first
+   std::cout << "Error: " << b.first
 	     << " not a TwoStageStochasticBlock" << std::endl;
    exit( 1 );
    }

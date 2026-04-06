@@ -63,8 +63,7 @@ if (TARGET SMS++::LEMONSolver)
 endif ()
 
 # Install
-install(TARGETS block_solver
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+smspp_install(block_solver)
 
 # Generate and install shell completion scripts
 configure_file(../cmake/completion.bash.in block_solver-completion.bash)
