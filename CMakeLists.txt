@@ -48,7 +48,8 @@ include(GNUInstallDirs)
 
 # ----- Tools --------------------------------------------------------------- #
 add_subdirectory(block_solver)
-add_subdirectory(investment_solver)
+add_subdirectory(investment_solver) # TODO needs to be merged into investmentblock_solver
+add_subdirectory(investmentblock_solver)
 add_subdirectory(sddp_solver)
 add_subdirectory(tssb_solver)
 add_subdirectory(ucblock_solver)

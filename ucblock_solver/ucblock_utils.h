@@ -23,7 +23,6 @@
 /*--------------------------------------------------------------------------*/
 
 #include <DesignNetworkBlock.h>
-#include <DCNetworkBlock.h>
 #include <HydroSystemUnitBlock.h>
 #include <SlackUnitBlock.h>
 #include <RBlockConfig.h>
