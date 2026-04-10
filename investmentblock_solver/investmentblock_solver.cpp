@@ -1201,7 +1201,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
     else
      if( dynamic_cast< NetworkBlock * >( inner_sub_block ) ) {
       /* TODO Dual solutions of the NetworkBlocks are necessary only if
-       * there are transmission lines that are subject to invesment. Since
+       * there are transmission lines that are subject to investment. Since
        * BundleSolver currently does not provide solutions for easy
        * components, the NetworkBlock must be treated as a hard component.
        * Once this feature is implemented by BundleSolver, the NetworkBlock

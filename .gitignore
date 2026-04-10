@@ -43,12 +43,16 @@ LD*.txt
 *.x86_64
 *.hex
 block_solver/block_solver
+investmentblock_solver/investmentblock_solver
 investment_solver/investment_solver
 sddp_solver/sddp_greedy_solver
 sddp_solver/sddp_solver
 ucblock_solver/ucblock_solver
 tssb_solver/tssb_solver
 chgcfg/chgcfg
+
+# data directories
+investmentblock_solver/investment_candidates.txt
 
 # Debug files
 *.dSYM/
