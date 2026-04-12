@@ -16,49 +16,8 @@ NAME = investmentblock_solver
 # basic directory
 DIR = .
 
-# common flags
-COMMON_SW = -std=c++20 -ferror-limit=1 -Wno-enum-compare -DCLANG_1200_0_32_27_PATCH
-
-# debug switches
-SW_DEBUG = -g3 $(COMMON_SW)
-# debug switches with address sanitizer and extra pedantic warning
-SW_DEBUG_ASAN = -g3 -glldb -fno-inline -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -Wno-deprecated -Wno-unused-parameter $(COMMON_SW)
-# production switches with address sanitizer
-SW_RELEASE_ASAN = -O3 -DNDEBUG -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined $(COMMON_SW)
-# production switches
-SW_RELEASE = -O3 -DNDEBUG $(COMMON_SW)
-
-# compiler
-CC = clang++
-
-# default target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-default: release
-
-# debug target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-debug: SW = $(SW_DEBUG)
-debug: $(NAME)
-
-# debug with address sanitizer target- - - - - - - - - - - - - - - - - - - -
-
-debug_asan: SW = $(SW_DEBUG_ASAN)
-debug_asan: $(NAME)
-
-# release target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-release: SW = $(SW_RELEASE)
-release: $(NAME)
-
-# release with address sanitizer target- - - - - - - - - - - - - - - - - - -
-
-release_asan: SW = $(SW_RELEASE_ASAN)
-release_asan: $(NAME)
-
-# clean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-clean::
-	rm -f $(DIR)/*.o $(DIR)/*~ $(NAME)
+# common stuff
+include ../makefile_common
 
 # define & include the necessary modules- - - - - - - - - - - - - - - - - - -
 # if a module is not used in the current configuration, just comment out the
@@ -70,7 +29,7 @@ clean::
 # *INC is the -I< include directories >
 
 # define input macros for InvestmentBlock complete makefile, then include it
-InvsBkSDR = ..
+InvsBkSDR = ../../InvestmentBlock
 include $(InvsBkSDR)/makefile-c
 
 # define input macros for BundleSolver makefile, then include it
@@ -119,13 +78,5 @@ $(DIR)/investmentblock_solver.o: $(DIR)/investmentblock_solver.cpp $(MH)
 $(CMMNUOBJ): $(CMMNUH) $(SMS++H) $(CMMNUDIR)/common_utils.cpp
 	$(CC) -c $(CMMNUDIR)/common_utils.cpp -o $@ $(CMMNUINC) \
 	$(SMS++INC) $(SW)
-
-# distclean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-distclean: clean
-
-# phony targets - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-.PHONY: debug debug_asan release release_asan clean distclean
 
 ############################ End of makefile #################################
