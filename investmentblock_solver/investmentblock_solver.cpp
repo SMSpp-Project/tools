@@ -304,7 +304,7 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
 
  auto shutdown = previous_unit->get_shut_down( time_horizon - 1 );
  if( shutdown && shutdown->get_value() >= 0.5 )
-  return 0;
+  return( 0 );
 
  int init_up_down_time = 0;
  const bool on = commitment->get_value() >= 0.5;
@@ -317,7 +317,7 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
   for( Index t = 1 ; t < time_horizon ; ++t , --commitment ) {
    if( std::abs( commitment->get_value() -
                  ( commitment - 1 )->get_value() ) > 0.5 )
-    return init_up_down_time;
+    return( init_up_down_time );
    if( on ) ++init_up_down_time;
    else     --init_up_down_time;
    }
@@ -354,7 +354,7 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
    }
   }
 
- return init_up_down_time;
+ return( init_up_down_time );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -367,7 +367,7 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
  auto unit = dynamic_cast< ThermalUnitBlock * >( block );
 
  if( ! unit && ! previous_unit )
-  return false;
+  return( false );
 
  if( ! unit || ! previous_unit )
   throw( std::logic_error(
@@ -391,7 +391,7 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
   ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
  unit->set_initial_power( active_power_data.cbegin() );
 
- return true;
+ return( true );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -461,7 +461,7 @@ std::vector< double > get_default_initial_point( InvestmentBlock * block )
    else
     initial_point[ i ] = 0;
 
- return initial_point;
+ return( initial_point );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -484,7 +484,7 @@ std::vector< double > load_initial_point( void )
  while( file >> component )
   initial_point.push_back( component );
 
- return initial_point;
+ return( initial_point );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -890,7 +890,7 @@ std::string get_str_par( const ComputeConfig * compute_config ,
 {
  for( const auto & pair : compute_config->str_pars )
   if( pair.first == par_name )
-   return pair.second;
+   return( pair.second );
 
  return "";
  }
@@ -902,9 +902,9 @@ int get_int_par( const ComputeConfig * compute_config ,
 {
  for( const auto & pair : compute_config->int_pars )
   if( pair.first == par_name )
-   return pair.second;
+   return( pair.second );
 
- return Inf<int>();
+ return( Inf< int >() );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -962,12 +962,12 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config )
   for( Index j = 0 ; j < inner_solver_config->num_ComputeConfig() ; ++j ) {
    if( inner_solver_config->get_SolverName( j ) == "LagrangianDualSolver" ) {
     delete inner_config;
-    return true;
+    return( true );
     }
    }
   delete inner_config;
   }
- return false;
+ return( false );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1229,7 +1229,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
      std::remove_if( lagrangian_dual_compute_config->vint_pars.begin() ,
                      lagrangian_dual_compute_config->vint_pars.end() ,
                      []( const auto & pair ) {
-                      return pair.first == "vintNoEasy"; } ) ,
+                      return( pair.first == "vintNoEasy" ); } ) ,
      lagrangian_dual_compute_config->vint_pars.end() );
 
   // Add the vintNoEasy parameter that was constructed here
@@ -1252,7 +1252,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
     std::remove_if( compute_config->str_pars.begin() ,
                     compute_config->str_pars.end() ,
                     []( const auto & pair ) {
-                     return pair.first == "strInnerBSC"; } ) ,
+                     return( pair.first == "strInnerBSC" ); } ) ,
     compute_config->str_pars.end() );
 
  /* The extra Configuration of the SDDPSolver and the SDDPGreedySolver is a
