@@ -1474,7 +1474,7 @@ void process_block_file( const netCDF::NcFile & file )
   // Configure the Solver
 
   // TODO This config file must be indicated in some appropriate way.
-  const auto uc_solver_config_filename = "uc_solverconfig.txt";
+  const auto uc_solver_config_filename = "BSCfg.txt";
 
   auto ucblock_solver_config =
    get_blocksolverconfig( uc_solver_config_filename );
