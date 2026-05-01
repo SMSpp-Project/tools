@@ -17,9 +17,9 @@ BlockSolverConfig     # exact type of the Configuration object
 1  # number of (the names of) Solver in this BlockSolverConfig
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
 #CPXMILPSolver
-#HiGHSMILPSolver
+HiGHSMILPSolver
 #SCIPMILPSolver
-GRBMILPSolver
+#GRBMILPSolver
 
 1  # number of ComputeConfig in this BlockSolverConfig
 
@@ -36,16 +36,41 @@ ComputeConfig # exact type of the ComputeConfig object
 intLogVerb      0    # log verbosity of the MILPSolver
 intRelaxIntVars 1    # nonzero if the continuous relaxation is solved
 
-3 # number of double parameters
+# the LP-relaxation oracle must be reproducible across runs: presolve transforms
+# the model and on degenerate LPs picks a different optimal vertex each time,
+# producing inconsistent subgradients that derail the outer BundleSolver's
+# convergence; with presolve OFF and barrier (= analytic center, unique x*)
+# the MILP solver returns a deterministic point for each Lambda, which is
+# what the bundle method needs to converge.
+
+# All specific CPLEX parameter (uncomment based on Solver)
+#CPXPARAM_LPMethod                4   # 0 = auto, 1 = primal, 2 = dual, 4 = barrier, 6 = concurrent
+#CPXPARAM_Preprocessing_Presolve  0   # disable presolve for reproducibility
+#CPXPARAM_Emphasis_Numerical      1   # numerical precision emphasis
+
+# All specific GUROBI parameter (uncomment based on Solver)
+#Method        2   # 0 = primal, 1 = dual simplex, 2 = barrier (analytic center, no degeneracy)
+#Presolve      0   # 0 = off, 1 = conservative, 2 = aggressive (default -1)
+#NumericFocus  3   # 0 = auto (default), 1..3 = increasing precision focus
+
+5 # number of double parameters
 # now all the double parameters
 dblAAccSol 1e-08     # absolute accuracy of the solution
 dblRAccSol 1e-08     # relative accuracy of the solution
 dblMaxTime 3600      # max running time (seconds)
 
-0 # number of string parameters
+# All specific HiGHS parameter (uncomment based on Solver)
+primal_feasibility_tolerance     1e-9
+dual_feasibility_tolerance       1e-9
+
+2 # number of string parameters
 # now all the string parameters
-#strOutputFile	 uc.lp                    # filename for .lp file 
+#strOutputFile	 uc.lp                    # filename for .lp file
 #strLogFileName  uc-milp.log              # filename for the Solver log
+
+# All specific HiGHS parameter (uncomment based on Solver)
+presolve  off    # disable presolve for reproducibility
+solver    ipm    # interior point: converges to analytic center (unique x*)
 
 0 # number of vector-of-int parameters
 # now all the vector-of-int parameters
