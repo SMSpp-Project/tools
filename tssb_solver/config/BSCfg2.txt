@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - BSCfg.txt - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - -BSCfg2.txt - - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for any Block that is a simple
 # MILP / MIQP / MIQCQP and can be solved by a :MILPSolver
@@ -14,14 +14,14 @@ BlockSolverConfig     # exact type of the Configuration object
 
 1  # the BlockSolverConfig is a "differential" one
 
-1  # number of (the names of) Solver in this BlockSolverConfig
+1 # number of (the names of) Solver in this BlockSolverConfig
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
-#CPXMILPSolver
-#HiGHSMILPSolver
-#SCIPMILPSolver
-GRBMILPSolver
+#CPXMILPSolver   # name of Solver
+GRBMILPSolver    # name of Solver
+#SCIPMILPSolver  # name of Solver
+#HiGHSMILPSolver # name of Solver
 
-1  # number of ComputeConfig in this BlockSolverConfig
+1 # number of ComputeConfig in this BlockSolverConfig
 
 # now all the ComputeConfig
 
@@ -30,7 +30,7 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-5  # number of integer parameters
+5 # number of integer parameters
 
 # now all the integer parameters
 intLogVerb      0    # log verbosity of the MILPSolver
@@ -53,12 +53,11 @@ Method        2   # 0 = primal, 1 = dual simplex, 2 = barrier (analytic center, 
 Presolve      0   # 0 = off, 1 = conservative, 2 = aggressive (default -1)
 NumericFocus  3   # 0 = auto (default), 1..3 = increasing precision focus
 
-3 # number of double parameters
+2 # number of double parameters
 
 # now all the double parameters
-dblAAccSol 1e-08     # absolute accuracy of the solution
-dblRAccSol 1e-08     # relative accuracy of the solution
-dblMaxTime 3600      # max running time (seconds)
+dblAAccSol 1e-08     # absolute accuracy required to solution
+dblRAccSol 1e-08     # relative accuracy required to solution
 
 # All specific HiGHS parameter (uncomment based on Solver)
 #primal_feasibility_tolerance     1e-9
@@ -93,5 +92,5 @@ dblMaxTime 3600      # max running time (seconds)
 * # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END BSCfg.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - -END BSCfg2.txt - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
