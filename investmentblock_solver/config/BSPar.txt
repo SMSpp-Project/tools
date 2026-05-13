@@ -60,7 +60,9 @@ intQPmp2   0      # MxRmv, how many variables can be removed from the base at ea
 
 # OSIMPSolver's parameters :- - - - - - - - - - - - - - - - - - - - - - - - -
 
-intOSImp1  1      # Osi(Cpx/Grb)Solver algorithm (0 = auto (default), 1 = primal, 2 = dual, 3 = network, 4 = barrier, 5 = sifting, 6 = concurrent)
+intOSImp1  1      # Osi(Cpx/Grb)Solver algorithm (0 = auto (default),
+                  # 1 = primal, 2 = dual, 3 = network, 4 = barrier,
+                  # 5 = sifting, 6 = concurrent)
 intOSImp2  1      # pre-processing (reduction)
 intOSImp3  1      # threads
 intRstAlg  2      # parameter to handle the reset of the algorithm
