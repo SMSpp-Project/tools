@@ -35,7 +35,7 @@ ComputeConfig # exact type of the ComputeConfig object
 # now all the integer parameters
 intPushCostToOwner 1 # whether sub-Block Objective are changed
 intDoEasy 	 0      # do easy components for (some) LagBFunction
-intMaxIter 	 50     # max number of iterations for each call
+intMaxIter 	 300    # max number of iterations for each call
 intMaxThread 1	    # MaxThread, max number of new tasks to spawn
 intLogVerb 	 4      # log verbosity of main Bundle algorithm
 intWZNorm   2     # which norm to use in the norm-based stopping condition
@@ -72,7 +72,7 @@ intRstAlg  2      # parameter to handle the reset of the algorithm
 16 # number of double parameters
 
 # now all the double parameters
-dblRelAcc  1e-3   # relative accuracy required to solution
+dblRelAcc  1e-5   # relative accuracy required to solution
 dblNZEps   1e-2   # stopping parameter: threshold to declare 0 the || residual ||
 dbltStar   -1e+3  # stopping parameter: multiplied to || residual || to estimate gap
 dblBPar5   4      # first parameter for dynamic max n. of items per iteration
