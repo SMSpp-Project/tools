@@ -19,13 +19,13 @@ BlockSolverConfig     # exact type of the Configuration object
 
 1  # the BlockSolverConfig is a "differential" one
 
-1  # number of (the names of) Solver in this BlockSolverConfig
+1 # number of (the names of) Solver in this BlockSolverConfig
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
 #CPXMILPSolver    # name of Solver
 #GRBMILPSolver    # name of Solver
 HiGHSMILPSolver   # name of Solver
 
-1  # number of ComputeConfig in this BlockSolverConfig
+1 # number of ComputeConfig in this BlockSolverConfig
 
 # now all the ComputeConfig
 # 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -35,7 +35,7 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-3  # number of integer parameters
+3 # number of integer parameters
 
 # now all the integer parameters
 intLogVerb          0    # LogVerb, log verbosity of the MILPSolver
@@ -51,7 +51,7 @@ intCutSepPar        7    # separate user cuts + lazy constraints
 #Presolve      0   # 0 = off, 1 = conservative, 2 = aggressive (default -1)
 #NumericFocus  3   # 0 = auto (default), 1..3 = increasing precision focus
 
-2  # number of double parameters
+2 # number of double parameters
 
 # All specific HiGHS parameter (uncomment based on Solver)
 primal_feasibility_tolerance  1e-9
