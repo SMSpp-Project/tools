@@ -39,6 +39,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "common_utils.h"
+#include "sddp_utils.h"
 
 #include <iostream>
 #include <queue>
@@ -78,92 +79,23 @@ const std::string my_help =
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-void process_my_args( int argc , char ** argv )
+static bool process_specific_arg( int opt )
 {
- exe = get_filename( argv[ 0 ] );
- if( argc < 2 ) {
-  std::cout << exe << ": no input file\n"
-            << "Try " << exe << "' --help' for more information.\n";
-  exit( 1 );
-  }
-
- while( true ) {  // options
-  auto opt = getopt_long( argc , argv , short_opts.data() ,
-			  long_opts.data() , nullptr );
-  if( opt == -1 ) break;
-  if( process_standard_arg( opt ) )  // if it is a standard one
-   continue;                         // next
-
-  switch( opt ) {  // non-standard options
-   case 'i': scenario_id = get_long_option();
-             if( scenario_id < 0 ) {
-	      std::cerr << "scenario index  must be a nonnegative integer"
-			<< std::endl;
-	      exit( 1 );
-	      }
-	     break;
-   case '?': // Unrecognized option
-   default:  std::cerr << "Try " << exe << "' --help' for more information"
-		       << std::endl;
+ switch( opt ) {  // non-standard options
+  case 'i': scenario_id = get_long_option();
+            if( scenario_id < 0 ) {
+             std::cerr << "scenario index  must be a nonnegative integer"
+                       << std::endl;
              exit( 1 );
-   }
-  }  // end( while( true ) )
-
- if( optind < argc )  // last argument == [SDDPBlock] filename
-  filename = std::string( argv[ optind ] );
- else {
- std::cout << exe << ": no input file" << std::endl
-            << "Try " << exe << "' --help' for more information" << std::endl;
-  exit( 1 );
+             }
+            return( true );
+  case '?':
+  default:  return( false );
   }
- } // end( process_my_args )
+ }
 
 /*--------------------------------------------------------------------------*/
 
-void show_status( Index status , Index fault_stage ) {
-
- switch( status ) {
-  case( SDDPGreedySolver::kError ):
-   std::cout << "Error while solving the subproblem at stage "
-             << fault_stage << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kUnbounded ):
-   std::cout << "The subproblem at stage " << fault_stage
-             << " is unbounded." << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kInfeasible ):
-   std::cout << "The problem is infeasible." << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kStopTime ):
-   std::cout << "A feasible solution has been found. The solution process "
-             << "of subproblem at stage " << fault_stage
-             << " terminated due a time limit." << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kStopIter ):
-   std::cout << "A feasible solution has been found. The solution process "
-             << "of subproblem at stage " << fault_stage
-             << " terminated due an iteration limit." << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kLowPrecision ):
-   std::cout << "A feasible solution has been found." << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kSubproblemInfeasible ):
-   std::cout << "The subproblem at stage " << fault_stage
-             << " is infeasible." << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kSolutionNotFound ):
-   std::cout << "A solution for the subproblem at stage "
-             << fault_stage << " has not been found." << std::endl;
-   break;
-  }
- }
 
 /*--------------------------------------------------------------------------*/
 
@@ -186,7 +118,7 @@ void solve( SDDPBlock * sddp_block )
  // greedily solve the scenario - - - - - - - - - - - - - - - - - - - - - - -
  if( ! dryrun ) {
   auto status = solver->compute();
-  show_status( status , solver->get_fault_stage() );
+  show_sddp_greedy_status( status , solver->get_fault_stage() );
   std::cout << "Lower bound: " << solver->get_lb() << std::endl;
   std::cout << "Upper bound: " << solver->get_ub() << std::endl;
   }
@@ -406,7 +338,7 @@ int main( int argc , char ** argv )
 
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
 
- process_my_args( argc , argv );
+ process_args( argc , argv , process_specific_arg );
 
  // open the file - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

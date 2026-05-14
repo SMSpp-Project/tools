@@ -188,7 +188,8 @@ bool process_standard_arg( int opt )
 
 /*--------------------------------------------------------------------------*/
 
-void process_args( int argc , char ** argv )
+void process_args( int argc , char ** argv ,
+                   bool ( *custom_arg )( int opt ) )
 {
  exe = get_filename( argv[ 0 ] );
  if( argc < 2 ) {
@@ -202,11 +203,15 @@ void process_args( int argc , char ** argv )
 				long_opts.data() , nullptr );
   if( opt == -1 ) break;
 
-  if( ! process_standard_arg( opt ) ) {
-   std::cout << "Try '" << exe << " --help' for more information"
-	     << std::endl;
-   exit( 1 );
-   }
+  if( process_standard_arg( opt ) )  // if it is a standard one
+   continue;                         // next
+
+  if( custom_arg && custom_arg( opt ) )  // tool-specific option
+   continue;                             // next
+
+  std::cout << "Try '" << exe << " --help' for more information"
+	    << std::endl;
+  exit( 1 );
   }
 
  if( optind < argc )  // last argument == [Block] filename
@@ -222,6 +227,13 @@ void process_args( int argc , char ** argv )
  sol_cfg_file = resolve_with_prefix( conf_prefix , sol_cfg_file );
 
  }  // end( process_args )
+
+/*--------------------------------------------------------------------------*/
+
+void process_args( int argc , char ** argv )
+{
+ process_args( argc , argv , nullptr );
+ }
 
 /*--------------------------------------------------------------------------*/
 
