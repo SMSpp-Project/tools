@@ -77,9 +77,9 @@ $(DIR)/CutProcessing.o: $(DIR)/CutProcessing.cpp $(MH)
 	$(CC) -c $(DIR)/CutProcessing.cpp -o $@ $(MINC) $(SW)
 
 $(DIR)/sddp_solver: $(DIR)/sddp_solver.o $(MOBJ)
-	$(CC) -o $(DIR)/sddp_solver $^ $(MLIB) -I../block_solver $(SW)
+	$(CC) -o $(DIR)/sddp_solver $^ $(MLIB) -I.. $(SW)
 
 $(DIR)/sddp_greedy_solver: $(DIR)/sddp_greedy_solver.o $(MOBJ)
-	$(CC) -o $(DIR)/sddp_greedy_solver $^ $(MLIB) -I../block_solver $(SW)
+	$(CC) -o $(DIR)/sddp_greedy_solver $^ $(MLIB) -I.. $(SW)
 
 ############################ End of makefile #################################

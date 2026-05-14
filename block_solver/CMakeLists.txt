@@ -34,8 +34,9 @@ if (NOT hasParent)
 endif ()
 
 # ----- block_solver -------------------------------------------------------- #
-add_executable(block_solver ../block_solver/common_utils.cpp
+add_executable(block_solver ../common_utils.cpp
                             block_solver.cpp)
+target_include_directories(block_solver PRIVATE ..)
 target_link_libraries(block_solver PRIVATE SMS++::SMS++)
 
 if (TARGET SMS++::MCFBlock)

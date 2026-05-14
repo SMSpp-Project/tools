@@ -35,10 +35,10 @@ endif ()
 if (TARGET SMS++::UCBlock AND
     TARGET SMS++::TwoStageStochasticBlock)
 
-    add_executable(tssb_solver ../block_solver/common_utils.cpp
+    add_executable(tssb_solver ../common_utils.cpp
                                tssb_solver.cpp)
     target_compile_features(tssb_solver PUBLIC cxx_std_17)
-    target_include_directories(tssb_solver PRIVATE ../block_solver ../ucblock_solver)
+    target_include_directories(tssb_solver PRIVATE .. ../ucblock_solver)
     target_link_libraries(tssb_solver PRIVATE
                           SMS++::UCBlock
                           SMS++::TwoStageStochasticBlock)

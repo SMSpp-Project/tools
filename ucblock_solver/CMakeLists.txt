@@ -33,9 +33,9 @@ endif ()
 # ----- ucblock_solver ------------------------------------------------------ #
 if (TARGET SMS++::UCBlock)
 
-    add_executable(ucblock_solver ../block_solver/common_utils.cpp
+    add_executable(ucblock_solver ../common_utils.cpp
                                   ucblock_solver.cpp)
-    target_include_directories(ucblock_solver PRIVATE ../block_solver)
+    target_include_directories(ucblock_solver PRIVATE ..)
     target_link_libraries(ucblock_solver PRIVATE SMS++::UCBlock)
 
     if (TARGET SMS++::LagrangianDualSolver)
