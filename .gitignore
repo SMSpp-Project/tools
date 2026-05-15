@@ -7,7 +7,6 @@
 block_solver/block_solver
 investmentblock_solver/investmentblock_solver
 investmentblock_solver/investment_candidates.txt
-investment_solver/investment_solver
 sddp_solver/sddp_solver
 sddp_solver/sddp_greedy_solver
 ucblock_solver/ucblock_solver

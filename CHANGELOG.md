@@ -80,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- The initial up and down times of thermal units are only updated in
+- The initial up and downtimes of thermal units are only updated in
   investment_solver when a single scenario is being simulated.
 - Linearization of InvestmentFunction.
 
