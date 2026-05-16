@@ -90,7 +90,7 @@ MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(MCFBkH) $(MCFLEH) \
 
 # compile command
 
-$(DIR)/block_solver.o: $(DIR)/block_solver.cpp $(DIR)/common_utils.h $(MH)
+$(DIR)/block_solver.o: $(DIR)/block_solver.cpp $(MH)
 	$(CC) -c $(DIR)/block_solver.cpp -o $@ $(MINC) $(SW)
 
 ############################ End of makefile #################################
