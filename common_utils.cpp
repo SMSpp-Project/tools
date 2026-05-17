@@ -222,10 +222,6 @@ void process_args( int argc , char ** argv ,
   exit( 1 );
   }
 
- bconf_file = resolve_with_prefix( conf_prefix , bconf_file );
- sconf_file = resolve_with_prefix( conf_prefix , sconf_file );
- sol_cfg_file = resolve_with_prefix( conf_prefix , sol_cfg_file );
-
  }  // end( process_args )
 
 /*--------------------------------------------------------------------------*/
