@@ -34,7 +34,8 @@ ComputeConfig # exact type of the ComputeConfig object
 
 # now all the integer parameters
 intPushCostToOwner 1 # whether sub-Block Objective are changed
-intDoEasy 	 0      # do easy components for (some) LagBFunction
+intDoEasy 	 3      # do easy components for (some) LagBFunction
+                    # (bit 0 + bit 1 = enable easy + ChgCosts)
 intMaxIter 	 100    # max number of iterations for each call
 intMaxThread 1	    # MaxThread, max number of new tasks to spawn
 intLogVerb 	 4      # log verbosity of main Bundle algorithm
