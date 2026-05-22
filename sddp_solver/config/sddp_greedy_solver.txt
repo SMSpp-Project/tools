@@ -32,9 +32,9 @@ ComputeConfig # exact type of the ComputeConfig object
 2 # number of integer parameters
 
 # now all the integer parameters
-intLogVerb          1 # log verbosity
-intUnregisterSolver 1 # unregister the Solver of the inner Block after solving it
-#intScenarioSeed 1000
+intLogVerb             1 # log verbosity
+intUnregisterSolver    1 # unregister the Solver of the inner Block after solving it
+#intScenarioSeed    1000
 
 # intScenarioId 0 # index of the scenario to be considered
 
@@ -45,12 +45,12 @@ intUnregisterSolver 1 # unregister the Solver of the inner Block after solving i
 1 # number of string parameters
 
 # now all the string parameters
-strInnerBSC         uc_solverconfig.txt # BlockSolverConfig for the UCBlock
-#strInnerBC      uc_blockconfig.txt    # BlockConfig for the UCBlock
+strInnerBSC           uc_solverconfig.txt # BlockSolverConfig for the UCBlock
+#strInnerBC            uc_blockconfig.txt # BlockConfig for the UCBlock
 
-#strRandomCutsFile random-cuts.nc4
-#strLoadCuts cuts.txt
-#strSimulationData simulation-data-1.txt
+#strRandomCutsFile        random-cuts.nc4
+#strLoadCuts                     cuts.txt
+#strSimulationData  simulation-data-1.txt
 
 1 # number of vector-of-int parameters
 

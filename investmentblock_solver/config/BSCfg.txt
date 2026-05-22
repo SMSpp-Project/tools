@@ -63,7 +63,7 @@ dual_feasibility_tolerance    1e-9
 presolve  off    # disable presolve for reproducibility
 solver    ipm    # interior point: converges to analytic center (unique x*)
 
-#strOutputFile uc_lp.lp
+#strOutputFile  uc_lp.lp
 
 0 # number of vector-of-int parameters
 

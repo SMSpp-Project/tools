@@ -17,21 +17,21 @@ ComputeConfig  # Type of the object
 1  # differential ComputeConfig
 
 2  # Number of integer parameters
-intLogVerb      0
-intRelaxIntVars 1
+intLogVerb                   0
+intRelaxIntVars              1
 #CPXPARAM_Threads 1
 #CPXPARAM_LPMethod 2
 
 #CPXPARAM_Preprocessing_Presolve 0
-#intThrowReducedCostException    1
+#intThrowReducedCostException 1
 
 0  # Number of double parameters
-#dblAAccSol 1e-04
-#dblMaxTime 20000
-#dblRelAcc 1.0e-10
+#dblAAccSol                    1e-04
+#dblMaxTime                    20000
+#dblRelAcc                   1.0e-10
 
 0  # Number of string parameters
-#strOutputFile thermal.lp
+#strOutputFile               thermal.lp
 
 0 # number of vector-of-int parameters
 

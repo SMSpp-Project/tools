@@ -19,12 +19,12 @@ Method 2
 Crossover 0
 
 0  # Number of double parameters
-#dblAAccSol 1e-08
-#dblRAccSol 1e-08
-#dblMaxTime 20000
+#dblAAccSol    1e-08
+#dblRAccSol    1e-08
+#dblMaxTime    20000
 
 1  # Number of string parameters
-strLogFileName log.txt
+strLogFileName                       log.txt
 #strOutputFile output/develop/1n_1c_1g_1h.lp
 
 0 # number of vector-of-int parameters

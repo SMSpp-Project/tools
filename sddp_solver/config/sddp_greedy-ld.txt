@@ -45,7 +45,7 @@ intUnregisterSolver 1 # unregister the Solver of the inner Block after solving i
 
 # now all the string parameters
 strInnerBSC         BSPar-greedy-LD.txt # BlockSolverConfig for the UCBlock
-#strInnerBC      uc_blockconfig.txt    # BlockConfig for the UCBlock
+#strInnerBC          uc_blockconfig.txt # BlockConfig for the UCBlock
 
 0 # number of vector-of-int parameters
 

@@ -19,11 +19,11 @@ CPXPARAM_Threads 1
 intRelaxIntVars 1
 
 0  # Number of double parameters
-#dblAAccSol 1e-04
-#dblMaxTime 20000
+#dblAAccSol     1e-04
+#dblMaxTime     20000
 
 0  # Number of string parameters
-#strOutputFile uc_lp.lp
+#strOutputFile  uc_lp.lp
 
 0 # number of vector-of-int parameters
 

@@ -30,7 +30,7 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # number of integer parameters
 
 # now all the integer parameters
-intLogVerb 1 # log verbosity
+intLogVerb    1 # log verbosity
 
 0 # number of double parameters
 
@@ -40,7 +40,7 @@ intLogVerb 1 # log verbosity
 0 # number of string parameters
 
 # now all the string parameters
-#strOutputFile	tssb.lp
+#strOutputFile tssb.lp
 
 0 # number of vector-of-int parameters
 
