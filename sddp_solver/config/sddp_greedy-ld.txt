@@ -33,7 +33,7 @@ ComputeConfig # exact type of the ComputeConfig object
 2 # number of integer parameters
 
 # now all the integer parameters
-intLogVerb 1      # log verbosity
+intLogVerb          1 # log verbosity
 # intScenarioId 0 # index of the scenario to be considered
 intUnregisterSolver 1 # unregister the Solver of the inner Block after solving it
 
@@ -44,7 +44,7 @@ intUnregisterSolver 1 # unregister the Solver of the inner Block after solving i
 1 # number of string parameters
 
 # now all the string parameters
-strInnerBSC      BSPar-greedy-LD.txt   # BlockSolverConfig for the UCBlock
+strInnerBSC         BSPar-greedy-LD.txt # BlockSolverConfig for the UCBlock
 #strInnerBC      uc_blockconfig.txt    # BlockConfig for the UCBlock
 
 0 # number of vector-of-int parameters

@@ -45,7 +45,7 @@ intUnregisterSolver 1 # unregister the Solver of the inner Block after solving i
 1 # number of string parameters
 
 # now all the string parameters
-strInnerBSC     uc_solverconfig.txt   # BlockSolverConfig for the UCBlock
+strInnerBSC         uc_solverconfig.txt # BlockSolverConfig for the UCBlock
 #strInnerBC      uc_blockconfig.txt    # BlockConfig for the UCBlock
 
 #strRandomCutsFile random-cuts.nc4

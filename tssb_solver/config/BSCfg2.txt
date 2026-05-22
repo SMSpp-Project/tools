@@ -33,8 +33,8 @@ ComputeConfig # exact type of the ComputeConfig object
 5 # number of integer parameters
 
 # now all the integer parameters
-intLogVerb      0    # log verbosity of the MILPSolver
-intRelaxIntVars 1    # nonzero if the continuous relaxation is solved
+intLogVerb      0 # log verbosity of the MILPSolver
+intRelaxIntVars 1 # nonzero if the continuous relaxation is solved
 
 # the LP-relaxation oracle must be reproducible across runs: presolve transforms
 # the model and on degenerate LPs picks a different optimal vertex each time,
@@ -56,8 +56,8 @@ NumericFocus  3   # 0 = auto (default), 1..3 = increasing precision focus
 2 # number of double parameters
 
 # now all the double parameters
-dblAAccSol 1e-08     # absolute accuracy required to solution
-dblRAccSol 1e-08     # relative accuracy required to solution
+dblAAccSol      1e-08 # absolute accuracy required to solution
+dblRAccSol      1e-08 # relative accuracy required to solution
 
 # All specific HiGHS parameter (uncomment based on Solver)
 #primal_feasibility_tolerance     1e-9

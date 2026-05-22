@@ -17,7 +17,7 @@ ComputeConfig  # Type of the object
 1  # differential ComputeConfig
 
 2  # Number of integer parameters
-intLogVerb 0
+intLogVerb      0
 intRelaxIntVars 1
 #CPXPARAM_Threads 1
 #CPXPARAM_LPMethod 2
@@ -34,8 +34,19 @@ intRelaxIntVars 1
 #strOutputFile thermal.lp
 
 0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
 0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
 0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
 
 # Pointer to the "extra" Configuration
 * # [none]

@@ -38,9 +38,9 @@ ComputeConfig # exact type of the ComputeConfig object
 3 # number of integer parameters
 
 # now all the integer parameters
-intLogVerb          0    # LogVerb, log verbosity of the MILPSolver
-intRelaxIntVars     1    # nonzero if the continuous relaxation is solved
-intCutSepPar        7    # separate user cuts + lazy constraints
+intLogVerb      0 # LogVerb, log verbosity of the MILPSolver
+intRelaxIntVars 1 # nonzero if the continuous relaxation is solved
+intCutSepPar    7 # separate user cuts + lazy constraints
 
 # All specific CPLEX parameter (uncomment based on Solver)
 #CPXPARAM_Preprocessing_Presolve  0   # disable presolve for reproducibility

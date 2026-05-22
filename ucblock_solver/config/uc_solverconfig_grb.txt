@@ -14,7 +14,7 @@ ComputeConfig  # Type of the object
 1  # differential
 
 3  # Number of integer parameters
-intLogVerb 7
+intLogVerb     7
 Method 2
 Crossover 0
 
@@ -28,8 +28,19 @@ strLogFileName log.txt
 #strOutputFile output/develop/1n_1c_1g_1h.lp
 
 0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
 0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
 0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
 
 # Pointer to the "extra" Configuration
 * # [none]
