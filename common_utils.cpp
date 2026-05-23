@@ -23,6 +23,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include <cstdlib>
 #include <iostream>
 
 #include <Block.h>
@@ -36,6 +37,35 @@
 /*--------------------------------------------------------------------------*/
 
 using namespace SMSpp_di_unipi_it;
+
+/*--------------------------------------------------------------------------*/
+/*--------------------- MPI / UCX SAFE-DEFAULTS ----------------------------*/
+/*--------------------------------------------------------------------------*/
+/* Some SMS++ targets (investmentblock_solver, sddp_solver, ...) pull in
+ * libboost_mpi / libmpi transitively via SDDPBlock even when they never
+ * call MPI_Init(). On systems where Open MPI / UCX are installed but no
+ * usable transport is available (no IB, missing UCX vfs.sock, ...), the
+ * MPI/UCX runtime can hang on startup spinning on futex / X11 sockets.
+ *
+ * To make every SMS++ tool work out-of-the-box after a fresh install, we
+ * pre-seed safe TCP-only defaults with setenv(..., 0): the third argument
+ * is "overwrite = false", so any user who has already exported UCX_TLS /
+ * OMPI_MCA_* (e.g. on an HPC cluster with a real fabric) keeps full
+ * control. This is executed before main() via a static initializer.    */
+
+namespace {
+
+struct SmsppMpiSafeEnvInit {
+ SmsppMpiSafeEnvInit() {
+  setenv( "UCX_TLS"     , "tcp,self" , 0 );
+  setenv( "OMPI_MCA_btl", "tcp,self" , 0 );
+  setenv( "OMPI_MCA_pml", "ob1"      , 0 );
+  }
+ };
+
+static SmsppMpiSafeEnvInit smspp_mpi_safe_env_init_;
+
+}  // anonymous namespace
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- GLOBALS ----------------------------------*/
