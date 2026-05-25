@@ -55,11 +55,20 @@ using namespace SMSpp_di_unipi_it;
 
 namespace {
 
+void set_default_env( const char * name , const char * value ) {
+#ifdef _WIN32
+ if( std::getenv( name ) == nullptr )
+  _putenv_s( name , value );
+#else
+ setenv( name , value , 0 );
+#endif
+}
+
 struct SmsppMpiSafeEnvInit {
  SmsppMpiSafeEnvInit() {
-  setenv( "UCX_TLS"     , "tcp,self" , 0 );
-  setenv( "OMPI_MCA_btl", "tcp,self" , 0 );
-  setenv( "OMPI_MCA_pml", "ob1"      , 0 );
+  set_default_env( "UCX_TLS"     , "tcp,self" );
+  set_default_env( "OMPI_MCA_btl", "tcp,self" );
+  set_default_env( "OMPI_MCA_pml", "ob1"      );
   }
  };
 
