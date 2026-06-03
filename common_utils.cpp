@@ -222,10 +222,10 @@ void process_args( int argc , char ** argv ,
   exit( 1 );
   }
 
- bconf_file = resolve_with_prefix( conf_prefix , bconf_file );
- sconf_file = resolve_with_prefix( conf_prefix , sconf_file );
- sol_cfg_file = resolve_with_prefix( conf_prefix , sol_cfg_file );
-
+ // note: bconf_file, sconf_file and sol_cfg_file are *not* resolved against
+ // conf_prefix here: every consumer already resolves them at the point of
+ // use (get_config(), output Solution Configuration), so prepending the
+ // prefix twice would yield a bogus "config/config/..." path
  }  // end( process_args )
 
 /*--------------------------------------------------------------------------*/

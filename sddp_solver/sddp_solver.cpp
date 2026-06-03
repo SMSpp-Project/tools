@@ -709,27 +709,6 @@ void load_cuts( SDDPBlock * sddp_block )
 
 /*--------------------------------------------------------------------------*/
 
-bool using_thermal_dp_solver( const std::string & config_filename )
-{
- auto solver_config = get_blocksolverconfig( config_filename );
- if( ! solver_config ) {
-  std::cerr << "Solver configuration " << config_filename << " is invalid"
-	    << std::endl;
-  exit( 1 );
-  }
-
- for( const auto & solver_name : solver_config->get_SolverNames() )
-  if( solver_name == "ThermalUnitDPSolver" ) {
-   delete( solver_config );
-   return( true );
-   }
-
- delete( solver_config );
- return( false );
- }
-
-/*--------------------------------------------------------------------------*/
-
 void configure_Blocks( SDDPBlock * sddp_block ,
                        bool add_reserve_variables_to_objective ,
                        double feasibility_tolerance ,
@@ -1468,12 +1447,6 @@ void process_block_file( const netCDF::NcFile & file )
  const auto is_using_lagrangian_dual_solver =
   using_lagrangian_dual_solver( solver_config );
 
- if( is_using_lagrangian_dual_solver &&
-     using_thermal_dp_solver( thermal_config_filename ) )
-  // The ThermalUnitDPSolver cannot currently deal with spinning
-  // reserves. Thus, any reserve that is provided must be ignored.
-  ThermalUnitBlock::ignore_reserve();
-
  // For each Block descriptor
  for( auto block_description : blocks ) {
 
@@ -1599,12 +1572,6 @@ void multiple_simulations( const netCDF::NcFile & file )
 
  const auto is_using_lagrangian_dual_solver =
   using_lagrangian_dual_solver( solver_config );
-
- if( is_using_lagrangian_dual_solver &&
-     using_thermal_dp_solver( thermal_config_filename ) )
-  // The ThermalUnitDPSolver cannot currently deal with spinning
-  // reserves. Thus, any reserve that is provided must be ignored.
-  ThermalUnitBlock::ignore_reserve();
 
  // For each Block descriptor
  for( auto block_description : blocks ) {
