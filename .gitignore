@@ -366,6 +366,7 @@ fabric.properties
 
 ### Xcode
 **/*.xcodeproj
+**/*_XPRJ
 
 ## User settings
 xcuserdata/
