@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - BSPar-CPX.txt - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - BSPar-CP.txt- - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for the CutProcessing in a SDDPBlock
 #
@@ -66,5 +66,5 @@ dblFAccSol 1.0e-15 # maximum constraint violation in the solution
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - END BSPar-CPX.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END BSPar-CP.txt- - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

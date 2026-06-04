@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - TSSBSCfg-LD2.txt- - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - TSSBSCfg-LD2-LD2.txt- - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a TSSBlock to be solved by a
 # LagrangianDualSolver using a BundleSolver as the inner Solver
@@ -124,5 +124,5 @@ str_LagBF_BSCfg     config/LPBSCfg-LD2.txt   	  # BlockSolverConfig for the LagB
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - END TSSBSCfg-LDq.txt- - - - - - - - - - - - - -
+# - - - - - - - - - - - - END TSSBSCfg-LD2-LD2.txt- - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

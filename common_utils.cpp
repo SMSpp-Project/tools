@@ -370,11 +370,14 @@ void config_Block( Block * block ,
 
    auto & map = mb->f_value;
 
-   // now BlockSolverConfig-ure all Block whose classname() matches
-   for( auto b : BFS )
-    if( auto bscit = map.find( b->classname() ); bscit != map.end() )
+   // now BlockSolverConfig-ure all Block whose classname() matches, leaf-first
+   // (reverse BFS order): a Solver attached to a parent Block (e.g. a
+   // LagrangianDualSolver decomposing it) must see the Solvers of its
+   // sub-Blocks already in place, so the sub-Blocks are configured first
+   for( auto bit = BFS.rbegin() ; bit != BFS.rend() ; ++bit )
+    if( auto bscit = map.find( ( *bit )->classname() ); bscit != map.end() )
      if( auto bsc = dynamic_cast< BlockSolverConfig * >( bscit->second ) )
-      bsc->apply( b );
+      bsc->apply( *bit );
 
    // finally, clear() all the BlockSolverConfig for final cleanup
    for( auto & el : map )

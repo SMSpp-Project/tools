@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - -BSPar-greedy-LD.txt- - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - BSPar-greedy-LD.txt - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a UCBlock to be solved by a
 # LagrangianDualSolver using a BundleSolver as the inner Solver

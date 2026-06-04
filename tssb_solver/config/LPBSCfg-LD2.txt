@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - -LPBSCfg-LD1.txt- - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - LPBSCfg-LD2.txt - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a TSSBlock to be solved by a
 # LagrangianDualSolver using a BundleSolver as the inner Solver
@@ -7,7 +7,6 @@
 #   Enrico Gorgone, Antonio Frangioni
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 BlockSolverConfig     # exact type of the Configuration object

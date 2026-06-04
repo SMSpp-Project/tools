@@ -1,0 +1,34 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - InnerMeta-LD1.txt - - - - - - - - - - - - - - -
+#
+# A "meta" BlockSolverConfig: a map from a Block classname() to the
+# BlockSolverConfig to attach to every Block of that class. It is consumed by
+# the (inner, UCBlock-level) LagrangianDualSolver -- parameter str_LagBF_BSCfg
+# in LPBSCfg-LD1.txt -- to configure the inner Block of each LagBFunction by its
+# type (same scheme as tests/LagrangianDualSolver_UC/InnerBSCfg.txt), so that
+# every unit of a given type is solved by its most efficient Solver:
+#
+#   ThermalUnitBlock  -> ThermalUnitExtDPSolver  (exact integer DP)
+#   *  (catch-all)    -> :MILPSolver  (LP relaxation, every other "hard" unit)
+#
+# The "*" entry is the default applied to any inner Block whose classname() is
+# not listed explicitly (BatteryUnitBlock, IntermittentUnitBlock, ...). To
+# switch the Solver of *all* the thermal units at once just edit
+# config/TUBSCfg-ext.txt.
+#
+#   Donato Meoli
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# a "meta"-BlockConfig , i.e., a map classname --> its BlockConfig
+SimpleConfiguration<std::map<std::string,Configuration*>>
+
+2 # the number of elements in the map
+
+ThermalUnitBlock        *config/TUBSCfg-ext.txt
+*                       *config/BSCfg1.txt
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END InnerMeta-LD1.txt - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

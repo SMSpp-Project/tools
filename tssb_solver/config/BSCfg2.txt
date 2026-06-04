@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - -BSCfg2.txt - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - BSCfg2.txt- - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for any Block that is a simple
 # MILP / MIQP / MIQCQP and can be solved by a :MILPSolver
@@ -7,7 +7,6 @@
 #   Antonio Frangioni
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 BlockSolverConfig     # exact type of the Configuration object
