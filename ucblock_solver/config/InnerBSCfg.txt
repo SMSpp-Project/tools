@@ -1,12 +1,11 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - InnerSolverCfg.txt- - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - InnerBSCfg.txt- - - - - - - - - - - - - - -
 #
 # A "meta" BlockSolverConfig: a map from a Block classname() to the
 # BlockSolverConfig to attach to every Block of that class. It is consumed by
 # the LagrangianDualSolver (parameter str_LagBF_BSCfg, set in LDCfg.txt) to
 # configure the inner Block of each LagBFunction by its type, so that every unit
-# of a given type is solved by the same (type-appropriate) Solver (same scheme
-# as tests/LagrangianDualSolver_UC/InnerBSCfg.txt):
+# of a given type is solved by the same (type-appropriate) Solver:
 #
 #   ThermalUnitBlock      -> ThermalUnitExtDPSolver  (the efficient thermal DP)
 #   HydroSystemUnitBlock  -> its own Solver
@@ -33,5 +32,5 @@ HydroSystemUnitBlock    *config/HSUBSCfg.txt
 *                       *config/OUBSCfg.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - -END InnerSolverCfg.txt - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END InnerBSCfg.txt- - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

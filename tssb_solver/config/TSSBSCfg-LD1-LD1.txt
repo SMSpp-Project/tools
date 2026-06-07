@@ -4,7 +4,7 @@
 # A txt description of a BlockSolverConfig for a TSSBlock to be solved by a
 # LagrangianDualSolver using a BundleSolver as the inner Solver
 #
-#   Enrico Gorgone, Antonio Frangioni
+#   Antonio Frangioni, Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

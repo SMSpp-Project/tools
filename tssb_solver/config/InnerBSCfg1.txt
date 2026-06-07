@@ -1,12 +1,13 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - InnerMeta-LD1.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - InnerBSCfg1.txt - - - - - - - - - - - - - - -
 #
 # A "meta" BlockSolverConfig: a map from a Block classname() to the
 # BlockSolverConfig to attach to every Block of that class. It is consumed by
-# the (inner, UCBlock-level) LagrangianDualSolver -- parameter str_LagBF_BSCfg
-# in LPBSCfg-LD1.txt -- to configure the inner Block of each LagBFunction by its
-# type (same scheme as tests/LagrangianDualSolver_UC/InnerBSCfg.txt), so that
-# every unit of a given type is solved by its most efficient Solver:
+# a LagrangianDualSolver -- parameter str_LagBF_BSCfg, set in TSSBSCfg-LD.txt
+# (the single Lagrangian dual that reaches the units directly) and in
+# LPBSCfg-LD1.txt (the inner, UCBlock-level dual of the nested variant) -- to
+# configure the inner Block of each LagBFunction by its type, so that every unit
+# of a given type is solved by its most efficient Solver:
 #
 #   ThermalUnitBlock  -> ThermalUnitExtDPSolver  (exact integer DP)
 #   *  (catch-all)    -> :MILPSolver  (LP relaxation, every other "hard" unit)
@@ -14,7 +15,7 @@
 # The "*" entry is the default applied to any inner Block whose classname() is
 # not listed explicitly (BatteryUnitBlock, IntermittentUnitBlock, ...). To
 # switch the Solver of *all* the thermal units at once just edit
-# config/TUBSCfg-ext.txt.
+# config/TUBSCfg-DP.txt.
 #
 #   Donato Meoli
 #
@@ -26,9 +27,9 @@ SimpleConfiguration<std::map<std::string,Configuration*>>
 
 2 # the number of elements in the map
 
-ThermalUnitBlock        *config/TUBSCfg-ext.txt
+ThermalUnitBlock        *config/TUBSCfg-DP.txt
 *                       *config/BSCfg1.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - END InnerMeta-LD1.txt - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -END InnerBSCfg1.txt- - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -6,7 +6,7 @@
 # The Lagrangian dual dualizes the UCBlock coupling constraints (active-power
 # demand and primary/secondary reserve demand); each inner unit is then solved
 # by its own Solver, attached by classname through the meta BlockSolverConfig
-# InnerSolverCfg.txt (e.g. ThermalUnitBlock -> ThermalUnitExtDPSolver).
+# InnerBSCfg.txt (e.g. ThermalUnitBlock -> ThermalUnitExtDPSolver).
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -34,15 +34,15 @@
  * options is not provided when the given netCDF file is a BlockFile, then
  * default configurations are considered.
  *
- * \author Donato Meoli \n
- *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
- *
  * \author Antonio Frangioni \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
- * \copyright &copy; by Donato Meoli, Antonio Frangioni
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * \copyright &copy; by Antonio Frangioni, Donato Meoli
  */
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
