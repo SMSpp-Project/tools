@@ -1,11 +1,10 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - END sddp_greedy-ld.txt- - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - -TUBSCfg-DP.txt - - - - - - - - - - - - - - -
 #
-# A txt description of a BlockSolverConfig for a SDDPGreedySolver
+# A txt description of a BlockSolverConfig for a ThermalUnitBlock that is being
+# solved by a ThermalUnitExtDPSolver
 #
-#   version 1.0 , 23/01/2021
-#
-#   Rafael Durbano Lobato
+#   Antonio Frangioni
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -14,38 +13,32 @@ BlockSolverConfig     # exact type of the Configuration object
 
 1  # the BlockSolverConfig is a "differential" one
 
-1  # number of (the names of) Solver in this BlockSolverConfig
+1 # number of (the names of) Solver in this BlockSolverConfig
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
-SDDPGreedySolver    # name of 1st Solver
+ThermalUnitExtDPSolver
 
-1  # number of ComputeConfig in this BlockSolverConfig
+0 # number of ComputeConfig in this BlockSolverConfig
 
 # now all the ComputeConfig
-# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# ComputeConfig of the SDDPGreedySolver; it basically is the
-# ComputeConfig of the inner Solver, which is a BundleSolver
-
 ComputeConfig # exact type of the ComputeConfig object
 
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-2 # number of integer parameters
+0 # number of integer parameters
 
 # now all the integer parameters
-intLogVerb 1      # log verbosity
-# intScenarioId 0 # index of the scenario to be considered
-intUnregisterSolver 1 # unregister the Solver of the inner Block after solving it
+# [none]
 
 0 # number of double parameters
 
 # now all the double parameters
+# [none]
 
-1 # number of string parameters
+0 # number of string parameters
 
 # now all the string parameters
-strInnerBSC      BSPar-greedy-LD.txt   # BlockSolverConfig for the UCBlock
-#strInnerBC      uc_blockconfig.txt    # BlockConfig for the UCBlock
+# [none]
 
 0 # number of vector-of-int parameters
 
@@ -65,10 +58,6 @@ strInnerBSC      BSPar-greedy-LD.txt   # BlockSolverConfig for the UCBlock
 # pointer to the "extra" Configuration
 * # [none]
 
-# end of 1st ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
-
-# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - END sddp_greedy-ld.txt- - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -END TUBSCfg-DP.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

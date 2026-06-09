@@ -213,6 +213,17 @@ bool process_standard_arg( int opt );
 void process_args( int argc , char ** argv );
 
 /*--------------------------------------------------------------------------*/
+/// processes all command-line arguments, with a tool-specific callback
+/** Drives the standard getopt_long loop, calling \p custom_arg(opt) for
+ * every option that process_standard_arg() does not recognise. \p custom_arg
+ * must return true if it consumed \p opt, false otherwise (which prints the
+ * usage hint and exits 1). Sets \p exe and \p filename as side effects, and
+ * resolves the standard Configuration filenames with \p conf_prefix. */
+
+void process_args( int argc , char ** argv ,
+                   bool ( *custom_arg )( int opt ) );
+
+/*--------------------------------------------------------------------------*/
 /// custom terminate function to print the exception message
 
 void smspp_terminate( void );

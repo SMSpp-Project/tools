@@ -100,6 +100,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "common_utils.h"
+#include "sddp_utils.h"
 
 #include <iomanip>
 #include <queue>
@@ -197,121 +198,51 @@ const std::string my_help =
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-void process_my_args( int argc , char ** argv )
+static bool process_specific_arg( int opt )
 {
- exe = get_filename( argv[ 0 ] );
- if( argc < 2 ) {
-  std::cout << exe << ": no input file\n"
-            << "Try " << exe << "' --help' for more information.\n";
-  exit( 1 );
-  }
-
- while( true ) {  // options
-  auto opt = getopt_long( argc , argv , short_opts.data() ,
-			  long_opts.data() , nullptr );
-  if( opt == -1 ) break;
-  if( process_standard_arg( opt ) )  // if it is a standard one
-   continue;                         // next
-
-  switch( opt ) {  // non-standard options
-   case 'd': output_solution_directory = std::string( optarg ); break;
-   case 'e': cut_processing_sconf_file = std::string( optarg );
-             eliminate_redundant_cuts = true;
-	     break;
-   case 'i': scenario_id = get_long_option();
-             if( scenario_id < 0 ) {
-	      std::cerr << "scenario index  must be a nonnegative integer"
-			<< std::endl;
-	      exit( 1 );
-	      }
-	     break;
-   case 'l': cuts_filename = std::string( optarg ); break;
-   case 'm': number_simulations = get_long_option();
-             if( number_simulations < 1 ) {
-	      std::cerr << "number of simulations must be at least 1"
-			<< std::endl;
-	      exit( 1 );
-	      }
-	     break;
-   case 'n': num_sub_blocks_per_stage = get_long_option();
-             if( num_sub_blocks_per_stage <= 0 ) {
-	      std::cout << "number of sub-Blocks per stage must be a "
-			<< "positive integer" << std::endl;
-	      exit( 1 );
-	      }
-	     break;
-   case 'r':
-    std::cout << "The -r option no longer exists. In order relax the "
-              << "integrality constraints,\nplease properly configure the "
-              << "solver. For instance, some solvers have the\nparameter "
-              << "'intRelaxIntVars', which can be set to 1 in the solver\n"
-              << "configuration file associated with the Block whose "
-              << "constraints must be\nrelaxed." << std::endl;
-    exit( 1 );
-   case 's': simulation_mode = true; break;
-   case 't': initial_solution_stage = get_long_option(); break;
-   case '?': // Unrecognized option
-   default:  std::cerr << "Try " << exe << "' --help' for more information"
-		       << std::endl;
+ switch( opt ) {  // non-standard options
+  case 'd': output_solution_directory = std::string( optarg ); return( true );
+  case 'e': cut_processing_sconf_file = std::string( optarg );
+            eliminate_redundant_cuts = true;
+            return( true );
+  case 'i': scenario_id = get_long_option();
+            if( scenario_id < 0 ) {
+             std::cerr << "scenario index  must be a nonnegative integer"
+                       << std::endl;
              exit( 1 );
-   }
-  }  // end( while( true ) )
-
- if( optind < argc )  // last argument == [SDDPBlock] filename
-  filename = std::string( argv[ optind ] );
- else {
- std::cout << exe << ": no input file" << std::endl
-            << "Try " << exe << "' --help' for more information" << std::endl;
-  exit( 1 );
-  }
- } // end( process_my_args )
-
-/*--------------------------------------------------------------------------*/
-
-void show_simulation_status( Index status , Index fault_stage )
-{
- switch( status ) {
-  case( SDDPGreedySolver::kError ):
-   std::cout << "Error while solving the subproblem at stage "
-             << fault_stage << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kUnbounded ):
-   std::cout << "The subproblem at stage " << fault_stage
-             << " is unbounded." << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kInfeasible ):
-   std::cout << "The problem is infeasible." << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kStopTime ):
-   std::cout << "A feasible solution has been found. The solution process "
-             << "of subproblem at stage " << fault_stage
-             << " terminated due a time limit." << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kStopIter ):
-   std::cout << "A feasible solution has been found. The solution process "
-             << "of subproblem at stage " << fault_stage
-             << " terminated due to an iteration limit." << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kLowPrecision ):
-   std::cout << "A feasible solution has been found." << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kSubproblemInfeasible ):
-   std::cout << "The subproblem at stage " << fault_stage
-             << " is infeasible." << std::endl;
-   break;
-
-  case( SDDPGreedySolver::kSolutionNotFound ):
-   std::cout << "A solution for the subproblem at stage "
-             << fault_stage << " has not been found." << std::endl;
-   break;
+             }
+            return( true );
+  case 'l': cuts_filename = std::string( optarg ); return( true );
+  case 'm': number_simulations = get_long_option();
+            if( number_simulations < 1 ) {
+             std::cerr << "number of simulations must be at least 1"
+                       << std::endl;
+             exit( 1 );
+             }
+            return( true );
+  case 'n': num_sub_blocks_per_stage = get_long_option();
+            if( num_sub_blocks_per_stage <= 0 ) {
+             std::cout << "number of sub-Blocks per stage must be a "
+                       << "positive integer" << std::endl;
+             exit( 1 );
+             }
+            return( true );
+  case 'r':
+   std::cout << "The -r option no longer exists. In order relax the "
+             << "integrality constraints,\nplease properly configure the "
+             << "solver. For instance, some solvers have the\nparameter "
+             << "'intRelaxIntVars', which can be set to 1 in the solver\n"
+             << "configuration file associated with the Block whose "
+             << "constraints must be\nrelaxed." << std::endl;
+   exit( 1 );
+  case 's': simulation_mode = true; return( true );
+  case 't': initial_solution_stage = get_long_option(); return( true );
+  case '?':
+  default:  return( false );
   }
  }
+
+/*--------------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------------*/
 
@@ -582,7 +513,7 @@ void simulate( SDDPBlock * sddp_block )
   boost::mpi::communicator world;
   if( world.rank() == 0 ) {
  #endif
-   show_simulation_status( status , solver->get_fault_stage() );
+   show_sddp_greedy_status( status , solver->get_fault_stage() );
 
    SDDPBlockSolutionOutput output( output_solution_directory );
 
@@ -774,27 +705,6 @@ void load_cuts( SDDPBlock * sddp_block )
 
    polyhedral_function->add_rows( std::move( A_stage ) , b[ stage ] );
    }
- }
-
-/*--------------------------------------------------------------------------*/
-
-bool using_thermal_dp_solver( const std::string & config_filename )
-{
- auto solver_config = get_blocksolverconfig( config_filename );
- if( ! solver_config ) {
-  std::cerr << "Solver configuration " << config_filename << " is invalid"
-	    << std::endl;
-  exit( 1 );
-  }
-
- for( const auto & solver_name : solver_config->get_SolverNames() )
-  if( solver_name == "ThermalUnitDPSolver" ) {
-   delete( solver_config );
-   return( true );
-   }
-
- delete( solver_config );
- return( false );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1537,12 +1447,6 @@ void process_block_file( const netCDF::NcFile & file )
  const auto is_using_lagrangian_dual_solver =
   using_lagrangian_dual_solver( solver_config );
 
- if( is_using_lagrangian_dual_solver &&
-     using_thermal_dp_solver( thermal_config_filename ) )
-  // The ThermalUnitDPSolver cannot currently deal with spinning
-  // reserves. Thus, any reserve that is provided must be ignored.
-  ThermalUnitBlock::ignore_reserve();
-
  // For each Block descriptor
  for( auto block_description : blocks ) {
 
@@ -1668,12 +1572,6 @@ void multiple_simulations( const netCDF::NcFile & file )
 
  const auto is_using_lagrangian_dual_solver =
   using_lagrangian_dual_solver( solver_config );
-
- if( is_using_lagrangian_dual_solver &&
-     using_thermal_dp_solver( thermal_config_filename ) )
-  // The ThermalUnitDPSolver cannot currently deal with spinning
-  // reserves. Thus, any reserve that is provided must be ignored.
-  ThermalUnitBlock::ignore_reserve();
 
  // For each Block descriptor
  for( auto block_description : blocks ) {
@@ -1804,7 +1702,7 @@ void multiple_simulations( const netCDF::NcFile & file )
      random_number_engine = solver->get_random_number_engine();
 
      // Output simulation status
-     show_simulation_status( status , solver->get_fault_stage() );
+     show_sddp_greedy_status( status , solver->get_fault_stage() );
      const auto lb = solver->get_lb();
      const auto ub = solver->get_ub();
      std::cout << "Lower bound: " << std::setprecision( 20 ) << lb
@@ -1864,7 +1762,7 @@ int main( int argc , char ** argv )
 
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
 
- process_my_args( argc , argv );
+ process_args( argc , argv , process_specific_arg );
 
  check_consistency();
 

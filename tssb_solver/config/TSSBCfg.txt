@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - -TSSBCfg.txt- - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - TSSBCfg.txt - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockConfig for a TSSBSolver
 #

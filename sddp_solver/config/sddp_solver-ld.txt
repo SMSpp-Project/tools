@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - END sddp_solver.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - END sddp_solver-ld.txt- - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a SDDPSolver
 #
@@ -81,5 +81,5 @@ strOutputFile cuts.txt
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - END sddp_solver.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - END sddp_solver-ld.txt- - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

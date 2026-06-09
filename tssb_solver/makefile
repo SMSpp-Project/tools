@@ -70,7 +70,7 @@ MH =    $(SMS++H) $(TSSBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(CMMNUH)
 # compile command
 
 $(DIR)/tssb_solver.o: $(DIR)/tssb_solver.cpp \
-    $(DIR)/../block_solver/common_utils.h $(MH)
+    $(DIR)/../common_utils.h $(MH)
 	$(CC) -c $(DIR)/tssb_solver.cpp -o $@ $(MINC) $(SW)
 
 ############################ End of makefile #################################

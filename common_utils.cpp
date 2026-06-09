@@ -188,7 +188,8 @@ bool process_standard_arg( int opt )
 
 /*--------------------------------------------------------------------------*/
 
-void process_args( int argc , char ** argv )
+void process_args( int argc , char ** argv ,
+                   bool ( *custom_arg )( int opt ) )
 {
  exe = get_filename( argv[ 0 ] );
  if( argc < 2 ) {
@@ -202,11 +203,15 @@ void process_args( int argc , char ** argv )
 				long_opts.data() , nullptr );
   if( opt == -1 ) break;
 
-  if( ! process_standard_arg( opt ) ) {
-   std::cout << "Try '" << exe << " --help' for more information"
-	     << std::endl;
-   exit( 1 );
-   }
+  if( process_standard_arg( opt ) )  // if it is a standard one
+   continue;                         // next
+
+  if( custom_arg && custom_arg( opt ) )  // tool-specific option
+   continue;                             // next
+
+  std::cout << "Try '" << exe << " --help' for more information"
+	    << std::endl;
+  exit( 1 );
   }
 
  if( optind < argc )  // last argument == [Block] filename
@@ -217,11 +222,18 @@ void process_args( int argc , char ** argv )
   exit( 1 );
   }
 
- bconf_file = resolve_with_prefix( conf_prefix , bconf_file );
- sconf_file = resolve_with_prefix( conf_prefix , sconf_file );
- sol_cfg_file = resolve_with_prefix( conf_prefix , sol_cfg_file );
-
+ // note: bconf_file, sconf_file and sol_cfg_file are *not* resolved against
+ // conf_prefix here: every consumer already resolves them at the point of
+ // use (get_config(), output Solution Configuration), so prepending the
+ // prefix twice would yield a bogus "config/config/..." path
  }  // end( process_args )
+
+/*--------------------------------------------------------------------------*/
+
+void process_args( int argc , char ** argv )
+{
+ process_args( argc , argv , nullptr );
+ }
 
 /*--------------------------------------------------------------------------*/
 
@@ -358,11 +370,14 @@ void config_Block( Block * block ,
 
    auto & map = mb->f_value;
 
-   // now BlockSolverConfig-ure all Block whose classname() matches
-   for( auto b : BFS )
-    if( auto bscit = map.find( b->classname() ); bscit != map.end() )
+   // now BlockSolverConfig-ure all Block whose classname() matches, leaf-first
+   // (reverse BFS order): a Solver attached to a parent Block (e.g. a
+   // LagrangianDualSolver decomposing it) must see the Solvers of its
+   // sub-Blocks already in place, so the sub-Blocks are configured first
+   for( auto bit = BFS.rbegin() ; bit != BFS.rend() ; ++bit )
+    if( auto bscit = map.find( ( *bit )->classname() ); bscit != map.end() )
      if( auto bsc = dynamic_cast< BlockSolverConfig * >( bscit->second ) )
-      bsc->apply( b );
+      bsc->apply( *bit );
 
    // finally, clear() all the BlockSolverConfig for final cleanup
    for( auto & el : map )

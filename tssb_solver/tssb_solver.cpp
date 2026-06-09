@@ -34,15 +34,15 @@
  * options is not provided when the given netCDF file is a BlockFile, then
  * default configurations are considered.
  *
- * \author Donato Meoli \n
- *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
- *
  * \author Antonio Frangioni \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
- * \copyright &copy; by Donato Meoli, Antonio Frangioni
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * \copyright &copy; by Antonio Frangioni, Donato Meoli
  */
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -77,38 +77,11 @@ const std::string default_config_filename = "LPBSCfg.txt";
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-void process_my_args( int argc , char ** argv )
+static bool process_specific_arg( int opt )
 {
- exe = get_filename( argv[ 0 ] );
- if( argc < 2 ) {
-  std::cout << exe << ": no input file\n"
-   << "Try " << exe << "' --help' for more information.\n";
-  exit( 1 );
-  }
-
- while( true ) { // options
-  auto opt = getopt_long( argc , argv , short_opts.data() ,
-                          long_opts.data() , nullptr );
-  if( opt == -1 ) break;
-  if( process_standard_arg( opt ) ) // if it is a standard one
-   continue; // next
-
-  switch( opt ) { // non-standard options
-  case '?' : // Unrecognized option
-  default :
-   std::cout << "Try " << exe << "' --help' for more information" << std::endl;
-   exit( 1 );
-   }
-  } // end( while( true ) )
-
- if( optind < argc ) // last argument == [InvestmentBlock] filename
-  filename = std::string( argv[ optind ] );
- else {
-  std::cout << exe << ": no input file" << std::endl
-   << "Try " << exe << "' --help' for more information" << std::endl;
-  exit( 1 );
-  }
- }  // end( process_my_args )
+ // tssb_solver has no tool-specific options
+ return( false );
+ }
 
 /*--------------------------------------------------------------------------*/
 
@@ -185,7 +158,7 @@ int main( int argc , char ** argv )
 
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
 
- process_my_args( argc , argv );
+ process_args( argc , argv , process_specific_arg );
 
  // open the file - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

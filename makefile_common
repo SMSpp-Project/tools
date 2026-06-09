@@ -68,7 +68,7 @@ release_asan: $(DIR)/$(NAME)
 # clean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 clean::
-	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/$(NAME) ../block_solver/*.o
+	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/$(NAME) ../common_utils.o
 
 # distclean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -111,12 +111,12 @@ include $(SMS++SDR)/lib/makefile-c
 
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
-CMMNUOBJ = ../block_solver/common_utils.o
-CMMNUH = ../block_solver/common_utils.h
-CMMNUINC = -I../block_solver/
+CMMNUOBJ = ../common_utils.o
+CMMNUH = ../common_utils.h
+CMMNUINC = -I..
 
-$(CMMNUOBJ): $(CMMNUH) $(SMS++H) ../block_solver/common_utils.cpp
-	$(CC) -c ../block_solver/common_utils.cpp -o $@ $(CMMNUINC) \
+$(CMMNUOBJ): $(CMMNUH) $(SMS++H) ../common_utils.cpp
+	$(CC) -c ../common_utils.cpp -o $@ $(CMMNUINC) \
 	$(SMS++INC) $(SW)
 
 ############################ End of makefile #################################
