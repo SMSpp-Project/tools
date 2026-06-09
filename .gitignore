@@ -72,6 +72,8 @@ _deps/
 *.iml
 *.iws
 out/
+**/*.xcodeproj
+**/*_XPRJ
 
 # --- OS junk ------------------------------------------------
 .DS_Store

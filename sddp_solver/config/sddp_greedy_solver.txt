@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - END sddp_greedy.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - END sddp_greedy_solver.txt- - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a SDDPGreedySolver
 #
@@ -78,5 +78,5 @@ vintStagesSample
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - END sddp_greedy.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - END sddp_greedy_solver.txt- - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
