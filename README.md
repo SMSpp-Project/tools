@@ -3,17 +3,18 @@
 A set of tools and examples that use SMS++ library and other modules.
 At the moment we provide:
 
-- a generic Block Solver with some example input files
+- `block_solver`: a generic Block solver with some example input files
 
-- a single Thermal Unit solver
+- `ucblock_solver`: a UCBlock solver
 
-- a UCBlock solver
+- `sddp_solver`: an SDDPBlock solver (plus the lightweight
+  `sddp_greedy_solver`)
 
-- an SDDPBlock solver
+- `tssb_solver`: a TwoStageStochasticBlock solver
 
-- an InvestmentBlock solver
+- `investmentblock_solver`: an InvestmentBlock solver
 
-- a small utility to change some parameters in a configuration
+- `chgcfg`: a small utility to change some parameters in a configuration
   file while leaving all the rest unchanged
 
 
@@ -110,13 +111,13 @@ files and configurations.
 
 ### InvestmentBlock Solver
 
-`investment_solver` adds the following command-line options to the basic ones:
+`investmentblock_solver` adds the following command-line options to the basic
+ones:
 
 ```sh
-  -d, --output-dir                directory where solutions are written
-  -e, --eliminate-redundant-cuts  eliminate given redundant cuts
   -l, --load-cuts <file>          load cuts from a file
   -n, --num-blocks <number>       number of sub-Blocks per stage
+  -r, --relax                     relax integer variables
   -s, --simulate                  simulate the given investment
   -x, --initial-investment <file> initial investment
 ```
@@ -182,9 +183,10 @@ where 't' is a stage (an integer between 0 and time horizon minus 1), 'a_0',
 ..., 'a_k' are the coefficients of the cut, and 'b' is the constant term of
 the cut.
 
-As a preprocessing, given redundant cuts can be removed by using the `-e`
-option. Notice that all cuts will be subject to being removed, whether they
-are provided in a netCDF file or by the `-l` option.
+The `-r` option relaxes the integrality of every integer variable in the
+inner Block (typically the binary commitment variables of every
+ThermalUnitBlock), so that the investment function is evaluated over the
+LP relaxation of the operational problem.
 
 There are a few ways to specify the initial state for the first stage
 subproblem. This can be done by setting the initial state variable of
@@ -283,17 +285,12 @@ belong to that interval (that is, if it is negative or greater than or equal
 to T) or if the `-t` option is not used, then no changes are made to the way
 the initial state is specified.
 
-### Thermal Unit solver / Unit Commitment solver
+### Unit Commitment solver
 
-`ucblock_solver` adds the following command-line options to the basic ones:
-
-```sh
-  -t, --output <type>             solution output type [1]
-                                  (0 none, 1 screen, 2 files, 3 both)
-```
-
-The input netCDF file must be a Block file. If you don't provide Block
-or Solver configurations, default configurations will be used.
+`ucblock_solver` does not add any tool-specific command-line option to the
+basic ones. The input netCDF file may be either a problem file (containing
+the Block, BlockConfig and BlockSolverConfig) or a Block file; in the latter
+case, if `-B` and/or `-S` are not provided, default configurations are used.
 
 ### TwoStageStochasticBlock solver
 
