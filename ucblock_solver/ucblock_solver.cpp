@@ -37,10 +37,13 @@
 /*--------------------------------------------------------------------------*/
 /* SAVE_TUB: if set to nonzero, an event is registered on the
  * LagrangianDualSolver (which forwards it to its inner [Parallel]BundleSolver)
- * that, at every iteration of the Lagrangian dual, serializes each
- * ThermalUnitBlock (the inner Block of each LagBFunction) to its own SMS++
- * netCDF Block file "TUB-<unit>-<iteration>.nc4". Switch off (default) by
- * leaving SAVE_TUB undefined / 0; switch on by compiling with -DSAVE_TUB=1. */
+ * that serializes each ThermalUnitBlock (the inner Block of each LagBFunction)
+ * to its own SMS++ netCDF Block file "TUB-<unit>-<iteration>.nc4". The dump
+ * frequency is the standard Solver::intEverykIt parameter of the inner Solver,
+ * to be set in its ComputeConfig (see config/LDCfg.txt): the event fires every
+ * k-th Lagrangian iteration, so dumps come naturally strided. Switch off
+ * (default) by leaving SAVE_TUB undefined / 0; switch on by compiling with
+ * -DSAVE_TUB=1. */
 
 #ifndef SAVE_TUB
  #define SAVE_TUB 0
@@ -140,16 +143,24 @@ int main( int argc , char ** argv )
    std::cerr << exe << ": SAVE_TUB is on but no LagrangianDualSolver is "
                 "registered to the Block; no ThermalUnitBlock will be saved"
              << std::endl;
+  else if( const int k =
+            lds->get_inner_Solver()->get_int_par( Solver::intEverykIt ) ;
+           k < 1 )
+   // dumping every iteration of every unit can be hundreds of thousands of
+   // small files, so no default is silently applied here: the dump frequency
+   // must be set explicitly in the inner Solver ComputeConfig
+   std::cerr << exe << ": SAVE_TUB is on but intEverykIt is not set in the "
+                "inner Solver ComputeConfig; no ThermalUnitBlock will be saved"
+             << std::endl;
   else {
-   // ask for the eEverykIteration event to be called at *every* iteration
-   lds->get_inner_Solver()->set_par( Solver::intEverykIt , 1 );
-
-   // iteration counter, captured (by shared_ptr) into the handler
+   // event counter, captured (by shared_ptr) into the handler; the event
+   // first fires at iteration k and then every k iterations, so the true
+   // iteration number put in the filename is (event count) * k
    auto iter = std::make_shared< int >( 0 );
 
    lds->set_event_handler( ThinComputeInterface::eEverykIteration ,
-    [ lds , iter ]() -> int {
-     const int it = (*iter)++;
+    [ lds , iter , k ]() -> int {
+     const int it = ++( *iter ) * k;
 
      // the inner BundleSolver is registered to the Lagrangian-dual Block (LB)
      // built by the LagrangianDualSolver: each of its sub-Blocks (LB_i) holds
@@ -185,8 +196,8 @@ int main( int argc , char ** argv )
      return( ThinComputeInterface::eContinue );
      } );
 
-   std::cout << exe << ": SAVE_TUB on; dumping every ThermalUnitBlock at "
-                "each iteration to TUB-<unit>-<iteration>.nc4" << std::endl;
+   std::cout << exe << ": SAVE_TUB on; dumping every ThermalUnitBlock every "
+             << k << " iterations to TUB-<unit>-<iteration>.nc4" << std::endl;
    }
   }
 #endif

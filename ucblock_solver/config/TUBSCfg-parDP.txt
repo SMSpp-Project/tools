@@ -1,0 +1,67 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - TUBSCfg-parDP.txt - - - - - - - - - - - - - -
+#
+# A txt description of a BlockSolverConfig for a ThermalUnitBlock that is being
+# solved by a ThermalUnitDPSolver (the "standard" dynamic-programming solver)
+# run in PARALLEL: intMaxThread 0 means all available cores as FastFlow workers
+# on compute_EDPs(). Note that the solver itself only goes parallel when the
+# time horizon is at least TUDPS_PAR_MIN_N (compiled-in break-even threshold,
+# 768): below it (the day and week single-bus instances) it silently falls back
+# to the serial DP, so the "parDP" timing column equals "stdDP" there.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+1 # number of (the names of) Solver in this BlockSolverConfig
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+ThermalUnitDPSolver
+
+1 # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig
+ComputeConfig # exact type of the ComputeConfig object
+
+1  # f_diff == 0 ==> all non-provided parameters are set to the default value
+   # f_diff == 1 ==> all non-provided parameters are not changed
+
+1 # number of integer parameters
+
+# now all the integer parameters
+intMaxThread 0  # 0 = all cores as FastFlow workers on compute_EDPs (above
+                # TUDPS_PAR_MIN_N); 1 = serial, k = k workers.
+
+0 # number of double parameters
+
+# now all the double parameters
+# [none]
+
+0 # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END TUBSCfg-parDP.txt - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
