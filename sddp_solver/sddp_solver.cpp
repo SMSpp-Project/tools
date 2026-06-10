@@ -542,6 +542,9 @@ void simulate( SDDPBlock * sddp_block )
 
  solver->set_scenario_id( scenario_id );
 
+ // load the given State (the cuts), if provided - - - - - - - - - - - - - - -
+ get_initial_State( solver );
+
  auto status = solver->compute();
 
  #ifdef USE_MPI
