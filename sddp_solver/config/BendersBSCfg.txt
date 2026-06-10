@@ -1,11 +1,14 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - END sddp_greedy_solver.txt- - - - - - - - - - - - -
+# - - - - - - - - - - - - - - BendersBSCfg.txt- - - - - - - - - - - - - - - -
 #
-# A txt description of a BlockSolverConfig for a SDDPGreedySolver
+# A txt description of the default BlockSolverConfig for the inner Block of
+# each BendersBFunction of the SDDPBlock, used by build_BlockConfig() of
+# sddp_solver when no BlockConfig (-B) and no BlockSolverConfig (-S) are
+# provided: the continuous relaxation is solved by CPXMILPSolver with
+# presolve disabled, throwing an exception if reduced costs are not
+# available.
 #
-#   version 1.0 , 23/01/2021
-#
-#   Rafael Durbano Lobato
+#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -16,13 +19,13 @@ BlockSolverConfig     # exact type of the Configuration object
 
 1  # number of (the names of) Solver in this BlockSolverConfig
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
-SDDPGreedySolver    # name of 1st Solver
+CPXMILPSolver    # name of 1st Solver
 
 1  # number of ComputeConfig in this BlockSolverConfig
 
 # now all the ComputeConfig
 # 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# ComputeConfig of the SDDPGreedySolver
+# ComputeConfig of the CPXMILPSolver
 
 ComputeConfig # exact type of the ComputeConfig object
 
@@ -32,30 +35,20 @@ ComputeConfig # exact type of the ComputeConfig object
 2 # number of integer parameters
 
 # now all the integer parameters
-intLogVerb          1 # log verbosity
-intUnregisterSolver 1 # unregister the Solver of the inner Block after solving it
-#intScenarioSeed 1000
-
-# intScenarioId 0 # index of the scenario to be considered
+CPXPARAM_Preprocessing_Presolve  0 # disable presolve
+intThrowReducedCostException     1 # throw if reduced costs are unavailable
 
 0 # number of double parameters
 
 # now all the double parameters
+# [none]
 
-1 # number of string parameters
+0 # number of string parameters
 
 # now all the string parameters
-strInnerBSC     uc_solverconfig.txt   # BlockSolverConfig for the UCBlock
-#strInnerBC      uc_blockconfig.txt    # BlockConfig for the UCBlock
+# [none]
 
-#strRandomCutsFile random-cuts.nc4
-#strLoadCuts cuts.txt
-#strSimulationData simulation-data-1.txt
-
-1 # number of vector-of-int parameters
-
-vintStagesSample
-6 1 13 26 38 50 64
+0 # number of vector-of-int parameters
 
 # now all the vector-of-int parameters
 # [none]
@@ -78,5 +71,5 @@ vintStagesSample
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - END sddp_greedy_solver.txt- - - - - - - - - - - - -
+# - - - - - - - - - - - - - END BendersBSCfg.txt- - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

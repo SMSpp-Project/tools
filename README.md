@@ -7,8 +7,7 @@ At the moment we provide:
 
 - `ucblock_solver`: a UCBlock solver
 
-- `sddp_solver`: an SDDPBlock solver (plus the lightweight
-  `sddp_greedy_solver`)
+- `sddp_solver`: an SDDPBlock solver
 
 - `tssb_solver`: a TwoStageStochasticBlock solver
 
