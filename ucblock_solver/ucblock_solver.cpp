@@ -35,6 +35,30 @@
 #include "UCBlock.h"
 
 /*--------------------------------------------------------------------------*/
+/* SAVE_TUB: if set to nonzero, an event is registered on the
+ * LagrangianDualSolver (which forwards it to its inner [Parallel]BundleSolver)
+ * that, at every iteration of the Lagrangian dual, serializes each
+ * ThermalUnitBlock (the inner Block of each LagBFunction) to its own SMS++
+ * netCDF Block file "TUB-<unit>-<iteration>.nc4". Switch off (default) by
+ * leaving SAVE_TUB undefined / 0; switch on by compiling with -DSAVE_TUB=1. */
+
+#ifndef SAVE_TUB
+ #define SAVE_TUB 0
+#endif
+
+#if SAVE_TUB
+ #include <memory>
+
+ #include <Solver.h>
+ #include <FRealObjective.h>
+ #include <C05Function.h>
+ #include <LagBFunction.h>
+
+ #include "LagrangianDualSolver.h"
+ #include "ThermalUnitBlock.h"
+#endif
+
+/*--------------------------------------------------------------------------*/
 /*-------------------------------- USING -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -99,6 +123,73 @@ int main( int argc , char ** argv )
  auto s_config = get_config( sconf_file );
 
  config_Block( block , b_config , s_config );
+
+#if SAVE_TUB
+ // register the ThermalUnitBlock-dumping event - - - - - - - - - - - - - - -
+ // The Solver registered to the (UC)Block must be a LagrangianDualSolver
+ // whose inner Solver is a [Parallel]BundleSolver: the latter is what
+ // actually iterates on the Lagrangian dual, and the LagrangianDualSolver
+ // transparently forwards both set_par() and set_event_handler() to it.
+ {
+  LagrangianDualSolver * lds = nullptr;
+  for( auto * s : block->get_registered_solvers() )
+   if( ( lds = dynamic_cast< LagrangianDualSolver * >( s ) ) )
+    break;
+
+  if( ! lds )
+   std::cerr << exe << ": SAVE_TUB is on but no LagrangianDualSolver is "
+                "registered to the Block; no ThermalUnitBlock will be saved"
+             << std::endl;
+  else {
+   // ask for the eEverykIteration event to be called at *every* iteration
+   lds->get_inner_Solver()->set_par( Solver::intEverykIt , 1 );
+
+   // iteration counter, captured (by shared_ptr) into the handler
+   auto iter = std::make_shared< int >( 0 );
+
+   lds->set_event_handler( ThinComputeInterface::eEverykIteration ,
+    [ lds , iter ]() -> int {
+     const int it = (*iter)++;
+
+     // the inner BundleSolver is registered to the Lagrangian-dual Block (LB)
+     // built by the LagrangianDualSolver: each of its sub-Blocks (LB_i) holds
+     // an FRealObjective whose Function is a LagBFunction, whose inner Block
+     // is the original unit (B_i) -- here a ThermalUnitBlock
+     Block * LB = lds->get_inner_Solver()->get_Block();
+     if( ! LB )
+      return( ThinComputeInterface::eContinue );
+
+     Block::Index unit = 0;
+     for( auto * sub : LB->get_nested_Blocks() ) {
+      // sub-Block with an FRealObjective ...
+      if( auto * fro =
+              dynamic_cast< FRealObjective * >( sub->get_objective() ) ) {
+       // ... containing a C05Function ...
+       if( auto * c05 =
+               dynamic_cast< C05Function * >( fro->get_function() ) )
+        // ... which is a LagBFunction ...
+        if( auto * lbf = dynamic_cast< LagBFunction * >( c05 ) )
+         // ... whose inner Block is a ThermalUnitBlock
+         if( auto * tub = dynamic_cast< ThermalUnitBlock * >(
+                                            lbf->get_inner_block() ) ) {
+          const std::string fname = "TUB-" + std::to_string( unit ) + "-" +
+                                    std::to_string( it ) + ".nc4";
+          // NB: Block::-qualified to bypass the serialize( NcGroup & )
+          // override that would otherwise hide this base overload
+          tub->Block::serialize( fname , eBlockFile );
+          }
+       }
+      ++unit;
+      }
+
+     return( ThinComputeInterface::eContinue );
+     } );
+
+   std::cout << exe << ": SAVE_TUB on; dumping every ThermalUnitBlock at "
+                "each iteration to TUB-<unit>-<iteration>.nc4" << std::endl;
+   }
+  }
+#endif
 
  // write nc4 problem - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  if( writeprob )
