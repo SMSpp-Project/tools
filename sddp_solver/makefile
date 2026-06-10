@@ -2,7 +2,7 @@
 ################################ makefile ####################################
 ##############################################################################
 #                                                                            #
-#   makefile of sddp_solver and sddp_greedy_solver                           #
+#   makefile of sddp_solver                                                  #
 #                                                                            #
 #                              Antonio Frangioni                             #
 #                          Dipartimento di Informatica                       #
@@ -14,7 +14,7 @@
 DIR = .
 
 # module name
-NAME = $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
+NAME = $(DIR)/sddp_solver
 
 # common stuff
 include ../makefile_common
@@ -50,7 +50,7 @@ include $(UCBckDIR)/lib/makefile
 
 # object files
 MOBJ =  $(SMS++OBJ) $(SDDPBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) \
-	$(DIR)/CutProcessing.o $(CMMNUOBJ)
+	$(CMMNUOBJ)
 
 # libraries
 MLIB =  $(SMS++LIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
@@ -59,27 +59,17 @@ MLIB =  $(SMS++LIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 
 # include directives
 MINC =  $(SMS++INC) $(SDDPBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) \
-	-I$(DIR) $(CMMNUINC) -I$(DIR)/../ucblock_solver
+	-I$(DIR) $(CMMNUINC)
 
 # includes
-MH =    $(SMS++H) $(SDDPBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) \
-	$(DIR)/CutProcessing.h $(CMMNUH)
+MH =    $(SMS++H) $(SDDPBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(CMMNUH)
 
 # compile commands
 
 $(DIR)/sddp_solver.o: $(DIR)/sddp_solver.cpp $(MH)
 	$(CC) -c $(DIR)/sddp_solver.cpp -o $@ $(MINC) $(SW)
 
-$(DIR)/sddp_greedy_solver.o: $(DIR)/sddp_greedy_solver.cpp $(MH)
-	$(CC) -c $(DIR)/sddp_greedy_solver.cpp -o $@ $(MINC) $(SW)
-
-$(DIR)/CutProcessing.o: $(DIR)/CutProcessing.cpp $(MH)
-	$(CC) -c $(DIR)/CutProcessing.cpp -o $@ $(MINC) $(SW)
-
 $(DIR)/sddp_solver: $(DIR)/sddp_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/sddp_solver $^ $(MLIB) -I.. $(SW)
-
-$(DIR)/sddp_greedy_solver: $(DIR)/sddp_greedy_solver.o $(MOBJ)
-	$(CC) -o $(DIR)/sddp_greedy_solver $^ $(MLIB) -I.. $(SW)
 
 ############################ End of makefile #################################

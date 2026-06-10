@@ -63,8 +63,7 @@ MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(CMMNUH)
 
 # compile command
 
-$(DIR)/ucblock_solver.o: $(DIR)/ucblock_solver.cpp \
-	$(DIR)/UCBlockSolutionOutput.h $(MH)
+$(DIR)/ucblock_solver.o: $(DIR)/ucblock_solver.cpp $(MH)
 	$(CC) -c $(DIR)/ucblock_solver.cpp -o $@ $(MINC) $(SW)
 
 ############################ End of makefile #################################

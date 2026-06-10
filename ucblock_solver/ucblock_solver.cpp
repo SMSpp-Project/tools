@@ -33,7 +33,6 @@
 
 #include "common_utils.h"
 #include "UCBlock.h"
-#include "ucblock_utils.h"
 
 /*--------------------------------------------------------------------------*/
 /* SAVE_TUB: if set to nonzero, an event is registered on the
@@ -115,14 +114,11 @@ int main( int argc , char ** argv )
   }
 
  // BlockConfig-ure and BlockSolverConfig-ure the [UC]Block - - - - - - - - -
- Configuration * b_config;
+ // if no BlockConfig file is given the UCBlock is solved as deserialized:
+ // any non-default formulation choice is the user's job (-B)
+ Configuration * b_config = nullptr;
  if( ! bconf_file.empty() )
   b_config = get_config( bconf_file );
- else {
-  // TODO: Try to remove this
-  std::cout << "Using a default Block configuration" << std::endl;
-  b_config = default_configure_UCBlock( block );
-  }
 
  auto s_config = get_config( sconf_file );
 

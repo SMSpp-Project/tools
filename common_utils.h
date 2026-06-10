@@ -262,8 +262,10 @@ BlockSolverConfig * get_blocksolverconfig( const std::string & conf_file );
  *
  * then this is interpreted as "the BlockConfig / BlockSolverConfig that are
  * to be set to the Block / all its sub-Block that have that specific
- * classname()". These are all properly apply()-ed to \p block. The
- * BlockSolverConfig[s] are also properly clear()-ed for final cleanup. */
+ * classname()", with the special entry "*" (if any) acting as the default
+ * for the Block whose classname() does not match any other entry. These are
+ * all properly apply()-ed to \p block. The BlockSolverConfig[s] are also
+ * properly clear()-ed for final cleanup. */
 
 void config_Block( Block * block ,
 		   Configuration * b_config , Configuration * s_config );

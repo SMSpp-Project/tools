@@ -1,9 +1,13 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - END sddp_greedy-ld.txt- - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - BSCfg-sim.txt - - - - - - - - - - - - - - - -
 #
-# A txt description of a BlockSolverConfig for a SDDPGreedySolver
+# A txt description of a BlockSolverConfig for a SDDPGreedySolver to be used
+# to simulate the SDDPBlock instances in this directory: the inner Block of
+# each stage is Solver-configured lazily (strInnerBSC), just before being
+# solved, so that the callback of sddp_solver can still update the data
+# linking two consecutive stages (e.g. ThermalUnitBlock init up/down time).
 #
-#   Rafael Durbano Lobato
+#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -20,8 +24,7 @@ SDDPGreedySolver    # name of 1st Solver
 
 # now all the ComputeConfig
 # 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# ComputeConfig of the SDDPGreedySolver; it basically is the
-# ComputeConfig of the inner Solver, which is a BundleSolver
+# ComputeConfig of the SDDPGreedySolver
 
 ComputeConfig # exact type of the ComputeConfig object
 
@@ -31,19 +34,18 @@ ComputeConfig # exact type of the ComputeConfig object
 2 # number of integer parameters
 
 # now all the integer parameters
-intLogVerb 1      # log verbosity
-# intScenarioId 0 # index of the scenario to be considered
+intLogVerb          1 # log verbosity
 intUnregisterSolver 1 # unregister the Solver of the inner Block after solving it
 
 0 # number of double parameters
 
 # now all the double parameters
+# [none]
 
 1 # number of string parameters
 
 # now all the string parameters
-strInnerBSC      config/BSPar-greedy-LD.txt   # BlockSolverConfig for the UCBlock
-#strInnerBC      uc_blockconfig.txt    # BlockConfig for the UCBlock
+strInnerBSC config/UCBSCfg.txt # BlockSolverConfig for the UCBlock
 
 0 # number of vector-of-int parameters
 
@@ -68,5 +70,5 @@ strInnerBSC      config/BSPar-greedy-LD.txt   # BlockSolverConfig for the UCBloc
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - END sddp_greedy-ld.txt- - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END BSCfg-sim.txt - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
