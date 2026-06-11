@@ -9,6 +9,13 @@
 # HiGHS additionally needs IPM rather than simplex because its simplex
 # implementation visits different vertices than CPLEX/Gurobi.
 #
+# NOTE: if the ThermalUnitBlock have quadratic costs (QuadTerm), the relaxed
+# problem is a convex QP, which HiGHS hands to its active-set QP solver
+# (the presolve/ipm options are ignored): it routinely aborts on degenerate
+# UC instances with model status "Solve error" (QpModelStatus kUndetermined),
+# making the whole investment run fail with Fi = inf. On such instances use
+# CPXMILPSolver or GRBMILPSolver instead.
+#
 #   Antonio Frangioni, Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
