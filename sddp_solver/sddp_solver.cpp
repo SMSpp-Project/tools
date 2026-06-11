@@ -58,10 +58,11 @@
  *
  * Initial cuts can be provided by using the -l option. This option must be
  * followed by the path to the netCDF file containing the initial cuts, in
- * the format specified by SDDPBlock::serialize_cuts() (which is also the
- * format in which the final cuts are output, see the BellmanValuesOUT.nc4
- * and BellmanValuesAllOUT.nc4 files produced in the directory specified by
- * the -d option).
+ * one of the formats supported by SDDPBlock::deserialize_cuts(), i.e.,
+ * either the netCDF or the historical CSV one (automatically detected);
+ * the final cuts are output in both formats, see the
+ * BellmanValues[All]OUT.nc4 and BellmanValues[All]OUT.csv files produced
+ * in the directory specified by the -d option.
  *
  * As a preprocessing, given redundant cuts can be removed by using the -e
  * option. Notice that all cuts will be subject to being removed, whether they
@@ -121,6 +122,8 @@
 
 #include <CutProcessing.h>
 
+#include "SDDPBlockSolutionOutput.h"
+
 #ifdef USE_MPI
 #include <boost/mpi/environment.hpp>
 #include <boost/mpi/communicator.hpp>
@@ -136,7 +139,7 @@ using namespace SMSpp_di_unipi_it;
 /*------------------------------- GLOBALS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-std::string output_cuts_directory = ".";
+std::string output_solution_directory = ".";
 std::string cuts_filename {};
 std::string cut_processing_sconf_file {};
 
@@ -199,7 +202,8 @@ const std::vector< option > my_long_opts = {
   };
 
 const std::string my_help =
- "  -d, --output-dir                directory where cuts are written\n"
+ "  -d, --output-dir                directory where solution and cuts files\n"
+ "                                  are written\n"
  "  -e, --eliminate-redundant-cuts  eliminate given redundant cuts\n"
  "  -l, --load-cuts <file>          load cuts from a file\n"
  "  -n, --num-blocks <number>       number of sub-Blocks per stage\n"
@@ -216,7 +220,7 @@ const std::string my_help =
 static bool process_specific_arg( int opt )
 {
  switch( opt ) {  // non-standard options
-  case 'd': output_cuts_directory = std::string( optarg ); return( true );
+  case 'd': output_solution_directory = std::string( optarg ); return( true );
   case 'e': cut_processing_sconf_file = std::string( optarg );
             eliminate_redundant_cuts = true;
             return( true );
@@ -592,12 +596,21 @@ void simulate( SDDPBlock * sddp_block )
  #endif
    show_sddp_greedy_status( status , solver->get_fault_stage() );
 
+   // the solution is also output in the historical CSV files (one per
+   // quantity, suffixed with the scenario index), kept so that existing
+   // consumers keep working unchanged
+   SDDPBlockSolutionOutput output( output_solution_directory );
+
    if( solver->has_var_solution() ) {
     solver->get_var_solution();
+
+    output.print( sddp_block , scenario_id , true );
 
     // write final Solution, if required
     write_final_Solution( sddp_block );
     }
+   else
+    output.print( sddp_block , solver->get_fault_stage() );
 
    auto lb = solver->get_lb();
    auto ub = solver->get_ub();
@@ -647,7 +660,7 @@ void show_status( Index status )
 static void serialize_cuts( const SDDPBlock * sddp_block ,
                             const std::string & filename )
 {
- sddp_block->serialize_cuts( ( std::filesystem::path( output_cuts_directory )
+ sddp_block->serialize_cuts( ( std::filesystem::path( output_solution_directory )
                                / filename ).string() );
  }
 
@@ -684,6 +697,9 @@ void solve( SDDPBlock * sddp_block )
 
  // output final cuts- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  serialize_cuts( sddp_block , "BellmanValuesAllOUT.nc4" );
+ // also in the historical CSV format, kept so that existing consumers
+ // keep working unchanged
+ serialize_cuts( sddp_block , "BellmanValuesAllOUT.csv" );
 
  if( eliminate_redundant_cuts )
   CutProcessing( get_blocksolverconfig(
@@ -691,6 +707,7 @@ void solve( SDDPBlock * sddp_block )
                  ).remove_redundant_cuts( sddp_block );
 
  serialize_cuts( sddp_block , "BellmanValuesOUT.nc4" );
+ serialize_cuts( sddp_block , "BellmanValuesOUT.csv" );
 
  }  // end( solve )
 
@@ -1673,8 +1690,8 @@ void multiple_simulations( const netCDF::NcFile & file )
 
 void check_consistency( void )
 {
- if( ! std::filesystem::is_directory( output_cuts_directory ) ) {
-  std::cerr << "Directory " << output_cuts_directory
+ if( ! std::filesystem::is_directory( output_solution_directory ) ) {
+  std::cerr << "Directory " << output_solution_directory
             << " does not exist" << std::endl;
   exit( 1 );
   }

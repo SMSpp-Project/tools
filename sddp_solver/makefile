@@ -62,7 +62,8 @@ MINC =  $(SMS++INC) $(SDDPBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) \
 	-I$(DIR) $(CMMNUINC)
 
 # includes
-MH =    $(SMS++H) $(SDDPBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(CMMNUH)
+MH =    $(SMS++H) $(SDDPBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(CMMNUH) \
+	$(DIR)/SDDPBlockSolutionOutput.h $(DIR)/UCBlockSolutionOutput.h
 
 # compile commands
 

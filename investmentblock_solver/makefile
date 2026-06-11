@@ -45,12 +45,6 @@ include $(LgDSLVSDR)/makefile
 #MILPSSDR = ../../MILPSolver
 #include $(MILPSSDR)/makefile-c
 
-# common_utils stuff
-CMMNUDIR = ../../tools/block_solver
-CMMNUOBJ = $(DIR)/common_utils.o
-CMMNUH = $(CMMNUDIR)/common_utils.h
-CMMNUINC = -I$(CMMNUDIR)
-
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
@@ -74,9 +68,5 @@ MH =    $(BNDSLVH) $(LgDSLVH) $(InvsBkH) $(CMMNUH)
 
 $(DIR)/investmentblock_solver.o: $(DIR)/investmentblock_solver.cpp $(MH)
 	$(CC) -c $(DIR)/investmentblock_solver.cpp -o $@ $(MINC) $(SW)
-
-$(CMMNUOBJ): $(CMMNUH) $(SMS++H) $(CMMNUDIR)/common_utils.cpp
-	$(CC) -c $(CMMNUDIR)/common_utils.cpp -o $@ $(CMMNUINC) \
-	$(SMS++INC) $(SW)
 
 ############################ End of makefile #################################

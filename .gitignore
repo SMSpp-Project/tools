@@ -25,6 +25,7 @@ sddp_solver/*.txt*
 sddp_solver/*.btr
 sddp_solver/*.nc4*
 sddp_solver/sub-log-*
+sddp_solver/*.csv
 
 # --- C/C++ build artifacts ----------------------------------
 *.o

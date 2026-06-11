@@ -35,7 +35,8 @@ endif ()
 if (TARGET SMS++::UCBlock AND
     TARGET SMS++::SDDPBlock)
 
-    add_executable(sddp_solver ../common_utils.cpp sddp_solver.cpp)
+    add_executable(sddp_solver ../common_utils.cpp sddp_solver.cpp
+                   SDDPBlockSolutionOutput.h UCBlockSolutionOutput.h)
     target_compile_features(sddp_solver PUBLIC cxx_std_17)
     target_include_directories(sddp_solver PRIVATE ..)
     target_link_libraries(sddp_solver PRIVATE

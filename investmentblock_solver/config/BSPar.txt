@@ -87,9 +87,13 @@ dbltInit   1e+0   # initial value for t
 dbltSPar2  1e-2   # parameter for the long-term t-strategy
 dblCtOff   0.01   # cut-off factor for pricing in MinQuad
 
-0 # number of string parameters
+1 # number of string parameters
 
 # now all the string parameters
+strInnerBSC  config/BSCfg.txt  # BlockSolverConfig for the inner Block of the
+                               # InvestmentFunction; it is not a BundleSolver
+                               # parameter, the tool removes it before the
+                               # ComputeConfig is applied
 #str_LagBF_BSCfg	LPBSCfg.txt   # BlockSolverConfig for the LagBFunctions
 
 0 # number of vector-of-int parameters

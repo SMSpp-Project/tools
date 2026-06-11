@@ -50,7 +50,20 @@
  * every InvestmentBlock; while the -S option specifies a BlockSolverConfig
  * file for every InvestmentBlock. If the -B option is not provided when the
  * given netCDF file is a BlockFile, then a default configuration is
- * considered.
+ * considered. The -B file can also contain a "meta"-BlockConfig, i.e., a
+ *
+ *   SimpleConfiguration< std::map< std::string , Configuration * > >
+ *
+ * mapping a Block classname() to the BlockConfig to be applied to every
+ * Block of that class (see config/InnerBCfg.txt); it is dispatched both
+ * to the InvestmentBlock and inside the inner Block of its
+ * InvestmentFunction, so it can be used to select the formulation of, e.g.,
+ * the ThermalUnitBlock or the DCNetworkBlock of the inner UCBlock.
+ *
+ * The BlockSolverConfig for the inner Block of the InvestmentFunction (the
+ * UCBlock) is indicated by the strInnerBSC string parameter in the
+ * ComputeConfig of the Solver of the InvestmentBlock found in the -S file
+ * (see config/BSPar.txt).
  *
  * \author Rafael Durbano Lobato \n
  *         Dipartimento di Informatica \n
@@ -1391,12 +1404,14 @@ void process_block_file( const netCDF::NcFile & file )
 {
  auto blocks = file.getGroups();
 
- // BlockConfig
- auto given_block_config = get_blockconfig( bconf_file );
+ // [meta]BlockConfig
+ auto given_block_config = get_config( bconf_file );
+ auto given_plain_block_config =
+  dynamic_cast< BlockConfig * >( given_block_config );
 
  BlockConfig * block_config = nullptr;
- if( given_block_config ) {
-  block_config = given_block_config->clone();
+ if( given_plain_block_config ) {
+  block_config = given_plain_block_config->clone();
   block_config->clear();
   }
 
@@ -1404,6 +1419,35 @@ void process_block_file( const netCDF::NcFile & file )
  auto solver_config = get_blocksolverconfig( sconf_file );
  if( ! solver_config ) {
   std::cerr << "The Solver configuration is not valid." << std::endl;
+  exit( 1 );
+  }
+
+ // the BlockSolverConfig for the inner Block of the InvestmentFunction is
+ // indicated by the strInnerBSC parameter in the ComputeConfig of (one of)
+ // the Solver of the InvestmentBlock; since it is not a real parameter of
+ // that Solver, it is removed from the ComputeConfig before this is applied
+ std::string inner_bsc_filename;
+ for( Index i = 0 ; i < solver_config->num_ComputeConfig() ; ++i ) {
+  auto compute_config = solver_config->get_SolverConfig( i );
+  if( ! compute_config )
+   continue;
+  inner_bsc_filename = get_str_par( compute_config , "strInnerBSC" );
+  if( inner_bsc_filename.empty() )
+   continue;
+  compute_config->str_pars.erase(
+     std::remove_if( compute_config->str_pars.begin() ,
+                     compute_config->str_pars.end() ,
+                     []( const auto & pair ) {
+                      return( pair.first == "strInnerBSC" ); } ) ,
+     compute_config->str_pars.end() );
+  break;
+  }
+
+ if( inner_bsc_filename.empty() ) {
+  std::cerr << "The BlockSolverConfig for the inner Block of the "
+            << "InvestmentFunction must be given via the strInnerBSC "
+            << "parameter in the ComputeConfig of the Solver of the "
+            << "InvestmentBlock." << std::endl;
   exit( 1 );
   }
 
@@ -1447,10 +1491,18 @@ void process_block_file( const netCDF::NcFile & file )
     }
    }
 
-  // Configure the UCBlock
-  if( given_block_config )
-   given_block_config->apply( investment_block );
-  else {
+  // Configure the Block
+  if( given_block_config ) {
+   // a plain BlockConfig is just apply()-ed to the InvestmentBlock, while a
+   // "meta"-BlockConfig is also dispatched to the inner Block of the
+   // InvestmentFunction, since the nested-Block BFS of config_Block()
+   // cannot cross the Function boundary
+   config_Block( investment_block , given_block_config , nullptr );
+   if( ! given_plain_block_config )
+    for( auto block_ : investment_function->get_nested_Blocks() )
+     config_Block( block_ , given_block_config , nullptr );
+   }
+  else
    for( auto block_ : investment_function->get_nested_Blocks() ) {
     auto block = dynamic_cast< UCBlock * >( block_ );
     bool is_using_lagrangian_dual_solver = false;
@@ -1458,29 +1510,24 @@ void process_block_file( const netCDF::NcFile & file )
                       is_using_lagrangian_dual_solver );
     }
 
-   if( reformulate_variable_bounds ) {
-    // Since BundleSolver cannot currently handle general bounds on the
-    // variables of the form l <= x <= u, we create a BlockConfig to instruct
-    // the InvestmentBlock to reformulate the bound constraints by replacing
-    // l <= x <= u by 0 <= x <= u - l.
-    auto config = new BlockConfig;
-    config->f_static_constraints_Configuration =
-     new SimpleConfiguration< int >( 1 );
+  if( reformulate_variable_bounds ) {
+   // Since BundleSolver cannot currently handle general bounds on the
+   // variables of the form l <= x <= u, we create a BlockConfig to instruct
+   // the InvestmentBlock to reformulate the bound constraints by replacing
+   // l <= x <= u by 0 <= x <= u - l.
+   auto config = new BlockConfig;
+   config->f_static_constraints_Configuration =
+    new SimpleConfiguration< int >( 1 );
 
-    investment_block->set_BlockConfig( config );
-    }
+   investment_block->set_BlockConfig( config );
    }
 
   // Configure the Solver
 
-  // TODO This config file must be indicated in some appropriate way.
-  const auto uc_solver_config_filename = "BSCfg.txt";
-
-  auto ucblock_solver_config =
-   get_blocksolverconfig( uc_solver_config_filename );
+  auto ucblock_solver_config = get_blocksolverconfig( inner_bsc_filename );
 
   if( ! ucblock_solver_config ) {
-   std::cerr << "File " << uc_solver_config_filename << " was not found or "
+   std::cerr << "File " << inner_bsc_filename << " was not found or "
              << "its Configuration is invalid." << std::endl;
    exit( 1 );
    }

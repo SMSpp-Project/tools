@@ -12,9 +12,10 @@
 # a "meta"-BlockConfig , i.e., a map classname --> its BlockConfig
 SimpleConfiguration<std::map<std::string,Configuration*>>
 
-1 # the number of elements in the map
+2 # the number of elements in the map
 
-ACNetworkBlock	*config/ACBCfg.txt # the simple config to apply to AC Networks
+ACNetworkBlock	*config/ACBCfg.txt  # the simple config to apply to AC Networks
+DCNetworkBlock	*config/DCNBCfg.txt # network formulation (PTDF)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - END MetaCfg.txt - - - - - - - - - - - - - - -
