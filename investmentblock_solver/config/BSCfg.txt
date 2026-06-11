@@ -10,11 +10,16 @@
 # implementation visits different vertices than CPLEX/Gurobi.
 #
 # NOTE: if the ThermalUnitBlock have quadratic costs (QuadTerm), the relaxed
-# problem is a convex QP, which HiGHS hands to its active-set QP solver
-# (the presolve/ipm options are ignored): it routinely aborts on degenerate
-# UC instances with model status "Solve error" (QpModelStatus kUndetermined),
-# making the whole investment run fail with Fi = inf. On such instances use
-# CPXMILPSolver or GRBMILPSolver instead.
+# problem is a convex QP. This needs HiGHS >= 1.14 built with HIPO=ON (see
+# INSTALL.sh), so that "solver ipm" routes the QP to the HiPO interior point
+# solver: the legacy active-set QP solver (the only one in HiGHS <= 1.13,
+# still selectable as "solver qpasm") routinely aborts on degenerate UC
+# instances with model status "Solve error", making the whole investment run
+# fail with Fi = inf. Since crossover is not available for QP, the duals of
+# HiPO only satisfy the dual feasibility check at ~1e-5: a tighter
+# dual_feasibility_tolerance makes HiGHS reject the (correct) HiPO optimum
+# with "Solve error". On LPs (no QuadTerm) crossover runs and the basic
+# optimum is exact regardless of this acceptance tolerance.
 #
 #   Antonio Frangioni, Donato Meoli
 #
@@ -61,7 +66,7 @@ intCutSepPar        7    # separate user cuts + lazy constraints
 
 # All specific HiGHS parameter (uncomment based on Solver)
 primal_feasibility_tolerance  1e-9
-dual_feasibility_tolerance    1e-9
+dual_feasibility_tolerance    1e-5  # HiPO duals on QP have no crossover cleanup
 
 2 # number of string parameters
 
