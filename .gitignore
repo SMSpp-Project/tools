@@ -9,6 +9,7 @@ investmentblock_solver/investmentblock_solver
 investmentblock_solver/investment_candidates.txt
 sddp_solver/sddp_solver
 ucblock_solver/ucblock_solver
+ucblock_solver/timing_harness
 tssb_solver/tssb_solver
 chgcfg/chgcfg
 
