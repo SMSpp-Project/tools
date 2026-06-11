@@ -173,9 +173,13 @@ constexpr double polyhedral_function_bound = 0;
 // of each BendersBFunction; see configure_Blocks() and build_BlockConfig().
 // As every configuration file, they are resolved against the directory the
 // tool is run from, as in the other tools
-const std::string default_block_config_filename = "config/SDDPBCfg.txt";
-const std::string default_block_config_filename_LD = "config/SDDPBCfg-LD.txt";
-const std::string benders_solver_config_filename = "config/BendersBSCfg.txt";
+// note: these are resolved against the -c prefix, which defaults to
+// "config/" (see main()); the file names referenced INSIDE configuration
+// files are instead resolved by the loading Solver against the directory
+// the tool is run from, hence they carry an explicit "config/"
+const std::string default_block_config_filename = "SDDPBCfg.txt";
+const std::string default_block_config_filename_LD = "SDDPBCfg-LD.txt";
+const std::string benders_solver_config_filename = "BendersBSCfg.txt";
 
 /*--------------------------------------------------------------------------*/
 
@@ -940,8 +944,10 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config )
 
   // If it is, check if it is a config for a LagrangianDualSolver
 
-  std::ifstream inner_solver_config_file(
-                            conf_prefix + strInnerBSC , std::ifstream::in );
+  // note: no conf_prefix here: file names referenced inside configuration
+  // files are relative to the directory the tool is run from, since they
+  // are also opened by the loading Solver, which knows no prefix
+  std::ifstream inner_solver_config_file( strInnerBSC , std::ifstream::in );
   if( ! inner_solver_config_file.is_open() )
    continue;
 
@@ -1014,8 +1020,8 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    return;
 
   // If it is, check if it is a config for a LagrangianDualSolver
-  std::ifstream inner_solver_config_file(
-                          conf_prefix + strInnerBSC , std::ifstream::in );
+  // note: no conf_prefix here, see the comment in the other overload
+  std::ifstream inner_solver_config_file( strInnerBSC , std::ifstream::in );
 
   if( ! inner_solver_config_file.is_open() )
    return;
@@ -1686,6 +1692,11 @@ int main( int argc , char ** argv )
  // record in long_opts
  
  docopt_desc = "SMS++ SDDP solver";
+
+ // the Configuration files of this tool live in config/ by default; an
+ // explicit -c overrides this
+ conf_prefix = "config/";
+
  short_opts.append( my_short_opts );
  long_opts.insert( std::prev( long_opts.end() ) ,
                    my_long_opts.begin() , my_long_opts.end() );
