@@ -203,11 +203,13 @@ void process_args( int argc , char ** argv ,
 				long_opts.data() , nullptr );
   if( opt == -1 ) break;
 
-  if( process_standard_arg( opt ) )  // if it is a standard one
-   continue;                         // next
-
+  // tool-specific options are processed first: a tool that re-defines one
+  // of the standard letters (e.g. the -n of sddp_solver) means its own
   if( custom_arg && custom_arg( opt ) )  // tool-specific option
    continue;                             // next
+
+  if( process_standard_arg( opt ) )  // if it is a standard one
+   continue;                         // next
 
   std::cout << "Try '" << exe << " --help' for more information"
 	    << std::endl;

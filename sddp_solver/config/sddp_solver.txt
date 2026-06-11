@@ -30,7 +30,7 @@ ComputeConfig # exact type of the ComputeConfig object
 8 # number of integer parameters
 
 # now all the integer parameters
-intMaxIter            5
+intMaxIter            10
 intLogVerb            1 # log verbosity
 intNStepConv            5 # Frequency at which the convergence is checked
 intPrintTime            1 # Indicates whether computational time should be displayed
@@ -39,10 +39,12 @@ intNbSimulForward       1 # Number of simulations considered in the forward pass
 intNbSimulBackward      5 # Number of simulations considered in the backward pass
 intOutputFrequency      1
 
-0 # number of double parameters
+1 # number of double parameters
 
 # now all the double parameters
-#dblAccuracy 0.01 # Relative accuracy for declaring a solution optimal
+dblAccuracy 1.0e-6 # relative accuracy for declaring a solution optimal
+
+# now all the double parameters
 
 3 # number of string parameters
 

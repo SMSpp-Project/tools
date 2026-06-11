@@ -61,7 +61,7 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-25 # number of integer parameters
+24 # number of integer parameters
 
 # now all the integer parameters
 intDoEasy  15     # do easy components for (some) LagBFunction
@@ -97,7 +97,7 @@ intOSImp1  4      # Osi(Cpx/Grb)Solver algorithm (0 = auto (default),
 intOSImp2  1      # pre-processing (reduction)
 intOSImp3  1      # threads
 intRstAlg   2     # parameter to handle the reset of the algorithm
-int_InnerS_WVarSCfg 4
+#int_InnerS_WVarSCfg 0 # set by sddp_solver with the -z (hydro-easy) option
 
 16 # number of double parameters
 

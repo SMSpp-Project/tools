@@ -111,6 +111,7 @@
 #include <SlackUnitBlock.h>
 #include <ThermalUnitBlock.h>
 #include <HydroSystemUnitBlock.h>
+#include <PolyhedralFunctionBlock.h>
 #include <RBlockConfig.h>
 #include <SDDPBlock.h>
 #include <StochasticBlock.h>
@@ -148,6 +149,25 @@ bool eliminate_redundant_cuts = false;
 
 const bool force_hard_components = false;
 
+// If hydro_is_easy_component is true (see the -z option), the
+// HydroSystemUnitBlock is treated as an easy component by the
+// [Parallel]BundleSolver; its primal solution (which is needed, as the
+// volume of the reservoirs links two consecutive stages) is then recovered
+// from the master problem solution via the Configuration in
+// get_var_solution_bundle.txt
+bool hydro_is_easy_component = false;
+
+const std::string get_var_solution_bundle_filename =
+                                    "config/get_var_solution_bundle.txt";
+
+// If set_polyhedral_function_bound is true, the PolyhedralFunction of each
+// stage (the Bellman, cost-to-go function) gets the finite global lower
+// bound below: since the stage costs are non-negative, 0 is a valid bound,
+// and a bounded PolyhedralFunction keeps the stage subproblems bounded even
+// when no (initial) cut is available
+constexpr bool set_polyhedral_function_bound = true;
+constexpr double polyhedral_function_bound = 0;
+
 // Name of the files containing the default (meta) BlockConfig for the inner
 // Block of each stage and the default BlockSolverConfig for the inner Block
 // of each BendersBFunction; see configure_Blocks() and build_BlockConfig().
@@ -159,7 +179,7 @@ const std::string benders_solver_config_filename = "config/BendersBSCfg.txt";
 
 /*--------------------------------------------------------------------------*/
 
-const std::string my_short_opts = "d:e:l:n:i:m:rst:";
+const std::string my_short_opts = "d:e:l:n:i:m:rst:z";
 
 const std::vector< option > my_long_opts = {
   { "output-dir" ,               required_argument , nullptr , 'd' } ,
@@ -170,7 +190,8 @@ const std::vector< option > my_long_opts = {
   { "num-simulations" ,          required_argument , nullptr , 'm' } ,
   { "relax" ,                    no_argument ,       nullptr , 'r' } ,
   { "simulation" ,               no_argument ,       nullptr , 's' } ,
-  { "stage" ,                    required_argument , nullptr , 't' }
+  { "stage" ,                    required_argument , nullptr , 't' } ,
+  { "hydro-easy" ,               no_argument ,       nullptr , 'z' }
   };
 
 const std::string my_help =
@@ -181,7 +202,8 @@ const std::string my_help =
  "  -i, --scenario <index>          the index of the scenario\n"
  "  -m, --num-simulations <number>  number of simulations to be performed\n"
  "  -s, --simulation                simulation mode\n"
- "  -t, --stage <stage>             stage from which initial state is taken";
+ "  -t, --stage <stage>             stage from which initial state is taken\n"
+ "  -z, --hydro-easy                treat the hydro system as an easy component";
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -225,6 +247,7 @@ static bool process_specific_arg( int opt )
              << "constraints must be\nrelaxed." << std::endl;
    exit( 1 );
   case 's': simulation_mode = true; return( true );
+  case 'z': hydro_is_easy_component = true; return( true );
   case 't': initial_solution_stage = get_long_option(); return( true );
   case '?':
   default:  return( false );
@@ -240,10 +263,12 @@ std::string get_cut_processing_solver_config_filepath()
 
 /*--------------------------------------------------------------------------*/
 
-Block * get_uc_block( const SDDPBlock * sddp_block , const Index stage )
+Block * get_uc_block( const SDDPBlock * sddp_block , const Index stage ,
+                      const Index sub_block_index = 0 )
 {
  auto benders_block = static_cast< BendersBlock * >(
-                     sddp_block->get_sub_Block( stage )->get_inner_block() );
+                       sddp_block->get_sub_Block( stage , sub_block_index )->
+                       get_inner_block() );
 
  auto objective = static_cast< FRealObjective * >(
                                             benders_block->get_objective() );
@@ -331,7 +356,8 @@ bool update_battery_unit( Block * previous_block , Block * block ,
 
 int compute_init_up_down_time( const SDDPBlock * sddp_block ,
                                ThermalUnitBlock * previous_unit ,
-                               ThermalUnitBlock * unit , Index stage )
+                               ThermalUnitBlock * unit , Index stage ,
+                               Index sub_block_index )
 {
  auto time_horizon = previous_unit->get_time_horizon();
  auto commitment = previous_unit->get_commitment( 0 ) + time_horizon - 1;
@@ -362,11 +388,12 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
    break;
 
   if( path.empty() ) {
-   auto uc_block = get_uc_block( sddp_block , stage );
+   auto uc_block = get_uc_block( sddp_block , stage , sub_block_index );
    path.build( unit , uc_block );
    }
 
-  auto previous_uc_block = get_uc_block( sddp_block , stage - outer_t - 2 );
+  auto previous_uc_block = get_uc_block( sddp_block , stage - outer_t - 2 ,
+                                         sub_block_index );
   previous_unit = dynamic_cast< ThermalUnitBlock * >(
                            path.get_element< Block >( previous_uc_block ) );
 
@@ -396,7 +423,7 @@ int compute_init_up_down_time( const SDDPBlock * sddp_block ,
 
 bool update_thermal_unit( const SDDPBlock * sddp_block ,
                           Block * previous_block , Block * block ,
-                          Index stage )
+                          Index stage , Index sub_block_index )
 {
  auto previous_unit = dynamic_cast< ThermalUnitBlock * >( previous_block );
  auto unit = dynamic_cast< ThermalUnitBlock * >( block );
@@ -412,7 +439,7 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
 
  if( simulation_mode ) {
   auto init_up_down_time = compute_init_up_down_time(
-                                sddp_block , previous_unit , unit , stage );
+           sddp_block , previous_unit , unit , stage , sub_block_index );
 
   std::vector< int > init_up_down_time_data = { init_up_down_time };
   unit->set_init_updown_time( init_up_down_time_data.cbegin() );
@@ -429,13 +456,15 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
 
 /*--------------------------------------------------------------------------*/
 
-void callback( SDDPBlock * sddp_block , Block::Index stage )
+void callback( SDDPBlock * sddp_block , Block::Index stage ,
+               Block::Index sub_block_index )
 {
  if( stage == 0 )
   return;
 
- auto previous_uc_block = get_uc_block( sddp_block , stage - 1 );
- auto uc_block = get_uc_block( sddp_block , stage );
+ auto previous_uc_block = get_uc_block( sddp_block , stage - 1 ,
+                                        sub_block_index );
+ auto uc_block = get_uc_block( sddp_block , stage , sub_block_index );
 
  std::queue< Block * > blocks;
  blocks.push( uc_block );
@@ -464,7 +493,8 @@ void callback( SDDPBlock * sddp_block , Block::Index stage )
    }
 
   update_hydro_unit( previous_block , block , stage )
-   || update_thermal_unit( sddp_block , previous_block , block , stage )
+   || update_thermal_unit( sddp_block , previous_block , block , stage ,
+                           sub_block_index )
    || update_battery_unit( previous_block , block , stage );
   }
  }
@@ -527,8 +557,13 @@ void simulate( SDDPBlock * sddp_block )
   throw( std::logic_error( "The Solver for the SDDPBlock must be a "
                            "SDDPGreedySolver in simulation mode" ) );
 
- solver->set_callback(
-       [ sddp_block ]( Index stage ) { callback( sddp_block , stage ); } );
+ // the (index of the) sub-Block of each stage the simulation works on
+ const auto sub_block_index = Index( solver->get_int_par(
+                                     SDDPGreedySolver::intSubBlockIndex ) );
+
+ solver->set_callback( [ sddp_block , sub_block_index ]( Index stage ) {
+                        callback( sddp_block , stage , sub_block_index );
+                        } );
 
  // Load possibly given cuts
  if( ! cuts_filename.empty() )
@@ -541,6 +576,9 @@ void simulate( SDDPBlock * sddp_block )
                  ).remove_redundant_cuts( sddp_block );
 
  solver->set_scenario_id( scenario_id );
+
+ // load the given State (the cuts), if provided - - - - - - - - - - - - - - -
+ get_initial_State( solver );
 
  auto status = solver->compute();
 
@@ -657,6 +695,27 @@ void solve( SDDPBlock * sddp_block )
 void configure_Blocks( SDDPBlock * sddp_block ,
                        bool is_using_lagrangian_dual_solver )
 {
+ // possibly give a finite global bound to the PolyhedralFunction of every
+ // stage; see the comments to set_polyhedral_function_bound
+ if( set_polyhedral_function_bound )
+  for( Index stage = 0 ; stage < sddp_block->get_time_horizon() ; ++stage )
+   for( Index j = 0 ; j < sddp_block->get_num_sub_blocks_per_stage() ; ++j ) {
+
+    std::queue< Block * > blocks;
+    blocks.push( get_uc_block( sddp_block , stage , j ) );
+
+    while( ! blocks.empty() ) {
+     auto block = blocks.front();
+     blocks.pop();
+     for( auto inner : block->get_nested_Blocks() )
+      blocks.push( inner );
+
+     if( auto polyhedral = dynamic_cast< PolyhedralFunctionBlock * >( block ) )
+      polyhedral->get_PolyhedralFunction().modify_bound(
+                                                polyhedral_function_bound );
+     }
+    }
+
  /* The default configuration of the inner Block of each stage is entirely
   * described by a "meta" BlockConfig file (a map from Block classname() to
   * the BlockConfig to be applied to every Block of that class, with "*" as
@@ -678,8 +737,9 @@ void configure_Blocks( SDDPBlock * sddp_block ,
   }
 
  for( Index stage = 0 ; stage < sddp_block->get_time_horizon() ; ++stage )
-  config_Block( get_uc_block( sddp_block , stage ) , block_config ,
-                nullptr );
+  for( Index j = 0 ; j < sddp_block->get_num_sub_blocks_per_stage() ; ++j )
+   config_Block( get_uc_block( sddp_block , stage , j ) , block_config ,
+                 nullptr );
 
  delete block_config;
  }
@@ -1116,14 +1176,23 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    required_primal_solution.push_back( inner_sub_block_index );
    hydro_system_index = inner_sub_block_index;
 
-   // The HydroSystemUnitBlock could be treated as an easy component. However,
-   // due to a current limitation of BundleSolver, the HydroSystemUnitBlock is
-   // considered a hard component. This is because its primal solution (the
-   // volume of the reservoirs) is required both in SDDP and in simulation
-   // mode, but BundleSolver cannot currently provide primal solutions for
-   // easy components. Once this feature is implemented by BundleSolver, the
-   // HydroSystemUnitBlock can become an easy component.
-   vintNoEasy.push_back( inner_sub_block_index );
+   /* The HydroSystemUnitBlock is by default treated as a hard component:
+    * its primal solution (the volume of the reservoirs) is required both in
+    * SDDP and in simulation mode, and BundleSolver does not provide primal
+    * solutions of easy components out of the inner Solver. With the -z
+    * option it is instead treated as an easy component, and its primal
+    * solution is recovered from the master problem solution by passing the
+    * Configuration in get_var_solution_bundle.txt to get_var_solution() of
+    * the [Parallel]BundleSolver. */
+   if( hydro_is_easy_component ) {
+    lagrangian_dual_compute_config->vstr_pars.push_back(
+     std::make_pair( "vstr_LDSl_Cfg" , std::vector< std::string >{
+                     get_var_solution_bundle_filename } ) );
+    lagrangian_dual_compute_config->int_pars.push_back(
+     std::make_pair( "int_InnerS_WVarSCfg" , 0 ) );
+    }
+   else
+    vintNoEasy.push_back( inner_sub_block_index );
   }
   else if( ( simulation_mode || force_hard_components ) &&
            dynamic_cast< IntermittentUnitBlock * >( inner_sub_block ) ) {
@@ -1511,8 +1580,13 @@ void multiple_simulations( const netCDF::NcFile & file )
    auto subgradients_filename_prefix =
     solver->get_str_par( SDDPGreedySolver::strSimulationData );
 
-   solver->set_callback(
-       [ sddp_block ]( Index stage ) { callback( sddp_block , stage ); } );
+   // the (index of the) sub-Block of each stage the simulation works on
+   const auto sub_block_index = Index( solver->get_int_par(
+                                       SDDPGreedySolver::intSubBlockIndex ) );
+
+   solver->set_callback( [ sddp_block , sub_block_index ]( Index stage ) {
+                          callback( sddp_block , stage , sub_block_index );
+                          } );
 
    if( i > 0 ) {
     // Set the random number engine
