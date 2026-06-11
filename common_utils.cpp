@@ -38,6 +38,48 @@
 using namespace SMSpp_di_unipi_it;
 
 /*--------------------------------------------------------------------------*/
+/*------------------------ MPI SAFE ENVIRONMENT -----------------------------*/
+/*--------------------------------------------------------------------------*/
+/* Some tools (those using SDDPBlock or InvestmentBlock) call MPI_Init().
+ * On systems where Open MPI / UCX are installed but no usable transport is
+ * available (no IB, missing UCX vfs.sock, ...), or where the hwloc GL
+ * component hangs probing the GPU topology via XOpenDisplay(), the MPI
+ * runtime can hang on startup spinning on futex / X11 sockets.
+ *
+ * To make every tool work out-of-the-box, we pre-seed safe defaults with
+ * setenv(..., 0): the third argument is "overwrite = false", so any user
+ * who has already exported UCX_TLS / OMPI_MCA_* / HWLOC_COMPONENTS (e.g.
+ * on an HPC cluster with a real fabric) keeps full control. This is
+ * executed before main() via a static initializer; it is the same
+ * mechanism used by tests/common_utils.cpp.                              */
+
+namespace {
+
+void set_default_env( const char * name , const char * value ) {
+#ifdef _WIN32
+ if( std::getenv( name ) == nullptr )
+  _putenv_s( name , value );
+#else
+ setenv( name , value , 0 );
+#endif
+}
+
+struct SmsppMpiSafeEnvInit {
+ SmsppMpiSafeEnvInit() {
+  set_default_env( "UCX_TLS"     , "tcp,self" );
+  set_default_env( "OMPI_MCA_btl", "tcp,self" );
+  set_default_env( "OMPI_MCA_pml", "ob1"      );
+  // the hwloc GL component probes the GPU topology via XOpenDisplay(),
+  // which may hang inside MPI_Init(); no SMS++ target has a use for it
+  set_default_env( "HWLOC_COMPONENTS", "-gl"  );
+  }
+ };
+
+static SmsppMpiSafeEnvInit smspp_mpi_safe_env_init_;
+
+}  // anonymous namespace
+
+/*--------------------------------------------------------------------------*/
 /*------------------------------- GLOBALS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @name Global variables used by every tool
