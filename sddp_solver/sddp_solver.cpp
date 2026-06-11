@@ -1716,6 +1716,8 @@ int main( int argc , char ** argv )
  // process the file- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
  #ifdef USE_MPI
+  // note: the MPI/UCX/hwloc safe-environment defaults are pre-seeded by
+  // the SmsppMpiSafeEnvInit static initializer in common_utils.cpp
   boost::mpi::environment env( argc , argv );
  #endif
 
