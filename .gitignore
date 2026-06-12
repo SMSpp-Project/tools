@@ -16,7 +16,6 @@ chgcfg/chgcfg
 # Generic run output
 *.lp
 log*.txt
-LD*.txt
 
 # SDDP solver run output (root only: the tracked instances are in examples/)
 sddp_solver/*.gsbd
