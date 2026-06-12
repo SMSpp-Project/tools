@@ -17,13 +17,14 @@
 
 SimpleConfiguration<std::map<std::string,Configuration*>>
 
-6 # the number of elements in the map
+7 # the number of elements in the map
 
 PolyhedralFunctionBlock	*config/PFBCfg.txt  # linearized representation
 SlackUnitBlock		*config/SUBCfg.txt  # OneVarConstraints
 BatteryUnitBlock	*config/BUBCfg.txt  # OneVarConstraints, no negative prices
 ThermalUnitBlock	*config/TUBCfg.txt  # OneVarConstraints
-DCNetworkBlock		*config/DCNBCfg.txt # network formulation (PTDF)
+DCNetworkBlock		*config/DCNBCfg.txt # network formulation (KIRCHHOFF)
+ACNetworkBlock		*config/ACBCfg.txt  # AC Network scaling factors
 *			*config/BCfg.txt    # everything else (is_feasible only)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -8,7 +8,6 @@ block_solver/block_solver
 investmentblock_solver/investmentblock_solver
 investmentblock_solver/investment_candidates.txt
 sddp_solver/sddp_solver
-sddp_solver/sddp_greedy_solver
 ucblock_solver/ucblock_solver
 tssb_solver/tssb_solver
 chgcfg/chgcfg
@@ -16,7 +15,6 @@ chgcfg/chgcfg
 # Generic run output
 *.lp
 log*.txt
-LD*.txt
 
 # SDDP solver run output (root only: the tracked instances are in examples/)
 sddp_solver/*.gsbd

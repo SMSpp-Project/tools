@@ -21,6 +21,14 @@
 # with "Solve error". On LPs (no QuadTerm) crossover runs and the basic
 # optimum is exact regardless of this acceptance tolerance.
 #
+# Even so, as of HiGHS 1.14.0 HiPO is only reliable on one-shot QP solves:
+# in the investment loop, where the same QP is repeatedly re-solved after
+# Modification, some modified QPs stall ("Hipo: No progress" with dual
+# residual ~1e-4 even from a cold start, regardless of kkt_tolerance /
+# presolve), and the run ends with status kError. Until this is fixed
+# upstream, on QP instances use CPXMILPSolver or GRBMILPSolver for actual
+# investment runs.
+#
 #   Antonio Frangioni, Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
