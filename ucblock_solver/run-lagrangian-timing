@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+#
+# run-lagrangian-timing [ build-dir ] [ "seeds" ]
+#
+# Reproducibility driver for the study "how does the single-unit solve time
+# vary along the Lagrangian-dual iterations?", comparing the two DP solvers and
+# a :MILPSolver on the SAME integer problem. For each single-bus UCBlock instance
+# (UCBlock/data/nc4/UC_singlebus/96/sb_day_seed<s>.nc4) it:
+#
+#   1. runs ucblock_solver (built with the SAVE_TUB dump enabled) under a
+#      LagrangianDualSolver, dumping every inner ThermalUnitBlock as
+#      TUB-<unit>-<iter>.nc4 (the unit's Lagrangian costs there) every
+#      intEverykIt iterations -- the dump stride is the standard
+#      Solver::intEverykIt parameter in config/LDCfg.txt (300: the LD runs
+#      ~10^4 iterations, so this samples ~30 points / instance);
+#   2. times FOUR solvers on each dump (the timing_harness executable):
+#      ThermalUnitDPSolver (serial and parallel, intMaxThread 0 = all cores as
+#      FastFlow workers; the solver falls back to serial below the compiled-in
+#      TUDPS_PAR_MIN_N=768 horizon threshold, i.e. on day and week),
+#      ThermalUnitExtDPSolver, and a :MILPSolver on the T+P/C formulation
+#      (integer MILP, the same problem the DPs solve exactly; the back-end is
+#      chosen in config/TUBSCfg-MILP.txt, not hard-coded);
+#   3. maps unit -> gen_type from the source JSON instance (python3 + json);
+#   4. deletes the (large) dumps and, once all seeds are done, plots
+#      time vs normalized iteration (per gen_type) and time by gen_type
+#      (plot_lagrangian_timing.py; needs python3 + numpy + matplotlib).
+#
+# Findings (5 instances per horizon, 50 units): the solve time is flat along
+# the LD iteration (~1.5-2% on every horizon and solver) and is governed by the
+# unit *type* (day: peakers ~120us ... Coal_old ~1500us, ~13x). Mean time per
+# unit solve scales very differently with the horizon T (day 96 / week 672 /
+# month 2976):
+#
+#            day      week     month
+#   stdDP    394us   22.3ms   569.3ms     (superlinear, ~T^2)
+#   extDP    587us    5.4ms    33.8ms     (~linear-ish)
+#   MILP     850us    4.0ms    19.1ms     (best at large T)
+#
+# so the standard DP wins only on short horizons; from week up the extended DP
+# is ~6-17x faster than it, and the integer MILP on T+P/C is faster still.
+#
+# This study lives in tools/ucblock_solver (NOT in the tests submodule) because
+# it depends on ucblock_solver. The single-bus UCBlock instances and the source
+# JSON come from the UCBlock submodule (tools/json2netCDF); generate them first
+# with UCBlock/tools/json2netCDF.
+#
+# PREREQUISITE: build ucblock_solver WITH the SAVE_TUB dump enabled, plus the
+# timing_harness, with either build system:
+#   - CMake:    cmake -DUCBLOCK_SOLVER_SAVE_TUB=ON <build> && build both targets,
+#               then pass <build> as the 1st argument;
+#   - makefile: cd tools/ucblock_solver && make SW="$SW -DSAVE_TUB=1"
+#               ucblock_solver && make timing_harness  (built in-place).
+#
+# Binaries are located automatically (build-dir arg, then in-place, then PATH),
+# or via the UCBLOCK_SOLVER / TIMING_HARNESS env variables. No assumption is
+# made on the build system or the build directory name.
+#
+# Env knobs: OUT (work/output dir, default /tmp/ld_timing), REPS (DP timing
+# repetitions, default 12),
+# MILP_REPS (MILP repetitions, default 3; 0 disables the slow MILP column; the
+# MILP back-end and its time limit live in config/TUBSCfg-MILP.txt), HORIZONS (which of
+# day/week/month to run, space-separated, default "day"), PYTHON (interpreter
+# with numpy+matplotlib for the plot, default python3).
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/../.." && pwd)"
+# optional 1st arg: a build directory (e.g. a CMake build tree); if given, its
+# tools/ucblock_solver/ subdir is searched too. By default the binaries are
+# looked up where a makefile build leaves them (in-place, next to this script).
+BUILD="${1:-}"
+# seeds: positional arg 2, or the SEEDS env var, default all five
+SEEDS="${SEEDS:-${2:-1 2 3 4 5}}"
+
+# locate a binary built either in-place (makefile) or in a build tree (CMake),
+# without assuming any particular build system or directory name. Override with
+# the UCBLOCK_SOLVER / TIMING_HARNESS env variables if it lives elsewhere.
+find_bin() {
+  local name="$1" c
+  for c in ${BUILD:+"$BUILD/tools/ucblock_solver/$name" "$BUILD/$name"} \
+           "$HERE/$name"; do
+    # emit an absolute path (the binary is invoked from a sub-directory)
+    [ -x "$c" ] && { printf '%s/%s\n' \
+       "$(cd "$(dirname "$c")" && pwd)" "$(basename "$c")"; return 0; }
+  done
+  command -v "$name" 2>/dev/null || return 1
+}
+SOLVER="${UCBLOCK_SOLVER:-$(find_bin ucblock_solver || true)}"
+HARNESS="${TIMING_HARNESS:-$(find_bin timing_harness || true)}"
+
+JSONDIR="$ROOT/UCBlock/tools/json2netCDF/instances_singlebus"
+NCDIR="$ROOT/UCBlock/data/nc4/UC_singlebus"
+CONFIG="$HERE/config"
+OUT="${OUT:-/tmp/ld_timing}"
+REPS="${REPS:-12}"
+MILP_REPS="${MILP_REPS:-3}"
+# horizons to run: day(96) / week(672) / month(2976). Each is timed and plotted
+# separately (absolute times differ by ~30x across horizons). PYTHON must have
+# numpy+matplotlib for the plot (the gen_type step uses only stdlib json).
+HORIZONS="${HORIZONS:-day}"
+PYTHON="${PYTHON:-python3}"
+horizon_periods() { case "$1" in day) echo 96;; week) echo 672;;
+                                 month) echo 2976;; *) echo "";; esac; }
+mkdir -p "$OUT"
+
+[ -n "$SOLVER" ] && [ -x "$SOLVER" ]  || { echo "ucblock_solver not found (build it, or pass the build dir / set UCBLOCK_SOLVER)" >&2; exit 1; }
+[ -n "$HARNESS" ] && [ -x "$HARNESS" ] || { echo "timing_harness not found (build it, or pass the build dir / set TIMING_HARNESS)" >&2; exit 1; }
+
+# a CMake build links shared libs with an embedded rpath, a makefile build is
+# static; neither needs LD_LIBRARY_PATH. As a safety net, if a build dir was
+# given add its in-tree library directories (harmless if they do not exist).
+if [ -n "$BUILD" ]; then
+  export LD_LIBRARY_PATH="$BUILD/SMS++:$BUILD/UCBlock:$BUILD/MILPSolver:${LD_LIBRARY_PATH:-}"
+fi
+
+export LD_LIBRARY_PATH="$BUILD/SMS++:$BUILD/UCBlock:$BUILD/MILPSolver:${LD_LIBRARY_PATH:-}"
+
+# --- per horizon, per seed: SAVE_TUB -> time -> gen_type ------------------- #
+for h in $HORIZONS; do
+  period="$(horizon_periods "$h")"
+  [ -n "$period" ] || { echo "unknown horizon '$h' (use day/week/month)" >&2; continue; }
+  DATADIR="$NCDIR/$period"
+  echo "===== horizon $h ($period periods) ====="
+  PAIRS=()
+  for s in $SEEDS; do
+    inst="$DATADIR/sb_${h}_seed$s.nc4"
+    [ -f "$inst" ] || { echo "skip $h seed$s: $inst not found"; continue; }
+    D="$OUT/dumps_${h}_$s"; rm -rf "$D"; mkdir -p "$D"; ln -sfn "$CONFIG" "$D/config"
+    echo "$h seed$s: running ucblock_solver (LagrangianDualSolver, SAVE_TUB) ..."
+    # the dumping is strided at the source (an instance runs ~10^4 LD iterations
+    # x 50 units, so dumping every one is ~10^5 small files and easily blows a
+    # /tmp quota): the dump stride is the intEverykIt parameter of the inner
+    # BundleSolver in config/LDCfg.txt (true iteration number kept in the
+    # filename), and every dump is then read (harness stride 1)
+    ( cd "$D" && \
+        "$SOLVER" -B config/MetaCfg.txt -S config/UCBSCfg-LD.txt "$inst" \
+        > run.log 2>&1 ) || true
+    n=$(ls "$D"/TUB-*.nc4 2>/dev/null | wc -l)
+    if [ "$n" -eq 0 ]; then
+      echo "ERROR: $h seed$s produced no TUB dumps (see $D/run.log)." >&2
+      echo "  Configure with -DUCBLOCK_SOLVER_SAVE_TUB=ON and rebuild." >&2
+      rm -rf "$D"; continue
+    fi
+    echo "$h seed$s: $n dumps; timing (dp_reps=$REPS milp_reps=$MILP_REPS) ..."
+    "$HARNESS" "$D" "$REPS" 1 "$MILP_REPS" > "$OUT/timing_${h}_$s.csv"
+    # unit -> gen_type from the source JSON (stdlib json; the plot needs it anyway)
+    python3 - "$JSONDIR/sb_${h}_seed$s.json" "$OUT/gentype_${h}_$s.csv" <<'PY'
+import json, sys
+src, out = sys.argv[1], sys.argv[2]
+gt = json.load(open(src))["generators"]["thermal"]["type"]
+with open(out, "w") as f:
+    f.write("unit,gen_type\n")
+    for i, t in enumerate(gt):
+        f.write(f"{i},{t}\n")
+PY
+    rm -rf "$D"
+    PAIRS+=("$OUT/timing_${h}_$s.csv" "$OUT/gentype_${h}_$s.csv")
+  done
+
+  if [ ${#PAIRS[@]} -eq 0 ]; then
+    echo "horizon $h: no instances timed, skipping plot."; continue
+  fi
+  echo "horizon $h: plotting ..."
+  "$PYTHON" "$HERE/plot_lagrangian_timing.py" "$OUT/ld_timing_$h" "${PAIRS[@]}"
+  echo "horizon $h done. outputs $OUT/ld_timing_${h}_{vs_iter,normalized,bytype}.png"
+done
