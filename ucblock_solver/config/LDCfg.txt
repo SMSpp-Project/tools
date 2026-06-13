@@ -18,7 +18,7 @@ ComputeConfig         # exact type of the ComputeConfig object
 
 # now all the integer parameters
 int_LDSlv_iBCopy       0 # 1 if sub-Block must be R3B-copied
-intPushCostToOwner     0 # the value of intPushCostToOwner for the LagBF
+intPushCostToOwner     1 # the value of intPushCostToOwner for the LagBF
 
 # then those of BundleSolver as its inner Solver
 intDoEasy              1 # do easy components for (some) LagBFunction
