@@ -482,10 +482,35 @@ void cleanup_bsc( Block * block , Configuration * s_config )
 
 /*--------------------------------------------------------------------------*/
 
+void require_solver_config( const std::string & bsc_file )
+{
+ if( bsc_file.empty() )
+  throw( std::invalid_argument(
+   "a BlockSolverConfig must be provided (did you forget the -S option?)" ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+void require_explicit_configs( const std::string & bc_file ,
+			       const std::string & bsc_file )
+{
+ if( bc_file.empty() )
+  throw( std::invalid_argument(
+   "a BlockConfig must be provided (did you forget the -B option?)" ) );
+ require_solver_config( bsc_file );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 void get_all( const std::string & b_file , const std::string & bc_file ,
 	      const std::string & bsc_file , Block * & block ,
 	      Configuration * & s_config )
 {
+ // a generic Block is solved as deserialized unless a BlockConfig is given:
+ // only the BlockSolverConfig (-S) is mandatory here, the BlockConfig (-B)
+ // stays optional (a plain MCFBlock / BinaryKnapsackBlock needs no
+ // formulation choice)
+ require_solver_config( bsc_file );
  block = get_Block( b_file );
  auto b_config = get_config( bc_file );
  s_config = get_config( bsc_file );
@@ -499,6 +524,7 @@ void get_all( const netCDF::NcGroup & group , const std::string & bc_file ,
 	      const std::string & bsc_file , Block * & block ,
 	      Configuration * & s_config )
 {
+ require_solver_config( bsc_file );  // -S mandatory, -B optional (see above)
  block = get_Block( group );
  auto b_config = get_config( bc_file );
  s_config = get_config( bsc_file );
@@ -655,6 +681,19 @@ int solve_all( Block * block )
           resolve_with_prefix( conf_prefix , sol_cfg_file ) ) ) )
    std::cout << "Warning: output Solution Configuration "
 	     << sol_cfg_file << " invalid" << std::endl;
+
+ // a Solver must be explicitly provided: if no Solver is registered to the
+ // Block (typically because no valid BlockSolverConfig was given via -S),
+ // there is nothing to solve and silently doing nothing would hide the
+ // configuration mistake. The only legitimate no-Solver use is writing the
+ // problem back (-n), which has already happened by now, so just return.
+ if( block->get_registered_solvers().empty() ) {
+  if( writeprob )
+   return( 0 );
+  throw( std::invalid_argument(
+   "no Solver registered to the Block: a BlockSolverConfig must be provided "
+   "(did you forget the -S option?)" ) );
+  }
 
  // for each of the registered Solver- - - - - - - - - - - - - - - - - - - - -
  //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

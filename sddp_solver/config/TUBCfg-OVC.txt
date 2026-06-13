@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - TUBCfg.txt- - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - TUBCfg-OVC.txt - - - - - - - - - - - - - - -
 #
 # A txt description of the BlockConfig for a ThermalUnitBlock: bound
 # constraints are generated as OneVarConstraints (static constraints
@@ -44,5 +44,5 @@ SimpleConfiguration<std::pair<double,int>>
 *    # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - END TUBCfg.txt- - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END TUBCfg-OVC.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

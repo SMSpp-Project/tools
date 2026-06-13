@@ -2,7 +2,7 @@
 # - - - - - - - - - - - - - - - TUBCfg-LD.txt - - - - - - - - - - - - - - - -
 #
 # A txt description of the BlockConfig for a ThermalUnitBlock when the
-# SDDPBlock is solved via LagrangianDualSolver: besides what TUBCfg.txt
+# SDDPBlock is solved via LagrangianDualSolver: besides what TUBCfg-OVC.txt
 # does, the primary and secondary spinning reserve variables are added to
 # the Objective (objective Configuration == 3), since the reserve demand
 # constraints of the UCBlock are dualized.

@@ -19,7 +19,7 @@
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
- * \copyright &copy; by Niccolo' Iardella
+ * \copyright &copy; by Niccolo' Iardella, Donato Meoli
  */
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -70,13 +70,6 @@ using namespace SMSpp_di_unipi_it;
 /*--------------------------------------------------------------------------*/
 /*------------------------------- GLOBALS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
-
-// const std::string my_short_opts = "";
-
-// const std::vector< option > my_long_opts = {};
-
-// const std::string my_help = "";
-
 /*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -117,12 +110,12 @@ int main( int argc , char ** argv )
   }
 
  // BlockConfig-ure and BlockSolverConfig-ure the [UC]Block - - - - - - - - -
- // if no BlockConfig file is given the UCBlock is solved as deserialized:
- // any non-default formulation choice is the user's job (-B)
- Configuration * b_config = nullptr;
- if( ! bconf_file.empty() )
-  b_config = get_config( bconf_file );
+ // both the BlockConfig (-B, the formulation) and the BlockSolverConfig
+ // (-S) must be provided explicitly: the tool never falls back to any
+ // hardcoded default Configuration
+ require_explicit_configs( bconf_file , sconf_file );
 
+ auto b_config = get_config( bconf_file );
  auto s_config = get_config( sconf_file );
 
  config_Block( block , b_config , s_config );

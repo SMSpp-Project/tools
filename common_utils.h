@@ -281,6 +281,25 @@ void config_Block( Block * block ,
 void cleanup_bsc( Block * block , Configuration * s_config );
 
 /*--------------------------------------------------------------------------*/
+/// require that a BlockSolverConfig was provided (-S); throw otherwise
+/** Throws std::invalid_argument if \p bsc_file is empty. The solver
+ * configuration must always be passed explicitly: a tool must never fall
+ * back to a hardcoded default Configuration. The BlockConfig (-B) is not
+ * required here, as a generic Block may be solved as deserialized. */
+
+void require_solver_config( const std::string & bsc_file );
+
+/*--------------------------------------------------------------------------*/
+/// require that both a BlockConfig and a BlockSolverConfig were provided
+/** Throws std::invalid_argument if either \p bc_file (the BlockConfig, -B)
+ * or \p bsc_file (the BlockSolverConfig, -S) is empty. Used by the tools
+ * whose Block genuinely needs an explicit formulation (e.g. ucblock_solver
+ * on a UCBlock): a tool must never fall back to a hardcoded default. */
+
+void require_explicit_configs( const std::string & bc_file ,
+                               const std::string & bsc_file );
+
+/*--------------------------------------------------------------------------*/
 /// get Block, BlockConfig and BlockSolverConfig from files, configure all
 
 void get_all( const std::string & b_file , const std::string & bc_file ,

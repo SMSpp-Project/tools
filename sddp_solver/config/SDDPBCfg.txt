@@ -22,7 +22,7 @@ SimpleConfiguration<std::map<std::string,Configuration*>>
 PolyhedralFunctionBlock	*config/PFBCfg.txt  # linearized representation
 SlackUnitBlock		*config/SUBCfg.txt  # OneVarConstraints
 BatteryUnitBlock	*config/BUBCfg.txt  # OneVarConstraints, no negative prices
-ThermalUnitBlock	*config/TUBCfg.txt  # OneVarConstraints
+ThermalUnitBlock	*config/TUBCfg-OVC.txt  # OneVarConstraints
 DCNetworkBlock		*config/DCNBCfg.txt # network formulation (KIRCHHOFF)
 ACNetworkBlock		*config/ACBCfg.txt  # AC Network scaling factors
 *			*config/BCfg.txt    # everything else (is_feasible only)

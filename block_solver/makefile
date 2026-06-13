@@ -73,7 +73,7 @@ MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) $(SMS++OBJ) $(MCFLEOBJ) \
 
 # libraries
 MLIB =  $(SMS++LIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB) $(MCFBkLIB) \
-	$(MILPSLIB) $(InvsBkLIB)
+	$(MCFLELIB) $(MILPSLIB) $(InvsBkLIB)
 
 $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
@@ -90,7 +90,7 @@ MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(MCFBkH) $(MCFLEH) \
 
 # compile command
 
-$(DIR)/block_solver.o: $(DIR)/block_solver.cpp $(DIR)/common_utils.h $(MH)
+$(DIR)/block_solver.o: $(DIR)/block_solver.cpp $(MH)
 	$(CC) -c $(DIR)/block_solver.cpp -o $@ $(MINC) $(SW)
 
 ############################ End of makefile #################################

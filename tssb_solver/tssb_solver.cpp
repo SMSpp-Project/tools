@@ -64,15 +64,6 @@ using namespace SMSpp_di_unipi_it;
 /*--------------------------------------------------------------------------*/
 /*------------------------------- GLOBALS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
-
-// Name of Configuration files for each component of the Lagrangian dual of
-// the UCBlock
-const std::string thermal_config_filename = "TUBSCfg.txt";
-const std::string hydro_config_filename = "HSUBSCfg.txt";
-const std::string other_unit_config_filename = "OUBSCfg.txt";
-const std::string default_config_filename = "LPBSCfg.txt";
-
-/*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 

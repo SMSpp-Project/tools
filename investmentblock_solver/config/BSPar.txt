@@ -91,10 +91,13 @@ dblCtOff   0.01   # cut-off factor for pricing in MinQuad
 
 # now all the string parameters
 strInnerBSC  BSCfg.txt  # BlockSolverConfig for the inner Block of the
-                       # InvestmentFunction; it is not a BundleSolver
-                       # parameter, the tool removes it before the
-                       # ComputeConfig is applied
-#str_LagBF_BSCfg	LPBSCfg.txt   # BlockSolverConfig for the LagBFunctions
+                        # InvestmentFunction; it is not a BundleSolver
+                        # parameter, the tool removes it before the
+                        # ComputeConfig is applied
+# when the inner UCBlock is solved by Lagrangian decomposition, the per-
+# component (meta) BlockSolverConfig of the LagBFunctions goes here: a map
+# from the inner-Block classname() to its BlockSolverConfig (see InnerBSCfg.txt)
+#str_LagBF_BSCfg	config/InnerBSCfg.txt # meta BlockSolverConfig for the LagBFunctions
 
 0 # number of vector-of-int parameters
 
