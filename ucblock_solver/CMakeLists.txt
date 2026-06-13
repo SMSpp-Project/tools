@@ -38,16 +38,6 @@ if (TARGET SMS++::UCBlock)
     target_include_directories(ucblock_solver PRIVATE ..)
     target_link_libraries(ucblock_solver PRIVATE SMS++::UCBlock)
 
-    # Optional: dump every inner ThermalUnitBlock at every Lagrangian iteration
-    # (as TUB-<unit>-<iteration>.nc4) while solving under a LagrangianDualSolver,
-    # for the run-lagrangian-timing study. Off by default; enable with
-    #   cmake -DUCBLOCK_SOLVER_SAVE_TUB=ON ...
-    option(UCBLOCK_SOLVER_SAVE_TUB
-           "ucblock_solver: dump per-iteration ThermalUnitBlocks (SAVE_TUB)" OFF)
-    if (UCBLOCK_SOLVER_SAVE_TUB)
-        target_compile_definitions(ucblock_solver PRIVATE SAVE_TUB=1)
-    endif ()
-
     if (TARGET SMS++::LagrangianDualSolver)
         target_link_libraries(ucblock_solver PRIVATE SMS++::LagrangianDualSolver)
     endif ()
@@ -62,16 +52,6 @@ if (TARGET SMS++::UCBlock)
 
     # Install
     smspp_install(ucblock_solver)
-
-    # timing_harness: small stand-alone benchmark for the run-lagrangian-timing
-    # study; it times the two DP solvers (ThermalUnit[Ext]DPSolver, in UCBlock)
-    # and, when available, a :MILPSolver on the T+P/C formulation (MILPSolver).
-    add_executable(timing_harness timing_harness.cpp)
-    target_link_libraries(timing_harness PRIVATE SMS++::UCBlock)
-    if (TARGET SMS++::MILPSolver)
-        target_link_libraries(timing_harness PRIVATE SMS++::MILPSolver)
-    endif ()
-    smspp_install(timing_harness)
 
     # Generate and install shell completion scripts
     configure_file(../cmake/completion.bash.in ucblock_solver-completion.bash)

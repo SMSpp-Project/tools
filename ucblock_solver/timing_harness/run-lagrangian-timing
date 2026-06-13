@@ -46,21 +46,22 @@
 # month but stays ~9x slower than extDP; and the integer MILP on T+P/C is
 # faster still.
 #
-# This study lives in tools/ucblock_solver (NOT in the tests submodule) because
-# it depends on ucblock_solver. The single-bus UCBlock instances and the source
-# JSON come from the UCBlock submodule (tools/json2netCDF); generate them first
-# with UCBlock/tools/json2netCDF.
+# This study is confined to tools/ucblock_solver/timing_harness/ (NOT in the
+# base ucblock_solver, which never carries the SAVE_TUB dump, and NOT in the
+# tests submodule) because it depends on ucblock_solver. The single-bus UCBlock
+# instances and the source JSON come from the UCBlock submodule
+# (tools/json2netCDF); generate them first with UCBlock/tools/json2netCDF.
 #
-# PREREQUISITE: build ucblock_solver WITH the SAVE_TUB dump enabled, plus the
-# timing_harness, with either build system:
-#   - CMake:    cmake -DUCBLOCK_SOLVER_SAVE_TUB=ON <build> && build both targets,
-#               then pass <build> as the 1st argument;
-#   - makefile: cd tools/ucblock_solver && make SW="$SW -DSAVE_TUB=1"
-#               ucblock_solver && make timing_harness  (built in-place).
+# PREREQUISITE: build the two experiment binaries with this directory's makefile,
+# which (re)compiles ../ucblock_solver.cpp WITH the SAVE_TUB dump enabled and
+# builds the timing_harness, both in-place here:
+#   cd tools/ucblock_solver/timing_harness && make
+# (override the parallel-DP horizon threshold with e.g. PARMIN=0 to force the
+# parallel path on every horizon: make PARMIN=0).
 #
-# Binaries are located automatically (build-dir arg, then in-place, then PATH),
-# or via the UCBLOCK_SOLVER / TIMING_HARNESS env variables. No assumption is
-# made on the build system or the build directory name.
+# Binaries are located automatically (in-place next to this script, then a
+# build-dir arg, then PATH), or via the UCBLOCK_SOLVER / TIMING_HARNESS env
+# variables.
 #
 # Env knobs: OUT (work/output dir, default /tmp/ld_timing), REPS (DP timing
 # repetitions, default 12),
@@ -71,7 +72,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(cd "$HERE/../.." && pwd)"
+ROOT="$(cd "$HERE/../../.." && pwd)"
 # optional 1st arg: a build directory (e.g. a CMake build tree); if given, its
 # tools/ucblock_solver/ subdir is searched too. By default the binaries are
 # looked up where a makefile build leaves them (in-place, next to this script).
@@ -97,7 +98,7 @@ HARNESS="${TIMING_HARNESS:-$(find_bin timing_harness || true)}"
 
 JSONDIR="$ROOT/UCBlock/tools/json2netCDF/instances_singlebus"
 NCDIR="$ROOT/UCBlock/data/nc4/UC_singlebus"
-CONFIG="$HERE/config"
+CONFIG="$HERE/../config"   # shared base ucblock_solver config dir
 OUT="${OUT:-/tmp/ld_timing}"
 REPS="${REPS:-12}"
 MILP_REPS="${MILP_REPS:-3}"
@@ -140,7 +141,7 @@ for h in $HORIZONS; do
     # BundleSolver in config/LDCfg.txt (true iteration number kept in the
     # filename), and every dump is then read (harness stride 1)
     ( cd "$D" && \
-        "$SOLVER" -B config/MetaCfg.txt -S config/UCBSCfg-LD.txt "$inst" \
+        "$SOLVER" -B config/InnerBCfg.txt -S config/UCBSCfg-LD.txt "$inst" \
         > run.log 2>&1 ) || true
     n=$(ls "$D"/TUB-*.nc4 2>/dev/null | wc -l)
     if [ "$n" -eq 0 ]; then

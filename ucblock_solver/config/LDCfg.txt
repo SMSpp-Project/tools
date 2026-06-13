@@ -24,8 +24,8 @@ intPushCostToOwner     0 # the value of intPushCostToOwner for the LagBF
 intDoEasy              1 # do easy components for (some) LagBFunction
 intMaxIter         10000 # max number of iterations for each call
 intEverykIt          300 # call the eEverykIteration events every <this> many
-                         # iterations (no-op unless an event is registered,
-                         # e.g. by a SAVE_TUB build of ucblock_solver)
+                         # iterations (no-op unless an eEverykIteration event
+                         # handler is registered)
 intMaxThread           8 # MaxThread, max number of new tasks to spawn
 intLogVerb             0 # log verbosity of main Bundle algorithm
 intWZNorm              2 # which norm to use in the norm-based stopping condition

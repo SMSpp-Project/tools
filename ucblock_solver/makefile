@@ -53,12 +53,6 @@ MLIB =  $(SMS++LIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 $(DIR)/$(NAME): $(DIR)/ucblock_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
 
-# timing_harness: stand-alone benchmark for run-lagrangian-timing (times the
-# two DP solvers + a :MILPSolver on the SAVE_TUB dumps; MILPSolver comes in via
-# BundleSolver/makefile-s). Build with: make timing_harness
-$(DIR)/timing_harness: $(DIR)/timing_harness.o $(MOBJ)
-	$(CC) -o $(DIR)/timing_harness $^ $(MLIB) $(SW)
-
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
@@ -69,12 +63,7 @@ MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(CMMNUH)
 
 # compile command
 
-# to enable the per-iteration ThermalUnitBlock dumps add -DSAVE_TUB=1, e.g.
-#   make SW="$(SW) -DSAVE_TUB=1" ucblock_solver
 $(DIR)/ucblock_solver.o: $(DIR)/ucblock_solver.cpp $(MH)
 	$(CC) -c $(DIR)/ucblock_solver.cpp -o $@ $(MINC) $(SW)
-
-$(DIR)/timing_harness.o: $(DIR)/timing_harness.cpp $(MH)
-	$(CC) -c $(DIR)/timing_harness.cpp -o $@ $(MINC) $(SW)
 
 ############################ End of makefile #################################

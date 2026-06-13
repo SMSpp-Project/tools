@@ -9,7 +9,10 @@ investmentblock_solver/investmentblock_solver
 investmentblock_solver/investment_candidates.txt
 sddp_solver/sddp_solver
 ucblock_solver/ucblock_solver
-ucblock_solver/timing_harness
+# timing-harness study binaries (built in-place by timing_harness/makefile;
+# the SAVE_TUB-enabled solver is a local rebuild of ../ucblock_solver.cpp)
+ucblock_solver/timing_harness/timing_harness
+ucblock_solver/timing_harness/ucblock_solver
 tssb_solver/tssb_solver
 chgcfg/chgcfg
 
