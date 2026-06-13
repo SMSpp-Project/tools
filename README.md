@@ -344,6 +344,8 @@ conduct, and the process for submitting merge requests to us.
 
 ## Authors
 
+### Current Lead Authors
+
 - **Antonio Frangioni**  
   Dipartimento di Informatica  
   Università di Pisa
@@ -359,6 +361,8 @@ conduct, and the process for submitting merge requests to us.
 - **Rafael Durbano Lobato**  
   Dipartimento di Informatica  
   Università di Pisa
+
+### Contributors
 
 
 ## License
