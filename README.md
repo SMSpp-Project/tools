@@ -310,7 +310,7 @@ Usage: chgcfg in-cfg out-cfg [ par1 val1 [ par2 val2 [ ... ] ] ]
   separate line, possibly with trailing whitespaces and followed by comment
 
 `out-cfg` is the output configuration file; it must be different from
-`in_cfg`, and any existing content in the file is deleted.
+`in-cfg`, and any existing content in the file is deleted.
 
 Then, an arbitrary number of `par-i val-i` pairs is allowed: each `par-i`
 is checked against the existing parameters in `in-cfg`, and if it is found
@@ -327,7 +327,6 @@ first command-line copy modifies the first occurrence in the file and so on.
 The module has a compile-time option, commanded by the macro BAREBONES in
 `chgcfg.cpp`; if activated, the produced configuration file will be
 stripped by all non-necessary comments and comment lines.
-
 
 
 ## Getting help
