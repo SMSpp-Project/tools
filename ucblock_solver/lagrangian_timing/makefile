@@ -2,7 +2,7 @@
 ################################ makefile ####################################
 ##############################################################################
 #                                                                            #
-#   makefile of the LD-iteration timing study (timing_harness)               #
+#   makefile of the LD-iteration timing study (lagrangian_timing)            #
 #                                                                            #
 #                              Antonio Frangioni                             #
 #                          Dipartimento di Informatica                       #

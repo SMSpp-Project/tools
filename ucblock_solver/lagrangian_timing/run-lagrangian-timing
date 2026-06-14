@@ -46,7 +46,7 @@
 # month but stays ~9x slower than extDP; and the integer MILP on T+P/C is
 # faster still.
 #
-# This study is confined to tools/ucblock_solver/timing_harness/ (NOT in the
+# This study is confined to tools/ucblock_solver/lagrangian_timing/ (NOT in the
 # base ucblock_solver, which never carries the SAVE_TUB dump, and NOT in the
 # tests submodule) because it depends on ucblock_solver. The single-bus UCBlock
 # instances and the source JSON come from the UCBlock submodule
@@ -55,7 +55,7 @@
 # PREREQUISITE: build the two experiment binaries with this directory's makefile,
 # which (re)compiles ../ucblock_solver.cpp WITH the SAVE_TUB dump enabled and
 # builds the timing_harness, both in-place here:
-#   cd tools/ucblock_solver/timing_harness && make
+#   cd tools/ucblock_solver/lagrangian_timing && make
 # (override the parallel-DP horizon threshold with e.g. PARMIN=0 to force the
 # parallel path on every horizon: make PARMIN=0).
 #
