@@ -31,11 +31,21 @@ include ../makefile_common
 # note that the SMS++ complete makefile isincluded in makefile_common
 
 # MCFBlock
-# this has to be before BundleSolver because there are two definitions of
-# OPTstuff, but the one in MCFBlock lacks OPTvect.h that is needed by
-# the NDOstuff in BundleSolver
 MCFBkSDR = ../../MCFBlock
 include $(MCFBkSDR)/makefile-s
+
+# MCFClass, needed by MCFClassSolver
+# this has to be before BundleSolver because there are two definitions of
+# OPTstuff, but the one in MCFClass lacks OPTvect.h that is needed by
+# the NDOstuff in BundleSolver
+MCFC_NO_PATHS = 0
+libMCFClDIR = ../../MCFClassSolver/MCFClass
+include $(libMCFClDIR)/lib/makefile-inc
+
+# MCFClassSolver, assuming all dependencies (SMS++, MCFBlock, MCFClass) are
+# there already (comment out if not required)
+MCFCSSDR = ../../MCFClassSolver
+include $(MCFCSSDR)/makefile
 
 # BundleSolver
 BNDSLVSDR = ../../BundleSolver
@@ -69,11 +79,11 @@ include $(InvsBkSDR)/makefile-s
 
 # object files
 MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) $(SMS++OBJ) $(MCFLEOBJ) \
-	$(MCFBkOBJ) $(InvsBkOBJ) $(CMMNUOBJ)
+	$(MCFCSOBJ) $(libMCFClOBJ) $(MCFBkOBJ) $(InvsBkOBJ) $(CMMNUOBJ)
 
 # libraries
 MLIB =  $(SMS++LIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB) $(MCFBkLIB) \
-	$(MCFLELIB) $(MILPSLIB) $(InvsBkLIB)
+	$(libMCFClLIB) $(MCFLELIB) $(MILPSLIB) $(InvsBkLIB)
 
 $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
@@ -82,11 +92,11 @@ $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 
 # include directives
 MINC =  $(SMS++INC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) $(MCFBkINC) \
-	$(MCFLEINC) $(InvsBkINC) $(CMMNUINC)
+	$(MCFCSINC) $(libMCFClINC) $(MCFLEINC) $(InvsBkINC) $(CMMNUINC)
 
 # includes
-MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(MCFBkH) $(MCFLEH) \
-	$(InvsBkH) $(CMMNUH)
+MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(MCFBkH) $(MCFCSH) \
+	$(MCFLEH) $(InvsBkH) $(CMMNUH)
 
 # compile command
 
