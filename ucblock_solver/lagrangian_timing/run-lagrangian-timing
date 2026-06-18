@@ -44,10 +44,20 @@
 #                                          this run forced the parallel path with
 #                                          PARMIN=0)
 #   extDP    338us    5.1ms    26.3ms     (~linear-ish)
-#   MILP      70ms    382ms    17.3ms     (T+P/C integer; day/week MILP here is
-#                                          anomalously slow vs the old 0.85ms/4ms
-#                                          (~80-100x) -- under investigation, not
-#                                          the DP comparison's concern)
+#   MILP      70ms    382ms    17.3ms     (T+P/C integer; the day/week ms-scale is
+#                                          NOT B&B/degeneracy nor a QP: the Gurobi
+#                                          log shows a linear MILP solved at the
+#                                          ROOT in 1 node, ~77% of the time in
+#                                          per-solve model-build + PRESOLVE (~0.1s
+#                                          at n=96). Data-dependent: at a ~0 dual
+#                                          (iter 1) presolve collapses it to 0.7ms,
+#                                          at a non-trivial dual it can't reduce ->
+#                                          full ~0.1s every solve. So Gurobi pays a
+#                                          fixed build+presolve cost each of the
+#                                          ~10^4 LD solves while the DP is sub-ms:
+#                                          a ~500x argument for the DP in the LD
+#                                          loop. The old 0.85ms/4ms were a lighter
+#                                          pre-reserve model build, not this one.)
 #
 # so the standard DP wins only on short horizons; from week up the extended DP
 # is ~4-17x faster than it; the parallel (FastFlow) DP is ~2x SLOWER than serial
@@ -76,7 +86,25 @@
 # MILP_REPS (MILP repetitions, default 3; 0 disables the slow MILP column; the
 # MILP back-end and its time limit live in config/TUBSCfg-MILP.txt), HORIZONS (which of
 # day/week/month to run, space-separated, default "day"), PYTHON (interpreter
-# with numpy+matplotlib for the plot, default python3).
+# with numpy+matplotlib for the plot, default python3),
+# LD_MAXITER (if set, cap the LD at this many iterations for the dump-generation
+# run -- the FULL ~10^4-iter LD solve is the wall-clock bottleneck (0.78 iter/s
+# at n=96, 0.045 at n=672), and the study only needs a few strided dump waves
+# since the per-unit solve time is flat along the LD iteration; the driver then
+# uses a per-run COPY of CONFIG with intMaxIter patched, so config/LDCfg.txt is
+# left untouched. e.g. LD_MAXITER=700 -> 2 waves (iter 300+600) at intEverykIt
+# 300), LDTIMING_CONFIG (point CONFIG at an alternate config dir).
+#
+# Reproducible recipe actually used for the 2026-06-18 day+week parDP run
+# (FastFlow forced on every horizon via the PARMIN=0 build; binaries copied to
+# /tmp so a cloud-sync of this tree cannot delete them mid-run):
+#   cd tools/ucblock_solver/lagrangian_timing
+#   rm -f ../../../UCBlock/obj/ThermalUnitDPSolver.o ; make PARMIN=0   # force rebuild
+#   mkdir -p /tmp/ld_bin && cp -f ucblock_solver timing_harness /tmp/ld_bin/
+#   UCBLOCK_SOLVER=/tmp/ld_bin/ucblock_solver TIMING_HARNESS=/tmp/ld_bin/timing_harness \
+#     LD_MAXITER=700 HORIZONS="day week" SEEDS="1 2 3 4 5" \
+#     PYTHON=/usr/bin/python3.14 ./run-lagrangian-timing
+# (week is ~4h/seed at n=672 -- the 2026-06-18 week run was trimmed to 2 seeds.)
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -144,7 +172,17 @@ for h in $HORIZONS; do
   for s in $SEEDS; do
     inst="$DATADIR/sb_${h}_seed$s.nc4"
     [ -f "$inst" ] || { echo "skip $h seed$s: $inst not found"; continue; }
-    D="$OUT/dumps_${h}_$s"; rm -rf "$D"; mkdir -p "$D"; ln -sfn "$CONFIG" "$D/config"
+    D="$OUT/dumps_${h}_$s"; rm -rf "$D"; mkdir -p "$D"
+    # configs: symlink the shared CONFIG dir by default; if LD_MAXITER is set use
+    # a per-run COPY with the LD iteration cap patched in, so the shared
+    # config/LDCfg.txt (also used by sddp/tssb/invest) is never modified
+    if [ -n "${LD_MAXITER:-}" ]; then
+      cp -rL "$CONFIG" "$D/config"
+      sed -i -E "s/^([[:space:]]*intMaxIter[[:space:]]+)[0-9]+/\1${LD_MAXITER}/" \
+        "$D/config/LDCfg.txt"
+    else
+      ln -sfn "$CONFIG" "$D/config"
+    fi
     echo "$h seed$s: running ucblock_solver (LagrangianDualSolver, SAVE_TUB) ..."
     # the dumping is strided at the source (an instance runs ~10^4 LD iterations
     # x 50 units, so dumping every one is ~10^5 small files and easily blows a
