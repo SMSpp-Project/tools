@@ -98,7 +98,10 @@ HARNESS="${TIMING_HARNESS:-$(find_bin timing_harness || true)}"
 
 JSONDIR="$ROOT/UCBlock/tools/json2netCDF/instances_singlebus"
 NCDIR="$ROOT/UCBlock/data/nc4/UC_singlebus"
-CONFIG="$HERE/../config"   # shared base ucblock_solver config dir
+CONFIG="${LDTIMING_CONFIG:-$HERE/../config}"   # shared base ucblock_solver
+                           # config dir; override with LDTIMING_CONFIG to point
+                           # at a study-local copy (e.g. a capped-intMaxIter
+                           # LDCfg.txt) without touching the shared configs
 OUT="${OUT:-/tmp/ld_timing}"
 REPS="${REPS:-12}"
 MILP_REPS="${MILP_REPS:-3}"
