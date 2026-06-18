@@ -25,26 +25,34 @@
 #      time vs normalized iteration (per gen_type) and time by gen_type
 #      (plot_lagrangian_timing.py; needs python3 + numpy + matplotlib).
 #
-# Findings (5 instances per horizon, 50 units; month over 4 seeds -- seed2's
-# timing run segfaults, under investigation): the solve time is flat along the
-# LD iteration (~1.5-2% on every horizon and solver) and is governed by the
-# unit *type* (day: peakers ~120us ... Coal_old ~1500us, ~13x). Mean time per
-# unit solve scales very differently with the horizon T (day 96 / week 672 /
-# month 2976):
+# Findings (PARMIN=0 build, i.e. FastFlow forced on every horizon; day = 5 seeds
+# x 2 dump waves (iter 300+600), week = 2 seeds, month = 4 seeds from the earlier
+# full-iteration run -- seed2's month timing run segfaults, under investigation):
+# the solve time is flat along the LD iteration (~1.5-3% on every horizon and
+# solver) and is governed by the unit *type* (day: peakers ~120us ... Coal_old
+# ~1500us, ~13x). Mean time per unit solve scales very differently with the
+# horizon T (day 96 / week 672 / month 2976):
 #
 #            day      week     month
-#   stdDP    394us   22.3ms   446.0ms     (superlinear, ~T^2)
-#   parDP      -        -     225.6ms     (FastFlow, ~2x stdDP; month only -- the
-#                                          serial fallback applies below the
-#                                          TUDPS_PAR_MIN_N=768 horizon, so on
-#                                          day/week parDP == stdDP)
-#   extDP    587us    5.4ms    26.3ms     (~linear-ish)
-#   MILP     850us    4.0ms    17.3ms     (best at large T)
+#   stdDP    223us   21.7ms   446.0ms     (superlinear, ~T^2)
+#   parDP    492us   10.1ms   225.6ms     (FastFlow; 2.2x SLOWER than stdDP at
+#                                          day, 2.1x FASTER from week up -- the
+#                                          thread-dispatch overhead pays off only
+#                                          once a single solve is >~1ms; with the
+#                                          base TUDPS_PAR_MIN_N=768, day+week
+#                                          (both < 768) would fall back to serial,
+#                                          this run forced the parallel path with
+#                                          PARMIN=0)
+#   extDP    338us    5.1ms    26.3ms     (~linear-ish)
+#   MILP      70ms    382ms    17.3ms     (T+P/C integer; day/week MILP here is
+#                                          anomalously slow vs the old 0.85ms/4ms
+#                                          (~80-100x) -- under investigation, not
+#                                          the DP comparison's concern)
 #
 # so the standard DP wins only on short horizons; from week up the extended DP
-# is ~6-17x faster than it; the parallel DP roughly halves the standard DP on
-# month but stays ~9x slower than extDP; and the integer MILP on T+P/C is
-# faster still.
+# is ~4-17x faster than it; the parallel (FastFlow) DP is ~2x SLOWER than serial
+# stdDP at day (n=96, dispatch overhead on a ~0.2ms solve) but ~2x FASTER from
+# week up, though it stays ~2x slower than extDP everywhere.
 #
 # This study is confined to tools/ucblock_solver/lagrangian_timing/ (NOT in the
 # base ucblock_solver, which never carries the SAVE_TUB dump, and NOT in the
