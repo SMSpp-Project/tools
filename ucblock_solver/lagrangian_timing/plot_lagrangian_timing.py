@@ -11,7 +11,9 @@
 #   usage: plot_lagrangian_timing.py <out_prefix> <timing1.csv> <gentype1.csv>
 #                                                  [<timing2.csv> <gentype2.csv> ...]
 #
-#   timing*.csv : "unit,iter,solver,time_us"  (from timing_harness)
+#   timing*.csv : "unit,iter,solver,time_us,phase"  (from timing_harness; only
+#                 the per-iteration "warm" re-solves are plotted, the one-off
+#                 "cold" first solve per unit is dropped)
 #   gentype*.csv: "unit,gen_type"             (from the source JSON instance)
 #
 # Different instances run a different number of Lagrangian iterations, so the
@@ -43,10 +45,16 @@ for k in range(0, len(pairs), 2):
     with open(gcsv) as f:
         for r in csv.DictReader(f):
             g[int(r["unit"])] = r["gen_type"]
-    # iteration normalization is per instance, computed over ALL solvers/units
+    # iteration normalization is per instance, computed over ALL solvers/units.
+    # only the "warm" rows are kept: those are the per-Lagrangian-iteration
+    # re-solve times the dual actually pays (the single "cold" row per unit is
+    # the one-off model build + first solve, not a cost incurred along the
+    # iterations). Files without a "phase" column are treated as all-warm.
     recs = []
     with open(tcsv) as f:
         for r in csv.DictReader(f):
+            if r.get("phase", "warm") != "warm":
+                continue
             u = int(r["unit"])
             if u in g:
                 recs.append((u, int(r["iter"]), r["solver"], float(r["time_us"])))

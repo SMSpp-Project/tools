@@ -11,6 +11,8 @@ At the moment we provide:
 
 - `tssb_solver`: a TwoStageStochasticBlock solver
 
+- `mssb_solver`: a MultiStageStochasticBlock solver
+
 - `investmentblock_solver`: an InvestmentBlock solver
 
 - `chgcfg`: a small utility to change some parameters in a configuration
@@ -33,6 +35,8 @@ These instructions will let you build SMS++ Tools on your system.
   dependencies
 
 - [TwoStageStochasticBlock](https://gitlab.com/smspp/twostagestochasticblock)
+
+- [MultiStageStochasticBlock](https://gitlab.com/smspp/multistagestochasticblock)
 
 - [UCBlock](https://gitlab.com/smspp/ucblock)
 
@@ -294,6 +298,10 @@ case, if `-B` and/or `-S` are not provided, default configurations are used.
 ### TwoStageStochasticBlock solver
 
 `tssb_solver` does not add any command-line options to the basic ones.
+
+### MultiStageStochasticBlock solver
+
+`mssb_solver` does not add any command-line options to the basic ones.
 
 ### The `chgcfg` utility
 

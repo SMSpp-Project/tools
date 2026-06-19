@@ -51,6 +51,11 @@ for h, n in HORIZONS:
     for f in glob.glob(os.path.join(res, f"timing_{h}_*.csv")):
         with open(f) as fh:
             for r in csv.DictReader(fh):
+                # keep the per-iteration "warm" re-solves (what the dual pays
+                # along the iterations); the one-off "cold" first solve per unit
+                # is dropped. Files without a "phase" column count as all-warm.
+                if r.get("phase", "warm") != "warm":
+                    continue
                 if r["solver"] in vals:
                     vals[r["solver"]].append(float(r["time_us"]))
     for s in SOLVERS:
@@ -63,7 +68,7 @@ for h, n in HORIZONS:
 probe = os.path.join(res, "month_milp_probe.csv")
 if os.path.exists(probe):
     mvals = [float(r["time_us"]) for r in csv.DictReader(open(probe))
-             if r["solver"] == "MILP"]
+             if r["solver"] == "MILP" and r.get("phase", "warm") == "warm"]
     st_ = summarise(mvals)
     if st_:
         stats["MILP"][2976] = st_

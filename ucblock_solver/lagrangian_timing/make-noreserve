@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+#
+# make-noreserve <in.nc4> <out.nc4>
+#
+# Produce an energy-only copy of a single-bus UCBlock instance by stripping the
+# reserve demand from the UCBlock group: the NumberPrimaryZones/
+# NumberSecondaryZones dimensions and the PrimaryDemand/SecondaryDemand
+# variables (with their data). With no reserve zones the UCBlock generates no
+# reserve constraints, so the units carry no reserve variables and the
+# Lagrangian dual prices no reserve, regardless of the per-unit PrimaryRho/
+# SecondaryRho (left in place, simply ignored). This is the "no reserves"
+# arm of the reserve experiment; it needs only netCDF's own ncdump/ncgen, not
+# the (Julia) instance generator.
+#
+# Round-trips through CDL: ncdump -> drop the reserve dims/vars/data -> ncgen.
+set -euo pipefail
+
+[ $# -eq 2 ] || { echo "usage: make-noreserve <in.nc4> <out.nc4>" >&2; exit 1; }
+IN="$1"; OUT="$2"
+TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
+
+ncdump "$IN" > "$TMP/full.cdl"
+python3 - "$TMP/full.cdl" "$TMP/nores.cdl" <<'PY'
+import sys, re
+src, dst = sys.argv[1], sys.argv[2]
+out, skip_data = [], False
+for line in open(src):
+    s = line.strip()
+    if skip_data:                       # inside a reserve-demand data block
+        if s.endswith(';'):
+            skip_data = False
+        continue
+    if re.match(r'^(Primary|Secondary)Demand\s*=', s):   # start of its data
+        skip_data = True
+        continue
+    if re.match(r'^Number(Primary|Secondary)Zones\s*=\s*\d+\s*;', s):  # the dim
+        continue
+    if re.search(r'\b(Primary|Secondary)Demand\s*\(', s):  # the variable decl
+        continue
+    out.append(line)
+open(dst, 'w').writelines(out)
+PY
+ncgen -o "$OUT" "$TMP/nores.cdl"
+echo "wrote $OUT  ($(ncdump -h "$OUT" | grep -c 'NumberPrimaryZones') reserve zones)"

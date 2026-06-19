@@ -74,8 +74,9 @@
 # which (re)compiles ../ucblock_solver.cpp WITH the SAVE_TUB dump enabled and
 # builds the timing_harness, both in-place here:
 #   cd tools/ucblock_solver/lagrangian_timing && make
-# (override the parallel-DP horizon threshold with e.g. PARMIN=0 to force the
-# parallel path on every horizon: make PARMIN=0).
+# The parallel DP is forced on every horizon from config/TUBSCfg-parDP.txt
+# (intParMinN 0, a run-time ThermalUnitDPSolver parameter), so no special build
+# is needed.
 #
 # Binaries are located automatically (in-place next to this script, then a
 # build-dir arg, then PATH), or via the UCBLOCK_SOLVER / TIMING_HARNESS env
@@ -88,18 +89,22 @@
 # day/week/month to run, space-separated, default "day"), PYTHON (interpreter
 # with numpy+matplotlib for the plot, default python3),
 # LD_MAXITER (if set, cap the LD at this many iterations for the dump-generation
-# run -- the FULL ~10^4-iter LD solve is the wall-clock bottleneck (0.78 iter/s
+# run: the FULL ~10^4-iter LD solve is the wall-clock bottleneck (0.78 iter/s
 # at n=96, 0.045 at n=672), and the study only needs a few strided dump waves
 # since the per-unit solve time is flat along the LD iteration; the driver then
 # uses a per-run COPY of CONFIG with intMaxIter patched, so config/LDCfg.txt is
 # left untouched. e.g. LD_MAXITER=700 -> 2 waves (iter 300+600) at intEverykIt
-# 300), LDTIMING_CONFIG (point CONFIG at an alternate config dir).
+# 300),
+# LD_EVERYK (if set, the dump stride intEverykIt, i.e. how many dump waves a
+# unit gets; the warm-resolve timing wants several, e.g. LD_EVERYK=50 with
+# LD_MAXITER=300 -> 6 waves at iter 50,100,...,300, one cold plus five warm),
+# LDTIMING_CONFIG (point CONFIG at an alternate config dir).
 #
-# Reproducible recipe actually used for the 2026-06-18 day+week parDP run
-# (FastFlow forced on every horizon via the PARMIN=0 build; binaries copied to
-# /tmp so a cloud-sync of this tree cannot delete them mid-run):
+# Reproducible recipe (FastFlow forced on every horizon from the parDP config,
+# intParMinN 0; binaries copied to /tmp so a cloud-sync of this tree cannot
+# delete them mid-run):
 #   cd tools/ucblock_solver/lagrangian_timing
-#   rm -f ../../../UCBlock/obj/ThermalUnitDPSolver.o ; make PARMIN=0   # force rebuild
+#   make
 #   mkdir -p /tmp/ld_bin && cp -f ucblock_solver timing_harness /tmp/ld_bin/
 #   UCBLOCK_SOLVER=/tmp/ld_bin/ucblock_solver TIMING_HARNESS=/tmp/ld_bin/timing_harness \
 #     LD_MAXITER=700 HORIZONS="day week" SEEDS="1 2 3 4 5" \
@@ -133,7 +138,12 @@ SOLVER="${UCBLOCK_SOLVER:-$(find_bin ucblock_solver || true)}"
 HARNESS="${TIMING_HARNESS:-$(find_bin timing_harness || true)}"
 
 JSONDIR="$ROOT/UCBlock/tools/json2netCDF/instances_singlebus"
-NCDIR="$ROOT/UCBlock/data/nc4/UC_singlebus"
+# instance directory (the nc4s are <NCDIR>/<period>/sb_<h>_seed<s>.nc4); override
+# with LD_NCDIR to run an alternative instance set, e.g. the energy-only copies
+# made by ./make-noreserve for the no-reserve arm of the reserve experiment. The
+# gen_type map comes from the same JSON either way (only the reserve demand
+# differs, the unit fleet is identical).
+NCDIR="${LD_NCDIR:-$ROOT/UCBlock/data/nc4/UC_singlebus}"
 CONFIG="${LDTIMING_CONFIG:-$HERE/../config}"   # shared base ucblock_solver
                            # config dir; override with LDTIMING_CONFIG to point
                            # at a study-local copy (e.g. a capped-intMaxIter
@@ -173,12 +183,19 @@ for h in $HORIZONS; do
     inst="$DATADIR/sb_${h}_seed$s.nc4"
     [ -f "$inst" ] || { echo "skip $h seed$s: $inst not found"; continue; }
     D="$OUT/dumps_${h}_$s"; rm -rf "$D"; mkdir -p "$D"
-    # configs: symlink the shared CONFIG dir by default; if LD_MAXITER is set use
-    # a per-run COPY with the LD iteration cap patched in, so the shared
-    # config/LDCfg.txt (also used by sddp/tssb/invest) is never modified
-    if [ -n "${LD_MAXITER:-}" ]; then
+    # configs: symlink the shared CONFIG dir by default; if LD_MAXITER and/or
+    # LD_EVERYK are set use a per-run COPY with the LD iteration cap and/or the
+    # dump stride patched in, so the shared config/LDCfg.txt (also used by
+    # sddp/tssb/invest) is never modified. LD_EVERYK sets intEverykIt, i.e. how
+    # many dump waves a unit gets: the warm-resolve timing wants several (a unit
+    # is loaded once at the first wave, then re-solved at each later one).
+    if [ -n "${LD_MAXITER:-}" ] || [ -n "${LD_EVERYK:-}" ]; then
       cp -rL "$CONFIG" "$D/config"
-      sed -i -E "s/^([[:space:]]*intMaxIter[[:space:]]+)[0-9]+/\1${LD_MAXITER}/" \
+      [ -n "${LD_MAXITER:-}" ] && sed -i -E \
+        "s/^([[:space:]]*intMaxIter[[:space:]]+)[0-9]+/\1${LD_MAXITER}/" \
+        "$D/config/LDCfg.txt"
+      [ -n "${LD_EVERYK:-}" ] && sed -i -E \
+        "s/^([[:space:]]*intEverykIt[[:space:]]+)[0-9]+/\1${LD_EVERYK}/" \
         "$D/config/LDCfg.txt"
     else
       ln -sfn "$CONFIG" "$D/config"

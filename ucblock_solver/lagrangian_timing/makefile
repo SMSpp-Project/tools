@@ -15,10 +15,9 @@
 # of ../ leaves SAVE_TUB at 0. Here the SAME ../ucblock_solver.cpp is
 # recompiled WITH -DSAVE_TUB=1, plus the timing_harness benchmark, in-place.
 #
-# Knob: PARMIN overrides the ThermalUnitDPSolver parallel horizon threshold
-# (TUDPS_PAR_MIN_N); unset = the in-code default. `make PARMIN=0` forces the
-# parallel DP on every horizon. NB: PARMIN recompiles the SHARED UCBlock
-# object ThermalUnitDPSolver.o; rebuild ../ afterwards.
+# The parallel DP is forced on every horizon from the config (intParMinN 0 in
+# config/TUBSCfg-parDP.txt), a run-time ThermalUnitDPSolver parameter, so no
+# -DTUDPS_PAR_MIN_N rebuild of the shared UCBlock object is needed any more.
 
 # basic directory
 DIR = .
@@ -33,14 +32,10 @@ CC = clang++
 COMMON_SW = -std=c++20 -ferror-limit=1 -Wno-deprecated-declarations -Wno-enum-compare -Wno-backslash-newline-escape -DCLANG_1200_0_32_27_PATCH
 SW_RELEASE = -O3 $(COMMON_SW) -DNDEBUG
 
-# study switches: SAVE_TUB is always on here; PARMIN (if given) overrides the
-# parallel-DP horizon threshold
+# study switches: SAVE_TUB is always on here
 SAVE_TUB_SW = -DSAVE_TUB=1
-ifdef PARMIN
-  PARMIN_SW = -DTUDPS_PAR_MIN_N=$(PARMIN)
-endif
 
-SW = $(SW_RELEASE) $(SAVE_TUB_SW) $(PARMIN_SW)
+SW = $(SW_RELEASE) $(SAVE_TUB_SW)
 
 .DEFAULT_GOAL := all
 

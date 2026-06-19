@@ -28,11 +28,15 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-1 # number of integer parameters
+2 # number of integer parameters
 
 # now all the integer parameters
 intMaxThread 0  # 0 = all cores as FastFlow workers on compute_EDPs (above
-                # TUDPS_PAR_MIN_N); 1 = serial, k = k workers.
+                # intParMinN); 1 = serial, k = k workers.
+intParMinN   0  # min time horizon for the parallel path; 0 forces it on every
+                # horizon (the study times the parallel DP at day/week too,
+                # below the default break-even threshold) -- a run-time config
+                # parameter, no -DTUDPS_PAR_MIN_N rebuild needed.
 
 0 # number of double parameters
 
