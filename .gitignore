@@ -14,6 +14,7 @@ ucblock_solver/ucblock_solver
 ucblock_solver/lagrangian_timing/timing_harness
 ucblock_solver/lagrangian_timing/ucblock_solver
 tssb_solver/tssb_solver
+mssb_solver/mssb_solver
 chgcfg/chgcfg
 
 # Generic run output
