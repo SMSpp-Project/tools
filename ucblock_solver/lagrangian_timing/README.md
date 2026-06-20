@@ -113,3 +113,14 @@ wave. See `results/reserve_scaling.png`.)
   cost each time, so the MILP stays one to two orders of magnitude behind
   `extDP` throughout, and reserves barely move it (the reserve rows add little
   to the presolve).
+- **No drift along the dual, a real spread across unit types.** The warm time
+  is flat over the Lagrangian iterations: the per-unit coefficient of variation
+  across iterations is a median of `5` to `9` percent at `day` and `1` to `5`
+  percent at `week` for every solver (the larger `day` figure is timing noise on
+  sub-millisecond solves), so one median per unit summarises the iteration well
+  (see `ld_timing_<h>_vs_iter.png`). The spread across unit *types* is instead
+  real and solver-dependent: with reserves at `day` the run-length `extDP` runs
+  from `~0.35 ms` on a peaker to `~3.4 ms` on the old coal unit, a `~10x` range
+  that tracks how many cost pieces the unit carries, while the base `stdDP`,
+  already saturated by the multi-piece reserve cost, flattens to `~1.7x` (see
+  `ld_timing_<h>_bytype.png`).
