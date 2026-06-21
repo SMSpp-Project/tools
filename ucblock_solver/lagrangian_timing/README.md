@@ -81,24 +81,23 @@ ranking entirely. Median warm time per solve, **no reserves, with reserves**:
 
 | solver |    day n=96    |   week n=672   |   month n=2976  |
 |--------|---------------:|---------------:|----------------:|
-| stdDP  | 0.23 , 6.52 ms |  17.8 , 396 ms |  478 , 8714 ms  |
-| parDP  | 1.00 , 2.90 ms |  7.0 , 111 ms  |  160 , 2757 ms  |
-| extDP  | 0.34 , 1.18 ms |  3.9 , 9.6 ms  |   20 , 38 ms    |
-| MILP   |   54 , 76 ms   |  416 , 390 ms  |  2007 , 1872 ms |
+| stdDP  | 0.23 , 6.52 ms |  17.8 , 396 ms |  478 , 8149 ms  |
+| parDP  | 1.00 , 2.90 ms |  7.0 , 111 ms  |  160 , 2368 ms  |
+| extDP  | 0.34 , 1.18 ms |  3.9 , 9.6 ms  |   20 , 41 ms    |
+| MILP   |   54 , 76 ms   |  416 , 390 ms  |  2007 , 1865 ms |
 
-(median, day/week over 5/2 seeds; month over 1 seed; the `month` with-reserve
-row is the `cold` solve, the dual at `n=2976` being too slow to dump a second
-wave. See `results/reserve_scaling.png`.)
+(median, day/week over 5/2 seeds, month over 1 seed. See
+`results/reserve_scaling.png`.)
 
 - **Energy-only, the base DP wins only at short horizons.** At `n=96` `stdDP`
   (0.23 ms) beats the run-length `extDP` (0.34 ms); from `n=672` up `extDP`
   overtakes it (3.9 ms vs 17.8 ms) and pulls away (`O(n^3)` vs near-linear).
 - **Pricing reserves flips the comparison.** It is nearly free for the
-  run-length DP (extDP grows only 2 to 3.4 times) but devastating for the base
+  run-length DP (extDP grows only 2 to 3.5 times) but devastating for the base
   DP, whose single-parabola inner loop must generalise to a multi-piece cost:
-  `stdDP` grows 28 times at `n=96`, 22 times at `n=672`, 18 times at `n=2976`,
+  `stdDP` grows 28 times at `n=96`, 22 times at `n=672`, 17 times at `n=2976`,
   to the point of becoming **slower than the MILP** at `n=672` and reaching
-  `~8.7 s` at `n=2976`. So with reserves the run-length **extDP wins at every
+  `~8.1 s` at `n=2976`. So with reserves the run-length **extDP wins at every
   horizon**, by up to two orders of magnitude.
 - **FastFlow parallelism pays once the solve is heavy enough.** Energy-only at
   `n=96` it does not (the thread-dispatch overhead is a one-off `cold` cost,
@@ -118,7 +117,8 @@ wave. See `results/reserve_scaling.png`.)
   across iterations is a median of `5` to `9` percent at `day` and `1` to `5`
   percent at `week` for every solver (the larger `day` figure is timing noise on
   sub-millisecond solves), so one median per unit summarises the iteration well
-  (see `ld_timing_<h>_vs_iter.png`). The spread across unit *types* is instead
+  (clearest at `day`, where the dual runs long enough for many dump waves, see
+  `ld_timing_day_vs_iter.png`). The spread across unit *types* is instead
   real and solver-dependent: with reserves at `day` the run-length `extDP` runs
   from `~0.35 ms` on a peaker to `~3.4 ms` on the old coal unit, a `~10x` range
   that tracks how many cost pieces the unit carries, while the base `stdDP`,
