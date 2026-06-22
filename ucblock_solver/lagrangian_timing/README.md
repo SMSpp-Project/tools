@@ -113,14 +113,9 @@ ranking entirely. Median warm time per solve, **no reserves, with reserves**:
   `extDP` throughout, and reserves barely move it (the reserve rows add little
   to the presolve).
 - **No drift along the dual, a real spread across unit types.** The warm time
-  is flat over the Lagrangian iterations: the per-unit coefficient of variation
-  across iterations is a median of `5` to `9` percent at `day` and `1` to `5`
-  percent at `week` for every solver (the larger `day` figure is timing noise on
-  sub-millisecond solves), so one median per unit summarises the iteration well
-  (clearest at `day`, where the dual runs long enough for many dump waves, see
-  `ld_timing_day_vs_iter.png`). The spread across unit *types* is instead
-  real and solver-dependent: with reserves at `day` the run-length `extDP` runs
-  from `~0.35 ms` on a peaker to `~3.4 ms` on the old coal unit, a `~10x` range
-  that tracks how many cost pieces the unit carries, while the base `stdDP`,
-  already saturated by the multi-piece reserve cost, flattens to `~1.7x` (see
-  `ld_timing_<h>_bytype.png`).
+  is flat along the Lagrangian iterations and governed by the unit type. The
+  flatness is in `ld_timing_day_vs_iter.png` (median per-unit coefficient of
+  variation within a few percent, clearest at `day` where the dual runs long
+  enough for many dump waves), the per-type spread in `ld_timing_<h>_bytype.png`:
+  the run-length `extDP` ranges an order of magnitude from peaker to old coal,
+  the reserve-saturated base `stdDP` only `~1.7x`.
