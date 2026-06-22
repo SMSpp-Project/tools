@@ -1194,9 +1194,10 @@ int main( int argc , char ** argv )
 
  // open the file - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
- // both the BlockConfig (-B) and the BlockSolverConfig (-S) must be
- // provided explicitly: the tool never falls back to any hardcoded default
- require_explicit_configs( bconf_file , sconf_file );
+ // only the BlockSolverConfig (-S) is mandatory; the BlockConfig (-B) is
+ // optional, defaulting to a built-in configuration when not given (see the
+ // default file lookup in process_args())
+ require_solver_config( sconf_file );
 
  netCDF::NcFile file;
  auto type = read_open_netCDF( file , filename );

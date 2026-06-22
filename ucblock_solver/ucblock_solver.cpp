@@ -110,10 +110,10 @@ int main( int argc , char ** argv )
   }
 
  // BlockConfig-ure and BlockSolverConfig-ure the [UC]Block - - - - - - - - -
- // both the BlockConfig (-B, the formulation) and the BlockSolverConfig
- // (-S) must be provided explicitly: the tool never falls back to any
- // hardcoded default Configuration
- require_explicit_configs( bconf_file , sconf_file );
+ // only the BlockSolverConfig (-S) is mandatory; the BlockConfig (-B, the
+ // formulation) is optional, defaulting to the deserialized formulation when
+ // not given (see the default file lookup in process_args())
+ require_solver_config( sconf_file );
 
  auto b_config = get_config( bconf_file );
  auto s_config = get_config( sconf_file );

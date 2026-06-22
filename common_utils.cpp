@@ -132,10 +132,10 @@ std::vector< option > long_opts = {
 std::string help =
  "  -h, --help                      print this help\n"
  "  -a, --save-state <file>         save State of the Solver\n"
- "  -B, --blockcfg <file>           Block Configuration\n"
+ "  -B, --blockcfg <file>           Block Configuration [BCfg.txt]\n"
  "  -b, --load-state <file>         load State for the Solver\n"
  "  -p, --prefix <path>             the prefix for all Block filenames\n"
- "  -S, --solvercfg <file>          Solver Configuration\n"
+ "  -S, --solvercfg <file>          Solver Configuration [BSCfg.txt]\n"
  "  -c, --configdir <path>          the prefix for all Config filenames\n"
  "  -I, --inputsol <file>           input Solution\n"
  "  -O, --outputsol <file>          output Solution\n"
@@ -265,6 +265,29 @@ void process_args( int argc , char ** argv ,
             << "Try '" << exe << " --help' for more information" << std::endl;
   exit( 1 );
   }
+
+ // if -B / -S was not given on the command line, fall back to the
+ // conventional default file name, but only when the file is actually
+ // reachable: a plain run then needs no -B / -S, while a missing default is
+ // silently ignored (so it produces no spurious "cannot open" message and -B
+ // stays genuinely optional). The lookup tries the conf_prefix location and,
+ // when no -c was given, also the conventional config/ subdirectory, where
+ // every tool keeps its configurations
+ auto default_config = [ & ]( const std::string & name ) -> std::string {
+  if( std::filesystem::exists( resolve_with_prefix( conf_prefix , name ) ) )
+   return( name );
+  if( conf_prefix.empty() ) {
+   auto in_subdir = std::string( "config/" ) + name;
+   if( std::filesystem::exists( in_subdir ) )
+    return( in_subdir );
+   }
+  return( std::string{} );
+  };
+
+ if( bconf_file.empty() )
+  bconf_file = default_config( "BCfg.txt" );
+ if( sconf_file.empty() )
+  sconf_file = default_config( "BSCfg.txt" );
 
  // note: bconf_file, sconf_file and sol_cfg_file are *not* resolved against
  // conf_prefix here: every consumer already resolves them at the point of
@@ -487,17 +510,6 @@ void require_solver_config( const std::string & bsc_file )
  if( bsc_file.empty() )
   throw( std::invalid_argument(
    "a BlockSolverConfig must be provided (did you forget the -S option?)" ) );
- }
-
-/*--------------------------------------------------------------------------*/
-
-void require_explicit_configs( const std::string & bc_file ,
-			       const std::string & bsc_file )
-{
- if( bc_file.empty() )
-  throw( std::invalid_argument(
-   "a BlockConfig must be provided (did you forget the -B option?)" ) );
- require_solver_config( bsc_file );
  }
 
 /*--------------------------------------------------------------------------*/

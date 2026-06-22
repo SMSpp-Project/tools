@@ -82,10 +82,10 @@ Usage:
 Options:
   -h, --help                      print this help
   -a, --save-state <file>         save State of the Solver
-  -B, --blockcfg <file>           Block Configuration
+  -B, --blockcfg <file>           Block Configuration [BCfg.txt]
   -b, --load-state <file>         load State for the Solver
   -p, --prefix <path>             the prefix for all Block filenames
-  -S, --solvercfg <file>          Solver Configuration
+  -S, --solvercfg <file>          Solver Configuration [BSCfg.txt]
   -c, --configdir <path>          the prefix for all Config filenames
   -I, --inputsol <file>           input Solution
   -O, --outputsol <file>          output Solution
@@ -99,6 +99,14 @@ Options:
 See the [`examples`](ucblock_solver/examples) directory for sample
 input files and configurations.
 
+When the `-B` and/or `-S` options are not given on the command line, the tools
+fall back to the conventional file names `BCfg.txt` and `BSCfg.txt`, looked up
+relative to the `-c` prefix and, when no `-c` is given, also in the
+conventional `config/` subdirectory. The fallback applies only when the file
+is actually reachable, so a missing default is silently ignored: a plain run
+thus needs no `-B`/`-S` as long as `BCfg.txt`/`BSCfg.txt` are reachable, while
+explicit `-B`/`-S` always take precedence.
+
 ### Block solver
 
 The input netCDF file can be a problem file or a Block file:
@@ -106,8 +114,9 @@ The input netCDF file can be a problem file or a Block file:
 - a problem file already contains a Block configuration and a Solver
   configuration, so if you provide them by command line they will be ignored;
 
-- a Block file needs a Block configuration and a Solver configuration to be
-  solved.
+- a Block file is solved with the given Solver configuration (or the default
+  `BSCfg.txt`); the Block configuration is optional, the Block being solved as
+  deserialized when none is given.
 
 See the [`examples`](ucblock_solver/examples) directory for sample input
 files and configurations.
