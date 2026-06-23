@@ -171,50 +171,24 @@ const std::string my_help =
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-void process_my_args( int argc , char ** argv )
+static bool process_specific_arg( int opt )
 {
- exe = get_filename( argv[ 0 ] );
- if( argc < 2 ) {
-  std::cout << exe << ": no input file\n"
-            << "Try " << exe << "' --help' for more information.\n";
-  exit( 1 );
+ switch( opt ) {  // non-standard options
+  case 'l': cuts_filename = std::string( optarg ); return( true );
+  case 'n': num_sub_blocks_per_stage = get_long_option();
+            if( num_sub_blocks_per_stage <= 0 ) {
+             std::cout << "The number of sub-Blocks per stage must be a "
+                       << "positive integer." << std::endl;
+             exit( 1 );
+             }
+            return( true );
+  case 'r': relax_integrality = true; return( true );
+  case 's': simulate_investment = true; return( true );
+  case 'x': initial_point_filename = std::string( optarg ); return( true );
+  case '?':
+  default:  return( false );
   }
-
- while( true ) {  // options
-  auto opt = getopt_long( argc , argv , short_opts.data() ,
-			  long_opts.data() , nullptr );
-  if( opt == -1 ) break;
-  if( process_standard_arg( opt ) )  // if it is a standard one
-   continue;                         // next
-
-  switch( opt ) {  // non-standard options
-   case 'l': cuts_filename = std::string( optarg ); break;
-   case 'n': { num_sub_blocks_per_stage = get_long_option();
-	       if( num_sub_blocks_per_stage <= 0 ) {
-		std::cout << "The number of sub-Blocks per stage must be a "
-			  << "positive integer." << std::endl;
-		exit( 1 );
-	        }
-	       break;
-               }
-   case 'r': relax_integrality = true; break;
-   case 's': simulate_investment = true; break;
-   case 'x': initial_point_filename = std::string( optarg ); break;
-   case '?': // Unrecognized option
-   default: std::cout << "Try " << exe << "' --help' for more information"
-		      << std::endl;
-            exit( 1 );
-   }
-  }  // end( while( true ) )
-
- if( optind < argc )  // last argument == [InvestmentBlock] filename
-  filename = std::string( argv[ optind ] );
- else {
- std::cout << exe << ": no input file" << std::endl
-            << "Try " << exe << "' --help' for more information" << std::endl;
-  exit( 1 );
-  }
- } // end( process_my_args )
+ } // end( process_specific_arg )
 
 /*--------------------------------------------------------------------------*/
 
@@ -898,94 +872,6 @@ void process_prob_file( const netCDF::NcFile & file )
 
 /*--------------------------------------------------------------------------*/
 
-std::string get_str_par( const ComputeConfig * compute_config ,
-                         const std::string & par_name )
-{
- for( const auto & pair : compute_config->str_pars )
-  if( pair.first == par_name )
-   return( pair.second );
-
- return "";
- }
-
-/*--------------------------------------------------------------------------*/
-
-int get_int_par( const ComputeConfig * compute_config ,
-		 const std::string & par_name )
-{
- for( const auto & pair : compute_config->int_pars )
-  if( pair.first == par_name )
-   return( pair.second );
-
- return( Inf< int >() );
- }
-
-/*--------------------------------------------------------------------------*/
-
-bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config )
-{
- BlockSolverConfig * inner_solver_config = nullptr;
- ComputeConfig * compute_config = nullptr;
-
- for( Index i = 0 ; i < sddp_solver_config->num_ComputeConfig() ; ++i ) {
-  if( sddp_solver_config->get_SolverName( i ) != "SDDPSolver" &&
-      sddp_solver_config->get_SolverName( i ) != "ParallelSDDPSolver" &&
-      sddp_solver_config->get_SolverName( i ) != "SDDPGreedySolver" )
-   continue;
-
-  compute_config = sddp_solver_config->get_SolverConfig( i );
-
-  // Check if strInnerBSC is present
-
-  auto strInnerBSC = get_str_par( compute_config , "strInnerBSC" );
-
-  if( strInnerBSC.empty() )
-   continue;
-
-  // If it is, check if it is a config for a LagrangianDualSolver
-
-  std::ifstream inner_solver_config_file
-   ( conf_prefix + strInnerBSC , std::ifstream::in );
-
-  if( ! inner_solver_config_file.is_open() )
-   continue;
-
-  std::string inner_config_name;
-  inner_solver_config_file >> eatcomments >> inner_config_name;
-  auto inner_config = Configuration::new_Configuration( inner_config_name );
-  inner_solver_config = dynamic_cast< BlockSolverConfig * >( inner_config );
-
-  if( ! inner_solver_config ) {
-   inner_solver_config_file.close();
-   delete inner_config;
-   continue;
-  }
-
-  try {
-   inner_solver_config_file >> *inner_solver_config;
-   }
-  catch( ... ) {
-   inner_solver_config_file.close();
-   delete inner_config;
-   continue;
-   }
-
-  inner_solver_config_file.close();
-
-  for( Index j = 0 ; j < inner_solver_config->num_ComputeConfig() ; ++j ) {
-   if( inner_solver_config->get_SolverName( j ) == "LagrangianDualSolver" ) {
-    delete inner_config;
-    return( true );
-    }
-   }
-  delete inner_config;
-  }
- return( false );
- }
-
-/*--------------------------------------------------------------------------*/
-
-
 void process_block_file( const netCDF::NcFile & file )
 {
  auto blocks = file.getGroups();
@@ -1020,22 +906,27 @@ void process_block_file( const netCDF::NcFile & file )
   inner_bsc_filename = get_str_par( compute_config , "strInnerBSC" );
   if( inner_bsc_filename.empty() )
    continue;
-  compute_config->str_pars.erase(
-     std::remove_if( compute_config->str_pars.begin() ,
-                     compute_config->str_pars.end() ,
-                     []( const auto & pair ) {
-                      return( pair.first == "strInnerBSC" ); } ) ,
-     compute_config->str_pars.end() );
+  erase_str_par( compute_config , "strInnerBSC" );
   break;
   }
+
+ // if strInnerBSC was not given, fall back to the conventional inner
+ // BlockSolverConfig, but only when it is actually reachable, so a plain run
+ // needs no explicit strInnerBSC and the parameter stays genuinely optional
+ if( inner_bsc_filename.empty() )
+  inner_bsc_filename = default_config_file( "BSCfg.txt" );
 
  if( inner_bsc_filename.empty() ) {
   std::cerr << "The BlockSolverConfig for the inner Block of the "
             << "InvestmentFunction must be given via the strInnerBSC "
             << "parameter in the ComputeConfig of the Solver of the "
-            << "InvestmentBlock." << std::endl;
+            << "InvestmentBlock, or be reachable as the conventional "
+            << "BSCfg.txt." << std::endl;
   exit( 1 );
   }
+
+ report_config_file( "inner BlockSolverConfig (strInnerBSC)" ,
+                     inner_bsc_filename );
 
  auto cleared_solver_config = solver_config->clone();
  cleared_solver_config->clear();
@@ -1188,9 +1079,16 @@ int main( int argc , char ** argv )
 		   my_long_opts.begin() , my_long_opts.end() );
  help.append( my_help );
 
+ // the InvestmentBlock is solved by a BundleSolver, configured in BSPar.txt;
+ // the inner Block of the InvestmentFunction is shaped by InnerBCfg.txt and
+ // solved as per BSCfg.txt, the conventional default for strInnerBSC (see
+ // process_block_file())
+ default_bconf_name = "InnerBCfg.txt";
+ default_sconf_name = "BSPar.txt";
+
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
 
- process_my_args( argc , argv );
+ process_args( argc , argv , process_specific_arg );
 
  // open the file - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

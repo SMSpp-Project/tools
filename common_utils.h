@@ -89,6 +89,17 @@ extern std::string docopt_desc;     ///< tool description
 extern std::string filename;        ///< input filename
 extern std::string bconf_file;      ///< BlockConfig filename
 extern std::string sconf_file;      ///< BlockSolverConfig filename
+
+/// conventional default BlockConfig filename (-B), when reachable
+extern std::string default_bconf_name;
+/// conventional default BlockSolverConfig filename (-S), when reachable
+/** The name process_args() falls back to when -S is not given on the command
+ * line; defaults to the common "BSCfg.txt", but a tool whose top-level Solver
+ * is configured by a differently named file may override it before calling
+ * process_args() (e.g. investmentblock_solver, whose InvestmentBlock is solved
+ * by a BundleSolver configured in BSPar.txt, while BSCfg.txt configures the
+ * inner Block of the InvestmentFunction via strInnerBSC). */
+extern std::string default_sconf_name;
 extern std::string state_in_file;   ///< State to be loaded into the Solver
 extern std::string state_out_file;  ///< final State of the Solver
 extern std::string block_prefix;    ///< prefix for all Block files
@@ -254,6 +265,52 @@ BlockConfig * get_blockconfig( const std::string & conf_file );
 BlockSolverConfig * get_blocksolverconfig( const std::string & conf_file );
 
 /*--------------------------------------------------------------------------*/
+/// gets the value of a string parameter of a ComputeConfig
+/** Returns the value of the \p par_name string parameter of \p compute_config,
+ * or an empty string if it is not present. */
+
+std::string get_str_par( const ComputeConfig * compute_config ,
+                         const std::string & par_name );
+
+/*--------------------------------------------------------------------------*/
+/// gets the value of an integer parameter of a ComputeConfig
+/** Returns the value of the \p par_name integer parameter of \p compute_config,
+ * or Inf< int >() if it is not present. */
+
+int get_int_par( const ComputeConfig * compute_config ,
+                 const std::string & par_name );
+
+/*--------------------------------------------------------------------------*/
+/// removes a string parameter from a ComputeConfig, if present
+/** Erases the \p par_name string parameter from \p compute_config. Used for
+ * "pseudo-parameters" that a tool consumes but that are not real Solver
+ * parameters (e.g. strInnerBSC), so they are not passed on to the Solver when
+ * the ComputeConfig is applied. */
+
+void erase_str_par( ComputeConfig * compute_config ,
+                    const std::string & par_name );
+
+/*--------------------------------------------------------------------------*/
+/// reports a Configuration file in use, mirroring the "X is a Block file" log
+/** When verbosity_level >= 1, prints which Configuration file is being used
+ * for \p what (e.g. "BlockSolverConfig (-S)"), resolved against conf_prefix,
+ * or a "no <what>" note when \p file is empty. This lets a run with defaults
+ * make clear which files it picked up. A no-op when verbosity_level < 1. */
+
+void report_config_file( const std::string & what , const std::string & file );
+
+/*--------------------------------------------------------------------------*/
+/// resolves a conventional default Configuration file name
+/** Returns \p name if a file with that name is actually reachable at the
+ * conf_prefix location (the -c prefix, which a plain run points at the
+ * config/ directory); returns an empty string otherwise. This is the lookup
+ * behind the optional -B / -S defaults of process_args(), and is reused by
+ * tools that have further conventional Configuration files (e.g. the inner
+ * BlockSolverConfig of investmentblock_solver). */
+
+std::string default_config_file( const std::string & name );
+
+/*--------------------------------------------------------------------------*/
 /// BlockConfig-ure and BlockSolverConfig-ure a Block
 /** \p b_config and \p s_config can be either a, respectively, BlockConfig or
  * BlockSolverConfig, or a "meta" Configuration, i.e., a
@@ -285,7 +342,7 @@ void cleanup_bsc( Block * block , Configuration * s_config );
 /** Throws std::invalid_argument if \p bsc_file is empty. A solver
  * configuration is needed to solve anything; when -S is not given,
  * process_args() falls back to the conventional BSCfg.txt if it is reachable
- * (relative to conf_prefix), so this only fires when no configuration can be
+ * through the -c prefix, so this only fires when no configuration can be
  * found at all. The BlockConfig (-B) is not required here, as a generic
  * Block may be solved as deserialized. */
 

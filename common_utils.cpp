@@ -23,6 +23,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include <algorithm>
 #include <iostream>
 
 #include <Block.h>
@@ -90,6 +91,9 @@ std::string docopt_desc {};     ///< tool description
 std::string filename {};        ///< input filename
 std::string bconf_file {};      ///< BlockConfig filename
 std::string sconf_file {};      ///< BlockSolverConfig filename
+
+std::string default_bconf_name = "BCfg.txt";   ///< default -B filename
+std::string default_sconf_name = "BSCfg.txt";  ///< default -S filename
 std::string state_in_file {};   ///< State to be loaded into the Solver
 std::string state_out_file {};  ///< final State of the Solver
 std::string block_prefix {};    ///< prefix for all Block files
@@ -268,26 +272,19 @@ void process_args( int argc , char ** argv ,
 
  // if -B / -S was not given on the command line, fall back to the
  // conventional default file name, but only when the file is actually
- // reachable: a plain run then needs no -B / -S, while a missing default is
- // silently ignored (so it produces no spurious "cannot open" message and -B
- // stays genuinely optional). The lookup tries the conf_prefix location and,
- // when no -c was given, also the conventional config/ subdirectory, where
- // every tool keeps its configurations
- auto default_config = [ & ]( const std::string & name ) -> std::string {
-  if( std::filesystem::exists( resolve_with_prefix( conf_prefix , name ) ) )
-   return( name );
-  if( conf_prefix.empty() ) {
-   auto in_subdir = std::string( "config/" ) + name;
-   if( std::filesystem::exists( in_subdir ) )
-    return( in_subdir );
-   }
-  return( std::string{} );
-  };
-
+ // reachable through the -c prefix: a run that points -c at the config/
+ // directory then needs no -B / -S, while a missing default is silently
+ // ignored (so it produces no spurious "cannot open" message and -B stays
+ // genuinely optional). See default_config_file() for the lookup rules
  if( bconf_file.empty() )
-  bconf_file = default_config( "BCfg.txt" );
+  bconf_file = default_config_file( default_bconf_name );
  if( sconf_file.empty() )
-  sconf_file = default_config( "BSCfg.txt" );
+  sconf_file = default_config_file( default_sconf_name );
+
+ // report which Configuration files are in use, so a run with defaults makes
+ // clear which files it picked up (mirrors the "X is a Block file" message)
+ report_config_file( "BlockConfig (-B)" , bconf_file );
+ report_config_file( "BlockSolverConfig (-S)" , sconf_file );
 
  // note: bconf_file, sconf_file and sol_cfg_file are *not* resolved against
  // conf_prefix here: every consumer already resolves them at the point of
@@ -377,6 +374,67 @@ BlockSolverConfig * get_blocksolverconfig( const std::string & conf_file )
  if( ! bscfg )
   delete cfg;
  return( bscfg );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+std::string get_str_par( const ComputeConfig * compute_config ,
+                         const std::string & par_name )
+{
+ for( const auto & pair : compute_config->str_pars )
+  if( pair.first == par_name )
+   return( pair.second );
+ return( "" );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+int get_int_par( const ComputeConfig * compute_config ,
+                 const std::string & par_name )
+{
+ for( const auto & pair : compute_config->int_pars )
+  if( pair.first == par_name )
+   return( pair.second );
+ return( Inf< int >() );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+void erase_str_par( ComputeConfig * compute_config ,
+                    const std::string & par_name )
+{
+ auto & str_pars = compute_config->str_pars;
+ str_pars.erase( std::remove_if( str_pars.begin() , str_pars.end() ,
+                                 [ & ]( const auto & pair ) {
+                                  return( pair.first == par_name ); } ) ,
+                 str_pars.end() );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+void report_config_file( const std::string & what , const std::string & file )
+{
+ if( verbosity_level < 1 )
+  return;
+ if( file.empty() )
+  std::cout << "no " << what << std::endl;
+ else
+  std::cout << resolve_with_prefix( conf_prefix , file ) << " is the "
+            << what << std::endl;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+std::string default_config_file( const std::string & name )
+{
+ // look for the file only at the conf_prefix location (the -c prefix, which
+ // a plain run points at the config/ directory); a missing default is
+ // reported as an empty string, so the caller can keep the file genuinely
+ // optional. The bare \p name is returned, not the resolved path, since
+ // every consumer re-resolves it against conf_prefix at the point of use
+ if( std::filesystem::exists( resolve_with_prefix( conf_prefix , name ) ) )
+  return( name );
+ return( std::string{} );
  }
 
 /*--------------------------------------------------------------------------*/

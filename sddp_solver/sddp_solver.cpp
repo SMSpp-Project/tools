@@ -913,29 +913,6 @@ BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block )
 
 /*--------------------------------------------------------------------------*/
 
-std::string get_str_par( ComputeConfig * compute_config ,
-                         std::string par_name )
-{
- for( const auto & pair : compute_config->str_pars )
-  if( pair.first == par_name )
-   return( pair.second );
-
- return( "" );
- }
-
-/*--------------------------------------------------------------------------*/
-
-int get_int_par( ComputeConfig * compute_config , std::string par_name )
-{
- for( const auto & pair : compute_config->int_pars )
-  if( pair.first == par_name )
-   return( pair.second );
-
- return( Inf< int >() );
- }
-
-/*--------------------------------------------------------------------------*/
-
 bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config )
 {
  if( ! sddp_solver_config )
@@ -1266,12 +1243,7 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
  lagrangian_dual_compute_config->int_pars.push_back(
                              std::make_pair( "int_LDSlv_CloneCfg" , 1 ) );
 
- compute_config->str_pars.erase(
-    std::remove_if( compute_config->str_pars.begin() ,
-                    compute_config->str_pars.end() ,
-                    []( const auto & pair ) {
-                     return( pair.first == "strInnerBSC" ); } ) ,
-    compute_config->str_pars.end() );
+ erase_str_par( compute_config , "strInnerBSC" );
 
  /* The extra Configuration of the SDDPSolver and the SDDPGreedySolver is a
   * vector with pointers to the following elements (in that order):

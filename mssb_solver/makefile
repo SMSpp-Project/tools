@@ -58,6 +58,11 @@ MLIB =  $(SMS++LIB) $(MSSBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 $(DIR)/mssb_solver: $(DIR)/mssb_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/mssb_solver $^ $(MLIB) $(SW)
 
+# par_build_test: construction (de-serialization) micro-benchmark, see
+# par_build_test.cpp; reuses the same objects/libraries as mssb_solver
+$(DIR)/par_build_test: $(DIR)/par_build_test.o $(MOBJ)
+	$(CC) -o $(DIR)/par_build_test $^ $(MLIB) $(SW)
+
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
@@ -72,5 +77,8 @@ MH =    $(SMS++H) $(MSSBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(CMMNUH)
 $(DIR)/mssb_solver.o: $(DIR)/mssb_solver.cpp \
     $(DIR)/../common_utils.h $(MH)
 	$(CC) -c $(DIR)/mssb_solver.cpp -o $@ $(MINC) $(SW)
+
+$(DIR)/par_build_test.o: $(DIR)/par_build_test.cpp $(MH)
+	$(CC) -c $(DIR)/par_build_test.cpp -o $@ $(MINC) $(SW)
 
 ############################ End of makefile #################################
