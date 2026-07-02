@@ -1,8 +1,8 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - LPBSCfg-LD2.txt - - - - - - - - - - - - - - -
 #
-# A txt description of a BlockSolverConfig for a TSSBlock to be solved by a
-# LagrangianDualSolver using a BundleSolver as the inner Solver
+# A txt description of a BlockSolverConfig for a sub-Block of the TSSBlock
+# to be solved by a LagrangianDualSolver using a BundleSolver as the inner Solver
 #
 #   Antonio Frangioni, Donato Meoli
 #
@@ -13,11 +13,11 @@ BlockSolverConfig     # exact type of the Configuration object
 
 1  # the BlockSolverConfig is a "differential" one
 
-1  # number of (the names of) Solver in this BlockSolverConfig
+1 # number of (the names of) Solver in this BlockSolverConfig
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
 LagrangianDualSolver    # name of Solver
 
-1  # number of ComputeConfig in this BlockSolverConfig
+1 # number of ComputeConfig in this BlockSolverConfig
 
 # now all the ComputeConfig
 # 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -1,3 +1,4 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - InnerBSCfg2.txt - - - - - - - - - - - - - - -
 #
 # A "meta" BlockSolverConfig: a map from a Block classname() to the
