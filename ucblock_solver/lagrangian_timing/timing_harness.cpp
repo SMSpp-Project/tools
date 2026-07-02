@@ -39,7 +39,8 @@
  * a BlockSolverConfig from a .txt file (the SMS++ standard way -- never
  * new_Solver()/set_par() by hand), and the MILP formulation comes from a
  * BlockConfig .txt file. The config files live in <dir>/config/ (the driver
- * symlinks the tool's config/ there). The files are:
+ * copies the tool's shared config/ there, overlaid with this study's own
+ * config/). The files are:
  *
  *   - TUBSCfg-stdDP.txt : BlockSolverConfig -> ThermalUnitDPSolver (serial)
  *   - TUBSCfg-parDP.txt : BlockSolverConfig -> ThermalUnitDPSolver (parallel)
@@ -234,8 +235,8 @@ int main( int argc , char ** argv )
  int stride    = argc > 3 ? std::atoi( argv[ 3 ] ) : 1;
  int milp_reps = argc > 4 ? std::atoi( argv[ 4 ] ) : 3;
 
- // config directory: <dir>/config (the driver symlinks the tool's config/
- // there)
+ // config directory: <dir>/config (the driver merges the tool's shared
+ // config/ and this study's config/ there)
  const std::string cfg = dir + "/config";
  const std::string stdDP_bsc = cfg + "/TUBSCfg-stdDP.txt";
  const std::string parDP_bsc = cfg + "/TUBSCfg-parDP.txt";

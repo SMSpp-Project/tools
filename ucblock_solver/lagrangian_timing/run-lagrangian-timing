@@ -11,7 +11,7 @@
 #      LagrangianDualSolver, dumping every inner ThermalUnitBlock as
 #      TUB-<unit>-<iter>.nc4 (the unit's Lagrangian costs there) every
 #      intEverykIt iterations -- the dump stride is the standard
-#      Solver::intEverykIt parameter in config/LDCfg.txt (300: the LD runs
+#      Solver::intEverykIt parameter in ../config/LDCfg.txt (300: the LD runs
 #      ~10^4 iterations, so this samples ~30 points / instance);
 #   2. times FOUR solvers on each dump (the timing_harness executable):
 #      ThermalUnitDPSolver (serial and parallel, intMaxThread 0 = all cores as
@@ -25,44 +25,40 @@
 #      time vs normalized iteration (per gen_type) and time by gen_type
 #      (plot_lagrangian_timing.py; needs python3 + numpy + matplotlib).
 #
-# Findings (PARMIN=0 build, i.e. FastFlow forced on every horizon; day = 5 seeds
-# x 2 dump waves (iter 300+600), week = 2 seeds, month = 4 seeds from the earlier
-# full-iteration run -- seed2's month timing run segfaults, under investigation):
-# the solve time is flat along the LD iteration (~1.5-3% on every horizon and
-# solver) and is governed by the unit *type* (day: peakers ~120us ... Coal_old
-# ~1500us, ~13x). Mean time per unit solve scales very differently with the
-# horizon T (day 96 / week 672 / month 2976):
+# Findings (full tables and plots in README.md and results/config_c/): the
+# solve time is flat along the LD iteration (a few percent on every horizon and
+# solver) and is governed by the unit *type*. Median warm time per solve on the
+# factorial instances, energy-only / +reserves / +reserves+reactive:
 #
-#            day      week     month
-#   stdDP    223us   21.7ms   446.0ms     (superlinear, ~T^2)
-#   parDP    492us   10.1ms   225.6ms     (FastFlow; 2.2x SLOWER than stdDP at
-#                                          day, 2.1x FASTER from week up -- the
-#                                          thread-dispatch overhead pays off only
-#                                          once a single solve is >~1ms; with the
-#                                          base TUDPS_PAR_MIN_N=768, day+week
-#                                          (both < 768) would fall back to serial,
-#                                          this run forced the parallel path with
-#                                          PARMIN=0)
-#   extDP    338us    5.1ms    26.3ms     (~linear-ish)
-#   MILP      70ms    382ms    17.3ms     (T+P/C integer; the day/week ms-scale is
-#                                          NOT B&B/degeneracy nor a QP: the Gurobi
-#                                          log shows a linear MILP solved at the
-#                                          ROOT in 1 node, ~77% of the time in
-#                                          per-solve model-build + PRESOLVE (~0.1s
-#                                          at n=96). Data-dependent: at a ~0 dual
-#                                          (iter 1) presolve collapses it to 0.7ms,
-#                                          at a non-trivial dual it can't reduce ->
-#                                          full ~0.1s every solve. So Gurobi pays a
-#                                          fixed build+presolve cost each of the
-#                                          ~10^4 LD solves while the DP is sub-ms:
-#                                          a ~500x argument for the DP in the LD
-#                                          loop. The old 0.85ms/4ms were a lighter
-#                                          pre-reserve model build, not this one.)
+#            day n=96            week n=672           month n=2976
+#   stdDP    0.40 / 8.8 / 9.4ms  23 / 487 / 637ms     0.63 / 8.9 / 9.9s
+#            (superlinear, the O(n^3) ED sweep; pricing reserves generalises
+#             its single-parabola inner loop to a multi-piece per-period cost,
+#             14-22x, making it slower than the MILP from week up)
+#   parDP    0.93 / 4.1 / 4.7ms  11 / 167 / 220ms     0.24 / 3.0 / 2.9s
+#            (FastFlow workers on the per-source ED sweep, forced on every
+#             horizon by config/TUBSCfg-parDP.txt intParMinN 0; the thread
+#             dispatch pays only once a single solve is >~1ms, i.e. from week
+#             up energy-only, already at day with reserves)
+#   extDP    0.57 / 1.8 / 1.8ms  5.9 / 12 / 19ms      22 / 45 / 54ms
+#            (run-length, near-linear; it already manipulates piecewise-
+#             quadratic value functions so reserves cost only 2-3x: with
+#             reserves it wins at every horizon, by up to two orders of
+#             magnitude)
+#   MILP      77 / 102 / 111ms   433 / 459 / 559ms    2.5 / 1.8 / 2.0s
+#            (T+P/C integer, NOT B&B-bound: the Gurobi log shows a linear
+#             MILP root-optimal in 1 node, the time is per-solve model build
+#             + PRESOLVE, ~0.1s at n=96 to ~2s at n=2976, and data-dependent:
+#             at a ~0 dual presolve collapses the model to sub-ms, at any
+#             non-trivial dual it cannot reduce -> the full cost every solve;
+#             nearly reserve-insensitive)
 #
-# so the standard DP wins only on short horizons; from week up the extended DP
-# is ~4-17x faster than it; the parallel (FastFlow) DP is ~2x SLOWER than serial
-# stdDP at day (n=96, dispatch overhead on a ~0.2ms solve) but ~2x FASTER from
-# week up, though it stays ~2x slower than extDP everywhere.
+# Energy-only the base DP wins only at day; with reserves the run-length extDP
+# wins at every horizon; reactive pricing adds a further ~10-30% on the DPs.
+# Gurobi pays its fixed build+presolve cost on each of the ~10^4 LD solves
+# while the DP is sub-ms to ms: the argument for the exact DP inside the LD
+# loop. The bottleneck of the whole dual is the bundle master QP, not the unit
+# solves: run-ld-vs-tpc measures that side.
 #
 # This study is confined to tools/ucblock_solver/lagrangian_timing/ (NOT in the
 # base ucblock_solver, which never carries the SAVE_TUB dump, and NOT in the
@@ -92,7 +88,7 @@
 # run: the FULL ~10^4-iter LD solve is the wall-clock bottleneck (0.78 iter/s
 # at n=96, 0.045 at n=672), and the study only needs a few strided dump waves
 # since the per-unit solve time is flat along the LD iteration; the driver then
-# uses a per-run COPY of CONFIG with intMaxIter patched, so config/LDCfg.txt is
+# uses a per-run COPY of CONFIG with intMaxIter patched, so ../config/LDCfg.txt is
 # left untouched. e.g. LD_MAXITER=700 -> 2 waves (iter 300+600) at intEverykIt
 # 300),
 # LD_EVERYK (if set, the dump stride intEverykIt, i.e. how many dump waves a
@@ -137,7 +133,12 @@ find_bin() {
 SOLVER="${UCBLOCK_SOLVER:-$(find_bin ucblock_solver || true)}"
 HARNESS="${TIMING_HARNESS:-$(find_bin timing_harness || true)}"
 
-JSONDIR="$ROOT/UCBlock/tools/json2netCDF/instances_singlebus"
+# gen_type JSON directory (read as <JSONDIR>/sb_<h>_seed<s>.json); override with
+# LD_JSONDIR when the instances use a different naming, e.g. the reserve/reactive
+# factorial whose JSONs are staged under their own names. The fleet is identical
+# across the reserve/reactive variants of a given (size,horizon,seed), so any
+# variant's JSON gives the same gen_type map.
+JSONDIR="${LD_JSONDIR:-$ROOT/UCBlock/tools/json2netCDF/instances_singlebus}"
 # instance directory (the nc4s are <NCDIR>/<period>/sb_<h>_seed<s>.nc4); override
 # with LD_NCDIR to run an alternative instance set, e.g. the energy-only copies
 # made by ./make-noreserve for the no-reserve arm of the reserve experiment. The
@@ -183,28 +184,27 @@ for h in $HORIZONS; do
     inst="$DATADIR/sb_${h}_seed$s.nc4"
     [ -f "$inst" ] || { echo "skip $h seed$s: $inst not found"; continue; }
     D="$OUT/dumps_${h}_$s"; rm -rf "$D"; mkdir -p "$D"
-    # configs: symlink the shared CONFIG dir by default; if LD_MAXITER and/or
-    # LD_EVERYK are set use a per-run COPY with the LD iteration cap and/or the
-    # dump stride patched in, so the shared config/LDCfg.txt (also used by
-    # sddp/tssb/invest) is never modified. LD_EVERYK sets intEverykIt, i.e. how
-    # many dump waves a unit gets: the warm-resolve timing wants several (a unit
-    # is loaded once at the first wave, then re-solved at each later one).
-    if [ -n "${LD_MAXITER:-}" ] || [ -n "${LD_EVERYK:-}" ]; then
-      cp -rL "$CONFIG" "$D/config"
-      [ -n "${LD_MAXITER:-}" ] && sed -i -E \
-        "s/^([[:space:]]*intMaxIter[[:space:]]+)[0-9]+/\1${LD_MAXITER}/" \
-        "$D/config/LDCfg.txt"
-      [ -n "${LD_EVERYK:-}" ] && sed -i -E \
-        "s/^([[:space:]]*intEverykIt[[:space:]]+)[0-9]+/\1${LD_EVERYK}/" \
-        "$D/config/LDCfg.txt"
-    else
-      ln -sfn "$CONFIG" "$D/config"
-    fi
+    # configs: build a per-run MERGED copy of the shared CONFIG dir and this
+    # study's config/ (the harness reads both the shared TUBSCfg-DP.txt and the
+    # study TUBSCfg-stdDP/parDP/MILP.txt + TUBCfg-tpc.txt from <dumpdir>/config),
+    # so the shared configs (also used by sddp/tssb/invest) are never modified.
+    # If LD_MAXITER and/or LD_EVERYK are set, the LD iteration cap and/or the
+    # dump stride are patched into the copy. LD_EVERYK sets intEverykIt, i.e.
+    # how many dump waves a unit gets: the warm-resolve timing wants several (a
+    # unit is loaded once at the first wave, then re-solved at each later one).
+    cp -rL "$CONFIG" "$D/config"
+    cp -f "$HERE"/config/*.txt "$D/config/"
+    [ -n "${LD_MAXITER:-}" ] && sed -i -E \
+      "s/^([[:space:]]*intMaxIter[[:space:]]+)[0-9]+/\1${LD_MAXITER}/" \
+      "$D/config/LDCfg.txt"
+    [ -n "${LD_EVERYK:-}" ] && sed -i -E \
+      "s/^([[:space:]]*intEverykIt[[:space:]]+)[0-9]+/\1${LD_EVERYK}/" \
+      "$D/config/LDCfg.txt"
     echo "$h seed$s: running ucblock_solver (LagrangianDualSolver, SAVE_TUB) ..."
     # the dumping is strided at the source (an instance runs ~10^4 LD iterations
     # x 50 units, so dumping every one is ~10^5 small files and easily blows a
     # /tmp quota): the dump stride is the intEverykIt parameter of the inner
-    # BundleSolver in config/LDCfg.txt (true iteration number kept in the
+    # BundleSolver in the shared ../config/LDCfg.txt (true iteration number kept in the
     # filename), and every dump is then read (harness stride 1)
     ( cd "$D" && \
         "$SOLVER" -B config/InnerBCfg.txt -S config/UCBSCfg-LD.txt "$inst" \
