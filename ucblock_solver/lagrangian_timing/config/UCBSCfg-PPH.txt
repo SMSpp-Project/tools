@@ -48,7 +48,7 @@ ComputeConfig  # exact type of the ComputeConfig object
 # now all the integer parameters
 intMaxIterPPH      10 # max number of outer PPH iterations (default = Inf<int>())
 intDoEasy           1 # do easy components for (some) LagBFunction
-intMaxIter          1 # max number of iterations for each (inner) LD call
+intMaxIter        100 # max number of iterations for each (inner) LD call
 intMaxThread        1 # MaxThread, max number of new tasks to spawn
 intLogVerb          3 # log verbosity of main Bundle algorithm
 intWZNorm           2 # which norm to use in the norm-based stopping condition

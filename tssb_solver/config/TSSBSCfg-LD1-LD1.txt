@@ -50,7 +50,7 @@ inttSPar1  12     # long-term t-strategy (0 = none, 4 = soft, 8 = hard, 12 = bal
 intMaxNrEvls 2    # maximum number of function evaluations at each iteration
 intMPName  15     # MP solver: 0 = QPP, 7 = Cplex/Gurobi with quadratic stabilization
                   # + 8 = check for duplicate linearizations
-intTrgtMng  31    # bit-wise encoding targets and accuracies management:
+intTrgtMng  0     # bit-wise encoding targets and accuracies management:
                   # bit 0: if lower/upper target is set to each convex/concave component
                   # bit 1: if upper/lower target is set to each convex/concave component
                   # bit 2-3: if accuracy is set (2 = upper - lower, 3 = using EpsU)
@@ -76,9 +76,9 @@ intRstAlg  2      # parameter to handle the reset of the algorithm
 16 # number of double parameters
 
 # now all the double parameters
-dblRelAcc  1e-5   # relative accuracy required to solution
+dblRelAcc  1e-6   # relative accuracy required to solution
 dblNZEps   1e-2   # stopping parameter: threshold to declare 0 the || residual ||
-dbltStar   -1e+0   # stopping parameter: multiplied to || residual || to estimate gap
+dbltStar   1e+6   # stopping parameter: multiplied to || residual || to estimate gap
 dblBPar5   4      # first parameter for dynamic max n. of items per iteration
 dblm1      -0.30  # a NS is possible if (~) Fi( Lambda1 ) >= Fi( Lambda ) + | m1 | v*
 dblm2      0.90   # a SS is possible if Fi( Lambda1 ) <= Fi( Lambda ) + ( 1 - m2 ) v*
