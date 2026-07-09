@@ -1,0 +1,11 @@
+instance,R,maxIterPPH,pph_status,pph_ub,pph_time
+sb_10u_day_res_reac_seed1,1e1,10,12,2.68008152e+06,2.15350579e+02
+sb_10u_day_res_reac_seed1,1e1,30,12,2.68008152e+06,2.04063020e+02
+sb_10u_day_res_reac_seed1,1e2,10,12,2.68008152e+06,1.31270339e+02
+sb_10u_day_res_reac_seed1,1e2,30,12,2.68008152e+06,1.30673694e+02
+sb_10u_day_res_reac_seed1,1e3,10,12,2.67773068e+06,7.46690522e+01
+sb_10u_day_res_reac_seed1,1e3,30,12,2.67773068e+06,7.24956033e+01
+sb_10u_day_res_reac_seed1,1e4,10,12,2.92051033e+06,6.87207008e+01
+sb_10u_day_res_reac_seed1,1e4,30,12,2.92213885e+06,6.84552341e+01
+sb_10u_day_res_reac_seed1,1e5,10,12,2.92051033e+06,6.88739417e+01
+sb_10u_day_res_reac_seed1,1e5,30,12,2.68008152e+06,6.84242548e+01

@@ -21,13 +21,13 @@
 # Findings (seed 1, 10/20/50 units x day/week/month, both reserve arms; full
 # table in results/config_c/ldtpc/ld_vs_tpc_all.csv and README.md): the LP and
 # MIP bounds coincide across the two arms -- the reactive fields do not move
-# the monolithic optimum, they enter the dual only through the dualised prices,
-# making the LD strictly harder. At day the LD closes to within 0.02-0.08% of
-# the LP bound in its budget; from week up the gap degrades with size and with
-# the number of dualised prices, down to no progress at 50 units x month where
-# the LP still delivers its bound in ~25 minutes. The single-unit solves are
-# milliseconds there (see run-lagrangian-timing): the dual's bottleneck is the
-# bundle master QP.
+# the monolithic optimum, they enter the dual only through the dualised prices.
+# COLD-started (multipliers at zero, this script), the dual is not viable at
+# scale: at day it closes to within 0.02-0.08% of the LP bound in its budget,
+# but from week up the master QP pays minutes per iteration and the gap
+# degrades with size, down to no meaningful bound at 50 units x month where
+# the LP delivers in ~25 minutes. The warm-started dual of run-warm-ld is the
+# viable counterpart; this script remains the cold baseline.
 #
 # Run on a QUIET machine: the LD and the MILP both peg all cores, so a
 # concurrent job corrupts the timings.

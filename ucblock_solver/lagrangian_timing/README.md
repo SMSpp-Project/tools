@@ -130,18 +130,22 @@ reserves priced (+r), with reserves and reactive power priced (+r+q)**:
   cost each time, so the MILP stays one to two orders of magnitude behind
   `extDP` throughout, and reserves barely move it (the reserve rows add little
   to the presolve).
-- **The bottleneck of the whole Lagrangian scheme is the bundle master, not
-  the unit solves.** `run-ld-vs-tpc` compares the full Lagrangian dual (bundle
-  master, extDP inner solvers, nominal 600 s budget) against the monolithic
-  T+Perspective-Cuts formulation, LP relaxation and integer, on the reserve
-  instances at 10/20/50 units x day/week/month
-  (`results/config_c/ldtpc/ld_vs_tpc_all.csv`). At `day` the dual closes to
-  within 0.02-0.08% of the LP bound; from `week` up the gap degrades with size
-  and with the number of dualised prices (reactive pricing makes the dual
-  strictly harder while leaving the monolithic optimum untouched), down to no
-  progress at 50 units x month, where the LP still delivers its bound in ~25
-  minutes. Fifty extDP solves cost tens of milliseconds per iteration there,
-  while the master QP reaches minutes per iteration.
+- **Warm-started, the Lagrangian dual certifies near-LP bounds in near-LP
+  time.** `run-warm-ld` solves each reserve instance once: LP relaxation ->
+  its duals initialise the multipliers -> bundle with extDP inner solvers
+  (budgeted by iterations: 200/100/50 at day/week/month) -> primal recovery
+  (`results/config_c/ldtpc/warm_ld_all.csv`). The bound lands within 0.4-1%
+  of the LP bound at `day` in ~70-100 s, within 0.6-3.3% at `week`, within
+  1.1-6% at `month`, where the LP warm start itself dominates the time; from
+  a warm point a master iteration costs ~1.4 s even at 50 units x month,
+  while cold-started the master pays minutes per iteration before yielding
+  any meaningful bound (`run-ld-vs-tpc`, `ld_vs_tpc_all.csv`). The reactive
+  arm consistently trails: the LP is blind to the reactive fields, so those
+  multipliers cannot be warm-started. At `day` the recovery returns a
+  feasible schedule in the same run (+1.1-1.3% above the LP bound, a ~1.5%
+  certified gap); at larger scales its restricted problems inherit the
+  monolithic intractability. The one monolithic computation the scheme
+  cannot avoid, the seeding LP, sets its time scale.
 - **No drift along the dual, a real spread across unit types.** The warm time
   is flat along the Lagrangian iterations and governed by the unit type. The
   flatness is in `ld_timing_day_vs_iter.png` (median per-unit coefficient of
