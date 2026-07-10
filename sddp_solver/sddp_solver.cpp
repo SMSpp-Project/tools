@@ -1691,6 +1691,18 @@ int main( int argc , char ** argv )
                    my_long_opts.begin() , my_long_opts.end() );
  help.append( my_help );
 
+ // default -B / -S so a plain run needs neither. The default -S is the
+ // SDDPSolver BlockSolverConfig sddp_solver.txt. The default -B is left empty
+ // on purpose: with no BlockConfig given, process_block_file() falls back to
+ // configure_Blocks(), which applies the "meta" BlockConfig SDDPBCfg.txt (or
+ // SDDPBCfg-LD.txt when the SDDPSolver uses a LagrangianDualSolver), the only
+ // config that linearises the PolyhedralFunctionBlock and shapes the
+ // network/units. A generic BCfg.txt would instead be applied verbatim and
+ // leave the PolyhedralFunctionBlock objective non-linear (MILPSolver then
+ // throws "Unknown type of Objective Function")
+ default_bconf_name = "";
+ default_sconf_name = "sddp_solver.txt";
+
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
 
  process_args( argc , argv , process_specific_arg );
