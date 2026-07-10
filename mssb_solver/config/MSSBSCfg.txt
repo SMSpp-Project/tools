@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - BSPar-MS.txt- - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - MSSBSCfg.txt- - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a MultiStageStochasticBlock to
 # be solved by a :MILPSolver on its deterministic equivalent (the extensive
@@ -35,5 +35,5 @@ HiGHSMILPSolver       # name of 1st Solver
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END BSPar-MS.txt- - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - END MSSBSCfg.txt- - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
