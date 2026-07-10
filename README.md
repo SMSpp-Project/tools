@@ -99,13 +99,43 @@ Options:
 See the [`examples`](ucblock_solver/examples) directory for sample
 input files and configurations.
 
-When the `-B` and/or `-S` options are not given on the command line, the tools
-fall back to the conventional file names `BCfg.txt` and `BSCfg.txt`, looked up
-relative to the `-c` prefix and, when no `-c` is given, also in the
-conventional `config/` subdirectory. The fallback applies only when the file
-is actually reachable, so a missing default is silently ignored: a plain run
-thus needs no `-B`/`-S` as long as `BCfg.txt`/`BSCfg.txt` are reachable, while
-explicit `-B`/`-S` always take precedence.
+When the `-B` and/or `-S` options are not given on the command line, each
+solver falls back to its own conventional default Configuration files, looked
+up relative to the `-c` prefix. For `sddp_solver`, `tssb_solver` and
+`mssb_solver` the `-c` prefix itself defaults to `config/`, so those need no
+`-c` at all when run from the tool directory. The per-tool defaults are:
+
+| tool                     | default `-B`                              | default `-S`      |
+|--------------------------|-------------------------------------------|-------------------|
+| `sddp_solver`            | `SDDPBCfg.txt` (or `SDDPBCfg-LD.txt`)      | `sddp_solver.txt` |
+| `tssb_solver`            | `TSSBCfg.txt`                             | `TSSBSCfg.txt`    |
+| `mssb_solver`            | `InnerBCfg.txt`                          | `BSPar-MS.txt`    |
+| `investmentblock_solver` | `InnerBCfg.txt`                          | `BSPar.txt`       |
+| `ucblock_solver`         | optional (deserialized formulation)       | `BSCfg.txt`       |
+| `block_solver`           | `BCfg.txt`                                | `BSCfg.txt`       |
+
+For `sddp_solver` the default `-B` is applied through the inner-Block "meta"
+BlockConfig (`SDDPBCfg.txt`, or `SDDPBCfg-LD.txt` when the SDDPSolver drives a
+LagrangianDualSolver), which linearises the `PolyhedralFunctionBlock` and
+shapes the network/units; passing a generic `BCfg.txt` instead is wrong and
+makes the MILPSolver throw "Unknown type of Objective Function". The fallback
+applies only when the file is actually reachable, so a missing default is
+silently ignored, and explicit `-B`/`-S` always take precedence.
+
+### Quick start (run the bundled example)
+
+From each tool's own directory, a plain run on the bundled example is:
+
+```sh
+cd sddp_solver            && sddp_solver SDDPBlock.nc4 -p examples/
+cd tssb_solver            && tssb_solver examples/toy_tssb.nc4
+cd mssb_solver            && mssb_solver examples/big_baked_L8.nc4
+cd ucblock_solver         && ucblock_solver examples/Bus_Test.nc4 -c config/ -B InnerBCfg.txt
+cd investmentblock_solver && investmentblock_solver InvestmentBlockBus.nc4 -c config/ -p examples/
+```
+
+`block_solver` is generic: it needs an explicit `-B`/`-S` matching the Block in
+the file, e.g. `block_solver <file>.nc4 -B <BlockConfig> -S <BlockSolverConfig>`.
 
 ### Block solver
 
