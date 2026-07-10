@@ -105,14 +105,14 @@ up relative to the `-c` prefix. For `sddp_solver`, `tssb_solver` and
 `mssb_solver` the `-c` prefix itself defaults to `config/`, so those need no
 `-c` at all when run from the tool directory. The per-tool defaults are:
 
-| tool                     | default `-B`                          | default `-S`      |
-|--------------------------|---------------------------------------|-------------------|
-| `sddp_solver`            | `SDDPBCfg.txt` (or `SDDPBCfg-LD.txt`) | `sddp_solver.txt` |
-| `tssb_solver`            | `TSSBCfg.txt`                         | `TSSBSCfg.txt`    |
-| `mssb_solver`            | `InnerBCfg.txt`                       | `BSPar-MS.txt`    |
-| `investmentblock_solver` | `InnerBCfg.txt`                       | `BSPar.txt`       |
-| `ucblock_solver`         | optional (deserialized formulation)   | `BSCfg.txt`       |
-| `block_solver`           | `BCfg.txt`                            | `BSCfg.txt`       |
+| tool                     | default `-B`                          | default `-S`   |
+|--------------------------|---------------------------------------|----------------|
+| `sddp_solver`            | `SDDPBCfg.txt` (or `SDDPBCfg-LD.txt`) | `SDDPSCfg.txt` |
+| `tssb_solver`            | `TSSBCfg.txt`                         | `TSSBSCfg.txt` |
+| `mssb_solver`            | `InnerBCfg.txt`                       | `MSSBSCfg.txt` |
+| `investmentblock_solver` | `InnerBCfg.txt`                       | `BSPar.txt`    |
+| `ucblock_solver`         | optional (deserialized formulation)   | `BSCfg.txt`    |
+| `block_solver`           | `BCfg.txt`                            | `BSCfg.txt`    |
 
 For `sddp_solver` the default `-B` is applied through the inner-Block "meta"
 BlockConfig (`SDDPBCfg.txt`, or `SDDPBCfg-LD.txt` when the SDDPSolver drives a
