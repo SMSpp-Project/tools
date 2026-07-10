@@ -146,6 +146,14 @@ int main( int argc , char ** argv )
 
  docopt_desc = "SMS++ MSSB solver.\n";
 
+ // Configuration files live in config/ by default; an explicit -c overrides
+ // this. Default -B / -S so a plain run needs neither: InnerBCfg.txt is the
+ // "meta" BlockConfig (per-class map for the inner stage Blocks) and
+ // BSPar-MS.txt the BlockSolverConfig for the MultiStageStochasticBlock
+ conf_prefix = "config/";
+ default_bconf_name = "InnerBCfg.txt";
+ default_sconf_name = "BSPar-MS.txt";
+
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
 
  process_args( argc , argv , process_specific_arg );

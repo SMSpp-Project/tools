@@ -30,7 +30,7 @@ HiGHSMILPSolver       # name of 1st Solver
 # 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # ComputeConfig of the :MILPSolver
 
-*MILPCfg.txt
+*config/MILPCfg.txt
 
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 

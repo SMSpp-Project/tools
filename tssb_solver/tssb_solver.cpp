@@ -146,6 +146,14 @@ int main( int argc , char ** argv )
 
  docopt_desc = "SMS++ TSSB solver.\n";
 
+ // Configuration files live in config/ by default; an explicit -c overrides
+ // this. Default -B / -S so a plain run needs neither: TSSBCfg.txt is the
+ // BlockConfig (anchor/sequential formulation) and TSSBSCfg.txt the
+ // BlockSolverConfig for the TwoStageStochasticBlock
+ conf_prefix = "config/";
+ default_bconf_name = "TSSBCfg.txt";
+ default_sconf_name = "TSSBSCfg.txt";
+
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
 
  process_args( argc , argv , process_specific_arg );
