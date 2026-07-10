@@ -68,5 +68,5 @@ strInnerBSC      config/BSPar-greedy-LD.txt   # BlockSolverConfig for the UCBloc
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - END SDDPSCfg-greedy-LD.txt- - - - - - - - - - - - - -
+# - - - - - - - - - - - - END SDDPSCfg-greedy-LD.txt- - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
