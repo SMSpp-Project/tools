@@ -122,6 +122,17 @@ makes the MILPSolver throw "Unknown type of Objective Function". The fallback
 applies only when the file is actually reachable, so a missing default is
 silently ignored, and explicit `-B`/`-S` always take precedence.
 
+The `-c` prefix is applied to *every* Configuration filename, not only the
+top-level `-B`/`-S` files but also every filename referenced from inside a
+config file: the `*filename` include mechanism and the `strInnerBSC` /
+`str_LagBF_BSCfg` meta-config chains. A run from any working directory therefore
+resolves every config relative to `-c`: point `-c` at the directory holding the
+`.txt` files and the tool needs no particular current directory (this is what
+lets an external driver such as pySMSpp invoke the tool from an arbitrary
+location). Consequently, filenames referenced from inside a config file are
+written *bare* (e.g. `*PFBCfg.txt`, `strInnerBSC UCBSCfg.txt`), without a
+`config/` component, since `-c` supplies the base directory.
+
 ### Quick start (run the bundled example)
 
 From each tool's own directory, a plain run on the bundled example is:
