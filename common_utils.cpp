@@ -281,15 +281,21 @@ void process_args( int argc , char ** argv ,
  if( sconf_file.empty() )
   sconf_file = default_config_file( default_sconf_name );
 
+ // hand the (final) -c prefix to Configuration, so that it is applied not only
+ // to the top-level -B / -S files but also to every filename referenced from
+ // *inside* a Configuration file (the "*filename" includes and the strInnerBSC
+ // meta-config chain), which are opened by SMS++/Solver code that only knows
+ // this executable-wide prefix. This mirrors Block::set_filename_prefix(),
+ // set from the -p prefix for the Block "filename" references. Because the
+ // prefix is now applied here, the -B / -S / Solution-config filenames are
+ // passed to Configuration::deserialize() *bare* (no resolve_with_prefix at the
+ // point of use), so it is prepended exactly once
+ Configuration::set_filename_prefix( std::string( conf_prefix ) );
+
  // report which Configuration files are in use, so a run with defaults makes
  // clear which files it picked up (mirrors the "X is a Block file" message)
  report_config_file( "BlockConfig (-B)" , bconf_file );
  report_config_file( "BlockSolverConfig (-S)" , sconf_file );
-
- // note: bconf_file, sconf_file and sol_cfg_file are *not* resolved against
- // conf_prefix here: every consumer already resolves them at the point of
- // use (get_config(), output Solution Configuration), so prepending the
- // prefix twice would yield a bogus "config/config/..." path
  }  // end( process_args )
 
 /*--------------------------------------------------------------------------*/
@@ -349,8 +355,9 @@ Configuration * get_config( const std::string & conf_file )
  if( conf_file.empty() )
   return( nullptr );
 
- auto cfg = Configuration::deserialize(
-                            resolve_with_prefix( conf_prefix , conf_file ) );
+ // the -c prefix is applied by Configuration itself (see set_filename_prefix()
+ // in process_args), so the bare name is passed here to avoid double-prefixing
+ auto cfg = Configuration::deserialize( conf_file );
  return( cfg );
  }
 
@@ -695,8 +702,7 @@ void write_final_Solution( Block * block , Configuration * cfg ,
  // use provided Configuration if any, otherwise (possibly) load one
  Configuration * outsolcfg = cfg;
  if( ( ! outsolcfg ) && ( ! sol_cfg_file.empty() ) )
-  if( ! ( outsolcfg = Configuration::deserialize(
-          resolve_with_prefix( conf_prefix , sol_cfg_file ) ) ) )
+  if( ! ( outsolcfg = Configuration::deserialize( sol_cfg_file ) ) )
    std::cout << "Warning: output Solution Configuration "
              << sol_cfg_file << " invalid" << std::endl;
 
@@ -747,8 +753,7 @@ int solve_all( Block * block )
  // prepare file and Configuration for final Solution(s) - - - - - - - - - - -
  Configuration * outsolcfg = nullptr;
  if( ( ! sol_output.empty() ) && ( ! sol_cfg_file.empty() ) )
-  if( ! ( outsolcfg = Configuration::deserialize(
-          resolve_with_prefix( conf_prefix , sol_cfg_file ) ) ) )
+  if( ! ( outsolcfg = Configuration::deserialize( sol_cfg_file ) ) )
    std::cout << "Warning: output Solution Configuration "
 	     << sol_cfg_file << " invalid" << std::endl;
 

@@ -938,10 +938,13 @@ bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config )
 
   // If it is, check if it is a config for a LagrangianDualSolver
 
-  // note: no conf_prefix here: file names referenced inside configuration
-  // files are relative to the directory the tool is run from, since they
-  // are also opened by the loading Solver, which knows no prefix
-  std::ifstream inner_solver_config_file( strInnerBSC , std::ifstream::in );
+  // resolve strInnerBSC against the executable-wide Configuration prefix (the
+  // -c prefix, see set_filename_prefix() in process_args), exactly as the
+  // loading Solver does when it re-opens this same file via
+  // Configuration::deserialize()
+  std::ifstream inner_solver_config_file(
+   resolve_with_prefix( Configuration::get_filename_prefix() , strInnerBSC ) ,
+   std::ifstream::in );
   if( ! inner_solver_config_file.is_open() )
    continue;
 
@@ -1014,8 +1017,10 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
    return;
 
   // If it is, check if it is a config for a LagrangianDualSolver
-  // note: no conf_prefix here, see the comment in the other overload
-  std::ifstream inner_solver_config_file( strInnerBSC , std::ifstream::in );
+  // resolve strInnerBSC against the Configuration prefix, see the other overload
+  std::ifstream inner_solver_config_file(
+   resolve_with_prefix( Configuration::get_filename_prefix() , strInnerBSC ) ,
+   std::ifstream::in );
 
   if( ! inner_solver_config_file.is_open() )
    return;

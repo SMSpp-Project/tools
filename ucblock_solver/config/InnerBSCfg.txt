@@ -27,9 +27,9 @@ SimpleConfiguration<std::map<std::string,Configuration*>>
 
 3 # the number of elements in the map
 
-ThermalUnitBlock        *config/TUBSCfg-DP.txt
-HydroSystemUnitBlock    *config/HSUBSCfg.txt
-*                       *config/OUBSCfg.txt
+ThermalUnitBlock        *TUBSCfg-DP.txt
+HydroSystemUnitBlock    *HSUBSCfg.txt
+*                       *OUBSCfg.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - END InnerBSCfg.txt- - - - - - - - - - - - - -

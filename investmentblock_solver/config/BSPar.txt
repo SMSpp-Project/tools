@@ -97,7 +97,7 @@ strInnerBSC  BSCfg.txt  # BlockSolverConfig for the inner Block of the
 # when the inner UCBlock is solved by Lagrangian decomposition, the per-
 # component (meta) BlockSolverConfig of the LagBFunctions goes here: a map
 # from the inner-Block classname() to its BlockSolverConfig (see InnerBSCfg.txt)
-#str_LagBF_BSCfg	config/InnerBSCfg.txt # meta BlockSolverConfig for the LagBFunctions
+#str_LagBF_BSCfg	InnerBSCfg.txt # meta BlockSolverConfig for the LagBFunctions
 
 0 # number of vector-of-int parameters
 
