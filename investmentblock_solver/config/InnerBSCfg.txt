@@ -21,9 +21,9 @@ SimpleConfiguration<std::map<std::string,Configuration*>>
 
 3 # the number of elements in the map
 
-ThermalUnitBlock	*config/TUBSCfg-DP.txt   # specialized DP solver
-HydroSystemUnitBlock	*config/HSUBSCfg.txt  # hard component (primal solution needed)
-*			*config/LPBSCfg.txt   # everything else
+ThermalUnitBlock	*TUBSCfg-DP.txt   # specialized DP solver
+HydroSystemUnitBlock	*HSUBSCfg.txt  # hard component (primal solution needed)
+*			*LPBSCfg.txt   # everything else
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - END InnerBSCfg.txt- - - - - - - - - - - - - - -

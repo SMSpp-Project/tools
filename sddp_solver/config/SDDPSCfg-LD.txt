@@ -50,8 +50,8 @@ dblAccuracy 0 # Relative accuracy for declaring a solution optimal
 3 # number of string parameters
 
 # now all the string parameters
-#strInnerBSC   config/UCBSCfg.txt   # BlockSolverConfig for the UCBlock
-strInnerBSC   config/BSPar-LD.txt          # BlockSolverConfig for the UCBlock
+#strInnerBSC   UCBSCfg.txt   # BlockSolverConfig for the UCBlock
+strInnerBSC   BSPar-LD.txt          # BlockSolverConfig for the UCBlock
 #strInnerBC   uc_blockconfig.txt    # BlockConfig for the UCBlock
 strSubSolverLogFilePrefix sub-log-
 strOutputFile cuts.txt

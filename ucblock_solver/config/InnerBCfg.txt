@@ -21,10 +21,10 @@ SimpleConfiguration<std::map<std::string,Configuration*>>
 
 4 # the number of elements in the map
 
-ThermalUnitBlock        *config/TUBCfg.txt
-DCNetworkBlock          *config/DCNBCfg.txt
-ACNetworkBlock          *config/ACBCfg.txt
-PolyhedralFunctionBlock *config/PFBCfg.txt
+ThermalUnitBlock        *TUBCfg.txt
+DCNetworkBlock          *DCNBCfg.txt
+ACNetworkBlock          *ACBCfg.txt
+PolyhedralFunctionBlock *PFBCfg.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - END InnerBCfg.txt - - - - - - - - - - - - -

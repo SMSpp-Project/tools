@@ -45,7 +45,7 @@ intUnregisterSolver 1 # unregister the Solver of the inner Block after solving i
 1 # number of string parameters
 
 # now all the string parameters
-strInnerBSC config/UCBSCfg.txt # BlockSolverConfig for the UCBlock
+strInnerBSC UCBSCfg.txt # BlockSolverConfig for the UCBlock
 
 0 # number of vector-of-int parameters
 

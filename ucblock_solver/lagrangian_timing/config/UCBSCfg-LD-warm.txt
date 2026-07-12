@@ -81,7 +81,7 @@ dbl_penaltyFactor     0 # no proximal penalty: pure warm-started Lagrangian dual
 
 # now all the string parameters
 str_LDSlv_ISName           BundleSolver # the inner Solver used by LagrangianDualSolver
-str_LagBF_BSCfg  config/InnerBSCfg.txt  # DP-based BlockSolverConfig for the LagBFunctions
+str_LagBF_BSCfg  InnerBSCfg.txt  # DP-based BlockSolverConfig for the LagBFunctions
 
 0 # number of vector-of-int parameters
 
