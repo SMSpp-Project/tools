@@ -60,16 +60,16 @@ for inst in "${INSTANCES[@]}"; do
   name="$(basename "$inst" .nc4)"
   echo "==== $name  $(date '+%F %H:%M:%S') ===="
 
-  ld="$( timeout "$LD_TO" "$SOLVER" -B config/InnerBCfg.txt     -S lagrangian_timing/config/UCBSCfg-LD-bound.txt "$inst" 2>&1 )"
+  ld="$( timeout "$LD_TO" "$SOLVER" -c lagrangian_timing/config/ -B InnerBCfg.txt -S UCBSCfg-LD-bound.txt "$inst" 2>&1 )"
   ld_st="$(  echo "$ld" | status )";              ld_st="${ld_st:-NA}"
   ld_lb="$(  echo "$ld" | field 'Lower bound' )"; ld_lb="${ld_lb:-NA}"
   ld_t="$(   echo "$ld" | field 'Elapsed time' )"; ld_t="${ld_t:-NA}"
 
-  lp="$( timeout "$LP_TO" "$SOLVER" -B lagrangian_timing/config/InnerBCfg-tpc.txt -S config/BSCfg.txt "$inst" 2>&1 )"
+  lp="$( timeout "$LP_TO" "$SOLVER" -c lagrangian_timing/config/ -B InnerBCfg-tpc.txt -S BSCfg.txt "$inst" 2>&1 )"
   lp_lb="$( echo "$lp" | field 'Lower bound' )";  lp_lb="${lp_lb:-NA}"
   lp_t="$(  echo "$lp" | field 'Elapsed time' )"; lp_t="${lp_t:-NA}"
 
-  mip="$( timeout "$MIP_TO" "$SOLVER" -B lagrangian_timing/config/InnerBCfg-tpc.txt -S lagrangian_timing/config/BSCfg-int.txt "$inst" 2>&1 )"
+  mip="$( timeout "$MIP_TO" "$SOLVER" -c lagrangian_timing/config/ -B InnerBCfg-tpc.txt -S BSCfg-int.txt "$inst" 2>&1 )"
   mip_st="$( echo "$mip" | status )";              mip_st="${mip_st:-NA}"
   mip_lb="$( echo "$mip" | field 'Lower bound' )"; mip_lb="${mip_lb:-NA}"
   mip_ub="$( echo "$mip" | field 'Upper bound' )"; mip_ub="${mip_ub:-NA}"

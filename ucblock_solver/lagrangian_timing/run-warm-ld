@@ -51,7 +51,8 @@ to_of()  { case "$1" in *_day_*) echo 1800;; *_week_*) echo 3600;;
                        *_month_*) echo 10800;; *) echo 3600;; esac; }
 
 base=lagrangian_timing/config/UCBSCfg-LD-warm.txt
-tmp=/tmp/UCBSCfg-LD-warm-run.txt
+tmp=lagrangian_timing/config/UCBSCfg-LD-warm-run.txt
+trap 'rm -f "$tmp"' EXIT
 
 field() { grep -iE "$1" | tail -1 | grep -oE '[-+]?[0-9]+\.?[0-9]*([eE][-+]?[0-9]+)?' | tail -1; }
 status() { grep -iE 'Status =' | tail -1 | grep -oE 'Status = [0-9]+' | grep -oE '[0-9]+'; }
@@ -64,7 +65,7 @@ for inst in "${INSTANCES[@]}"; do
   sed -E "s/^(intMaxIter)[[:space:]]+[0-9]+/\1        $it/" "$base" > "$tmp"
   echo "==== $name  it=$it  $(date '+%F %H:%M:%S') ===="
 
-  out="$( timeout "$(to_of "$name")" "$SOLVER" -B config/InnerBCfg.txt -S "$tmp" "$inst" 2>&1 )"
+  out="$( timeout "$(to_of "$name")" "$SOLVER" -c lagrangian_timing/config/ -B InnerBCfg.txt -S "$(basename "$tmp")" "$inst" 2>&1 )"
   st="$( echo "$out" | status )";              st="${st:-NA}"
   lb="$( echo "$out" | field 'Lower bound' )"; lb="${lb:-NA}"
   ub="$( echo "$out" | field 'Upper bound' )"; ub="${ub:-NA}"

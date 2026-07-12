@@ -18,7 +18,7 @@ SimpleConfiguration<std::map<std::string,Configuration*>>
 
 4 # the number of elements in the map
 
-ThermalUnitBlock        *lagrangian_timing/config/TUBCfg-tpc.txt
+ThermalUnitBlock        *TUBCfg-tpc.txt
 DCNetworkBlock          *DCNBCfg.txt
 ACNetworkBlock          *ACBCfg.txt
 PolyhedralFunctionBlock *PFBCfg.txt

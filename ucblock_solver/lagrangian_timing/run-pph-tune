@@ -28,7 +28,8 @@ ITGRID="${ITGRID:-10 30}"
 TO="${TO:-1200}"
 
 base=lagrangian_timing/config/UCBSCfg-PPH.txt
-tmp=/tmp/UCBSCfg-PPH-tune.txt
+tmp=lagrangian_timing/config/UCBSCfg-PPH-tune.txt
+trap 'rm -f "$tmp"' EXIT
 
 field() { grep -iE "$1" | tail -1 | grep -oE '[-+]?[0-9]+\.?[0-9]*([eE][-+]?[0-9]+)?' | tail -1; }
 status() { grep -iE 'Status =' | tail -1 | grep -oE 'Status = [0-9]+' | grep -oE '[0-9]+'; }
@@ -41,7 +42,7 @@ for R in $RGRID; do
     sed -E "s/^(dbl_penaltyFactor)[[:space:]]+[0-9.eE+-]+/\1  $R/; \
             s/^(intMaxIterPPH)[[:space:]]+[0-9]+/\1      $IT/" "$base" > "$tmp"
     echo "==== R=$R maxIter=$IT  $(date '+%H:%M:%S') ===="
-    out="$( timeout "$TO" "$SOLVER" -B config/InnerBCfg.txt -S "$tmp" "$INST" 2>&1 )"
+    out="$( timeout "$TO" "$SOLVER" -c lagrangian_timing/config/ -B InnerBCfg.txt -S "$(basename "$tmp")" "$INST" 2>&1 )"
     st="$( echo "$out" | status )";              st="${st:-NA}"
     ub="$( echo "$out" | field 'Upper bound' )"; ub="${ub:-NA}"
     t="$(  echo "$out" | field 'Elapsed time' )"; t="${t:-NA}"

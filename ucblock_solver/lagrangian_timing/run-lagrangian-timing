@@ -207,7 +207,7 @@ for h in $HORIZONS; do
     # BundleSolver in the shared ../config/LDCfg.txt (true iteration number kept in the
     # filename), and every dump is then read (harness stride 1)
     ( cd "$D" && \
-        "$SOLVER" -B config/InnerBCfg.txt -S config/UCBSCfg-LD.txt "$inst" \
+        "$SOLVER" -c lagrangian_timing/config/ -B InnerBCfg.txt -S UCBSCfg-LD.txt "$inst" \
         > run.log 2>&1 ) || true
     n=$(ls "$D"/TUB-*.nc4 2>/dev/null | wc -l)
     if [ "$n" -eq 0 ]; then
