@@ -30,6 +30,8 @@
 #include <BlockSolverConfig.h>
 #include <Solution.h>
 
+#include <SMS++Config.h>  // generated: provides SMSpp_VERSION
+
 #include "common_utils.h"
 
 /*--------------------------------------------------------------------------*/
@@ -111,7 +113,7 @@ bool dryrun = false;            ///< if compute() need not really ba called
 int verbosity_level = 0;        ///< verbosity level (0 = silent, >0 = verbose output)
 
 /// default short command-line options
-std::string short_opts = "a:B:b:p:S:c:on:I:O:C:Dv:h";
+std::string short_opts = "a:B:b:p:S:c:on:I:O:C:Dv:hV";
 
 /// default long command-line options
 std::vector< option > long_opts = {
@@ -129,12 +131,14 @@ std::vector< option > long_opts = {
  { "outsolcfg"       , required_argument , nullptr , 'C' } ,
  { "dryrun"          , no_argument       , nullptr , 'D' } ,
  { "verbose"         , optional_argument , nullptr , 'v' } ,
+ { "version"         , no_argument       , nullptr , 'V' } ,
  { nullptr           , no_argument       , nullptr , 0 }
 };
 
 /// default command-line options help string
 std::string help =
  "  -h, --help                      print this help\n"
+ "  -V, --version                   print the SMS++ version and exit\n"
  "  -a, --save-state <file>         save State of the Solver\n"
  "  -B, --blockcfg <file>           Block Configuration [BCfg.txt]\n"
  "  -b, --load-state <file>         load State for the Solver\n"
@@ -226,6 +230,8 @@ bool process_standard_arg( int opt )
    break;
   }
   case 'h': docopt(); exit( 0 );
+  case 'V': std::cout << "SMS++ version " << SMSpp_VERSION << std::endl;
+            exit( 0 );
   case '?':
   default:  return( false );
   }
