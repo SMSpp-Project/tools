@@ -120,7 +120,6 @@
 #include <SDDPSolver.h>
 #include <UCBlock.h>
 
-#include <CutProcessing.h>
 
 #include "SDDPBlockSolutionOutput.h"
 
@@ -268,6 +267,30 @@ std::string get_cut_processing_solver_config_filepath()
 {
  return( cut_processing_sconf_file );
  }
+
+/*--------------------------------------------------------------------------*/
+// eliminate the redundant cuts of every PolyhedralFunction of the SDDPBlock,
+// if requested: the removal is delegated to the PolyhedralFunctionBlock that
+// owns each function ( reached via its Observer )
+
+void process_cuts( SDDPBlock * sddp_block )
+{
+ if( ! eliminate_redundant_cuts )
+  return;
+
+ auto solver_config = get_blocksolverconfig(
+			      get_cut_processing_solver_config_filepath() );
+
+ for( auto function : sddp_block->get_polyhedral_functions() )
+  if( auto pfb = dynamic_cast< PolyhedralFunctionBlock * >(
+					       function->get_Observer() ) )
+   pfb->remove_redundant_rows( solver_config );
+
+ if( solver_config ) {
+  solver_config->clear();
+  delete( solver_config );
+  }
+}
 
 /*--------------------------------------------------------------------------*/
 
@@ -578,10 +601,7 @@ void simulate( SDDPBlock * sddp_block )
   solver->set_par( SDDPGreedySolver::strLoadCuts , cuts_filename );
 
  // Eliminate redundant cuts if it is desired
- if( eliminate_redundant_cuts )
-  CutProcessing( get_blocksolverconfig(
-                             get_cut_processing_solver_config_filepath() )
-                 ).remove_redundant_cuts( sddp_block );
+ process_cuts( sddp_block );
 
  solver->set_scenario_id( scenario_id );
 
@@ -701,10 +721,7 @@ void solve( SDDPBlock * sddp_block )
  // keep working unchanged
  serialize_cuts( sddp_block , "BellmanValuesAllOUT.csv" );
 
- if( eliminate_redundant_cuts )
-  CutProcessing( get_blocksolverconfig(
-                              get_cut_processing_solver_config_filepath() )
-                 ).remove_redundant_cuts( sddp_block );
+ process_cuts( sddp_block );
 
  serialize_cuts( sddp_block , "BellmanValuesOUT.nc4" );
  serialize_cuts( sddp_block , "BellmanValuesOUT.csv" );
@@ -825,10 +842,7 @@ void process_prob_file( const netCDF::NcFile & file )
    sddp_block->deserialize_cuts( cuts_filename );
 
   // Eliminate redundant cuts if it is desired
-  if( eliminate_redundant_cuts )
-   CutProcessing( get_blocksolverconfig(
-                              get_cut_processing_solver_config_filepath() )
-                  ).remove_redundant_cuts( sddp_block );
+  process_cuts( sddp_block );
 
   std::cout << "Problem: " << problem.first << std::endl;
 
@@ -1417,10 +1431,7 @@ void process_block_file( const netCDF::NcFile & file )
    sddp_block->deserialize_cuts( cuts_filename );
 
   // Eliminate redundant cuts if it is desired
-  if( eliminate_redundant_cuts )
-   CutProcessing( get_blocksolverconfig(
-                              get_cut_processing_solver_config_filepath() )
-                  ).remove_redundant_cuts( sddp_block );
+  process_cuts( sddp_block );
 
   // Solve
   if( simulation_mode ) {
@@ -1605,10 +1616,7 @@ void multiple_simulations( const netCDF::NcFile & file )
     solver->set_par( SDDPGreedySolver::strLoadCuts , cuts_filename );
 
    // Eliminate redundant cuts if it is desired
-   if( eliminate_redundant_cuts )
-    CutProcessing( get_blocksolverconfig(
-                               get_cut_processing_solver_config_filepath() )
-                   ).remove_redundant_cuts( sddp_block );
+   process_cuts( sddp_block );
 
    // Set the name of the file that will output the subgradients
    if( ! subgradients_filename_prefix.empty()  )
