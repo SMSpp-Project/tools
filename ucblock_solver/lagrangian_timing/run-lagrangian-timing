@@ -194,6 +194,11 @@ for h in $HORIZONS; do
     # unit is loaded once at the first wave, then re-solved at each later one).
     cp -rL "$CONFIG" "$D/config"
     cp -f "$HERE"/config/*.txt "$D/config/"
+    # the solver runs from $D with -c lagrangian_timing/config/ (study configs
+    # include each other via *lagrangian_timing/config/...): expose the merged
+    # copy at that path too (the harness still reads $D/config)
+    mkdir -p "$D/lagrangian_timing"
+    ln -sfn "$D/config" "$D/lagrangian_timing/config"
     [ -n "${LD_MAXITER:-}" ] && sed -i -E \
       "s/^([[:space:]]*intMaxIter[[:space:]]+)[0-9]+/\1${LD_MAXITER}/" \
       "$D/config/LDCfg.txt"
