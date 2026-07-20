@@ -13,11 +13,20 @@
 # --------------------------------------------------------------------------- #
 cmake_minimum_required(VERSION 3.21)
 cmake_policy(VERSION 3.15)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/DeriveVersion.cmake)
+smspp_derive_version(SMSPP_MODULE_VERSION)
+
 project(SMS++_tools
-        VERSION 0.5.4
+        VERSION ${SMSPP_MODULE_VERSION}
         DESCRIPTION "SMS++ tools"
         HOMEPAGE_URL https://gitlab.com/smspp/tools
         LANGUAGES C CXX)
+
+# These variables make the code harder to read but easier to change.
+set(modName ${PROJECT_NAME})
+
+# C-safe form of modName for the preprocessor macros in <modName>Config.h
+set(modMacro "SMSpp_tools")
 
 # Find out if it's being called by the umbrella.
 get_directory_property(hasParent PARENT_DIRECTORY)
@@ -40,6 +49,12 @@ function(smspp_install target_name)
     install(TARGETS ${target_name}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endfunction()
+
+# ----- Configuration header ------------------------------------------------ #
+# This will generate a *Config.h header in the build directory, which every
+# tool sees since the build directory is on their include path.
+configure_file(cmake/${modName}Config.h.in ${modName}Config.h)
+include_directories(${PROJECT_BINARY_DIR})
 
 # ----- Settings ------------------------------------------------------------ #
 # This is needed for setting the runtime path when installing.
