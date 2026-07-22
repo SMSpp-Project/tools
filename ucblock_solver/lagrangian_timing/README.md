@@ -85,6 +85,45 @@ See the headers of `run-lagrangian-timing` and `run-ld-vs-tpc` for every knob
 and the reproducible recipe, including running the binaries from a copy outside
 a synced folder.
 
+**Build pitfalls.** Three traps when building the study binaries from scratch:
+
+1. the makefile compiles `BundleSolver.o` with the default `WHICH_OSI_QP=2`
+   (Gurobi) while a `libNDO.a` built by CMake wants OsiCpx: the LD then dies
+   with `OSIMPSolver::SetOsi: not an OsiCpx`. Either recompile `BundleSolver.o`
+   with `-DWHICH_OSI_QP=1` or link the CMake-built objects throughout;
+2. `../../common_utils.cpp` includes the generated `SMS++Config.h`, which lives
+   in the CMake build tree: `make CMMNUINC="-I../.. -I<cmake-build>/SMS++"`;
+3. the dump producer must carry `-DSAVE_TUB=1` (this makefile sets it; a CMake
+   `ucblock_solver` needs the flag added when compiling `ucblock_solver.cpp`).
+
+A binary whose `ThermalUnitBlock`-chain objects predate the current sources
+silently measures the old code: check the link line, not just the mtime of the
+executable.
+
+## Profiling a single re-solve
+
+To profile one priced 1UC solve (no Lagrangian run, no harness), use any
+`TUB-<unit>-<iteration>.nc4` dump: it is a stand-alone `ThermalUnitBlock`
+carrying the true Lagrangian energy and reserve prices of that iteration
+(`LinearTerm`, `Primary/SecondarySpinningReserveCost`, and
+`ReactiveLinearTerm` when the instance prices reactive power). Then:
+
+1. set `TUDPS_PROFILE` to `1` at the top of
+   `UCBlock/src/ThermalUnitDPSolver.cpp` and rebuild: `compute()` prints
+   per-phase wall-clock (`build_graph` / `compute_EDPs` / `min_path` /
+   `compute_solutions`) on every call;
+2. run the standalone checker on the dump with the base DP as second solver
+   (in `tests/ThermalUnitBlock_Solver`, a `BSCfg.txt` copy with
+   `ThermalUnitDPSolver` in place of `ThermalUnitExtDPSolver`):
+
+       ./TUDPS_test -S BSCfg-base.txt TUB-<u>-<i>.nc4
+
+   The reserve-priced path is active whenever the dump carries a negative
+   reserve cost; on an instance without one, the env hooks `TUDPS_RESCOST=<c>`
+   / `TUDPS_QCOST=<c>` in `test.cpp` inject a constant reserve / reactive
+   price. The reserve overhead of the base DP lives in `compute_EDPs`
+   (`augment_with_g`, the multi-piece per-period cost in the sweep).
+
 ## Findings
 
 The per-unit solve time is **flat along the Lagrangian iteration** (within a few
