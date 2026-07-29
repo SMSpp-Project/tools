@@ -25,6 +25,7 @@ if (NOT hasParent)
     # Blocks
     find_package(InvestmentBlock)
     # Solvers
+    find_package(LagrangianDualSolver)
     find_package(BundleSolver)
     find_package(MILPSolver)
 endif ()
@@ -36,6 +37,10 @@ if (TARGET SMS++::InvestmentBlock)
                                           investmentblock_solver.cpp)
     target_include_directories(investmentblock_solver PRIVATE ..)
     target_link_libraries(investmentblock_solver PRIVATE SMS++::InvestmentBlock)
+
+    if (TARGET SMS++::LagrangianDualSolver)
+        target_link_libraries(investmentblock_solver PRIVATE SMS++::LagrangianDualSolver)
+    endif ()
 
     if (TARGET SMS++::BundleSolver)
         target_link_libraries(investmentblock_solver PRIVATE SMS++::BundleSolver)
