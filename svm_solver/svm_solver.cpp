@@ -57,6 +57,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include <cmath>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
@@ -216,6 +217,27 @@ static SVMBlock * sub_SVMBlock( const SVMBlock * svm , const IndexSet & rows ,
  }  // end( sub_SVMBlock )
 
 /*--------------------------------------------------------------------------*/
+/// the value of the training problem that \p solver reports
+/** A Solver that finds a solution reports its value with get_var_value(), but
+ * one that rather computes a bound, as any Lagrangian Solver does, leaves it
+ * in the finite one of get_lb() and get_ub(): this returns whichever of the
+ * three is the value of the training problem. */
+
+static double solver_value( Solver * solver )
+{
+ const double v = solver->get_var_value();
+ if( std::abs( v ) < Inf< double >() )
+  return( v );
+
+ const double lb = solver->get_lb() , ub = solver->get_ub();
+ if( std::abs( lb ) < Inf< double >() )
+  return( lb );
+
+ return( ub );
+
+ }  // end( solver_value )
+
+/*--------------------------------------------------------------------------*/
 /// trains \p svm, returning the value of the training problem
 /** Configures \p svm with the BlockConfig and the BlockSolverConfig, which is
  * also what decides the formulation of the abstract representation, computes
@@ -267,7 +289,7 @@ static double train( SVMBlock * svm )
  if( svm->get_generated_formulation() >= 0 )
   svm->get_solution_from_abstract();
 
- const double value = solver->get_var_value();
+ const double value = solver_value( solver );
 
  cleanup_bsc( svm , s_config );
  delete s_config;
