@@ -15,6 +15,11 @@ At the moment we provide:
 
 - `investmentblock_solver`: an InvestmentBlock solver
 
+- `svm_solver`: a SVMBlock solver, i.e., a Support Vector Machine trainer,
+  together with the model selection that surrounds the training: hold-out and
+  k-fold cross-validation, both stratified, and grid search over the
+  hyper-parameters
+
 - `chgcfg`: a small utility to change some parameters in a configuration
   file while leaving all the rest unchanged
 
@@ -37,6 +42,8 @@ These instructions will let you build SMS++ Tools on your system.
 - [TwoStageStochasticBlock](https://gitlab.com/smspp/twostagestochasticblock)
 
 - [MultiStageStochasticBlock](https://gitlab.com/smspp/multistagestochasticblock)
+
+- [SVMBlock](https://gitlab.com/smspp/svmblock)
 
 - [UCBlock](https://gitlab.com/smspp/ucblock)
 

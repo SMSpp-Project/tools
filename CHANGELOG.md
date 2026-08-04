@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added 
 
+- `svm_solver`, a SVMBlock solver that trains a Support Vector Machine and
+  performs the model selection around it: hold-out and k-fold
+  cross-validation, both stratified, and grid search over the
+  hyper-parameters
+
+- `ml_utils.{h,cpp}`, the model-agnostic machine learning scaffolding that
+  `svm_solver` uses, i.e., the splits, the scores and the grid; it depends on
+  nothing but the standard library, so any tool training a model can use it
+
 ### Changed
 
 ### Fixed 

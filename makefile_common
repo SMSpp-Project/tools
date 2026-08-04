@@ -119,4 +119,18 @@ $(CMMNUOBJ): $(CMMNUH) $(SMS++H) ../common_utils.cpp
 	$(CC) -c ../common_utils.cpp -o $@ $(CMMNUINC) \
 	$(SMS++INC) $(SW)
 
+# ml_utils stuff- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# the model-agnostic machine learning scaffolding, which the tools training a
+# model use; it depends on nothing but the standard library
+
+MLUTOBJ = ../ml_utils.o
+MLUTH = ../ml_utils.h
+MLUTINC = -I..
+
+$(MLUTOBJ): $(MLUTH) ../ml_utils.cpp
+	$(CC) -c ../ml_utils.cpp -o $@ $(MLUTINC) $(SW)
+
+clean::
+	rm -f $(MLUTOBJ)
+
 ############################ End of makefile #################################
