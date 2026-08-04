@@ -85,6 +85,7 @@ using doubleVec = SVMBlock::doubleVec;
 unsigned n_fold = 0;        ///< folds of the cross-validation, 0 = none
 double test_fraction = 0;   ///< held-out fraction, 0 = none
 std::string grid_spec;      ///< the grid of hyper-parameters to compare
+Index n_chunk = 1;          ///< chunks of the consensus rewriting, 1 = none
 std::string task = "c";     ///< "c" or "r", only used by the text format
 unsigned seed = 1;          ///< seed of the splits
 std::string model_file;     ///< where the trained model is written
@@ -249,6 +250,44 @@ static double train( SVMBlock * svm )
  auto b_config = get_config( bconf_file );
  auto s_config = get_config( sconf_file );
 
+ /* With more than one chunk the training problem is rewritten as one problem
+  * per chunk tied by consensus constraints, which is what a Lagrangian Solver
+  * attacks; the Solver is then attached to the assembled Block, and the model
+  * read out of any of its sub-Block, all of which hold the same one. */
+ Block * block = svm;
+ if( n_chunk > 1 ) {
+  block = make_consensus_Block( svm , n_chunk );
+  config_Block( block , nullptr , s_config );
+
+  auto & subsolvers = block->get_registered_solvers();
+  if( subsolvers.empty() ) {
+   std::cerr << "Error: the BlockSolverConfig registered no Solver"
+             << std::endl;
+   exit( 1 );
+   }
+
+  auto slv = subsolvers.front();
+  const int st = slv->compute();
+  if( ( st != Solver::kOK ) && ( st != Solver::kLowPrecision ) ) {
+   std::cerr << "Error: the Solver returned " << st << std::endl;
+   exit( 1 );
+   }
+
+  slv->get_var_solution();
+
+  auto sub = dynamic_cast< SVMBlock * >( block->get_nested_Block( 0 ) );
+  sub->get_solution_from_abstract();
+  svm->set_primal_solution( sub->get_w() , sub->get_b() );
+
+  const double v = solver_value( slv );
+
+  cleanup_bsc( block , s_config );
+  delete s_config;
+  delete block;
+
+  return( v );
+  }
+
  /* The BlockConfig, which is what chooses the formulation, is applied first
   * and the abstract representation is generated right away, before any Solver
   * is attached: the decomposed formulation creates one sub-Block per chunk,
@@ -286,7 +325,7 @@ static double train( SVMBlock * svm )
   * Variable, whence the model has to be read back out of them; one that does
   * not need it, such as SMOSolver, has already written the model into the
   * SVMBlock itself, and there is nothing to read. */
- if( svm->get_generated_formulation() >= 0 )
+ if( svm->get_generated_problem() >= 0 )
   svm->get_solution_from_abstract();
 
  const double value = solver_value( solver );
@@ -391,6 +430,7 @@ static bool process_specific_arg( int opt )
   case( 'g' ): grid_spec = optarg;                 return( true );
   case( 't' ): task = optarg;                      return( true );
   case( 'e' ): str2num( optarg , seed );          return( true );
+  case( 's' ): str2num( optarg , n_chunk );       return( true );
   }
 
  return( false );
@@ -416,13 +456,14 @@ int main( int argc , char ** argv )
  default_bconf_name = "SVMCfg.txt";
  default_sconf_name = "SVMSCfg.txt";
 
- short_opts += "k:x:g:t:e:";
+ short_opts += "k:x:g:t:e:s:";
  const std::vector< option > my_opts = {
    { "kfold"    , required_argument , nullptr , 'k' } ,
    { "holdout"  , required_argument , nullptr , 'x' } ,
    { "grid"     , required_argument , nullptr , 'g' } ,
    { "task"     , required_argument , nullptr , 't' } ,
-   { "seed"     , required_argument , nullptr , 'e' } };
+   { "seed"     , required_argument , nullptr , 'e' } ,
+   { "chunks"   , required_argument , nullptr , 's' } };
  long_opts.insert( std::prev( long_opts.end() ) ,
                    my_opts.begin() , my_opts.end() );
  help += "  -k, --kfold <n>                 folds of the cross-validation\n"
@@ -438,7 +479,11 @@ int main( int argc , char ** argv )
          "only for\n"
          "                                  the plain text input format "
          "[c]\n"
-         "  -e, --seed <n>                  seed of the splits [1]\n";
+         "  -e, --seed <n>                  seed of the splits [1]\n"
+         "  -s, --chunks <n>                rewrite the training problem as "
+         "n chunks tied\n"
+         "                                  by consensus constraints, for a "
+         "Lagrangian Solver [1]\n";
 
  process_args( argc , argv , process_specific_arg );
 

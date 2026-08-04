@@ -22,10 +22,11 @@ BlockConfig # exact type of the Configuration object
 
 # static_variables
 SimpleConfiguration<int>
-0    # 0 = Wolfe dual, 1 = primal, 2 = decomposed (Formulation)
-     # the primal ones only exist for the linear kernel; for the decomposed
-     # one use a SimpleConfiguration<std::pair<int,int>> instead, whose second
-     # value is the number of chunks
+0    # 0 = Wolfe dual, 1 = the training problem itself
+     # the primal only exists for the linear kernel. Writing the problem as
+     # chunks tied by consensus constraints, which is what a Lagrangian Solver
+     # attacks, is not a formulation of the Block: it is assembled out of it,
+     # see the -s option of svm_solver
 
 # dynamic_variables
 *    # [none]
