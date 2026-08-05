@@ -90,7 +90,27 @@ using GridPoint = std::vector< double >;
 /// a pseudo-random permutation of the indices 0, ..., n - 1
 /** Returns a pseudo-random permutation of 0, ..., n - 1 drawn out of \p seed,
  * hence the same seed always gives the same permutation, which is what makes
- * any experiment based on it reproducible. */
+ * any experiment based on it reproducible.
+ *
+ * The permutation is specified down to the bit, rather than being left to
+ * whatever the standard library happens to do, so that it is the same one on
+ * every platform and can be reproduced in any other language, which is what
+ * it takes to compare an experiment with the same experiment run elsewhere:
+ *
+ * - the pseudo-random numbers are those of *splitmix64*, i.e. the sequence
+ *   \f$ z_t \f$ obtained from the state
+ *   \f$ s_t = s_{t-1} + \f$ 0x9E3779B97F4A7C15, \f$ s_0 = \f$ \p seed, by
+ *   \f$ z = ( s \oplus ( s \gg 30 ) ) \cdot \f$ 0xBF58476D1CE4E5B9,
+ *   \f$ z = ( z \oplus ( z \gg 27 ) ) \cdot \f$ 0x94D049BB133111EB and
+ *   \f$ z = z \oplus ( z \gg 31 ) \f$, all in 64 unsigned bits;
+ *
+ * - a number below a bound is drawn out of them by rejection, discarding the
+ *   values below \f$ 2^{64} \bmod \f$ bound and taking the remainder of the
+ *   first one that survives, which is unbiased;
+ *
+ * - the permutation is the Fisher-Yates shuffle running downwards, i.e. for
+ *   \f$ i = n - 1 , \dots , 1 \f$ the entries \f$ i \f$ and \f$ j \f$
+ *   are swapped, \f$ j \f$ being drawn below \f$ i + 1 \f$. */
 
 IndexSet shuffled_indices( std::size_t n , unsigned seed );
 

@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the folds being a cartesian product of independent problems; -j says
   how many at a time
 
+- the splits of `ml_utils` are specified down to the bit, rather than being
+  left to the implementation-defined shuffle of the standard library, so that
+  a seed gives the same splits everywhere and an experiment can be reproduced
+  in any other language
+
 ### Fixed 
 
 - `svm_solver` reads a netCDF SVMBlock again, and looks for the input file at

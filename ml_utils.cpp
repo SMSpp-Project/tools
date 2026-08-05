@@ -21,11 +21,11 @@
 
 #include <cmath>
 
+#include <cstdint>
+
 #include <map>
 
 #include <numeric>
-
-#include <random>
 
 #include <sstream>
 
@@ -40,8 +40,29 @@ IndexSet shuffled_indices( std::size_t n , unsigned seed )
  IndexSet idx( n );
  std::iota( idx.begin() , idx.end() , std::size_t( 0 ) );
 
- std::mt19937 rng( seed );
- std::shuffle( idx.begin() , idx.end() , rng );
+ // splitmix64, and an unbiased draw below a bound out of it: see the
+ // comments to this function for why it is spelled out here rather than
+ // being left to <random>, whose shuffle is implementation-defined
+ std::uint64_t state = seed;
+
+ auto next = [ &state ]() {
+  std::uint64_t z = ( state += 0x9E3779B97F4A7C15ULL );
+  z = ( z ^ ( z >> 30 ) ) * 0xBF58476D1CE4E5B9ULL;
+  z = ( z ^ ( z >> 27 ) ) * 0x94D049BB133111EBULL;
+  return( z ^ ( z >> 31 ) );
+  };
+
+ auto below = [ &next ]( std::uint64_t bound ) {
+  const std::uint64_t threshold = ( - bound ) % bound;  // 2^64 mod bound
+  std::uint64_t r;
+  do
+   r = next();
+  while( r < threshold );
+  return( r % bound );
+  };
+
+ for( std::size_t i = n ; i-- > 1 ; )
+  std::swap( idx[ i ] , idx[ below( i + 1 ) ] );
 
  return( idx );
 
