@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the format every other tool uses, and -O writes the trained model, i.e.,
   the `SVMBlockSolution`
 
+- `svm_solver` trains the models of a model selection in parallel, the grid
+  and the folds being a cartesian product of independent problems; -j says
+  how many at a time
+
 ### Fixed 
 
 - `svm_solver` reads a netCDF SVMBlock again, and looks for the input file at

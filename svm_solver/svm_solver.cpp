@@ -58,10 +58,14 @@
 /*--------------------------------------------------------------------------*/
 
 #include <cmath>
+
+#include <thread>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <iostream>
+
+#include <ff/parallel_for.hpp>
 
 #include <SVCBlock.h>
 #include <SVRBlock.h>
@@ -88,6 +92,7 @@ std::string grid_spec;      ///< the grid of hyper-parameters to compare
 Index n_chunk = 1;          ///< chunks of the consensus rewriting, 1 = none
 std::string task = "c";     ///< "c" or "r", only used by the text format
 unsigned seed = 1;          ///< seed of the splits
+long n_jobs = 0;            ///< parallel trainings, 0 = one per core
 
 /* What the Solver reported about the last training problem, kept aside for
  * the standard log any other SMS++ tool prints. Model selection trains one
@@ -247,16 +252,19 @@ static double solver_value( Solver * solver )
  }  // end( solver_value )
 
 /*--------------------------------------------------------------------------*/
-/// trains \p svm, returning the value of the training problem
-/** Configures \p svm with the BlockConfig and the BlockSolverConfig, which is
- * also what decides the formulation of the abstract representation, computes
- * with the first Solver registered and reads the trained model back into the
- * SVMBlock. */
+/// trains \p svm with the given Configuration, returning the optimal value
+/** Configures \p svm with the given BlockConfig and BlockSolverConfig, which
+ * is also what decides the formulation of the abstract representation,
+ * computes with the first Solver registered and reads the trained model back
+ * into the SVMBlock. The two Configuration are consumed.
+ *
+ * This is the whole of a training, and it only touches \p svm: model
+ * selection trains many models at once by calling it from several threads,
+ * each with its own copy of the Configuration. */
 
-static double train( SVMBlock * svm )
+static double train( SVMBlock * svm , Configuration * b_config ,
+                     Configuration * s_config )
 {
- auto b_config = get_config( bconf_file );
- auto s_config = get_config( sconf_file );
 
  /* With more than one chunk the training problem is rewritten as one problem
   * per chunk tied by consensus constraints, which is what a Lagrangian Solver
@@ -353,6 +361,14 @@ static double train( SVMBlock * svm )
  }  // end( train )
 
 /*--------------------------------------------------------------------------*/
+/// trains \p svm with the Configuration of -B and -S
+
+static double train( SVMBlock * svm )
+{
+ return( train( svm , get_config( bconf_file ) , get_config( sconf_file ) ) );
+ }
+
+/*--------------------------------------------------------------------------*/
 /// writes the trained model of \p svm, if -O asked for it
 /** The model is what a SVMBlockSolution saves, which is not what a SVMBlock
  * returns by default [see SVMBlock::get_Solution()]: the Configuration
@@ -435,24 +451,59 @@ static std::string score_name( const SVMBlock * svm )
  }
 
 /*--------------------------------------------------------------------------*/
-/// trains on each split and returns the score of each of them
+/// the score of every point of the grid on every split
+/** Trains one model per point of the grid and per split, and returns the
+ * score of each of them, the scores of a point being contiguous.
+ *
+ * The trainings are independent of each other, so they are done in parallel:
+ * this is where the time of a model selection goes, and the grid is exactly a
+ * cartesian product to spread over the cores. The scores are only reported by
+ * the caller, once they are all in, so that the log does not depend on how
+ * the work happened to be scheduled.
+ *
+ * The Configuration are parsed once here and copied for each training, both
+ * because parsing them again per model would be pointless and because a
+ * Configuration is consumed by the Block it configures. */
 
 static std::vector< double > evaluate( const SVMBlock * svm ,
                                        const std::vector< DataSplit > &
                                                                     splits ,
                                        const Grid & grid ,
-                                       const GridPoint & point )
+                                       const std::vector< GridPoint > &
+                                                                    points )
 {
- std::vector< double > scores;
- scores.reserve( splits.size() );
+ const std::size_t n_split = splits.size();
+ std::vector< double > scores( points.size() * n_split );
 
- for( auto & split : splits ) {
-  auto model = sub_SVMBlock( svm , split.train , grid , point );
-  train( model );
-  scores.push_back( score( svm , targets( svm , split.test ) ,
-                           predict( model , svm , split.test ) ) );
+ auto b_config = get_config( bconf_file );
+ auto s_config = get_config( sconf_file );
+
+ // hardware_concurrency() may return 0, and a ParallelFor wants at least
+ // one worker
+ const long workers = n_jobs > 0 ? n_jobs
+  : std::max< long >( 1 , std::thread::hardware_concurrency() );
+
+ /* The chunk of 1: the trainings of a grid have wildly different costs, a
+  * large C or a small gamma being much harder than the opposite, so the
+  * scheduling has to be dynamic or the workers that drew the easy points
+  * would sit idle. */
+ ff::ParallelFor pf( workers );
+ pf.parallel_for( 0 , scores.size() , 1 , 1 , [ & ]( const long t ) {
+  auto & split = splits[ t % n_split ];
+
+  auto model = sub_SVMBlock( svm , split.train , grid ,
+                             points[ t / n_split ] );
+
+  train( model , b_config ? b_config->clone() : nullptr ,
+         s_config ? s_config->clone() : nullptr );
+
+  scores[ t ] = score( svm , targets( svm , split.test ) ,
+                       predict( model , svm , split.test ) );
   delete model;
-  }
+  } , workers );
+
+ delete b_config;
+ delete s_config;
 
  return( scores );
 
@@ -477,10 +528,11 @@ static bool process_specific_arg( int opt )
  switch( opt ) {
   case( 'k' ): str2num( optarg , n_fold );        return( true );
   case( 'x' ): str2num( optarg , test_fraction ); return( true );
-  case( 'g' ): grid_spec = optarg;                 return( true );
-  case( 't' ): task = optarg;                      return( true );
+  case( 'g' ): grid_spec = optarg;                return( true );
+  case( 't' ): task = optarg;                     return( true );
   case( 'e' ): str2num( optarg , seed );          return( true );
   case( 's' ): str2num( optarg , n_chunk );       return( true );
+  case( 'j' ): str2num( optarg , n_jobs );        return( true );
   }
 
  return( false );
@@ -506,14 +558,15 @@ int main( int argc , char ** argv )
  default_bconf_name = "SVMCfg.txt";
  default_sconf_name = "SVMSCfg.txt";
 
- short_opts += "k:x:g:t:e:s:";
+ short_opts += "k:x:g:t:e:s:j:";
  const std::vector< option > my_opts = {
    { "kfold"    , required_argument , nullptr , 'k' } ,
    { "holdout"  , required_argument , nullptr , 'x' } ,
    { "grid"     , required_argument , nullptr , 'g' } ,
    { "task"     , required_argument , nullptr , 't' } ,
    { "seed"     , required_argument , nullptr , 'e' } ,
-   { "chunks"   , required_argument , nullptr , 's' } };
+   { "chunks"   , required_argument , nullptr , 's' } ,
+   { "jobs"     , required_argument , nullptr , 'j' } };
  long_opts.insert( std::prev( long_opts.end() ) ,
                    my_opts.begin() , my_opts.end() );
  help += "  -k, --kfold <n>                 folds of the cross-validation\n"
@@ -533,7 +586,10 @@ int main( int argc , char ** argv )
          "  -s, --chunks <n>                rewrite the training problem as "
          "n chunks tied\n"
          "                                  by consensus constraints, for a "
-         "Lagrangian Solver [1]\n";
+         "Lagrangian Solver [1]\n"
+         "  -j, --jobs <n>                  models trained in parallel during "
+         "the model\n"
+         "                                  selection [one per core]\n";
 
  process_args( argc , argv , process_specific_arg );
 
@@ -594,11 +650,15 @@ int main( int argc , char ** argv )
            << ( points.size() == 1 ? " point" : " points" ) << " of the grid"
            << std::endl;
 
+ const auto all_scores = evaluate( svm , splits , grid , points );
+
  double best_score = - Inf< double >();
  GridPoint best_point;
 
- for( auto & point : points ) {
-  auto scores = evaluate( svm , splits , grid , point );
+ for( std::size_t p = 0 ; p < points.size() ; ++p ) {
+  const std::vector< double > scores(
+                       all_scores.begin() + p * splits.size() ,
+                       all_scores.begin() + ( p + 1 ) * splits.size() );
   const double avg = mean( scores );
 
   std::cout << "  " << score_name( svm ) << " = " << std::fixed
@@ -612,13 +672,13 @@ int main( int argc , char ** argv )
    }
 
   if( ! grid.empty() )
-   std::cout << "  ~  " << to_string( grid , point );
+   std::cout << "  ~  " << to_string( grid , points[ p ] );
 
   std::cout << std::endl;
 
   if( avg > best_score ) {
    best_score = avg;
-   best_point = point;
+   best_point = points[ p ];
    }
   }
 
