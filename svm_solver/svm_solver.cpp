@@ -17,8 +17,8 @@
  *                < file >
  *
  * With none of -k, -x and -g the SVMBlock is simply trained on all of its
- * samples and the value of the training problem is reported; this is what any
- * other SMS++ tool would do, and -O writes the trained model.
+ * samples and the value of the training problem is reported, in the format
+ * any other SMS++ tool uses, and -O writes the trained model.
  *
  * The other three options are the model selection proper, i.e., the part that
  * is not an optimization problem and that any honest use of a model needs:
@@ -43,9 +43,9 @@
  * netCDF file is a BlockFile. Note that which formulation of the training
  * problem the abstract representation encodes is precisely what the
  * BlockConfig says [see SVMBlock::generate_abstract_variables()], so it is
- * with -B that one chooses between the Wolfe dual, the primal and the
- * decomposed formulation. The first Solver of the BlockSolverConfig is the
- * one that trains the model.
+ * with -B that one chooses between the Wolfe dual and the primal. The first
+ * Solver of the BlockSolverConfig is the one that trains the model.
+ *
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -88,7 +88,15 @@ std::string grid_spec;      ///< the grid of hyper-parameters to compare
 Index n_chunk = 1;          ///< chunks of the consensus rewriting, 1 = none
 std::string task = "c";     ///< "c" or "r", only used by the text format
 unsigned seed = 1;          ///< seed of the splits
-std::string model_file;     ///< where the trained model is written
+
+/* What the Solver reported about the last training problem, kept aside for
+ * the standard log any other SMS++ tool prints. Model selection trains one
+ * model per split and per point of the grid, so this is only reported for
+ * the model that is the outcome of the run, i.e., the one that is kept. */
+
+int train_status = Solver::kOK;   ///< status of the last training problem
+double train_lb = 0;              ///< lower bound on the last training problem
+double train_ub = 0;              ///< upper bound on the last training problem
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -106,11 +114,15 @@ static void str2num( const char * str , T & value )
 
 static SVMBlock * read_SVMBlock( void )
 {
+ // the input file is looked for at the -p prefix, exactly as
+ // read_open_netCDF() does with a netCDF one
+ const std::string fn = resolve_with_prefix( block_prefix , filename );
+
  // the plain text format of SVMBlock: try it if the file is not netCDF
  {
-  std::ifstream in( filename );
+  std::ifstream in( fn );
   if( ! in.is_open() ) {
-   std::cerr << "Error: cannot open " << filename << std::endl;
+   std::cerr << "Error: cannot open " << fn << std::endl;
    exit( 1 );
    }
   char magic[ 4 ] = { 0 , 0 , 0 , 0 };
@@ -139,18 +151,14 @@ static SVMBlock * read_SVMBlock( void )
 
  // only the first Block of the file is trained: unlike a family of unrelated
  // instances, a data set is one thing
- Block * block = nullptr;
- Configuration * s_config = nullptr;
+ auto & group = groups.begin()->second;
 
  /* The Block is only read here, not configured: the BlockConfig is what
   * chooses the formulation, and it is applied by train(), once per model
-  * trained, together with the BlockSolverConfig. */
- if( type == eProbFile )
-  get_all( groups.begin()->second , block , s_config );
- else
-  get_all( groups.begin()->second , "" , "" , block , s_config );
-
- delete s_config;
+  * trained, together with the BlockSolverConfig. The Configuration a ProbFile
+  * carries are therefore ignored, -B and -S being the ones that count. */
+ auto block = get_Block( ( type == eProbFile ) ? group.getGroup( "Block" )
+                                               : group );
 
  auto svm = dynamic_cast< SVMBlock * >( block );
  if( ! svm ) {
@@ -273,6 +281,10 @@ static double train( SVMBlock * svm )
    exit( 1 );
    }
 
+  train_status = st;
+  train_lb = slv->get_lb();
+  train_ub = slv->get_ub();
+
   slv->get_var_solution();
 
   auto sub = dynamic_cast< SVMBlock * >( block->get_nested_Block( 0 ) );
@@ -289,12 +301,11 @@ static double train( SVMBlock * svm )
   }
 
  /* The BlockConfig, which is what chooses the formulation, is applied first
-  * and the abstract representation is generated right away, before any Solver
-  * is attached: the decomposed formulation creates one sub-Block per chunk,
-  * and a Block must not grow new sub-Block while a Solver holds its lock.
-  * With no BlockConfig nothing is generated, which is what lets SMOSolver,
-  * that does not need the abstract representation, avoid paying for the dense
-  * Hessian of the dual it would never look at. */
+  * and the abstract representation is generated right away, so that the
+  * Solver attaches to a Block that is already the formulation it is meant to
+  * solve. With no BlockConfig nothing is generated, which is what lets
+  * SMOSolver, that does not need the abstract representation, avoid paying
+  * for the dense Hessian of the dual it would never look at. */
  if( b_config ) {
   config_Block( svm , b_config , nullptr );
   svm->generate_abstract_variables();
@@ -319,6 +330,10 @@ static double train( SVMBlock * svm )
   exit( 1 );
   }
 
+ train_status = status;
+ train_lb = solver->get_lb();
+ train_ub = solver->get_ub();
+
  solver->get_var_solution();
 
  /* A Solver working on the abstract representation leaves the solution in the
@@ -336,6 +351,41 @@ static double train( SVMBlock * svm )
  return( value );
 
  }  // end( train )
+
+/*--------------------------------------------------------------------------*/
+/// writes the trained model of \p svm, if -O asked for it
+/** The model is what a SVMBlockSolution saves, which is not what a SVMBlock
+ * returns by default [see SVMBlock::get_Solution()]: the Configuration
+ * asking for it is therefore passed here, so that -O alone does the obvious
+ * thing, unless a -C says otherwise. */
+
+static void write_model( SVMBlock * svm )
+{
+ if( sol_output.empty() || ( ! sol_cfg_file.empty() ) ) {
+  write_final_Solution( svm );
+  return;
+  }
+
+ SimpleConfiguration< int > cfg( 3 );  // 3 = the trained model
+ write_final_Solution( svm , & cfg );
+
+ }  // end( write_model )
+
+/*--------------------------------------------------------------------------*/
+/// reports the training problem, in the format every SMS++ tool uses
+/** Reports what the Solver said about the training problem of the model that
+ * the run produces, i.e., the status and the two bounds, and then the value
+ * of \p value, which is the one of the two that is finite. */
+
+static void report_training( double value )
+{
+ print_status( train_status );
+ std::cout << "Upper bound = " << train_ub << std::endl;
+ std::cout << "Lower bound = " << train_lb << std::endl;
+ std::cout << "training problem: " << std::scientific << std::setprecision( 7 )
+           << value << std::endl;
+
+ }  // end( report_training )
 
 /*--------------------------------------------------------------------------*/
 /// the predictions of the model of \p model on the given samples of \p svm
@@ -522,10 +572,7 @@ int main( int argc , char ** argv )
 
   // plain training on the whole data set - - - - - - - - - - - - - - - - - -
 
-  const double value = train( svm );
-
-  std::cout << "training problem: " << std::scientific
-           << std::setprecision( 7 ) << value << std::endl;
+  report_training( train( svm ) );
 
   auto y_pred = predict( svm , svm , shuffled_indices( n , 0 ) );
   auto y_true = targets( svm , shuffled_indices( n , 0 ) );
@@ -533,8 +580,7 @@ int main( int argc , char ** argv )
             << std::setprecision( 4 ) << score( svm , y_true , y_pred )
             << std::endl;
 
-  if( output_solution )
-   write_final_Solution( svm );
+  write_model( svm );
 
   delete svm;
   return( 0 );
@@ -586,20 +632,20 @@ int main( int argc , char ** argv )
  if( ! grid.empty() ) {
   auto model = sub_SVMBlock( svm , shuffled_indices( n , 0 ) , grid ,
                              best_point );
-  train( model );
 
   std::cout << "retrained on all the samples with "
             << to_string( grid , best_point ) << std::endl;
 
-  if( output_solution )
-   write_final_Solution( model );
+  report_training( train( model ) );
+
+  write_model( model );
 
   delete model;
   }
  else
-  if( output_solution ) {
-   train( svm );
-   write_final_Solution( svm );
+  if( ! sol_output.empty() ) {
+   report_training( train( svm ) );
+   write_model( svm );
    }
 
  delete svm;

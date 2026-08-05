@@ -20,7 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `svm_solver` reports the status and the bounds of the training problem in
+  the format every other tool uses, and -O writes the trained model, i.e.,
+  the `SVMBlockSolution`
+
 ### Fixed 
+
+- `svm_solver` reads a netCDF SVMBlock again, and looks for the input file at
+  the -p prefix whatever its format
 
 ## [0.5.4] - 2025-12-12
 
