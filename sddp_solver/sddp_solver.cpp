@@ -1243,11 +1243,6 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
                std::make_pair( "vintNoEasy" , std::move( vintNoEasy ) ) );
   }
 
- // Configuration for the sub-Blocks may need to be cloned since the same
- // Configuration is used to configure multiple Blocks.
- lagrangian_dual_compute_config->int_pars.push_back(
-                             std::make_pair( "int_LDSlv_CloneCfg" , 1 ) );
-
  erase_str_par( compute_config , "strInnerBSC" );
 
  /* The extra Configuration of the SDDPSolver and the SDDPGreedySolver is a
