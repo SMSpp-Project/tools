@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the PPH configuration of ucblock_solver solves the Lagrangian Dual of
+  every proximal iteration to convergence
+
 ### Fixed 
 
 ## [0.5.4] - 2025-12-12
