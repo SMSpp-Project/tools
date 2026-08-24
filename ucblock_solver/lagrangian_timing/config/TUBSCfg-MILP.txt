@@ -31,11 +31,14 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-2  # number of integer parameters
+3  # number of integer parameters
 
 # now all the integer parameters
 intLogVerb      0    # log verbosity of the MILPSolver
 intRelaxIntVars 0    # 0 ==> solve the integer MILP (not the LP relaxation)
+Threads         1    # one core, like the DP solvers it is compared against:
+                     # left free, GUROBI takes every core of the machine and
+                     # the comparison stops being like-for-like
 
 3 # number of double parameters
 
