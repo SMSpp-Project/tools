@@ -12,8 +12,10 @@
 # InnerBSCfg.txt (ThermalUnitBlock -> ThermalUnitExtDPSolver), so the
 # heuristic exploits the DP solvers rather than an LP relaxation of each unit.
 #
-# The two PrimalProximalHeur-specific parameters are intMaxIterPPH (the number
-# of outer proximal iterations) and dbl_penaltyFactor (the quadratic penalty
+# The PrimalProximalHeur-specific parameters are intInnerMaxIter and
+# dblInnerRelAcc (the budget and the accuracy of each call to the inner
+# Solver), intUseWarmStartPSol, strWarmStartBSC and dbl_penaltyFactor (the
+# quadratic penalty
 # weight R); everything else is inherited from LagrangianDualSolver and, in
 # turn, from its inner BundleSolver.
 #
@@ -43,12 +45,15 @@ ComputeConfig  # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-24 # number of integer parameters
+25 # number of integer parameters
 
 # now all the integer parameters
-intMaxIterPPH      10 # max number of outer PPH iterations (default = Inf<int>())
+intMaxIter         10 # max number of iterations of the heuristic itself
+intUseWarmStartPSol 0 # 1 = the primal solution of the warm start is the
+                      # first proximal center, 0 = the first iteration is
+                      # not penalized and its bound is the valid one
 intDoEasy           1 # do easy components for (some) LagBFunction
-intMaxIter      10000 # max number of iterations for each (inner) LD call
+intInnerMaxIter   500 # max number of iterations of each (inner) LD call
 intMaxThread        1 # MaxThread, max number of new tasks to spawn
 intLogVerb          3 # log verbosity of main Bundle algorithm
 intWZNorm           2 # which norm to use in the norm-based stopping condition
@@ -77,16 +82,18 @@ intRstAlg           2 # parameter to handle the reset of the algorithm
 dblRelAcc          1e-4 # relative accuracy required of the solution the
                         # heuristic produces: it stops as soon as its
                         # gap is this small, and returns kOK
-dbl_LDSRelAcc      1e-4 # relative accuracy the inner Solver solves the
+dblInnerRelAcc     1e-4 # relative accuracy the inner Solver solves the
                         # Lagrangian Dual with
 dblNZEps           1e-4 # stopping parameter: threshold to declare 0 the || residual ||
 dbltStar           1e+4 # stopping parameter: multiplied to || residual || to estimate gap
 dbltInit           1e-3 # initial value for t
 dbl_penaltyFactor  1e+3 # PPH quadratic penalty weight R (default 0 = plain LD)
 
-2 # number of string parameters
+3 # number of string parameters
 
 # now all the string parameters
+strWarmStartBSC      WarmStartCfg.txt # BlockSolverConfig of the warm start,
+                                      # empty = no warm start
 str_LDSlv_ISName           BundleSolver # the inner Solver used by LagrangianDualSolver
 str_LagBF_BSCfg   InnerBSCfg.txt # DP-based BlockSolverConfig for the LagBFunctions
 
