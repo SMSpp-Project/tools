@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - the PPH configuration of ucblock_solver solves the Lagrangian Dual of
-  every proximal iteration to convergence
+  every proximal iteration to convergence, and follows the parameters of
+  PrimalProximalHeur being now named after the algorithm they belong to
 
 ### Fixed 
 
