@@ -268,44 +268,12 @@ static double train( SVMBlock * svm , Configuration * b_config ,
 
  /* With more than one chunk the training problem is rewritten as one problem
   * per chunk tied by consensus constraints, which is what a Lagrangian Solver
-  * attacks; the Solver is then attached to the assembled Block, and the model
-  * read out of any of its sub-Block, all of which hold the same one. */
- Block * block = svm;
+  * attacks: that is a *structure* of the SVMBlock [see
+  * SVMBlock::set_structure()], hence it is asked for here and the Solver is
+  * attached to the SVMBlock exactly as in the monolithic case. */
  if( n_chunk > 1 ) {
-  block = make_consensus_Block( svm , n_chunk );
-  config_Block( block , nullptr , s_config );
-
-  auto & subsolvers = block->get_registered_solvers();
-  if( subsolvers.empty() ) {
-   std::cerr << "Error: the BlockSolverConfig registered no Solver"
-             << std::endl;
-   exit( 1 );
-   }
-
-  auto slv = subsolvers.front();
-  const int st = slv->compute();
-  if( ( st != Solver::kOK ) && ( st != Solver::kLowPrecision ) ) {
-   std::cerr << "Error: the Solver returned " << st << std::endl;
-   exit( 1 );
-   }
-
-  train_status = st;
-  train_lb = slv->get_lb();
-  train_ub = slv->get_ub();
-
-  slv->get_var_solution();
-
-  auto sub = dynamic_cast< SVMBlock * >( block->get_nested_Block( 0 ) );
-  sub->get_solution_from_abstract();
-  svm->set_primal_solution( sub->get_w() , sub->get_b() );
-
-  const double v = solver_value( slv );
-
-  cleanup_bsc( block , s_config );
-  delete s_config;
-  delete block;
-
-  return( v );
+  SimpleConfiguration< int > chunks( n_chunk );
+  svm->set_structure( & chunks );
   }
 
  /* The BlockConfig, which is what chooses the formulation, is applied first
