@@ -9,13 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added 
 
+- `svm_solver`, a SVMBlock solver that trains a Support Vector Machine and
+  performs the model selection around it: hold-out and k-fold
+  cross-validation, both stratified, and grid search over the
+  hyper-parameters
+
+- `ml_utils.{h,cpp}`, the model-agnostic machine learning scaffolding that
+  `svm_solver` uses, i.e., the splits, the scores and the grid; it depends on
+  nothing but the standard library, so any tool training a model can use it
+
 ### Changed
+
+- `svm_solver` reports the status and the bounds of the training problem in
+  the format every other tool uses, and -O writes the trained model, i.e.,
+  the `SVMBlockSolution`
+
+- `svm_solver` trains the models of a model selection in parallel, the grid
+  and the folds being a cartesian product of independent problems; -j says
+  how many at a time
+
+- the splits of `ml_utils` are specified down to the bit, rather than being
+  left to the implementation-defined shuffle of the standard library, so that
+  a seed gives the same splits everywhere and an experiment can be reproduced
+  in any other language
 
 - the PPH configuration of ucblock_solver solves the Lagrangian Dual of
   every proximal iteration to convergence, and follows the parameters of
   PrimalProximalHeur being now named after the algorithm they belong to
 
 ### Fixed 
+
+- `svm_solver` reads a netCDF SVMBlock again, and looks for the input file at
+  the -p prefix whatever its format
 
 ## [0.5.4] - 2025-12-12
 

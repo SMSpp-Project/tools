@@ -1,0 +1,56 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - SVMCfg.txt  - - - - - - - - - - - - - - - -
+#
+# A txt description of a BlockConfig for a SVMBlock. Which formulation of the
+# training problem the abstract representation encodes is not part of the data
+# of the SVMBlock, it is a Configuration matter: this is where it is chosen
+#
+#   Donato Meoli
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockConfig # exact type of the Configuration object
+
+1  # the BlockConfig is a "differential" one
+
+2  # version of the BlockConfig format
+
+# the Configuration for the structure, i.e., the tree of sub-Block - -
+*  # [none]
+
+# static_constraints
+*    # [none]
+
+# dynamic_constraints
+*    # [none]
+
+# static_variables
+SimpleConfiguration<int>
+0    # 0 = Wolfe dual, 1 = the training problem itself
+     # the primal only exists for the linear kernel. Writing the problem as
+     # chunks tied by consensus constraints, which is what a Lagrangian Solver
+     # attacks, is not a formulation of the Block: it is assembled out of it,
+     # see the -s option of svm_solver
+
+# dynamic_variables
+*    # [none]
+
+# objective
+*    # [none]
+
+# is_feasible
+*    # [none]
+
+# is_optimal
+*    # [none]
+
+# solution
+*    # [none]
+
+# extra
+*    # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - END SVMCfg.txt  - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
