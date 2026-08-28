@@ -17,7 +17,7 @@ BlockConfig
 
 2  # version of the BlockConfig format
 
-# the Configuration for the structure, i.e., the tree of sub-Block - -
+# the Configuration for the structure, i.e., the tree of sub-Block
 *  # [none]
 
 *  # static_constraints   [none]
