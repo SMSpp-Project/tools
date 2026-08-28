@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a seed gives the same splits everywhere and an experiment can be reproduced
   in any other language
 
+- the PPH configuration of ucblock_solver solves the Lagrangian Dual of
+  every proximal iteration to convergence, and follows the parameters of
+  PrimalProximalHeur being now named after the algorithm they belong to
+
 ### Fixed 
 
 - `svm_solver` reads a netCDF SVMBlock again, and looks for the input file at

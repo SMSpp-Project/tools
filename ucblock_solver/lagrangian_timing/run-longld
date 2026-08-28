@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+#
+# run-longld < out-root > < instance.nc4 > [ max-iter ] [ every-k ]
+#
+# Start one long Lagrangian-dual run and keep the single-unit subproblems it
+# feeds its inner solvers, so that they can be timed afterwards.
+#
+# The point of running the dual long is the multipliers: after a few hundred
+# iterations they are far from zero and the single-unit problems become as hard
+# as they ever get inside a decomposition. Dumps taken early in a dual run make
+# every solver look good and the reserve columns several times cheaper than they
+# are, which is misleading.
+#
+# The run writes TUB-<unit>-<iteration>.nc4 into < out-root >/< instance
+# >/dump every < every-k > iterations, and expects to be driven by an
+# ucblock_solver built with -DSAVE_TUB=1 (the makefile here builds one).
+# It detaches, so it survives the session that starts it; watch it through the
+# dump waves rather than through its log, whose stdout is block buffered and
+# stays empty until the run ends.
+#
+# Energy-only instances converge well before the iteration limit, so give them a
+# small < every-k > or they produce no dumps at all.
+
+set -u
+here=$(cd "$(dirname "$0")" && pwd)
+out_root=${1:?usage: run-longld <out-root> <instance.nc4> [max-iter] [every-k]}
+instance=${2:?usage: run-longld <out-root> <instance.nc4> [max-iter] [every-k]}
+max_iter=${3:-2000}
+every_k=${4:-200}
+solver=${UCBLOCK_SOLVER:-$here/ucblock_solver}
+
+[ -x "$solver" ] || { echo "run-longld: no SAVE_TUB solver at $solver (make it here, or set UCBLOCK_SOLVER)" >&2; exit 1; }
+[ -f "$instance" ] || { echo "run-longld: no instance $instance" >&2; exit 1; }
+
+name=$(basename "$instance" .nc4)
+arm=$out_root/$name
+mkdir -p "$arm/dump" "$arm/lagrangian_timing"
+
+# a private copy of the configuration, so that the iteration budget can be set
+# per run without touching the one in the repository
+cp -rL "$here/config" "$arm/lagrangian_timing/config"
+cfg=$arm/lagrangian_timing/config/LDCfg.txt
+sed -i "s/^intMaxIter .*/intMaxIter $max_iter # iteration budget of this run/" "$cfg"
+sed -i "s/^intEverykIt .*/intEverykIt $every_k # dump wave every <this> many iterations/" "$cfg"
+grep -q "^intMaxIter $max_iter" "$cfg" || { echo "run-longld: could not set the budget in $cfg" >&2; exit 1; }
+
+cd "$arm/dump" || exit 1
+setsid nohup "$solver" -c ../lagrangian_timing/config/ -B InnerBCfg.txt \
+      -S UCBSCfg-LD.txt "$instance" > run.log 2>&1 < /dev/null &
+echo "run-longld: $name started (pid $!), $max_iter iterations, a wave every $every_k, into $arm/dump"
