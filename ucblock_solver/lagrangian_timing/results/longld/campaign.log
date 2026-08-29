@@ -1,0 +1,20 @@
+[08-21_13:39] === campaign take 5: MILP pinned to 1 thread, quiet threshold 50 ===
+[08-21_13:39] day_nores_noreac: start try 1 (reps=30 stride=1 milp=3, load 3.54)
+[08-21_13:41] day_nores_noreac: DONE in 123s, 1201 rows, load 3.54 -> 4.40
+[08-21_13:41] day_res_noreac: start try 1 (reps=30 stride=1 milp=3, load 4.40)
+[08-21_14:01] day_res_noreac: DONE in 1219s, 1401 rows, load 4.40 -> 5.06
+[08-21_14:01] day_res_reac: start try 1 (reps=30 stride=1 milp=3, load 5.06)
+[08-21_14:29] day_res_reac: DONE in 1658s, 2001 rows, load 5.06 -> 4.64
+[08-21_14:29] week_res_noreac: start try 1 (reps=3 stride=200 milp=1, load 4.64)
+[08-21_22:18] week_res_noreac: DONE in 28162s, 1541 rows, load 4.64 -> 3.72
+[08-21_22:18] week_res_reac: start try 1 (reps=3 stride=200 milp=1, load 3.72)
+[08-22_03:42] week_res_reac: DONE in 19423s, 1801 rows, load 3.72 -> 3.01
+[08-22_03:42] week_nores_noreac: start try 1 (reps=3 stride=200 milp=1, load 3.01)
+[08-22_03:46] week_nores_noreac: DONE in 214s, 2001 rows, load 3.01 -> 3.14
+[08-22_03:46] month_res_noreac: start try 1 (reps=1 stride=600 milp=1, load 3.14)
+[08-22_09:38] month_res_noreac: DONE in 21135s, 401 rows, load 3.14 -> 3.36
+[08-22_09:38] month_res_reac: start try 1 (reps=1 stride=600 milp=1, load 3.36)
+[08-22_14:44] month_res_reac: DONE in 18360s, 601 rows, load 3.36 -> 3.06
+[08-24_01:35] month_nores_noreac: start try 1 (reps=1 stride=500 milp=1, load 0.47)
+[08-24_01:40] month_nores_noreac: DONE in 322s, 801 rows, load 0.47 -> 1.28
+[08-24_01:40] === campaign done ===

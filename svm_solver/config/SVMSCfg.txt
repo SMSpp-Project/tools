@@ -1,12 +1,11 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - TUBSCfg-MILP.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - SVMSCfg.txt - - - - - - - - - - - - - - - -
 #
-# A txt description of a BlockSolverConfig for a ThermalUnitBlock to be solved
-# as an integer MILP by any :MILPSolver. The harness is solver-agnostic: pick
-# the back-end here by un-commenting exactly one of the four names below. The
-# unit is solved on the formulation chosen by the companion BlockConfig (see
-# TUBCfg-tpc.txt, the T + Perspective-Cuts formulation), as an INTEGER problem
-# (intRelaxIntVars 0) so it is the same problem the exact DP solvers solve.
+# A txt description of a BlockSolverConfig for a SVMBlock to be trained by the
+# ad hoc SMOSolver, which is the default because it needs no external solver
+# and it does not even need the abstract representation to be generated
+#
+#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -17,10 +16,7 @@ BlockSolverConfig     # exact type of the Configuration object
 
 1  # number of (the names of) Solver in this BlockSolverConfig
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
-#CPXMILPSolver
-#HiGHSMILPSolver
-#SCIPMILPSolver
-GRBMILPSolver
+SMOSolver          # name of Solver
 
 1  # number of ComputeConfig in this BlockSolverConfig
 
@@ -31,21 +27,15 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-3  # number of integer parameters
+0  # number of integer parameters
 
 # now all the integer parameters
-intLogVerb      0    # log verbosity of the MILPSolver
-intRelaxIntVars 0    # 0 ==> solve the integer MILP (not the LP relaxation)
-Threads         1    # one core, like the DP solvers it is compared against:
-                     # left free, GUROBI takes every core of the machine and
-                     # the comparison stops being like-for-like
+# [none]
 
-3 # number of double parameters
+1  # number of double parameters
 
 # now all the double parameters
-dblAAccSol 1e-04     # absolute accuracy of the solution
-dblRAccSol 1e-04     # relative accuracy of the solution
-dblMaxTime 300       # max running time (seconds)
+dblSMOTol  1e-6 # tolerance on the optimality conditions of the dual
 
 0 # number of string parameters
 
@@ -71,5 +61,5 @@ dblMaxTime 300       # max running time (seconds)
 * # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END TUBSCfg-MILP.txt - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - END SVMSCfg.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

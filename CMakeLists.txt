@@ -67,6 +67,7 @@ add_subdirectory(investmentblock_solver)
 add_subdirectory(sddp_solver)
 add_subdirectory(tssb_solver)
 add_subdirectory(mssb_solver)
+add_subdirectory(svm_solver)
 add_subdirectory(ucblock_solver)
 
 add_subdirectory(chgcfg)
