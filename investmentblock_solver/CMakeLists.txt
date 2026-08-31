@@ -24,6 +24,11 @@ endif ()
 if (NOT hasParent)
     # Blocks
     find_package(InvestmentBlock)
+    # the inner Block of an InvestmentBlock may be a stochastic one: the
+    # TwoStageStochasticBlock comes with InvestmentBlock, the multi-stage one
+    # has to be asked for, since nothing depends on it, the Block being
+    # reached polymorphically
+    find_package(MultiStageStochasticBlock)
     # Solvers
     find_package(LagrangianDualSolver)
     find_package(BundleSolver)
@@ -37,6 +42,11 @@ if (TARGET SMS++::InvestmentBlock)
                                           investmentblock_solver.cpp)
     target_include_directories(investmentblock_solver PRIVATE ..)
     target_link_libraries(investmentblock_solver PRIVATE SMS++::InvestmentBlock)
+
+    if (TARGET SMS++::MultiStageStochasticBlock)
+        target_link_libraries(investmentblock_solver PRIVATE
+                              SMS++::MultiStageStochasticBlock)
+    endif ()
 
     if (TARGET SMS++::LagrangianDualSolver)
         target_link_libraries(investmentblock_solver PRIVATE SMS++::LagrangianDualSolver)
