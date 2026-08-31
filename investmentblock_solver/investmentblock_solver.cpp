@@ -98,6 +98,8 @@
 #include <SDDPSolver.h>
 #include <SlackUnitBlock.h>
 #include <ThermalUnitBlock.h>
+#include <TwoStageStochasticBlock.h>
+
 #include <UCBlock.h>
 
 #include "InvestmentBlock.h"
@@ -959,14 +961,15 @@ void process_block_file( const netCDF::NcFile & file )
   auto investment_function = static_cast< InvestmentFunction * >(
 				        investment_block->get_function() );
 
-  for( auto block_ : investment_function->get_nested_Blocks() ) {
-   auto block = dynamic_cast< UCBlock * >( block_ );
-   if( ! block ) {
-    std::cerr << "The sub-Block of the InvestmentBlock is not a UCBlock."
-              << std::endl;
+  // the inner Block may also be a stochastic one, in which case the
+  // investment is the here-and-now decision taken above the scenarios
+  for( auto block_ : investment_function->get_nested_Blocks() )
+   if( ! ( dynamic_cast< UCBlock * >( block_ ) ||
+           dynamic_cast< TwoStageStochasticBlock * >( block_ ) ) ) {
+    std::cerr << "The sub-Block of the InvestmentBlock is neither a UCBlock "
+              << "nor a TwoStageStochasticBlock." << std::endl;
     exit( 1 );
     }
-   }
 
   // Configure the Block
   if( given_block_config ) {
@@ -981,10 +984,17 @@ void process_block_file( const netCDF::NcFile & file )
    }
   else
    for( auto block_ : investment_function->get_nested_Blocks() ) {
-    auto block = dynamic_cast< UCBlock * >( block_ );
     bool is_using_lagrangian_dual_solver = false;
-    configure_Blocks( block , relax_integrality ,
-                      is_using_lagrangian_dual_solver );
+    if( auto block = dynamic_cast< UCBlock * >( block_ ) )
+     configure_Blocks( block , relax_integrality ,
+                       is_using_lagrangian_dual_solver );
+    else
+     // a stochastic inner Block holds one UCBlock per scenario: each of them
+     // is configured, the stochastic Block itself having nothing to configure
+     for( auto scenario : block_->get_nested_Blocks() )
+      if( auto block = dynamic_cast< UCBlock * >( scenario ) )
+       configure_Blocks( block , relax_integrality ,
+                         is_using_lagrangian_dual_solver );
     }
 
   if( reformulate_variable_bounds ) {
