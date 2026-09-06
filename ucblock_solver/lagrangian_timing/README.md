@@ -41,7 +41,24 @@ build leaves the `SAVE_TUB` macro at `0`.
 3. **`plot_lagrangian_timing.py`** (per gen_type, time vs normalized iteration),
    **`plot_algorithms.py`** (per solver, scaling and head-to-head ratios) and
    **`plot_reserve.py`** (the with/without-reserve comparison) read the warm
-   rows.
+   rows. Three more read the CSVs a whole campaign leaves behind, one figure
+   each: **`plot_early.py`** (the first few hundred iterations at the three
+   horizons, each curve over its own first sample, so the solvers are compared
+   on how they degrade and not on how fast they are), **`plot_dual_range.py`**
+   (the same warm re-solve over the whole dual, in milliseconds, and how many
+   times `extDP` the other three are) and **`plot_by_type.py`** (what the MILP
+   finds hard, by unit technology).
+
+   Two things to know before reading their output. The arm called **`+r` in the
+   paper is `res_noreac`** and **`+r+q` is `res_reac`**: plotting the wrong one
+   changes the conclusions, not just the numbers. And the dumps carry no
+   technology label, so `plot_by_type.py` classifies the units from their own
+   data, `MinPower/MaxPower` separating every type but the three mid CCGTs and
+   the minimum up time splitting those; that time is in **periods**, and the
+   instances are quarter-hourly at every horizon, so it is four times the hours
+   of a data sheet. The script checks the classification against the declared
+   per-size mix and refuses to plot unless it comes out exactly, a silent
+   misclassification filing the times under the wrong technology.
 
 ## Running
 
@@ -84,6 +101,21 @@ bound and wall-clock of each into one CSV.
 See the headers of `run-lagrangian-timing` and `run-ld-vs-tpc` for every knob
 and the reproducible recipe, including running the binaries from a copy outside
 a synced folder.
+
+**Measuring on a shared machine.** `run-timing-guarded` wraps one set: it
+waits for the load to fall below `QUIET`, measures, and promotes the result
+only if the machine is still quiet at the end, since the single-core DPs
+survive a crowd while the MILP does not. It also defends the three ways a set
+worth a day of machine has been lost: the configuration is **copied** into the
+dump directory rather than linked, so that a `git pull` cannot change what a
+running campaign is measuring; a result carrying no `MILP` row while the MILP
+was asked for is refused rather than promoted, that being what an unreadable
+`BlockConfig` produces, the harness saying so once on its error stream and
+going on to time the three DPs; and a result discarded for load is kept as
+`<out>.SUSPECT-try<n>.csv` instead of deleted. Its counterpart is that a
+measurement is comparable only with others taken by the same binary and the
+same configuration files: the format of the latter has changed at least once
+under a campaign in flight.
 
 **Build pitfalls.** Three traps when building the study binaries from scratch:
 
