@@ -17,7 +17,15 @@
 # an interrupted or discarded run cannot leave a half-written CSV behind that a
 # later pass would mistake for a finished measurement. A result of a handful of
 # lines is treated as a failure, not as a measurement, since that is what a
-# broken configuration produces.
+# broken configuration produces, and so is one that carries no MILP row while
+# the MILP was asked for, which is what an unreadable BlockConfig produces: the
+# harness says so once on its error stream and goes on timing the three DPs,
+# which is easy to miss in a set that costs a day. A result discarded for load
+# is kept aside as <out>.SUSPECT-try<n>.csv rather than deleted, since at the
+# monthly horizon a set is worth a day of the machine and the units are timed
+# one after the other, each sweeping all its iterations within half an hour: a
+# load drift moves a whole unit at a time and leaves usable a curve read
+# iteration by iteration, even where it spoils an absolute median.
 #
 # Environment: QUIET (load threshold, default 50), TRIES (default 8).
 # Sizing: at the weekly and monthly horizons a set costs hours, so ask for few
@@ -43,8 +51,14 @@ say()   { echo "[$(date +%m-%d_%H:%M)] $*"; }
 [ -d "$dumps" ]   || { echo "run-timing-guarded: no dump directory $dumps" >&2; exit 1; }
 [ -e "$out" ]     && { say "$(basename "$out"): already measured, left alone"; exit 0; }
 
-# the harness reads its solver configurations from <dump-dir>/config
-[ -e "$dumps/config/TUBCfg-tpc.txt" ] || ln -sfn "$here/config" "$dumps/config"
+# The harness reads its solver configurations from <dump-dir>/config, which is
+# a COPY of this study's config/, not a link to it: a dump set is measured over
+# days and re-measured months later, and a link would follow the repository
+# through any change made meanwhile, so that a set would silently stop being
+# measured with the configuration it was set up with. A legacy link is
+# materialised into the copy it resolves to.
+[ -L "$dumps/config" ] && rm -f "$dumps/config"
+[ -d "$dumps/config" ] || cp -rL "$here/config" "$dumps/config"
 [ -e "$dumps/config/TUBCfg-tpc.txt" ] || { echo "run-timing-guarded: $dumps/config does not resolve" >&2; exit 1; }
 grep -q '^Threads' "$dumps/config/TUBSCfg-MILP.txt" || {
   echo "run-timing-guarded: the MILP is not held to one core, the comparison would not be like-for-like" >&2; exit 1; }
@@ -61,13 +75,17 @@ while [ $try -lt "$TRIES" ]; do
     say "$(basename "$out"): empty result ($rows rows), see ${out%.csv}.err"
     rm -f "$out.part"; exit 1
   fi
+  if [ "$milp" -gt 0 ] && ! grep -q ',MILP,' "$out.part"; then
+    say "$(basename "$out"): the MILP was asked for and not one solve was timed, see ${out%.csv}.err"
+    mv "$out.part" "${out%.csv}.NO-MILP.csv"; exit 1
+  fi
   if awk -v x="$l1" -v q="$QUIET" 'BEGIN{exit !(x<q)}'; then
     mv "$out.part" "$out"
     say "$(basename "$out"): done in $((SECONDS-t0))s, $rows rows, load $l0 -> $l1"
     exit 0
   fi
-  say "$(basename "$out"): discarded after $((SECONDS-t0))s, the machine filled up (load $l0 -> $l1)"
-  rm -f "$out.part"
+  mv "$out.part" "${out%.csv}.SUSPECT-try$try.csv"
+  say "$(basename "$out"): discarded after $((SECONDS-t0))s, the machine filled up (load $l0 -> $l1), kept as $(basename "${out%.csv}").SUSPECT-try$try.csv"
   sleep 600
 done
 say "$(basename "$out"): given up after $try tries"
