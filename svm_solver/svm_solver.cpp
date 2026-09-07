@@ -7,9 +7,10 @@
  * solving a SVMBlock, and for the model selection that surrounds it.
  *
  * The description of the SVMBlock must be given in a netCDF file, either a
- * BlockFile or a ProbFile, or in the plain text format that SVMBlock reads
- * [see SVMBlock::load( std::istream )], in which case -t says whether it is a
- * classification or a regression problem. This tool can be executed as
+ * BlockFile or a ProbFile, or in one of the two plain text formats that
+ * SVMBlock reads, the dense one and, with -l, the sparse one of the LIBSVM
+ * data sets [see SVMBlock::load( std::istream , char )], in which case -t
+ * says whether it is a classification or a regression problem. This tool can be executed as
  * follows:
  *
  *   ./svm_solver [-B FILE] [-S FILE] [-O FILE] [-k NUMBER] [-x FRACTION]
@@ -99,6 +100,7 @@ double test_fraction = 0;   ///< held-out fraction, 0 = none
 std::string grid_spec;      ///< the grid of hyper-parameters to compare
 Index n_chunk = 1;          ///< chunks of the consensus rewriting, 1 = none
 std::string task = "c";     ///< "c" or "r", only used by the text format
+bool libsvm = false;        ///< the text format is the sparse one of LIBSVM
 unsigned seed = 1;          ///< seed of the splits
 long n_jobs = 0;            ///< parallel trainings, 0 = one per core
 
@@ -148,7 +150,7 @@ static SVMBlock * read_SVMBlock( void )
    in.seekg( 0 );
    auto block = dynamic_cast< SVMBlock * >(
     Block::new_Block( ( task == "r" ) ? "SVRBlock" : "SVCBlock" ) );
-   block->load( in );
+   block->load( in , libsvm ? 'l' : 0 );
    return( block );
    }
   }
@@ -635,6 +637,7 @@ static bool process_specific_arg( int opt )
   case( 'x' ): str2num( optarg , test_fraction ); return( true );
   case( 'g' ): grid_spec = optarg;                return( true );
   case( 't' ): task = optarg;                     return( true );
+  case( 'l' ): libsvm = true;                     return( true );
   case( 'e' ): str2num( optarg , seed );          return( true );
   case( 's' ): str2num( optarg , n_chunk );       return( true );
   case( 'j' ): str2num( optarg , n_jobs );        return( true );
@@ -663,7 +666,7 @@ int main( int argc , char ** argv )
  default_bconf_name = "SVMCfg.txt";
  default_sconf_name = "SVMSCfg.txt";
 
- short_opts += "k:x:g:t:e:s:j:i";
+ short_opts += "k:x:g:t:e:s:j:il";
  const std::vector< option > my_opts = {
    { "kfold"    , required_argument , nullptr , 'k' } ,
    { "holdout"  , required_argument , nullptr , 'x' } ,
@@ -672,7 +675,8 @@ int main( int argc , char ** argv )
    { "seed"     , required_argument , nullptr , 'e' } ,
    { "chunks"   , required_argument , nullptr , 's' } ,
    { "jobs"     , required_argument , nullptr , 'j' } ,
-   { "increment", no_argument       , nullptr , 'i' } };
+   { "increment", no_argument       , nullptr , 'i' } ,
+   { "libsvm"   , no_argument       , nullptr , 'l' } };
  long_opts.insert( std::prev( long_opts.end() ) ,
                    my_opts.begin() , my_opts.end() );
  help += "  -k, --kfold <n>                 folds of the cross-validation\n"
@@ -689,6 +693,9 @@ int main( int argc , char ** argv )
          "names are\n"
          "                                  C, gamma, degree, coef0, "
          "epsilon\n"
+         "  -l, --libsvm                    the text input is in the sparse "
+         "format of\n"
+         "                                  the LIBSVM data sets\n"
          "  -t, --task <c|r>                classification or regression, "
          "only for\n"
          "                                  the plain text input format "
