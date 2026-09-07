@@ -28,6 +28,10 @@
  *
  * - -k trains and scores the model on each of the folds of a k-fold
  *   cross-validation, reporting the score of each fold and their average;
+ *   with -i the k models are not trained, they are obtained by unlearning
+ *   each fold out of the model of all the samples along the exact solution
+ *   path, which is one training plus k walks and makes leave-one-out, i.e.
+ *   -k with as many folds as there are samples, affordable;
  *
  * - -g compares the hyper-parameters of the given grid, each by
  *   cross-validation (or by the hold-out split of -x), and reports the best.
@@ -59,6 +63,8 @@
 
 #include <cmath>
 
+#include <numeric>
+
 #include <thread>
 #include <fstream>
 #include <sstream>
@@ -67,6 +73,7 @@
 
 #include <ff/parallel_for.hpp>
 
+#include <SMOSolver.h>
 #include <SVCBlock.h>
 #include <SVRBlock.h>
 
@@ -87,6 +94,7 @@ using doubleVec = SVMBlock::doubleVec;
 /*--------------------------------------------------------------------------*/
 
 unsigned n_fold = 0;        ///< folds of the cross-validation, 0 = none
+bool incremental = false;   ///< a fold is unlearnt rather than trained around
 double test_fraction = 0;   ///< held-out fraction, 0 = none
 std::string grid_spec;      ///< the grid of hyper-parameters to compare
 Index n_chunk = 1;          ///< chunks of the consensus rewriting, 1 = none
@@ -252,18 +260,20 @@ static double solver_value( Solver * solver )
  }  // end( solver_value )
 
 /*--------------------------------------------------------------------------*/
-/// trains \p svm with the given Configuration, returning the optimal value
+/// configures \p svm and returns the Solver that has to train it
 /** Configures \p svm with the given BlockConfig and BlockSolverConfig, which
- * is also what decides the formulation of the abstract representation,
- * computes with the first Solver registered and reads the trained model back
- * into the SVMBlock. The two Configuration are consumed.
+ * is also what decides the formulation of the abstract representation, and
+ * returns the first Solver the latter has registered. The BlockConfig is
+ * consumed, the BlockSolverConfig is the caller's to clean up with.
  *
- * This is the whole of a training, and it only touches \p svm: model
- * selection trains many models at once by calling it from several threads,
- * each with its own copy of the Configuration. */
+ * Together with solve() this is the whole of a training, and it only touches
+ * \p svm: model selection trains many models at once by calling them from
+ * several threads, each with its own copy of the Configuration. They are two
+ * because a cross-validation done by unlearning keeps the same Solver
+ * attached across the folds [see evaluate_incremental()]. */
 
-static double train( SVMBlock * svm , Configuration * b_config ,
-                     Configuration * s_config )
+static Solver * setup( SVMBlock * svm , Configuration * b_config ,
+                       Configuration * s_config )
 {
 
  /* With more than one chunk the training problem is rewritten as one problem
@@ -298,7 +308,18 @@ static double train( SVMBlock * svm , Configuration * b_config ,
   exit( 1 );
   }
 
- auto solver = solvers.front();
+ return( solvers.front() );
+
+ }  // end( setup )
+
+/*--------------------------------------------------------------------------*/
+/// computes with \p solver and reads the trained model back into \p svm
+/** Computes the training problem of \p svm with \p solver, which setup() has
+ * attached to it, checks the status, reads the model back where the Solver
+ * has not written it itself and returns the optimal value. */
+
+static double solve( SVMBlock * svm , Solver * solver )
+{
  const int status = solver->compute();
 
  if( ( status != Solver::kOK ) && ( status != Solver::kLowPrecision ) ) {
@@ -319,7 +340,18 @@ static double train( SVMBlock * svm , Configuration * b_config ,
  if( svm->get_generated_problem() >= 0 )
   svm->get_solution_from_abstract();
 
- const double value = solver_value( solver );
+ return( solver_value( solver ) );
+
+ }  // end( solve )
+
+/*--------------------------------------------------------------------------*/
+/// trains \p svm with the given Configuration, returning the optimal value
+
+static double train( SVMBlock * svm , Configuration * b_config ,
+                     Configuration * s_config )
+{
+ auto solver = setup( svm , b_config , s_config );
+ const double value = solve( svm , solver );
 
  cleanup_bsc( svm , s_config );
  delete s_config;
@@ -478,6 +510,110 @@ static std::vector< double > evaluate( const SVMBlock * svm ,
  }  // end( evaluate )
 
 /*--------------------------------------------------------------------------*/
+/// the same, unlearning each fold out of one model instead of training k
+/** Gives what evaluate() gives, but computing the model of a fold the way the
+ * incremental and decremental algorithm of [Cauwenberghs and Poggio] allows:
+ * ONE model is trained on all the samples, and then, fold by fold, the
+ * samples of the fold are unlearnt out of it along the exact solution path,
+ * which leaves exactly the model that training on the other folds would have
+ * given, the fold is scored on it, and a re-optimization puts them back. A
+ * k-fold cross-validation is therefore one training plus k walks rather than
+ * k trainings, and leave-one-out, which is `-k n`, becomes affordable.
+ *
+ * This asks of the Solver something no Solver interface has, unlearning a
+ * sample, so it wants a SMOSolver; and it is sequential over the folds by
+ * construction, one model being walked back and forth, so what is spread
+ * over the cores is the grid. A walk that fails, the system that drives it
+ * being singular, costs nothing but the training from scratch of that fold,
+ * which is what the other way does anyway. */
+
+static std::vector< double > evaluate_incremental( const SVMBlock * svm ,
+                                                   const std::vector<
+                                                        DataSplit > & splits ,
+                                                   const Grid & grid ,
+                                                   const std::vector<
+                                                     GridPoint > & points )
+{
+ const std::size_t n_split = splits.size();
+ std::vector< double > scores( points.size() * n_split );
+
+ auto b_config = get_config( bconf_file );
+ auto s_config = get_config( sconf_file );
+
+ IndexSet all( svm->get_NSamples() );
+ std::iota( all.begin() , all.end() , 0 );
+
+ const long workers = n_jobs > 0 ? n_jobs
+  : std::max< long >( 1 , std::thread::hardware_concurrency() );
+
+ ff::ParallelFor pf( workers );
+ pf.parallel_for( 0 , points.size() , 1 , 1 , [ & ]( const long p ) {
+  auto model = sub_SVMBlock( svm , all , grid , points[ p ] );
+
+  auto sconf = s_config ? s_config->clone() : nullptr;
+  auto solver = setup( model , b_config ? b_config->clone() : nullptr ,
+                       sconf );
+
+  auto smo = dynamic_cast< SMOSolver * >( solver );
+  if( ! smo ) {
+   std::cerr << "Error: the incremental cross-validation needs a Solver that "
+             << "can unlearn a sample, i.e., SMOSolver, and the "
+             << "BlockSolverConfig registered a " << solver->classname()
+             << std::endl;
+   exit( 1 );
+   }
+
+  solve( model , solver );   // the model of all the samples, once
+
+  for( std::size_t f = 0 ; f < n_split ; ++f ) {
+   const auto & fold = splits[ f ].test;
+
+   /* The whole fold goes in one call: unlearning its samples one by one
+    * would let each walk give a multiplier back to a sample the previous
+    * ones have unlearnt, which the model of the other folds cannot have. */
+
+   const Block::Subset out( fold.begin() , fold.end() );
+   const bool walked = ( smo->unlearn( out ) == Solver::kOK );
+
+   if( walked ) {
+    solver->get_var_solution();   // the model without the fold, in the Block
+    scores[ p * n_split + f ] = score( svm , targets( svm , fold ) ,
+                                       predict( model , svm , fold ) );
+    }
+   else {
+    // the path could not be followed: that fold is trained from scratch
+    auto sub = sub_SVMBlock( svm , splits[ f ].train , grid , points[ p ] );
+    train( sub , b_config ? b_config->clone() : nullptr ,
+           s_config ? s_config->clone() : nullptr );
+    scores[ p * n_split + f ] = score( svm , targets( svm , fold ) ,
+                                       predict( sub , svm , fold ) );
+    delete sub;
+    }
+
+   /* The fold comes back the way it went out, along the path: putting it
+    * back by re-optimizing would be a training, which is exactly what this
+    * is here not to do. A walk that fails leaves the multipliers feasible
+    * but not optimal, and only a compute() can then put things right. */
+
+   if( f + 1 < n_split ) {
+    if( ( ! walked ) || ( smo->relearn( out ) != Solver::kOK ) )
+     solve( model , solver );
+    }
+   }
+
+  cleanup_bsc( model , sconf );
+  delete sconf;
+  delete model;
+  } , workers );
+
+ delete b_config;
+ delete s_config;
+
+ return( scores );
+
+ }  // end( evaluate_incremental )
+
+/*--------------------------------------------------------------------------*/
 /// the average of the values
 
 static double mean( const std::vector< double > & v )
@@ -495,6 +631,7 @@ static bool process_specific_arg( int opt )
 {
  switch( opt ) {
   case( 'k' ): str2num( optarg , n_fold );        return( true );
+  case( 'i' ): incremental = true;                return( true );
   case( 'x' ): str2num( optarg , test_fraction ); return( true );
   case( 'g' ): grid_spec = optarg;                return( true );
   case( 't' ): task = optarg;                     return( true );
@@ -526,7 +663,7 @@ int main( int argc , char ** argv )
  default_bconf_name = "SVMCfg.txt";
  default_sconf_name = "SVMSCfg.txt";
 
- short_opts += "k:x:g:t:e:s:j:";
+ short_opts += "k:x:g:t:e:s:j:i";
  const std::vector< option > my_opts = {
    { "kfold"    , required_argument , nullptr , 'k' } ,
    { "holdout"  , required_argument , nullptr , 'x' } ,
@@ -534,10 +671,16 @@ int main( int argc , char ** argv )
    { "task"     , required_argument , nullptr , 't' } ,
    { "seed"     , required_argument , nullptr , 'e' } ,
    { "chunks"   , required_argument , nullptr , 's' } ,
-   { "jobs"     , required_argument , nullptr , 'j' } };
+   { "jobs"     , required_argument , nullptr , 'j' } ,
+   { "increment", no_argument       , nullptr , 'i' } };
  long_opts.insert( std::prev( long_opts.end() ) ,
                    my_opts.begin() , my_opts.end() );
  help += "  -k, --kfold <n>                 folds of the cross-validation\n"
+         "  -i, --increment                 each fold is unlearnt out of one "
+         "model\n"
+         "                                  instead of training one per fold; "
+         "wants\n"
+         "                                  SMOSolver\n"
          "  -x, --holdout <x>               fraction of the samples held out "
          "for the test\n"
          "  -g, --grid <spec>               hyper-parameters to compare, "
@@ -616,9 +759,12 @@ int main( int argc , char ** argv )
                        : "hold-out of " + std::to_string( test_fraction ) )
            << ", " << points.size()
            << ( points.size() == 1 ? " point" : " points" ) << " of the grid"
+           << ( incremental ? ", each fold unlearnt out of one model" : "" )
            << std::endl;
 
- const auto all_scores = evaluate( svm , splits , grid , points );
+ const auto all_scores = incremental
+                         ? evaluate_incremental( svm , splits , grid , points )
+                         : evaluate( svm , splits , grid , points );
 
  double best_score = - Inf< double >();
  GridPoint best_point;
