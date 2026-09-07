@@ -30,8 +30,12 @@ build:
       - develop
       - tags
     changes:
-      - cmake/*
+      # every tool lives in a directory of its own
+      - "*/*"
+      - common_utils.*
+      - ml_utils.*
       - CMakeLists.txt
+      - .gitlab-ci.yml
 
 deploy:
   stage: deploy
