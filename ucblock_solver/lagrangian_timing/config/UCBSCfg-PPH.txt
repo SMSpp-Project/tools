@@ -45,9 +45,10 @@ ComputeConfig  # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-25 # number of integer parameters
+19 # number of integer parameters
 
 # now all the integer parameters
+intMPStbl              0 # stabilization: 0 = proximal, 1 = level, 2 = doubly stabilized
 intMaxIter         10 # max number of iterations of the heuristic itself
 intUseWarmStartPSol 0 # 1 = the primal solution of the warm start is the
                       # first proximal center, 0 = the first iteration is
@@ -67,13 +68,6 @@ intMnSSC            0 # min number of consecutive SS with the same t for a t inc
 intMnNSC            1 # min number of consecutive NS with the same t for a t decrease
 inttSPar1          12 # long-term t-strategy (0 = none, 4 = soft, 8 = hard, 12 = balancing)
 intMaxNrEvls        2 # maximum number of function evaluations at each iteration
-intMPName          15 # MP solver: 7 = Cplex/Gurobi quadratic stab. + 8 = dup-check
-intMPlvl            4 # log verbosity of Master Problem
-intQPmp1            0 # MxAdd, how many variables can be added to the base (0 = at will)
-intQPmp2            0 # MxRmv, how many variables can be removed from the base (0 = at will)
-intOSImp1           0 # Osi(Cpx/Grb)Solver algorithm (0 = auto)
-intOSImp2           0 # pre-processing (reduction)
-intOSImp3           1 # threads
 intRstAlg           2 # parameter to handle the reset of the algorithm
 
 6 # number of double parameters
@@ -89,13 +83,14 @@ dbltStar           1e+4 # stopping parameter: multiplied to || residual || to es
 dbltInit           1e-3 # initial value for t
 dbl_penaltyFactor  1e+3 # PPH quadratic penalty weight R (default 0 = plain LD)
 
-3 # number of string parameters
+4 # number of string parameters
 
 # now all the string parameters
 strWarmStartBSC      WarmStartCfg.txt # BlockSolverConfig of the warm start,
                                       # empty = no warm start
 str_LDSlv_ISName           BundleSolver # the inner Solver used by LagrangianDualSolver
 str_LagBF_BSCfg   InnerBSCfg.txt # DP-based BlockSolverConfig for the LagBFunctions
+strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's Solver
 
 0 # number of vector-of-int parameters
 
