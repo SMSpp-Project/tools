@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `svm_solver` takes the kernel from the command line with -K, one of linear,
+  poly, gaussian, laplacian and sigmoid, which overrides the one the instance
+  carries while keeping its parameters
+
 - `svm_solver` reports the status and the bounds of the training problem in
   the format every other tool uses, and -O writes the trained model, i.e.,
   the `SVMBlockSolution`

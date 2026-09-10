@@ -100,6 +100,7 @@ double test_fraction = 0;   ///< held-out fraction, 0 = none
 std::string grid_spec;      ///< the grid of hyper-parameters to compare
 Index n_chunk = 1;          ///< chunks of the consensus rewriting, 1 = none
 std::string task = "c";     ///< "c" or "r", only used by the text format
+std::string kernel;         ///< name of the kernel, empty = the one of the file
 bool libsvm = false;        ///< the text format is the sparse one of LIBSVM
 unsigned seed = 1;          ///< seed of the splits
 long n_jobs = 0;            ///< parallel trainings, 0 = one per core
@@ -123,6 +124,27 @@ static void str2num( const char * str , T & value )
 {
  std::istringstream( str ) >> value;
  }
+
+/*--------------------------------------------------------------------------*/
+/// the value of SVMBlock::kernel_type named by \p name
+
+static int kernel_by_name( const std::string & name )
+{
+ static const std::pair< const char * , int > names[] = {
+   { "linear"    , SVMBlock::kLinear    } ,
+   { "poly"      , SVMBlock::kPoly      } ,
+   { "gaussian"  , SVMBlock::kGaussian  } ,
+   { "laplacian" , SVMBlock::kLaplacian } ,
+   { "sigmoid"   , SVMBlock::kSigmoid   } };
+
+ for( const auto & [ n , k ] : names )
+  if( name == n )
+   return( k );
+
+ std::cerr << "Error: unknown kernel \"" << name << "\"" << std::endl;
+ exit( 1 );
+
+ }  // end( kernel_by_name )
 
 /*--------------------------------------------------------------------------*/
 /// the SVMBlock of the given file, whatever format it is in
@@ -637,6 +659,7 @@ static bool process_specific_arg( int opt )
   case( 'x' ): str2num( optarg , test_fraction ); return( true );
   case( 'g' ): grid_spec = optarg;                return( true );
   case( 't' ): task = optarg;                     return( true );
+  case( 'K' ): kernel = optarg;                   return( true );
   case( 'l' ): libsvm = true;                     return( true );
   case( 'e' ): str2num( optarg , seed );          return( true );
   case( 's' ): str2num( optarg , n_chunk );       return( true );
@@ -666,12 +689,13 @@ int main( int argc , char ** argv )
  default_bconf_name = "SVMCfg.txt";
  default_sconf_name = "SVMSCfg.txt";
 
- short_opts += "k:x:g:t:e:s:j:il";
+ short_opts += "k:x:g:t:e:s:j:K:il";
  const std::vector< option > my_opts = {
    { "kfold"    , required_argument , nullptr , 'k' } ,
    { "holdout"  , required_argument , nullptr , 'x' } ,
    { "grid"     , required_argument , nullptr , 'g' } ,
    { "task"     , required_argument , nullptr , 't' } ,
+   { "kernel"   , required_argument , nullptr , 'K' } ,
    { "seed"     , required_argument , nullptr , 'e' } ,
    { "chunks"   , required_argument , nullptr , 's' } ,
    { "jobs"     , required_argument , nullptr , 'j' } ,
@@ -700,6 +724,12 @@ int main( int argc , char ** argv )
          "only for\n"
          "                                  the plain text input format "
          "[c]\n"
+         "  -K, --kernel <name>             kernel to train with, one of "
+         "linear, poly,\n"
+         "                                  gaussian, laplacian and sigmoid; "
+         "overrides\n"
+         "                                  the one of the file, its "
+         "parameters kept\n"
          "  -e, --seed <n>                  seed of the splits [1]\n"
          "  -s, --chunks <n>                rewrite the training problem as "
          "n chunks tied\n"
@@ -712,6 +742,14 @@ int main( int argc , char ** argv )
  process_args( argc , argv , process_specific_arg );
 
  auto svm = read_SVMBlock();
+
+ // the kernel of the command line, if any, replaces the one of the file; the
+ // Block is not configured yet, so no abstract representation is rebuilt, and
+ // the parameters of the kernel are those the file carries unless the grid
+ // moves them
+ if( ! kernel.empty() )
+  svm->set_kernel( kernel_by_name( kernel ) , svm->get_gamma() ,
+                   svm->get_degree() , svm->get_coef0() );
 
  const Index n = svm->get_NSamples();
 
