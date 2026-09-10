@@ -660,17 +660,28 @@ void print_status( int status )
 {
  std::cout << "Status = " << status << " (";
 
+ // note: the description is printed without the closing ")" and the
+ // std::endl, which are added below, so that a status that none of the
+ // cases catches (a :Solver-specific one extending the set of return
+ // codes after kLastSolverError) still produces a complete line
  switch( status ) {
-  case Solver::kOK:         std::cout << "Success)" << std::endl;    break;
-  case Solver::kError:      std::cout << "Error)" << std::endl;      break;
-  case Solver::kInfeasible: std::cout << "Infeasible)" << std::endl; break;
-  case Solver::kUnbounded:  std::cout << "Unbounded)" << std::endl;  break;
-  case Solver::kStopTime:   std::cout << "Stopped for time limit)"
-				      << std::endl;                  break;
-  case Solver::kStopIter:   std::cout << "Stopped for iteration limit)"
-				      << std::endl;                  break;
-  default:;
+  case Solver::kStillRunning: std::cout << "Still running";           break;
+  case Solver::kUnEval:       std::cout << "Not evaluated";           break;
+  case Solver::kOK:           std::cout << "Success";                 break;
+  case Solver::kError:        std::cout << "Error";                   break;
+  case Solver::kInfeasible:   std::cout << "Infeasible";              break;
+  case Solver::kUnbounded:    std::cout << "Unbounded";               break;
+  case Solver::kStopTime:     std::cout << "Stopped for time limit";  break;
+  case Solver::kStopIter:     std::cout << "Stopped for iteration limit";
+                                                                      break;
+  case Solver::kBlockLocked:  std::cout << "Block could not be locked";
+                                                                      break;
+  case Solver::kLowPrecision: std::cout << "Solution found, but not provably "
+                                           "optimal";                 break;
+  default:                    std::cout << "Solver-specific status";
   }
+
+ std::cout << ")" << std::endl;
  }
 
 /*--------------------------------------------------------------------------*/
