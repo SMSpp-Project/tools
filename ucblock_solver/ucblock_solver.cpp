@@ -202,6 +202,9 @@ int main( int argc , char ** argv )
  // solve - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  std::cout.setf( std::ios::scientific, std::ios::floatfield );
  std::cout << std::setprecision( 8 );
+
+ set_solver_logs( block );
+
  solve_all( block );
 
  // cleanup - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
