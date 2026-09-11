@@ -117,9 +117,21 @@ configure_file(cmake/${modName}Config.h.in ${modName}Config.h)
 include_directories(${PROJECT_BINARY_DIR})
 
 # ----- Settings ------------------------------------------------------------ #
-# This is needed for setting the runtime path when installing.
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+# The installed tools look for the SMS++ libraries relative to their own
+# location, so that the installed tree can be moved as a whole, and for the
+# external libraries where they were found at link time.
 include(GNUInstallDirs)
+if (NOT CMAKE_INSTALL_RPATH)
+    if (APPLE)
+        set(rpathOrigin "@loader_path")
+    else ()
+        set(rpathOrigin "$ORIGIN")
+    endif ()
+    file(RELATIVE_PATH binToLib ${CMAKE_INSTALL_FULL_BINDIR}
+            ${CMAKE_INSTALL_FULL_LIBDIR})
+    set(CMAKE_INSTALL_RPATH "${rpathOrigin}/${binToLib}")
+endif ()
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # ----- Tools --------------------------------------------------------------- #
 add_subdirectory(block_solver)
