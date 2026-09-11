@@ -7,11 +7,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added 
+### Added
 
 ### Changed
 
-### Fixed 
+### Fixed
+
+## [0.6.0] - 2026-09-12
+
+### Added
+
+- `svm_solver`, a SVMBlock solver that trains a Support Vector Machine and
+  performs the model selection around it: hold-out and k-fold
+  cross-validation, both stratified, and grid search over the
+  hyper-parameters
+
+- `ml_utils.{h,cpp}`, the model-agnostic machine learning scaffolding that
+  `svm_solver` uses, i.e., the splits, the scores and the grid; it depends on
+  nothing but the standard library, so any tool training a model can use it
+
+- every tool installs its configuration, its example instances and a man
+  page generated from its --help; without -c, when none of its configuration
+  files is found with its own prefix, it uses the installed configuration
+
+- the --help of every tool follows the GNU layout, and describes its input
+  file, how the configuration files are looked up, some examples and the
+  exit status
+
+- an empty name given to -B or -S, as in -B '', means no file at all
+
+- `chgcfg` has --help, --version and a man page, as every other tool
+
+- `mcfblock_solver`, `bkblock_solver`, `cflblock_solver`, `mmcfblock_solver`
+  and `sfdcrblock_solver`, the solvers of MCFBlock, BinaryKnapsackBlock,
+  CapacitatedFacilityLocationBlock, MMCFBlock and SingleFlowDCRBlock, which
+  read their Block from an SMS++ netCDF file or from a native text format of
+  it, chosen by -f
+
+### Changed
+
+- the default configurations of `ucblock_solver`, `tssb_solver` and
+  `sddp_solver` solve with HiGHSMILPSolver, which needs no license
+
+- the default -B of `ucblock_solver` is InnerBCfg.txt, which chooses the
+  formulation of the units and of the network
+
+- -n writes the problem on the file it is given, and -v takes its level only
+  when attached, as in -v2 or --verbose=2, so that -v can precede the input
+  file
+
+- `svm_solver` takes the kernel from the command line with -K, one of linear,
+  poly, gaussian, laplacian and sigmoid, which overrides the one the instance
+  carries while keeping its parameters
+
+- `svm_solver` reports the status and the bounds of the training problem in
+  the format every other tool uses, and -O writes the trained model, i.e.,
+  the `SVMBlockSolution`
+
+- `svm_solver` trains the models of a model selection in parallel, the grid
+  and the folds being a cartesian product of independent problems; -j says
+  how many at a time
+
+- the splits of `ml_utils` are specified down to the bit, rather than being
+  left to the implementation-defined shuffle of the standard library, so that
+  a seed gives the same splits everywhere and an experiment can be reproduced
+  in any other language
+
+- the PPH configuration of ucblock_solver solves the Lagrangian Dual of
+  every proximal iteration to convergence, and follows the parameters of
+  PrimalProximalHeur being now named after the algorithm they belong to
+
+- the version of the module is the git tag of its repository, or the
+  VERSION.txt of a release tarball, and the shared library carries it: its
+  SONAME is major.minor while the major is 0, and it is installed with an
+  RPATH relative to itself, so that an installed tree keeps working wherever
+  it is moved
+
+### Fixed
+
+- `svm_solver` reads a netCDF SVMBlock again, and looks for the input file at
+  the -p prefix whatever its format
+
+- the tools report a missing input file and an unknown option on the
+  standard error
+
+- the shell completions of the tools name their tool, instead of nothing
 
 ## [0.5.4] - 2025-12-12
 
@@ -80,7 +160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- The initial up and down times of thermal units are only updated in
+- The initial up and downtimes of thermal units are only updated in
   investment_solver when a single scenario is being simulated.
 - Linearization of InvestmentFunction.
 
@@ -145,8 +225,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First test release.
 
-[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.5.4...develop
-[0.5.4]: https://gitlab.com/smspp/tools/-/compare/0.5.3...0.5.3
+[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.6.0...develop
+[0.6.0]: https://gitlab.com/smspp/tools/-/compare/0.5.4...0.6.0
+[0.5.4]: https://gitlab.com/smspp/tools/-/compare/0.5.3...0.5.4
 [0.5.3]: https://gitlab.com/smspp/tools/-/compare/0.5.2...0.5.3
 [0.5.2]: https://gitlab.com/smspp/tools/-/compare/0.5.1...0.5.2
 [0.5.1]: https://gitlab.com/smspp/tools/-/compare/0.5.0...0.5.1

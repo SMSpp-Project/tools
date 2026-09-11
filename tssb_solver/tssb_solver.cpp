@@ -34,15 +34,15 @@
  * options is not provided when the given netCDF file is a BlockFile, then
  * default configurations are considered.
  *
- * \author Donato Meoli \n
- *         Dipartimento di Informatica \n
- *         Universita' di Pisa \n
- *
  * \author Antonio Frangioni \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
  *
- * \copyright &copy; by Donato Meoli, Antonio Frangioni
+ * \author Donato Meoli \n
+ *         Dipartimento di Informatica \n
+ *         Universita' di Pisa \n
+ *
+ * \copyright &copy; by Antonio Frangioni, Donato Meoli
  */
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -51,11 +51,9 @@
 #include <iomanip>
 #include <iostream>
 
-#include <BlockSolverConfig.h>
 #include <TwoStageStochasticBlock.h>
 
 #include "common_utils.h"
-#include "ucblock_utils.h"
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- USING -----------------------------------*/
@@ -66,50 +64,14 @@ using namespace SMSpp_di_unipi_it;
 /*--------------------------------------------------------------------------*/
 /*------------------------------- GLOBALS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
-
-// Name of Configuration files for each component of the Lagrangian dual of
-// the UCBlock
-const std::string thermal_config_filename = "TUBSCfg.txt";
-const std::string hydro_config_filename = "HSUBSCfg.txt";
-const std::string other_unit_config_filename = "OUBSCfg.txt";
-const std::string default_config_filename = "LPBSCfg.txt";
-
-/*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-void process_my_args( int argc , char ** argv )
+static bool process_specific_arg( int opt )
 {
- exe = get_filename( argv[ 0 ] );
- if( argc < 2 ) {
-  std::cout << exe << ": no input file\n"
-   << "Try " << exe << "' --help' for more information.\n";
-  exit( 1 );
-  }
-
- while( true ) { // options
-  auto opt = getopt_long( argc , argv , short_opts.data() ,
-                          long_opts.data() , nullptr );
-  if( opt == -1 ) break;
-  if( process_standard_arg( opt ) ) // if it is a standard one
-   continue; // next
-
-  switch( opt ) { // non-standard options
-  case '?' : // Unrecognized option
-  default :
-   std::cout << "Try " << exe << "' --help' for more information" << std::endl;
-   exit( 1 );
-   }
-  } // end( while( true ) )
-
- if( optind < argc ) // last argument == [InvestmentBlock] filename
-  filename = std::string( argv[ optind ] );
- else {
-  std::cout << exe << ": no input file" << std::endl
-   << "Try " << exe << "' --help' for more information" << std::endl;
-  exit( 1 );
-  }
- }  // end( process_my_args )
+ // tssb_solver has no tool-specific options
+ return( false );
+ }
 
 /*--------------------------------------------------------------------------*/
 
@@ -117,53 +79,28 @@ void process_prob_file( const netCDF::NcFile & file )
 {
  auto problems = file.getGroups();
 
- for( auto & problem : problems ) { // for each problem descriptor:
-  auto & problem_group = problem.second;
+ for( auto & problem : problems ) {  // for each problem descriptor:
+  Block * block;
+  Configuration * s_config;
+  get_all( problem.second , block , s_config );
 
-  // Deserialize block
-  auto block_group = problem_group.getGroup( "Block" );
-  auto block = Block::new_Block( block_group );
-  auto tss_block = dynamic_cast< TwoStageStochasticBlock * >( block );
-  if( ! tss_block ) {
-   std::cout << "Error: " << problem.first << "not a TwoStageStochasticBlock"
-	     << std::endl;
+  if( ! dynamic_cast< TwoStageStochasticBlock * >( block ) ) {
+   std::cout << "Error: " << problem.first
+	     << " not a TwoStageStochasticBlock" << std::endl;
    exit( 1 );
    }
 
-  // Configure block
-  auto block_config_group = problem_group.getGroup( "BlockConfig" );
-  auto block_config = static_cast< BlockConfig * >(
-   BlockConfig::new_Configuration( block_config_group ) );
-  if( ! block_config )
-   throw( std::logic_error( "invalid BlockConfig group" ) );
-
-  block_config->apply( tss_block );
-  block_config->clear();
-
-  // Configure solver
-  auto solver_config_group = problem_group.getGroup( "BlockSolver" );
-  auto block_solver_config = static_cast< BlockSolverConfig * >(
-   BlockSolverConfig::new_Configuration( solver_config_group ) );
-  if( ! block_solver_config )
-   throw( std::logic_error( "invalid BlockSolver group" ) );
-  block_solver_config->apply( tss_block );
-  block_solver_config->clear();
-
   std::cout << "Problem: " << problem.first << std::endl;
 
-  set_solver_logs( tss_block );
+  set_solver_logs( block );
 
   // Solve
-  solve_all( tss_block );
+  solve_all( block );
 
-  // Destroy the Block and the Configurations
-  block_config->apply( tss_block );
-  delete( block_config );
-
-  block_solver_config->apply( tss_block );
-  delete( block_solver_config );
-
-  delete( tss_block );
+  // cleanup
+  cleanup_bsc( block , s_config );
+  delete s_config;
+  delete block;
   }
  }
 
@@ -171,84 +108,29 @@ void process_prob_file( const netCDF::NcFile & file )
 
 void process_block_file( const netCDF::NcFile & file )
 {
- // BlockConfig
- BlockConfig * given_block_config = nullptr;
- if( bconf_file.empty() )
-  std::cout << "Block configuration was not provided, "
-               "using default configuration" << std::endl;
- else
-  if( ( given_block_config = get_blockconfig( bconf_file ) ) )
-   std::cout << "Using Block configuration in " << bconf_file << std::endl;
-  else {
-   std::cerr << "Block Configuration " << bconf_file << " invalid"
-	     << std::endl;
-   delete( given_block_config );
-   exit( 1 );
-   }
-
- BlockConfig * block_config = nullptr;
- if( given_block_config ) {
-  block_config = given_block_config->clone();
-  block_config->clear();
-  }
-
- // BlockSolverConfig
- bool block_solver_config_provided = true;
- auto solver_config = get_blocksolverconfig( sconf_file );
- if( ! solver_config ) {
-  std::cerr << "The Solver configuration is not valid." << std::endl;
-  exit( 1 );
-  }
-
- auto cleared_solver_config = solver_config->clone();
- cleared_solver_config->clear();
-
  auto blocks = file.getGroups();
- for( auto block_description : blocks ) { // for each Block descriptor
-  // Deserialize the TwoStageStochasticBlock
-  auto block = Block::new_Block( block_description.second );
-  auto tss_block = dynamic_cast< TwoStageStochasticBlock * >( block );
-  if( ! tss_block ) {
-   std::cout << "Error: " << block_description.first
-	     << "not a TwoStageStochasticBlock" << std::endl;
+
+ for( auto & b : blocks ) {  // for each Block descriptor
+  Block * block;
+  Configuration * s_config;
+  get_all( b.second , bconf_file , sconf_file , block , s_config );
+
+  if( ! dynamic_cast< TwoStageStochasticBlock * >( block ) ) {
+   std::cout << "Error: " << b.first
+	     << " not a TwoStageStochasticBlock" << std::endl;
    exit( 1 );
    }
 
-  // Configure the TwoStageStochasticBlock
-  if( given_block_config )
-   given_block_config->apply( tss_block );
-  else {
-   if( ! block_solver_config_provided ) {
-    block_config->apply( tss_block );
-    block_config->clear();
-    }
-   }
-
-  // Configure the Solver
-  solver_config->apply( tss_block );
-
-  set_solver_logs( tss_block );
+  set_solver_logs( block );
 
   // Solve
-  solve_all( tss_block );
+  solve_all( block );
 
-  // Destroy the Block and the Configurations
-  if( block_config )
-   block_config->apply( tss_block );
-  if( ! given_block_config ) {
-   delete( block_config );
-   block_config = nullptr;
-   }
-
-  cleared_solver_config->apply( tss_block );
-
-  delete( tss_block );
+  // cleanup
+  cleanup_bsc( block , s_config );
+  delete s_config;
+  delete block;
   }
-
- delete( block_config );
- delete( given_block_config );
- delete( solver_config );
- delete( cleared_solver_config );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -262,11 +144,35 @@ int main( int argc , char ** argv )
  // note that the last nullptr record in long_opts is overwritten since the
  // new one is further down from there
 
- docopt_desc = "SMS++ TSSB solver.\n";
+ docopt_desc =
+  "SMS++ TSSB solver: loads a two-stage stochastic problem (a\n"
+  "TwoStageStochasticBlock) and solves it with the Solvers of its\n"
+  "BlockSolverConfig.\n";
+ docopt_args =
+  "  <file>    SMS++ netCDF file (.nc4) holding a TwoStageStochasticBlock:\n"
+  "            a Block file, or a problem file, whose own configuration is\n"
+  "            then used and -B and -S are ignored\n";
+ docopt_examples =
+  "  tssb_solver instance.nc4\n"
+  "      solve the deterministic equivalent with a :MILPSolver\n"
+  "  tssb_solver -S TSSBSCfg-LD.txt instance.nc4\n"
+  "      solve the Lagrangian dual of the scenario decomposition, whose\n"
+  "      master problem needs CPLEX or Gurobi\n"
+  "  tssb_solver -c myconfig/ instance.nc4\n"
+  "      use the Configuration files in myconfig/, e.g. a modified copy\n"
+  "      of the installed ones\n";
+
+ // Configuration files live in config/ by default; an explicit -c overrides
+ // this. Default -B / -S so a plain run needs neither: TSSBCfg.txt is the
+ // BlockConfig (anchor/sequential formulation) and TSSBSCfg.txt the
+ // BlockSolverConfig for the TwoStageStochasticBlock
+ conf_prefix = "config/";
+ default_bconf_name = "TSSBCfg.txt";
+ default_sconf_name = "TSSBSCfg.txt";
 
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
 
- process_my_args( argc , argv );
+ process_args( argc , argv , process_specific_arg );
 
  // open the file - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

@@ -28,16 +28,24 @@ include ../makefile_common
 # *H   is the list of all include files
 # *INC is the -I< include directories >
 
-# define input macros for SMS++ complete makefile, then include it
-SMS++SDR = ../../SMS++
-include $(SMS++SDR)/lib/makefile-c
+# note that the SMS++ complete makefile isincluded in makefile_common
 
 # MCFBlock
-# this has to be before BundleSolver because there are two definitions of
-# OPTstuff, but the one in MCFBlock lacks OPTvect.h that is needed by
-# the NDOstuff in BundleSolver
 MCFBkSDR = ../../MCFBlock
 include $(MCFBkSDR)/makefile-s
+
+# MCFClass, needed by MCFClassSolver
+# this has to be before BundleSolver because there are two definitions of
+# OPTstuff, but the one in MCFClass lacks OPTvect.h that is needed by
+# the NDOstuff in BundleSolver
+MCFC_NO_PATHS = 0
+libMCFClDIR = ../../MCFClassSolver/MCFClass
+include $(libMCFClDIR)/lib/makefile-inc
+
+# MCFClassSolver, assuming all dependencies (SMS++, MCFBlock, MCFClass) are
+# there already (comment out if not required)
+MCFCSSDR = ../../MCFClassSolver
+include $(MCFCSSDR)/makefile
 
 # BundleSolver
 BNDSLVSDR = ../../BundleSolver
@@ -57,10 +65,10 @@ include $(LgDSLVSDR)/makefile
 #UCBckDIR = ../../UCBlock
 #include $(UCBckDIR)/lib/makefile
 
-# LEMONSolver, assuming all dependencies (MCFBlock) are there already
+# MCFLemonSolver, assuming all dependencies (MCFBlock) are there already
 # (comment out if not required)
 # note: -std=c++20 is required if this is included
-MCFLESDR = ../../LEMONSolver
+MCFLESDR = ../../MCFLemonSolver
 include $(MCFLESDR)/makefile
 
 # InvestmentBlock
@@ -71,11 +79,11 @@ include $(InvsBkSDR)/makefile-s
 
 # object files
 MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) $(SMS++OBJ) $(MCFLEOBJ) \
-	$(MCFBkOBJ) $(InvsBkOBJ)
+	$(MCFCSOBJ) $(libMCFClOBJ) $(MCFBkOBJ) $(InvsBkOBJ) $(CMMNUOBJ)
 
 # libraries
 MLIB =  $(SMS++LIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB) $(MCFBkLIB) \
-	$(MILPSLIB) $(InvsBkLIB)
+	$(libMCFClLIB) $(MCFLELIB) $(MILPSLIB) $(InvsBkLIB)
 
 $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
@@ -84,15 +92,15 @@ $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 
 # include directives
 MINC =  $(SMS++INC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) $(MCFBkINC) \
-	$(MCFLEINC) $(InvsBkINC)
+	$(MCFCSINC) $(libMCFClINC) $(MCFLEINC) $(InvsBkINC) $(CMMNUINC)
 
 # includes
-MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(MCFBkH) $(MCFLEH) \
-	$(InvsBkH)
+MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(MCFBkH) $(MCFCSH) \
+	$(MCFLEH) $(InvsBkH) $(CMMNUH)
 
 # compile command
 
-$(DIR)/block_solver.o: $(DIR)/block_solver.cpp $(DIR)/common_utils.h $(MH)
+$(DIR)/block_solver.o: $(DIR)/block_solver.cpp $(MH)
 	$(CC) -c $(DIR)/block_solver.cpp -o $@ $(MINC) $(SW)
 
 ############################ End of makefile #################################

@@ -28,25 +28,27 @@ include ../makefile_common
 # *H   is the list of all include files
 # *INC is the -I< include directories >
 
-# BundleSolver
-BNDSLVSDR = ../../BundleSolver
-include $(BNDSLVSDR)/makefile-c
-
-# LagrangianDualSolver
-LgDSLVSDR = ../../LagrangianDualSolver
-include $(LgDSLVSDR)/makefile
+# note that the SMS++ complete makefile isincluded in makefile_common
 
 # define input macros for UCBlock makefile, then include it
 UCBckDIR = ../../UCBlock
 include $(UCBckDIR)/lib/makefile
 
+# BundleSolver
+BNDSLVSDR = ../../BundleSolver
+include $(BNDSLVSDR)/makefile-s
+
+# LagrangianDualSolver
+LgDSLVSDR = ../../LagrangianDualSolver
+include $(LgDSLVSDR)/makefile-s
+
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ)
+MOBJ =  $(SMS++OBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) $(CMMNUOBJ)
 
 # libraries
-MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
+MLIB =  $(SMS++LIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 
 $(DIR)/$(NAME): $(DIR)/ucblock_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
@@ -54,16 +56,14 @@ $(DIR)/$(NAME): $(DIR)/ucblock_solver.o $(MOBJ)
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
-MINC =  $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) -I$(DIR)/../block_solver
+MINC =  $(SMS++INC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) $(CMMNUINC)
 
 # includes
-MH =    $(BNDSLVH) $(LgDSLVH) $(UCBckH)
+MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(CMMNUH)
 
 # compile command
 
-$(DIR)/ucblock_solver.o: $(DIR)/ucblock_solver.cpp \
-	$(DIR)/../block_solver/common_utils.h \
-	$(DIR)/UCBlockSolutionOutput.h $(MH)
+$(DIR)/ucblock_solver.o: $(DIR)/ucblock_solver.cpp $(MH)
 	$(CC) -c $(DIR)/ucblock_solver.cpp -o $@ $(MINC) $(SW)
 
 ############################ End of makefile #################################

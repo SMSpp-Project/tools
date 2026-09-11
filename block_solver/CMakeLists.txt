@@ -3,9 +3,7 @@
 # may wrongly appear unused, and by default the linker does not include them,
 # so we have to force the linking.
 if (BUILD_SHARED_LIBS)
-    if (MSVC)
-        add_link_options("/OPT:NOREF")
-    elseif (UNIX AND (NOT APPLE))
+    if (UNIX AND (NOT APPLE))
         add_link_options("-Wl,--no-as-needed")
     endif ()
 else ()
@@ -32,11 +30,14 @@ if (NOT hasParent)
     find_package(LagrangianDualSolver)
     find_package(BundleSolver)
     find_package(MILPSolver)
-    find_package(LEMONSolver)
+    find_package(MCFClassSolver)
+    find_package(MCFLemonSolver)
 endif ()
 
 # ----- block_solver -------------------------------------------------------- #
-add_executable(block_solver block_solver.cpp)
+add_executable(block_solver ../common_utils.cpp
+                            block_solver.cpp)
+target_include_directories(block_solver PRIVATE ..)
 target_link_libraries(block_solver PRIVATE SMS++::SMS++)
 
 if (TARGET SMS++::MCFBlock)
@@ -59,13 +60,20 @@ if (TARGET SMS++::MILPSolver)
     target_link_libraries(block_solver PRIVATE SMS++::MILPSolver)
 endif ()
 
-if (TARGET SMS++::LEMONSolver)
-    target_link_libraries(block_solver PRIVATE SMS++::LEMONSolver)
+if (TARGET SMS++::MCFClassSolver)
+    target_link_libraries(block_solver PRIVATE SMS++::MCFClassSolver)
 endif ()
 
-install(TARGETS block_solver
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+if (TARGET SMS++::MCFLemonSolver)
+    target_link_libraries(block_solver PRIVATE SMS++::MCFLemonSolver)
+endif ()
 
+# Install
+smspp_install(block_solver)
+smspp_install_data(block_solver "solve any SMS++ Block")
+
+# Generate and install shell completion scripts
+set(toolName block_solver)
 configure_file(../cmake/completion.bash.in block_solver-completion.bash)
 configure_file(../cmake/completion.zsh.in block_solver-completion.zsh)
 

@@ -3,9 +3,7 @@
 # may wrongly appear unused, and by default the linker does not include them,
 # so we have to force the linking.
 if (BUILD_SHARED_LIBS)
-    if (MSVC)
-        add_link_options("/OPT:NOREF")
-    elseif (UNIX AND (NOT APPLE))
+    if (UNIX AND (NOT APPLE))
         add_link_options("-Wl,--no-as-needed")
     endif ()
 else ()
@@ -35,8 +33,9 @@ endif ()
 # ----- ucblock_solver ------------------------------------------------------ #
 if (TARGET SMS++::UCBlock)
 
-    add_executable(ucblock_solver ucblock_solver.cpp)
-    target_include_directories(ucblock_solver PRIVATE ../block_solver)
+    add_executable(ucblock_solver ../common_utils.cpp
+                                  ucblock_solver.cpp)
+    target_include_directories(ucblock_solver PRIVATE ..)
     target_link_libraries(ucblock_solver PRIVATE SMS++::UCBlock)
 
     if (TARGET SMS++::LagrangianDualSolver)
@@ -52,10 +51,12 @@ if (TARGET SMS++::UCBlock)
     endif ()
 
     # Install
-    install(TARGETS ucblock_solver
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    smspp_install(ucblock_solver)
+    smspp_install_data(ucblock_solver "solve a Unit Commitment problem"
+            examples/Bus_Test.nc4)
 
     # Generate and install shell completion scripts
+    set(toolName ucblock_solver)
     configure_file(../cmake/completion.bash.in ucblock_solver-completion.bash)
     configure_file(../cmake/completion.zsh.in ucblock_solver-completion.zsh)
 

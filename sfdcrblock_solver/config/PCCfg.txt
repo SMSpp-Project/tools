@@ -1,0 +1,60 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - PCCfg.txt - - - - - - - - - - - - - - - - -
+#
+# A txt description of a BlockConfig for a SingleFlowDCRBlock asking for the
+# "P/C" (Perspective Cuts) formulation of the burst-delay terms, i.e., the
+# one in which the two rotated cones are not constructed but dynamically
+# outer-approximated by linear cuts. The formulation is therefore a
+# relaxation of the problem as long as the cuts that separate the current
+# point have not all been generated, which is why a Solver of this
+# formulation is declared to solve a relaxation (see the -R option of the
+# test) unless it separates the cuts itself.
+#
+#   Antonio Frangioni
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockConfig # exact type of the Configuration object
+
+1  # the BlockConfig is a "differential" one
+
+2  # version of the BlockConfig format
+
+# the Configuration for the structure, i.e., the tree of sub-Block
+*  # [none]
+
+# static_constraints
+SimpleConfiguration<int>
+1    # the formulation: 1 = P/C, 2 = SOCP
+
+# dynamic_constraints
+SimpleConfiguration<std::pair<double,double>>
+1e-6    # threshold below which a cone is not deemed violated
+1e-4    # threshold above which a routing variable counts as nonzero
+
+# static_variables
+*    # [none]
+
+# dynamic_variables
+*    # [none]
+
+# objective
+*    # [none]
+
+# is_feasible
+SimpleConfiguration<double>
+1e-4    # relative tolerance of the feasibility checks
+
+# is_optimal
+*    # [none]
+
+# solution
+*    # [none]
+
+# extra
+*    # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - END PCCfg.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -3,9 +3,7 @@
 # may wrongly appear unused, and by default the linker does not include them,
 # so we have to force the linking.
 if (BUILD_SHARED_LIBS)
-    if (MSVC)
-        add_link_options("/OPT:NOREF")
-    elseif (UNIX AND (NOT APPLE))
+    if (UNIX AND (NOT APPLE))
         add_link_options("-Wl,--no-as-needed")
     endif ()
 else ()
@@ -37,9 +35,10 @@ endif ()
 if (TARGET SMS++::UCBlock AND
     TARGET SMS++::SDDPBlock)
 
-    add_executable(sddp_solver sddp_solver.cpp CutProcessing.cpp)
+    add_executable(sddp_solver ../common_utils.cpp sddp_solver.cpp
+                   SDDPBlockSolutionOutput.h UCBlockSolutionOutput.h)
     target_compile_features(sddp_solver PUBLIC cxx_std_17)
-    target_include_directories(sddp_solver PRIVATE ../block_solver ../ucblock_solver)
+    target_include_directories(sddp_solver PRIVATE ..)
     target_link_libraries(sddp_solver PRIVATE
                           SMS++::UCBlock
                           SMS++::SDDPBlock)
@@ -57,10 +56,14 @@ if (TARGET SMS++::UCBlock AND
     endif ()
 
     # Install
-    install(TARGETS sddp_solver
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    smspp_install(sddp_solver)
+    smspp_install_data(sddp_solver
+            "solve a multi-stage stochastic problem by SDDP"
+            examples/SDDPBlock.nc4 examples/Block_0.nc4
+            examples/Block_1.nc4 examples/Block_2.nc4)
 
     # Generate and install shell completion scripts
+    set(toolName sddp_solver)
     configure_file(../cmake/completion.bash.in sddp_solver-completion.bash)
     configure_file(../cmake/completion.zsh.in sddp_solver-completion.zsh)
 

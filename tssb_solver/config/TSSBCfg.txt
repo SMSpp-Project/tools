@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - -TSSBCfg.txt- - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - TSSBCfg.txt - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockConfig for a TSSBSolver
 #
@@ -11,6 +11,11 @@
 BlockConfig # exact type of the ComputeConfig object
 
 1  # the BlockConfig is a "differential" one
+
+2  # version of the BlockConfig format
+
+# the Configuration for the structure, i.e., the tree of sub-Block
+*  # [none]
 
 # static_constraints
 SimpleConfiguration<int>

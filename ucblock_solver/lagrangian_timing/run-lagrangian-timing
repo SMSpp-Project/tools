@@ -1,0 +1,245 @@
+#!/usr/bin/env bash
+#
+# run-lagrangian-timing [ build-dir ] [ "seeds" ]
+#
+# Reproducibility driver for the study "how does the single-unit solve time
+# vary along the Lagrangian-dual iterations?", comparing the two DP solvers and
+# a :MILPSolver on the SAME integer problem. For each single-bus UCBlock instance
+# (UCBlock/data/nc4/UC_singlebus/96/sb_day_seed<s>.nc4) it:
+#
+#   1. runs ucblock_solver (built with the SAVE_TUB dump enabled) under a
+#      LagrangianDualSolver, dumping every inner ThermalUnitBlock as
+#      TUB-<unit>-<iter>.nc4 (the unit's Lagrangian costs there) every
+#      intEverykIt iterations -- the dump stride is the standard
+#      Solver::intEverykIt parameter in ../config/LDCfg.txt (300: the LD runs
+#      ~10^4 iterations, so this samples ~30 points / instance);
+#   2. times FOUR solvers on each dump (the timing_harness executable):
+#      ThermalUnitDPSolver (serial and parallel, intMaxThread 0 = all cores as
+#      FastFlow workers; the solver falls back to serial below the compiled-in
+#      TUDPS_PAR_MIN_N=768 horizon threshold, i.e. on day and week),
+#      ThermalUnitExtDPSolver, and a :MILPSolver on the T+P/C formulation
+#      (integer MILP, the same problem the DPs solve exactly; the back-end is
+#      chosen in config/TUBSCfg-MILP.txt, not hard-coded);
+#   3. maps unit -> gen_type from the source JSON instance (python3 + json);
+#   4. deletes the (large) dumps and, once all seeds are done, plots
+#      time vs normalized iteration (per gen_type) and time by gen_type
+#      (plot_lagrangian_timing.py; needs python3 + numpy + matplotlib).
+#
+# Findings (full tables and plots in README.md and results/config_c/): the
+# solve time is flat along the LD iteration (a few percent on every horizon and
+# solver) and is governed by the unit *type*. Median warm time per solve on the
+# factorial instances, energy-only / +reserves / +reserves+reactive:
+#
+#            day n=96            week n=672           month n=2976
+#   stdDP    0.40 / 8.8 / 9.4ms  23 / 487 / 637ms     0.63 / 8.9 / 9.9s
+#            (superlinear, the O(n^3) ED sweep; pricing reserves generalises
+#             its single-parabola inner loop to a multi-piece per-period cost,
+#             14-22x, making it slower than the MILP from week up)
+#   parDP    0.93 / 4.1 / 4.7ms  11 / 167 / 220ms     0.24 / 3.0 / 2.9s
+#            (FastFlow workers on the per-source ED sweep, forced on every
+#             horizon by config/TUBSCfg-parDP.txt intParMinN 0; the thread
+#             dispatch pays only once a single solve is >~1ms, i.e. from week
+#             up energy-only, already at day with reserves)
+#   extDP    0.57 / 1.8 / 1.8ms  5.9 / 12 / 19ms      22 / 45 / 54ms
+#            (run-length, near-linear; it already manipulates piecewise-
+#             quadratic value functions so reserves cost only 2-3x: with
+#             reserves it wins at every horizon, by up to two orders of
+#             magnitude)
+#   MILP      77 / 102 / 111ms   433 / 459 / 559ms    2.5 / 1.8 / 2.0s
+#            (T+P/C integer, NOT B&B-bound: the Gurobi log shows a linear
+#             MILP root-optimal in 1 node, the time is per-solve model build
+#             + PRESOLVE, ~0.1s at n=96 to ~2s at n=2976, and data-dependent:
+#             at a ~0 dual presolve collapses the model to sub-ms, at any
+#             non-trivial dual it cannot reduce -> the full cost every solve;
+#             nearly reserve-insensitive)
+#
+# Energy-only the base DP wins only at day; with reserves the run-length extDP
+# wins at every horizon; reactive pricing adds a further ~10-30% on the DPs.
+# Gurobi pays its fixed build+presolve cost on each of the ~10^4 LD solves
+# while the DP is sub-ms to ms: the argument for the exact DP inside the LD
+# loop. The bottleneck of the whole dual is the bundle master QP, not the unit
+# solves: run-ld-vs-tpc measures that side.
+#
+# This study is confined to tools/ucblock_solver/lagrangian_timing/ (NOT in the
+# base ucblock_solver, which never carries the SAVE_TUB dump, and NOT in the
+# tests submodule) because it depends on ucblock_solver. The single-bus UCBlock
+# instances and the source JSON come from the UCBlock submodule
+# (tools/json2netCDF); generate them first with UCBlock/tools/json2netCDF.
+#
+# PREREQUISITE: build the two experiment binaries with this directory's makefile,
+# which (re)compiles ../ucblock_solver.cpp WITH the SAVE_TUB dump enabled and
+# builds the timing_harness, both in-place here:
+#   cd tools/ucblock_solver/lagrangian_timing && make
+# The parallel DP is forced on every horizon from config/TUBSCfg-parDP.txt
+# (intParMinN 0, a run-time ThermalUnitDPSolver parameter), so no special build
+# is needed.
+#
+# Binaries are located automatically (in-place next to this script, then a
+# build-dir arg, then PATH), or via the UCBLOCK_SOLVER / TIMING_HARNESS env
+# variables.
+#
+# Env knobs: OUT (work/output dir, default /tmp/ld_timing), REPS (DP timing
+# repetitions, default 12),
+# MILP_REPS (MILP repetitions, default 3; 0 disables the slow MILP column; the
+# MILP back-end and its time limit live in config/TUBSCfg-MILP.txt), HORIZONS (which of
+# day/week/month to run, space-separated, default "day"), PYTHON (interpreter
+# with numpy+matplotlib for the plot, default python3),
+# LD_MAXITER (if set, cap the LD at this many iterations for the dump-generation
+# run: the FULL ~10^4-iter LD solve is the wall-clock bottleneck (0.78 iter/s
+# at n=96, 0.045 at n=672), and the study only needs a few strided dump waves
+# since the per-unit solve time is flat along the LD iteration; the driver then
+# uses a per-run COPY of CONFIG with intMaxIter patched, so ../config/LDCfg.txt is
+# left untouched. e.g. LD_MAXITER=700 -> 2 waves (iter 300+600) at intEverykIt
+# 300),
+# LD_EVERYK (if set, the dump stride intEverykIt, i.e. how many dump waves a
+# unit gets; the warm-resolve timing wants several, e.g. LD_EVERYK=50 with
+# LD_MAXITER=300 -> 6 waves at iter 50,100,...,300, one cold plus five warm),
+# LDTIMING_CONFIG (point CONFIG at an alternate config dir).
+#
+# Reproducible recipe (FastFlow forced on every horizon from the parDP config,
+# intParMinN 0; binaries copied to /tmp so a cloud-sync of this tree cannot
+# delete them mid-run):
+#   cd tools/ucblock_solver/lagrangian_timing
+#   make
+#   mkdir -p /tmp/ld_bin && cp -f ucblock_solver timing_harness /tmp/ld_bin/
+#   UCBLOCK_SOLVER=/tmp/ld_bin/ucblock_solver TIMING_HARNESS=/tmp/ld_bin/timing_harness \
+#     LD_MAXITER=700 HORIZONS="day week" SEEDS="1 2 3 4 5" \
+#     PYTHON=/usr/bin/python3.14 ./run-lagrangian-timing
+# (week is ~4h/seed at n=672 -- the 2026-06-18 week run was trimmed to 2 seeds.)
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/../../.." && pwd)"
+# optional 1st arg: a build directory (e.g. a CMake build tree); if given, its
+# tools/ucblock_solver/ subdir is searched too. By default the binaries are
+# looked up where a makefile build leaves them (in-place, next to this script).
+BUILD="${1:-}"
+# seeds: positional arg 2, or the SEEDS env var, default all five
+SEEDS="${SEEDS:-${2:-1 2 3 4 5}}"
+
+# locate a binary built either in-place (makefile) or in a build tree (CMake),
+# without assuming any particular build system or directory name. Override with
+# the UCBLOCK_SOLVER / TIMING_HARNESS env variables if it lives elsewhere.
+find_bin() {
+  local name="$1" c
+  for c in ${BUILD:+"$BUILD/tools/ucblock_solver/$name" "$BUILD/$name"} \
+           "$HERE/$name"; do
+    # emit an absolute path (the binary is invoked from a sub-directory)
+    [ -x "$c" ] && { printf '%s/%s\n' \
+       "$(cd "$(dirname "$c")" && pwd)" "$(basename "$c")"; return 0; }
+  done
+  command -v "$name" 2>/dev/null || return 1
+}
+SOLVER="${UCBLOCK_SOLVER:-$(find_bin ucblock_solver || true)}"
+HARNESS="${TIMING_HARNESS:-$(find_bin timing_harness || true)}"
+
+# gen_type JSON directory (read as <JSONDIR>/sb_<h>_seed<s>.json); override with
+# LD_JSONDIR when the instances use a different naming, e.g. the reserve/reactive
+# factorial whose JSONs are staged under their own names. The fleet is identical
+# across the reserve/reactive variants of a given (size,horizon,seed), so any
+# variant's JSON gives the same gen_type map.
+JSONDIR="${LD_JSONDIR:-$ROOT/UCBlock/tools/json2netCDF/instances_singlebus}"
+# instance directory (the nc4s are <NCDIR>/<period>/sb_<h>_seed<s>.nc4); override
+# with LD_NCDIR to run an alternative instance set, e.g. the energy-only copies
+# made by ./make-noreserve for the no-reserve arm of the reserve experiment. The
+# gen_type map comes from the same JSON either way (only the reserve demand
+# differs, the unit fleet is identical).
+NCDIR="${LD_NCDIR:-$ROOT/UCBlock/data/nc4/UC_singlebus}"
+CONFIG="${LDTIMING_CONFIG:-$HERE/../config}"   # shared base ucblock_solver
+                           # config dir; override with LDTIMING_CONFIG to point
+                           # at a study-local copy (e.g. a capped-intMaxIter
+                           # LDCfg.txt) without touching the shared configs
+OUT="${OUT:-/tmp/ld_timing}"
+REPS="${REPS:-12}"
+MILP_REPS="${MILP_REPS:-3}"
+# horizons to run: day(96) / week(672) / month(2976). Each is timed and plotted
+# separately (absolute times differ by ~30x across horizons). PYTHON must have
+# numpy+matplotlib for the plot (the gen_type step uses only stdlib json).
+HORIZONS="${HORIZONS:-day}"
+PYTHON="${PYTHON:-python3}"
+horizon_periods() { case "$1" in day) echo 96;; week) echo 672;;
+                                 month) echo 2976;; *) echo "";; esac; }
+mkdir -p "$OUT"
+
+[ -n "$SOLVER" ] && [ -x "$SOLVER" ]  || { echo "ucblock_solver not found (build it, or pass the build dir / set UCBLOCK_SOLVER)" >&2; exit 1; }
+[ -n "$HARNESS" ] && [ -x "$HARNESS" ] || { echo "timing_harness not found (build it, or pass the build dir / set TIMING_HARNESS)" >&2; exit 1; }
+
+# a CMake build links shared libs with an embedded rpath, a makefile build is
+# static; neither needs LD_LIBRARY_PATH. As a safety net, if a build dir was
+# given add its in-tree library directories (harmless if they do not exist).
+if [ -n "$BUILD" ]; then
+  export LD_LIBRARY_PATH="$BUILD/SMS++:$BUILD/UCBlock:$BUILD/MILPSolver:${LD_LIBRARY_PATH:-}"
+fi
+
+export LD_LIBRARY_PATH="$BUILD/SMS++:$BUILD/UCBlock:$BUILD/MILPSolver:${LD_LIBRARY_PATH:-}"
+
+# --- per horizon, per seed: SAVE_TUB -> time -> gen_type ------------------- #
+for h in $HORIZONS; do
+  period="$(horizon_periods "$h")"
+  [ -n "$period" ] || { echo "unknown horizon '$h' (use day/week/month)" >&2; continue; }
+  DATADIR="$NCDIR/$period"
+  echo "===== horizon $h ($period periods) ====="
+  PAIRS=()
+  for s in $SEEDS; do
+    inst="$DATADIR/sb_${h}_seed$s.nc4"
+    [ -f "$inst" ] || { echo "skip $h seed$s: $inst not found"; continue; }
+    D="$OUT/dumps_${h}_$s"; rm -rf "$D"; mkdir -p "$D"
+    # configs: build a per-run MERGED copy of the shared CONFIG dir and this
+    # study's config/ (the harness reads both the shared TUBSCfg-DP.txt and the
+    # study TUBSCfg-stdDP/parDP/MILP.txt + TUBCfg-tpc.txt from <dumpdir>/config),
+    # so the shared configs (also used by sddp/tssb/invest) are never modified.
+    # If LD_MAXITER and/or LD_EVERYK are set, the LD iteration cap and/or the
+    # dump stride are patched into the copy. LD_EVERYK sets intEverykIt, i.e.
+    # how many dump waves a unit gets: the warm-resolve timing wants several (a
+    # unit is loaded once at the first wave, then re-solved at each later one).
+    cp -rL "$CONFIG" "$D/config"
+    cp -f "$HERE"/config/*.txt "$D/config/"
+    # the solver runs from $D with -c lagrangian_timing/config/ (study configs
+    # include each other via *lagrangian_timing/config/...): expose the merged
+    # copy at that path too (the harness still reads $D/config)
+    mkdir -p "$D/lagrangian_timing"
+    ln -sfn "$D/config" "$D/lagrangian_timing/config"
+    [ -n "${LD_MAXITER:-}" ] && sed -i -E \
+      "s/^([[:space:]]*intMaxIter[[:space:]]+)[0-9]+/\1${LD_MAXITER}/" \
+      "$D/config/LDCfg.txt"
+    [ -n "${LD_EVERYK:-}" ] && sed -i -E \
+      "s/^([[:space:]]*intEverykIt[[:space:]]+)[0-9]+/\1${LD_EVERYK}/" \
+      "$D/config/LDCfg.txt"
+    echo "$h seed$s: running ucblock_solver (LagrangianDualSolver, SAVE_TUB) ..."
+    # the dumping is strided at the source (an instance runs ~10^4 LD iterations
+    # x 50 units, so dumping every one is ~10^5 small files and easily blows a
+    # /tmp quota): the dump stride is the intEverykIt parameter of the inner
+    # BundleSolver in the shared ../config/LDCfg.txt (true iteration number kept in the
+    # filename), and every dump is then read (harness stride 1)
+    ( cd "$D" && \
+        "$SOLVER" -c lagrangian_timing/config/ -B InnerBCfg.txt -S UCBSCfg-LD.txt "$inst" \
+        > run.log 2>&1 ) || true
+    n=$(ls "$D"/TUB-*.nc4 2>/dev/null | wc -l)
+    if [ "$n" -eq 0 ]; then
+      echo "ERROR: $h seed$s produced no TUB dumps (see $D/run.log)." >&2
+      echo "  Configure with -DUCBLOCK_SOLVER_SAVE_TUB=ON and rebuild." >&2
+      rm -rf "$D"; continue
+    fi
+    echo "$h seed$s: $n dumps; timing (dp_reps=$REPS milp_reps=$MILP_REPS) ..."
+    "$HARNESS" "$D" "$REPS" 1 "$MILP_REPS" > "$OUT/timing_${h}_$s.csv"
+    # unit -> gen_type from the source JSON (stdlib json; the plot needs it anyway)
+    python3 - "$JSONDIR/sb_${h}_seed$s.json" "$OUT/gentype_${h}_$s.csv" <<'PY'
+import json, sys
+src, out = sys.argv[1], sys.argv[2]
+gt = json.load(open(src))["generators"]["thermal"]["type"]
+with open(out, "w") as f:
+    f.write("unit,gen_type\n")
+    for i, t in enumerate(gt):
+        f.write(f"{i},{t}\n")
+PY
+    rm -rf "$D"
+    PAIRS+=("$OUT/timing_${h}_$s.csv" "$OUT/gentype_${h}_$s.csv")
+  done
+
+  if [ ${#PAIRS[@]} -eq 0 ]; then
+    echo "horizon $h: no instances timed, skipping plot."; continue
+  fi
+  echo "horizon $h: plotting ..."
+  "$PYTHON" "$HERE/plot_lagrangian_timing.py" "$OUT/ld_timing_$h" "${PAIRS[@]}"
+  echo "horizon $h done. outputs $OUT/ld_timing_${h}_{vs_iter,normalized,bytype}.png"
+done

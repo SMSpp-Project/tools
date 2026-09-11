@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+#
+# run-timing-guarded < out.csv > < dump-dir > [ dp_reps ] [ stride ] [ milp_reps ]
+#
+# Time one dump set with timing_harness, but only while the machine is quiet,
+# and throw the result away if it stopped being quiet along the way.
+#
+# On a shared machine a timing run is worth nothing unless nobody else is on it.
+# The single-core DP solvers survive a crowd surprisingly well, their medians
+# moving by a few percent, but the MILP does not: left free it takes every core
+# it can and its measured time swells several fold under load, which is enough
+# to make one arm look eight times slower than its twin for no reason at all.
+# Hence the guard: wait for the load to fall below $QUIET, measure, and promote
+# the result only if the load is still below it at the end.
+#
+# The result is written to a temporary file and moved into place at the end, so
+# an interrupted or discarded run cannot leave a half-written CSV behind that a
+# later pass would mistake for a finished measurement. A result of a handful of
+# lines is treated as a failure, not as a measurement, since that is what a
+# broken configuration produces, and so is one that carries no MILP row while
+# the MILP was asked for, which is what an unreadable BlockConfig produces: the
+# harness says so once on its error stream and goes on timing the three DPs,
+# which is easy to miss in a set that costs a day. A result discarded for load
+# is kept aside as <out>.SUSPECT-try<n>.csv rather than deleted, since at the
+# monthly horizon a set is worth a day of the machine and the units are timed
+# one after the other, each sweeping all its iterations within half an hour: a
+# load drift moves a whole unit at a time and leaves usable a curve read
+# iteration by iteration, even where it spoils an absolute median.
+#
+# Environment: QUIET (load threshold, default 50), TRIES (default 8).
+# Sizing: at the weekly and monthly horizons a set costs hours, so ask for few
+# repetitions and sample the dump waves with a stride; hundreds of measurement
+# points make the aggregate median steady enough without them.
+
+set -u
+out=${1:?usage: run-timing-guarded <out.csv> <dump-dir> [dp_reps] [stride] [milp_reps]}
+dumps=${2:?usage: run-timing-guarded <out.csv> <dump-dir> [dp_reps] [stride] [milp_reps]}
+reps=${3:-3}
+stride=${4:-1}
+milp=${5:-1}
+here=$(cd "$(dirname "$0")" && pwd)
+harness=${TIMING_HARNESS:-$here/timing_harness}
+QUIET=${QUIET:-50}
+TRIES=${TRIES:-8}
+
+load()  { cut -d' ' -f1 /proc/loadavg; }
+quiet() { awk -v x="$(load)" -v q="$QUIET" 'BEGIN{exit !(x<q)}'; }
+say()   { echo "[$(date +%m-%d_%H:%M)] $*"; }
+
+[ -x "$harness" ] || { echo "run-timing-guarded: no timing_harness at $harness" >&2; exit 1; }
+[ -d "$dumps" ]   || { echo "run-timing-guarded: no dump directory $dumps" >&2; exit 1; }
+[ -e "$out" ]     && { say "$(basename "$out"): already measured, left alone"; exit 0; }
+
+# The harness reads its solver configurations from <dump-dir>/config, which is
+# a COPY of this study's config/, not a link to it: a dump set is measured over
+# days and re-measured months later, and a link would follow the repository
+# through any change made meanwhile, so that a set would silently stop being
+# measured with the configuration it was set up with. A legacy link is
+# materialised into the copy it resolves to.
+[ -L "$dumps/config" ] && rm -f "$dumps/config"
+[ -d "$dumps/config" ] || cp -rL "$here/config" "$dumps/config"
+[ -e "$dumps/config/TUBCfg-tpc.txt" ] || { echo "run-timing-guarded: $dumps/config does not resolve" >&2; exit 1; }
+grep -q '^Threads' "$dumps/config/TUBSCfg-MILP.txt" || {
+  echo "run-timing-guarded: the MILP is not held to one core, the comparison would not be like-for-like" >&2; exit 1; }
+
+try=0
+while [ $try -lt "$TRIES" ]; do
+  try=$((try+1))
+  until quiet; do sleep 300; done
+  l0=$(load); t0=$SECONDS
+  say "$(basename "$out"): start try $try (reps=$reps stride=$stride milp=$milp, load $l0)"
+  "$harness" "$dumps" "$reps" "$stride" "$milp" > "$out.part" 2> "${out%.csv}.err"
+  l1=$(load); rows=$(wc -l < "$out.part")
+  if [ "$rows" -lt 10 ]; then
+    say "$(basename "$out"): empty result ($rows rows), see ${out%.csv}.err"
+    rm -f "$out.part"; exit 1
+  fi
+  if [ "$milp" -gt 0 ] && ! grep -q ',MILP,' "$out.part"; then
+    say "$(basename "$out"): the MILP was asked for and not one solve was timed, see ${out%.csv}.err"
+    mv "$out.part" "${out%.csv}.NO-MILP.csv"; exit 1
+  fi
+  if awk -v x="$l1" -v q="$QUIET" 'BEGIN{exit !(x<q)}'; then
+    mv "$out.part" "$out"
+    say "$(basename "$out"): done in $((SECONDS-t0))s, $rows rows, load $l0 -> $l1"
+    exit 0
+  fi
+  mv "$out.part" "${out%.csv}.SUSPECT-try$try.csv"
+  say "$(basename "$out"): discarded after $((SECONDS-t0))s, the machine filled up (load $l0 -> $l1), kept as $(basename "${out%.csv}").SUSPECT-try$try.csv"
+  sleep 600
+done
+say "$(basename "$out"): given up after $try tries"
+exit 1

@@ -2,7 +2,7 @@
 ################################ makefile ####################################
 ##############################################################################
 #                                                                            #
-#   makefile of sddp_solver and sddp_greedy_solver                           #
+#   makefile of sddp_solver                                                  #
 #                                                                            #
 #                              Antonio Frangioni                             #
 #                          Dipartimento di Informatica                       #
@@ -14,7 +14,7 @@
 DIR = .
 
 # module name
-NAME = $(DIR)/sddp_solver $(DIR)/sddp_greedy_solver
+NAME = $(DIR)/sddp_solver
 
 # common stuff
 include ../makefile_common
@@ -28,9 +28,7 @@ include ../makefile_common
 # *H   is the list of all include files
 # *INC is the -I< include directories >
 
-# define input macros for SMS++ complete makefile, then include it
-SMS++SDR = ../../SMS++
-include $(SMS++SDR)/lib/makefile-c
+# note that the SMS++ complete makefile isincluded in makefile_common
 
 # BundleSolver
 BNDSLVSDR = ../../BundleSolver
@@ -52,36 +50,27 @@ include $(UCBckDIR)/lib/makefile
 
 # object files
 MOBJ =  $(SMS++OBJ) $(SDDPBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) \
-	$(DIR)/CutProcessing.o
+	$(CMMNUOBJ)
 
 # libraries
 MLIB =  $(SMS++LIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
-
-$(DIR)/sddp_solver: $(DIR)/sddp_solver.o $(MOBJ)
-	$(CC) -o $(DIR)/sddp_solver $^ $(MLIB) -I../block_solver $(SW)
-
-$(DIR)/sddp_greedy_solver: $(DIR)/sddp_greedy_solver.o $(MOBJ)
-	$(CC) -o $(DIR)/sddp_greedy_solver $^ $(MLIB) -I../block_solver $(SW)
 
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
 MINC =  $(SMS++INC) $(SDDPBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) \
-	-I$(DIR) -I$(DIR)/../block_solver -I$(DIR)/../ucblock_solver
+	-I$(DIR) $(CMMNUINC)
 
 # includes
-MH =    $(SMS++H) $(SDDPBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) \
-	$(DIR)/CutProcessing.h	$(DIR)/../block_solver/common_utils.h
+MH =    $(SMS++H) $(SDDPBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(CMMNUH) \
+	$(DIR)/SDDPBlockSolutionOutput.h $(DIR)/UCBlockSolutionOutput.h
 
-# compile command
+# compile commands
 
 $(DIR)/sddp_solver.o: $(DIR)/sddp_solver.cpp $(MH)
 	$(CC) -c $(DIR)/sddp_solver.cpp -o $@ $(MINC) $(SW)
 
-$(DIR)/sddp_greedy_solver.o: $(DIR)/sddp_greedy_solver.cpp $(MH)
-	$(CC) -c $(DIR)/sddp_greedy_solver.cpp -o $@ $(MINC) $(SW)
-
-$(DIR)/CutProcessing.o: $(DIR)/CutProcessing.cpp $(MH)
-	$(CC) -c $(DIR)/CutProcessing.cpp -o $@ $(MINC) $(SW)
+$(DIR)/sddp_solver: $(DIR)/sddp_solver.o $(MOBJ)
+	$(CC) -o $(DIR)/sddp_solver $^ $(MLIB) -I.. $(SW)
 
 ############################ End of makefile #################################

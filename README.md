@@ -3,17 +3,29 @@
 A set of tools and examples that use SMS++ library and other modules.
 At the moment we provide:
 
-- a generic Block Solver with some example input files
+- `block_solver`: a generic Block solver with some example input files
 
-- a single Thermal Unit solver
+- `ucblock_solver`: a UCBlock solver
 
-- a UCBlock solver
+- `sddp_solver`: an SDDPBlock solver
 
-- an SDDPBlock solver
+- `tssb_solver`: a TwoStageStochasticBlock solver
 
-- an InvestmentBlock solver
+- `mssb_solver`: a MultiStageStochasticBlock solver
 
-- a small utility to change some parameters in a configuration
+- `investmentblock_solver`: an InvestmentBlock solver
+
+- `svm_solver`: a SVMBlock solver, i.e., a Support Vector Machine trainer,
+  together with the model selection that surrounds the training: hold-out and
+  k-fold cross-validation, both stratified, and grid search over the
+  hyper-parameters
+
+- `mcfblock_solver`, `bkblock_solver`, `cflblock_solver`,
+  `mmcfblock_solver` and `sfdcrblock_solver`: the solvers of MCFBlock,
+  BinaryKnapsackBlock, CapacitatedFacilityLocationBlock, MMCFBlock and
+  SingleFlowDCRBlock, which also read the native text formats of their Block
+
+- `chgcfg`: a small utility to change some parameters in a configuration
   file while leaving all the rest unchanged
 
 
@@ -34,7 +46,18 @@ These instructions will let you build SMS++ Tools on your system.
 
 - [TwoStageStochasticBlock](https://gitlab.com/smspp/twostagestochasticblock)
 
+- [MultiStageStochasticBlock](https://gitlab.com/smspp/multistagestochasticblock)
+
+- [SVMBlock](https://gitlab.com/smspp/svmblock)
+
 - [UCBlock](https://gitlab.com/smspp/ucblock)
+
+- [MCFBlock](https://gitlab.com/smspp/mcfblock),
+  [BinaryKnapsackBlock](https://gitlab.com/smspp/binaryknapsackblock),
+  [CapacitatedFacilityLocationBlock](https://gitlab.com/smspp/capacitatedfacilitylocationblock),
+  [MMCFBlock](https://gitlab.com/smspp/mmcfblock) and
+  [SingleFlowDCRBlock](https://gitlab.com/smspp/singleflowdcrblock), each for
+  its own solver
 
 ### Build and install with CMake
 
@@ -71,12 +94,13 @@ The Block solver (`block_solver`) and the Unit Commitment solver (`ucblock_solve
 share the same interface:
 
 ```sh
-Usage:
-  <*_solver> [options] <file>
-  <*_solver> -h | --help
+Usage: <*_solver> [options] <file>
+  or:  <*_solver> -h | --help
+  or:  <*_solver> -V | --version
 
 Options:
   -h, --help                      print this help
+  -V, --version                   print the SMS++ tools version and exit
   -a, --save-state <file>         save State of the Solver
   -B, --blockcfg <file>           Block Configuration
   -b, --load-state <file>         load State for the Solver
@@ -95,6 +119,70 @@ Options:
 See the [`examples`](ucblock_solver/examples) directory for sample
 input files and configurations.
 
+When the `-B` and/or `-S` options are not given on the command line, each
+solver falls back to its own conventional default Configuration files, looked
+up relative to the `-c` prefix. For `sddp_solver`, `tssb_solver` and
+`mssb_solver` the `-c` prefix itself defaults to `config/`, so those need no
+`-c` at all when run from the tool directory. The per-tool defaults are:
+
+| tool                     | default `-B`                          | default `-S`   |
+|--------------------------|---------------------------------------|----------------|
+| `sddp_solver`            | `SDDPBCfg.txt` (or `SDDPBCfg-LD.txt`) | `SDDPSCfg.txt` |
+| `tssb_solver`            | `TSSBCfg.txt`                         | `TSSBSCfg.txt` |
+| `mssb_solver`            | `InnerBCfg.txt`                       | `MSSBSCfg.txt` |
+| `investmentblock_solver` | `InnerBCfg.txt`                       | `BSPar.txt`    |
+| `ucblock_solver`         | `InnerBCfg.txt`                       | `BSCfg.txt`    |
+| `block_solver`           | `BCfg.txt`                            | `BSCfg.txt`    |
+| `mcfblock_solver` and the other four | `BCfg.txt`                | `BSCfg.txt`    |
+
+For `sddp_solver` the default `-B` is applied through the inner-Block "meta"
+BlockConfig (`SDDPBCfg.txt`, or `SDDPBCfg-LD.txt` when the SDDPSolver drives a
+LagrangianDualSolver), which linearises the `PolyhedralFunctionBlock` and
+shapes the network/units; passing a generic `BCfg.txt` instead is wrong and
+makes the MILPSolver throw "Unknown type of Objective Function". The fallback
+applies only when the file is actually reachable, so a missing default is
+silently ignored, and explicit `-B`/`-S` always take precedence; an empty
+name, as in `-B ''`, means no file at all.
+
+The `-c` prefix is applied to *every* Configuration filename, not only the
+top-level `-B`/`-S` files but also every filename referenced from inside a
+config file: the `*filename` include mechanism and the `strInnerBSC` /
+`str_LagBF_BSCfg` meta-config chains. A run from any working directory therefore
+resolves every config relative to `-c`: point `-c` at the directory holding the
+`.txt` files and the tool needs no particular current directory (this is what
+lets an external driver such as pySMSpp invoke the tool from an arbitrary
+location). Consequently, filenames referenced from inside a config file are
+written *bare* (e.g. `*PFBCfg.txt`, `strInnerBSC UCBSCfg.txt`), without a
+`config/` component, since `-c` supplies the base directory.
+
+Every tool with a `config/` directory installs it, under
+`share/SMS++_tools/<tool>/config`, and uses it when `-c` is not given and
+none of its Configuration files is found with its own prefix: the whole
+configuration then comes from the installed directory, which the tool finds
+relative to its executable, so an installed tool runs from anywhere with no
+option at all. A file in the current directory, or an explicit `-c`, always
+takes precedence; `--help` prints the installed directory, and `-v` which
+files are in use. `--help` also lists the exit status: 0 when the run
+completes, whatever the status of the Solvers, nonzero on errors. Next to its
+configuration each tool installs its example instances, under
+`share/SMS++_tools/<tool>/examples`, and a man page generated from its
+`--help` when help2man is available.
+
+### Quick start (run the bundled example)
+
+From each tool's own directory, a plain run on the bundled example is:
+
+```sh
+cd sddp_solver            && sddp_solver SDDPBlock.nc4 -p examples/
+cd tssb_solver            && tssb_solver examples/toy_tssb.nc4
+cd mssb_solver            && mssb_solver examples/big_baked_L8.nc4
+cd ucblock_solver         && ucblock_solver examples/Bus_Test.nc4 -c config/
+cd investmentblock_solver && investmentblock_solver InvestmentBlockBus.nc4 -c config/ -p examples/
+```
+
+`block_solver` is generic: it needs an explicit `-B`/`-S` matching the Block in
+the file, e.g. `block_solver <file>.nc4 -B <BlockConfig> -S <BlockSolverConfig>`.
+
 ### Block solver
 
 The input netCDF file can be a problem file or a Block file:
@@ -102,21 +190,22 @@ The input netCDF file can be a problem file or a Block file:
 - a problem file already contains a Block configuration and a Solver
   configuration, so if you provide them by command line they will be ignored;
 
-- a Block file needs a Block configuration and a Solver configuration to be
-  solved.
+- a Block file is solved with the given Solver configuration (or the default
+  `BSCfg.txt`); the Block configuration is optional, the Block being solved as
+  deserialized when none is given.
 
 See the [`examples`](ucblock_solver/examples) directory for sample input
 files and configurations.
 
 ### InvestmentBlock Solver
 
-`investment_solver` adds the following command-line options to the basic ones:
+`investmentblock_solver` adds the following command-line options to the basic
+ones:
 
 ```sh
-  -d, --output-dir                directory where solutions are written
-  -e, --eliminate-redundant-cuts  eliminate given redundant cuts
   -l, --load-cuts <file>          load cuts from a file
   -n, --num-blocks <number>       number of sub-Blocks per stage
+  -r, --relax                     relax integer variables
   -s, --simulate                  simulate the given investment
   -x, --initial-investment <file> initial investment
 ```
@@ -182,9 +271,10 @@ where 't' is a stage (an integer between 0 and time horizon minus 1), 'a_0',
 ..., 'a_k' are the coefficients of the cut, and 'b' is the constant term of
 the cut.
 
-As a preprocessing, given redundant cuts can be removed by using the `-e`
-option. Notice that all cuts will be subject to being removed, whether they
-are provided in a netCDF file or by the `-l` option.
+The `-r` option relaxes the integrality of every integer variable in the
+inner Block (typically the binary commitment variables of every
+ThermalUnitBlock), so that the investment function is evaluated over the
+LP relaxation of the operational problem.
 
 There are a few ways to specify the initial state for the first stage
 subproblem. This can be done by setting the initial state variable of
@@ -283,21 +373,48 @@ belong to that interval (that is, if it is negative or greater than or equal
 to T) or if the `-t` option is not used, then no changes are made to the way
 the initial state is specified.
 
-### Thermal Unit solver / Unit Commitment solver
+### Unit Commitment solver
 
-`ucblock_solver` adds the following command-line options to the basic ones:
+`ucblock_solver` does not add any tool-specific command-line option to the
+basic ones. The input netCDF file may be either a Block file or a problem
+file, of which only the Block is used, the configuration always coming from
+`-B` and `-S`. The default configuration solves the UCBlock with
+HiGHSMILPSolver, and its `InnerBCfg.txt` chooses the formulation of the units
+and of the network, which is needed, e.g., by the instances whose objective
+contains a PolyhedralFunction; `-B ''` keeps the formulation of the file.
+
+### MCFBlock, BinaryKnapsackBlock, CapacitatedFacilityLocationBlock, MMCFBlock and SingleFlowDCRBlock solvers
+
+`mcfblock_solver`, `bkblock_solver`, `cflblock_solver`, `mmcfblock_solver`
+and `sfdcrblock_solver` read their Block either from an SMS++ netCDF file, a
+Block file or a problem file of which only the Block is used, or from a file
+in a native text format of the Block, that its `load()` reads: DIMACS for
+MCFBlock, and the formats that `-f` selects for the other three. The format is
+told by the file itself, a netCDF one or not, while
 
 ```sh
-  -t, --output <type>             solution output type [1]
-                                  (0 none, 1 screen, 2 files, 3 both)
+  -f, --format <c>                native format of the input file, if not
+                                  netCDF
 ```
 
-The input netCDF file must be a Block file. If you don't provide Block
-or Solver configurations, default configurations will be used.
+chooses among the native ones, e.g. `-f P` for the Pisinger benchmarks of
+BinaryKnapsackBlock or `-f m` for the Mnetgen instances of MMCFBlock. The
+DIMACS format of SingleFlowDCRBlock does not carry the delay data, so
+`sfdcrblock_solver` only reads netCDF files.
+
+Their default configurations solve the problem with no license needed: the
+MCFSimplex of MCFClass for MCFBlock, the core Dynamic Programming for
+BinaryKnapsackBlock, HiGHS on the MILP for CapacitatedFacilityLocationBlock
+and MMCFBlock, and the Benders Solver of SingleFlowDCRBlock, whose `MILPCfg.txt`
+and `PCCfg.txt` solve its P/C formulation with a :MILPSolver instead.
 
 ### TwoStageStochasticBlock solver
 
 `tssb_solver` does not add any command-line options to the basic ones.
+
+### MultiStageStochasticBlock solver
+
+`mssb_solver` does not add any command-line options to the basic ones.
 
 ### The `chgcfg` utility
 
@@ -314,7 +431,7 @@ Usage: chgcfg in-cfg out-cfg [ par1 val1 [ par2 val2 [ ... ] ] ]
   separate line, possibly with trailing whitespaces and followed by comment
 
 `out-cfg` is the output configuration file; it must be different from
-`in_cfg`, and any existing content in the file is deleted.
+`in-cfg`, and any existing content in the file is deleted.
 
 Then, an arbitrary number of `par-i val-i` pairs is allowed: each `par-i`
 is checked against the existing parameters in `in-cfg`, and if it is found
@@ -333,7 +450,6 @@ The module has a compile-time option, commanded by the macro BAREBONES in
 stripped by all non-necessary comments and comment lines.
 
 
-
 ## Getting help
 
 If you need support, you want to submit bugs or propose a new feature, you can
@@ -347,6 +463,8 @@ conduct, and the process for submitting merge requests to us.
 
 
 ## Authors
+
+### Current Lead Authors
 
 - **Antonio Frangioni**  
   Dipartimento di Informatica  
@@ -363,6 +481,8 @@ conduct, and the process for submitting merge requests to us.
 - **Rafael Durbano Lobato**  
   Dipartimento di Informatica  
   Università di Pisa
+
+### Contributors
 
 
 ## License

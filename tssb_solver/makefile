@@ -28,9 +28,7 @@ include ../makefile_common
 # *H   is the list of all include files
 # *INC is the -I< include directories >
 
-# define input macros for SMS++ complete makefile, then include it
-SMS++SDR = ../../SMS++
-include $(SMS++SDR)/lib/makefile-c
+# note that the SMS++ complete makefile isincluded in makefile_common
 
 # TwoStageStochasticBlock
 TSSBkSDR = ../../TwoStageStochasticBlock
@@ -51,7 +49,8 @@ include $(LgDSLVSDR)/makefile
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(SMS++OBJ) $(TSSBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ)
+MOBJ =  $(SMS++OBJ) $(TSSBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) \
+	$(CMMNUOBJ)
 
 # libraries
 MLIB =  $(SMS++LIB) $(TSSBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
@@ -63,15 +62,15 @@ $(DIR)/tssb_solver: $(DIR)/tssb_solver.o $(MOBJ)
 
 # include directives
 MINC =  $(SMS++INC) $(TSSBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) \
-	-I$(DIR) -I../ucblock_solver -I../block_solver
+	-I$(DIR) -I../ucblock_solver $(CMMNUINC)
 
 # includes
-MH =    $(SMS++H) $(TSSBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH)
+MH =    $(SMS++H) $(TSSBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(CMMNUH)
 
 # compile command
 
 $(DIR)/tssb_solver.o: $(DIR)/tssb_solver.cpp \
-    $(DIR)/../block_solver/common_utils.h $(MH)
+    $(DIR)/../common_utils.h $(MH)
 	$(CC) -c $(DIR)/tssb_solver.cpp -o $@ $(MINC) $(SW)
 
 ############################ End of makefile #################################

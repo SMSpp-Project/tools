@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+#
+# run-ld-vs-tpc < out.csv > [instance ...]
+#
+# For each single-bus UCBlock instance, solve it three ways and tabulate the
+# bound and wall-clock time of each, to compare the Lagrangian dual (with the
+# DP inner solvers) against the monolithic "T + Perspective-Cuts" formulation
+# given to a :MILPSolver:
+#
+#   LD       Lagrangian dual         -B InnerBCfg.txt     -S UCBSCfg-LD-bound.txt
+#   TPC-LP   T+P/C LP relaxation     -B InnerBCfg-tpc.txt -S BSCfg.txt     (intRelaxIntVars 1)
+#   TPC-MIP  T+P/C integer MI(Q)P    -B InnerBCfg-tpc.txt -S BSCfg-int.txt (intRelaxIntVars 0)
+#
+# LD and TPC-LP both yield a lower bound on the integer optimum; TPC-MIP yields
+# the (proven) optimum / best incumbent and its bound within the time limit.
+# The LD uses UCBSCfg-LD-bound.txt (dblRelAcc 1e-4 + dblMaxTime) so it stops
+# gracefully and reports a bound instead of being killed by an outer timeout.
+# The CSV columns are:
+#   instance,ld_status,ld_lb,ld_time,tpclp_lb,tpclp_time,tpcmip_status,tpcmip_lb,tpcmip_ub,tpcmip_time
+#
+# Findings (seed 1, 10/20/50 units x day/week/month, both reserve arms; full
+# table in results/config_c/ldtpc/ld_vs_tpc_all.csv and README.md): the LP and
+# MIP bounds coincide across the two arms -- the reactive fields do not move
+# the monolithic optimum, they enter the dual only through the dualised prices.
+# COLD-started (multipliers at zero, this script), the dual is not viable at
+# scale: at day it closes to within 0.02-0.08% of the LP bound in its budget,
+# but from week up the master QP pays minutes per iteration and the gap
+# degrades with size, down to no meaningful bound at 50 units x month where
+# the LP delivers in ~25 minutes. The warm-started dual of run-warm-ld is the
+# viable counterpart; this script remains the cold baseline.
+#
+# Run on a QUIET machine: the LD and the MILP both peg all cores, so a
+# concurrent job corrupts the timings.
+
+set -u
+HERE="$(cd "$(dirname "$0")" && pwd)"
+cd "$HERE/.."                      # tools/ucblock_solver (so config/ resolves)
+
+SOLVER="${UCBLOCK_SOLVER:-../../cmake-build-debug/tools/ucblock_solver/ucblock_solver}"
+[ -x "$SOLVER" ] || { echo "ucblock_solver not found at $SOLVER (set UCBLOCK_SOLVER)" >&2; exit 1; }
+
+OUT="${1:?usage: run-ld-vs-tpc out.csv [instance ...]}"; shift
+INSTANCES=( "$@" )
+if [ "${#INSTANCES[@]}" -eq 0 ]; then
+  # default sweep: the reserve instances with and without reactive power
+  # (res_noreac is the no-reactive baseline), ALL sizes and horizons, seed 1
+  mapfile -t INSTANCES < <(ls ../../UCBlock/data/nc4/UC_singlebus/sb_*u_*_res_*reac_seed1.nc4)
+fi
+
+# per-solve timeouts (s): the LD self-caps via dblMaxTime in UCBSCfg-LD-bound,
+# TPC-MIP via its own dblMaxTime in BSCfg-int; the outer timeouts are just slack
+LD_TO="${LD_TO:-2400}"; LP_TO="${LP_TO:-900}"; MIP_TO="${MIP_TO:-900}"
+
+field() { grep -iE "$1" | tail -1 | grep -oE '[-+]?[0-9]+\.?[0-9]*([eE][-+]?[0-9]+)?' | tail -1; }
+status() { grep -iE 'Status =' | tail -1 | grep -oE 'Status = [0-9]+' | grep -oE '[0-9]+'; }
+
+echo "instance,ld_status,ld_lb,ld_time,tpclp_lb,tpclp_time,tpcmip_status,tpcmip_lb,tpcmip_ub,tpcmip_time" > "$OUT"
+
+for inst in "${INSTANCES[@]}"; do
+  name="$(basename "$inst" .nc4)"
+  echo "==== $name  $(date '+%F %H:%M:%S') ===="
+
+  ld="$( timeout "$LD_TO" "$SOLVER" -c lagrangian_timing/config/ -B InnerBCfg.txt -S UCBSCfg-LD-bound.txt "$inst" 2>&1 )"
+  ld_st="$(  echo "$ld" | status )";              ld_st="${ld_st:-NA}"
+  ld_lb="$(  echo "$ld" | field 'Lower bound' )"; ld_lb="${ld_lb:-NA}"
+  ld_t="$(   echo "$ld" | field 'Elapsed time' )"; ld_t="${ld_t:-NA}"
+
+  lp="$( timeout "$LP_TO" "$SOLVER" -c lagrangian_timing/config/ -B InnerBCfg-tpc.txt -S BSCfg.txt "$inst" 2>&1 )"
+  lp_lb="$( echo "$lp" | field 'Lower bound' )";  lp_lb="${lp_lb:-NA}"
+  lp_t="$(  echo "$lp" | field 'Elapsed time' )"; lp_t="${lp_t:-NA}"
+
+  mip="$( timeout "$MIP_TO" "$SOLVER" -c lagrangian_timing/config/ -B InnerBCfg-tpc.txt -S BSCfg-int.txt "$inst" 2>&1 )"
+  mip_st="$( echo "$mip" | status )";              mip_st="${mip_st:-NA}"
+  mip_lb="$( echo "$mip" | field 'Lower bound' )"; mip_lb="${mip_lb:-NA}"
+  mip_ub="$( echo "$mip" | field 'Upper bound' )"; mip_ub="${mip_ub:-NA}"
+  mip_t="$(  echo "$mip" | field 'Elapsed time' )"; mip_t="${mip_t:-NA}"
+
+  echo "$name,$ld_st,$ld_lb,$ld_t,$lp_lb,$lp_t,$mip_st,$mip_lb,$mip_ub,$mip_t" >> "$OUT"
+  tail -1 "$OUT"
+done
+
+echo "==== done  $(date '+%F %H:%M:%S')  ->  $OUT ===="

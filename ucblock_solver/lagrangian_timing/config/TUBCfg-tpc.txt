@@ -1,0 +1,46 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - TUBCfg-tpc.txt - - - - - - - - - - - - - - -
+#
+# A txt description of a BlockConfig that selects the "T + Perspective-Cuts"
+# (T+P/C) formulation of a ThermalUnitBlock, i.e. the static-variables
+# Configuration is SimpleConfiguration< int > with value wf = 9
+# (wf & 7 == 1 is the "T" formulation, wf & 8 enables the Perspective Cuts).
+# Applied to a ThermalUnitBlock before generate_abstract_variables() so the
+# abstract representation a :MILPSolver sees is the T+P/C one.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockConfig
+
+1  # the BlockConfig is a "differential" one
+
+2  # version of the BlockConfig format
+
+# the Configuration for the structure, i.e., the tree of sub-Block
+*  # [none]
+
+*  # static_constraints   [none]
+
+*  # dynamic_constraints   [none]
+
+# static_variables: SimpleConfiguration< int > with value wf = 9
+# (T formulation + Perspective Cuts)
+SimpleConfiguration<int>
+9
+
+*  # dynamic_variables   [none]
+
+*  # objective   [none]
+
+*  # is_feasible   [none]
+
+*  # is_optimal   [none]
+
+*  # solution   [none]
+
+*  # extra   [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - END TUBCfg-tpc.txt - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

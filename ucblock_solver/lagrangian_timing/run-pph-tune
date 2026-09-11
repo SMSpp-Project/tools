@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+#
+# run-pph-tune [instance] [out.csv]
+#
+# Tune the two PrimalProximalHeur parameters (the quadratic penalty weight R =
+# dbl_penaltyFactor, and the outer-iteration cap intMaxIterPPH) on a single
+# UCBlock instance: for each (R, maxIter) pair it runs PPH and records the
+# upper bound it finds and the time, so the pair can be picked against the
+# TPC-MIP optimum (run-ld-vs-tpc gives that). Writes a per-pair CSV.
+#
+# R must be commensurate with the cost scale: too small leaves the LD solution
+# fractional (no rounding), too large jumps to a poor integer point. The
+# default grid spans four orders of magnitude around the UC value 1e3.
+#
+# Run on a QUIET machine.
+
+set -u
+HERE="$(cd "$(dirname "$0")" && pwd)"
+cd "$HERE/.."                      # tools/ucblock_solver (config/ resolves)
+
+SOLVER="${UCBLOCK_SOLVER:-../../cmake-build-debug/tools/ucblock_solver/ucblock_solver}"
+[ -x "$SOLVER" ] || { echo "ucblock_solver not found at $SOLVER (set UCBLOCK_SOLVER)" >&2; exit 1; }
+
+INST="${1:-../../UCBlock/data/nc4/UC_singlebus/sb_10u_day_res_reac_seed1.nc4}"
+OUT="${2:-/tmp/pph_tune.csv}"
+RGRID="${RGRID:-1e1 1e2 1e3 1e4 1e5}"
+ITGRID="${ITGRID:-10 30}"
+TO="${TO:-1200}"
+
+base=lagrangian_timing/config/UCBSCfg-PPH.txt
+tmp=lagrangian_timing/config/UCBSCfg-PPH-tune.txt
+trap 'rm -f "$tmp"' EXIT
+
+field() { grep -iE "$1" | tail -1 | grep -oE '[-+]?[0-9]+\.?[0-9]*([eE][-+]?[0-9]+)?' | tail -1; }
+status() { grep -iE 'Status =' | tail -1 | grep -oE 'Status = [0-9]+' | grep -oE '[0-9]+'; }
+
+echo "instance,R,maxIterPPH,pph_status,pph_ub,pph_time" > "$OUT"
+echo "tuning PPH on $(basename "$INST")  grid R={$RGRID} maxIter={$ITGRID}"
+
+for R in $RGRID; do
+  for IT in $ITGRID; do
+    sed -E "s/^(dbl_penaltyFactor)[[:space:]]+[0-9.eE+-]+/\1  $R/; \
+            s/^(intMaxIterPPH)[[:space:]]+[0-9]+/\1      $IT/" "$base" > "$tmp"
+    echo "==== R=$R maxIter=$IT  $(date '+%H:%M:%S') ===="
+    out="$( timeout "$TO" "$SOLVER" -c lagrangian_timing/config/ -B InnerBCfg.txt -S "$(basename "$tmp")" "$INST" 2>&1 )"
+    st="$( echo "$out" | status )";              st="${st:-NA}"
+    ub="$( echo "$out" | field 'Upper bound' )"; ub="${ub:-NA}"
+    t="$(  echo "$out" | field 'Elapsed time' )"; t="${t:-NA}"
+    echo "$(basename "$INST" .nc4),$R,$IT,$st,$ub,$t" >> "$OUT"
+    tail -1 "$OUT"
+  done
+done
+
+echo "==== done -> $OUT ===="

@@ -1,0 +1,199 @@
+netcdf Block_0 {
+
+// global attributes:
+        :SMS++_file_type = 1LL ;
+
+group: Block_0 {
+  dimensions:
+  	TimeHorizon = 1 ; 
+  	NumberUnits = 3 ; 
+  	NumberElectricalGenerators = 3 ; 
+  	NumberNodes = 3 ; 
+  	NumberLines = 3 ; 
+  variables:
+  	uint GeneratorNode(NumberElectricalGenerators) ;
+  	string NodeName(NumberNodes) ; 
+  	double ActivePowerDemand(NumberNodes, TimeHorizon) ;
+  	string NetworkBlockClassname ;
+  	double ReactivePowerDemand(NumberNodes, TimeHorizon) ;
+  	double NodeConductance(NumberNodes) ;
+  	double NodeSusceptance(NumberNodes) ;
+  	double NodeMinVoltage(NumberNodes) ;
+  	double NodeMaxVoltage(NumberNodes) ;
+  	uint StartLine(NumberLines) ;
+  	uint EndLine(NumberLines) ;
+  	double MinPowerFlow(NumberLines) ;
+  	double MaxPowerFlow(NumberLines) ;
+  	double LineSusceptance(NumberLines) ;
+  	double NetworkCost(NumberLines) ;
+  	string LineName(NumberLines) ;
+  	double LineResistance(NumberLines) ;
+  	double LineReactance(NumberLines) ;
+  	double LineMinAngle(NumberLines) ;
+  	double LineMaxAngle(NumberLines) ;
+  	double LineShiftAngle(NumberLines) ;
+  	double LineRATEA(NumberLines) ;
+  	double LineRatio(NumberLines) ;
+
+  // group attributes:
+  		:id = "0" ;
+  		:type = "UCBlock" ;
+  		:baseMVA = "1.0" ;
+  data:
+
+   NetworkBlockClassname = "ACNetworkBlock" ;
+
+   GeneratorNode = 0, 1, 2 ;
+
+   NodeName = "B1","B2","B3" ;
+
+   ActivePowerDemand = 110.0, 110.0, 95.0 ;
+
+   ReactivePowerDemand = 40.0, 40.0, 50.0 ;
+
+   NodeConductance = 0.0, 0.0, 0.0 ;
+
+   NodeSusceptance = 0.0, 0.0, 0.0 ;
+
+   NodeMinVoltage = 216.0, 216.0, 216.0 ;
+
+   NodeMaxVoltage = 264.0, 264.0, 264.0 ;
+
+   StartLine = 0, 2, 0 ;
+
+   EndLine   = 2, 1, 1 ;
+
+   MinPowerFlow = -9000.0, -50.0, -9000.0 ;
+
+   MaxPowerFlow = 9000.0, 50.0, 9000.0 ;
+
+   LineSusceptance = 0.0008506616257088847, 0.001323251417769376, 0.0005671077504725897 ;
+
+   LineResistance  = 34.385, 13.225, 22.218 ;
+
+   LineReactance   = 327.98, 396.75, 476.1;
+
+   LineMinAngle = -30.0, -30.0, -30.0 ;
+
+   LineMaxAngle =   30.0, 30.0, 30.0 ;
+
+   LineShiftAngle = 0.0, 0.0, 0.0 ;
+
+   LineRATEA = 9000.0, 50.0, 9000.0 ;
+
+   LineRatio = 1.0, 1.0, 1.0;
+
+   NetworkCost = 0.0, 0.0, 0.0 ;
+
+   LineName = "L1","L2","L3" ;
+
+  group: UnitBlock_0 { 
+    dimensions:
+    	NumberIntervals = 1 ; 
+    variables:
+    	double MinPower ;
+    	double MaxPower ;
+    	double MaxReactivePower ;
+    	double VoltageMagnitude ;
+    	double LinearTerm ;
+    	double ConstTerm ;
+    	double InitialPower ;
+    	uint InitUpDownTime ;
+    	uint MinDownTime ;
+
+    // group attributes:
+    		:type = "ThermalUnitBlock" ;
+    		:name = "G1" ; 
+    data:
+     MinPower = 0.0 ; 
+     MaxPower = 2000.0 ; 
+     MaxReactivePower = 1000.0 ; 
+
+     VoltageMagnitude = 1.0 ; 
+
+     LinearTerm = 5.0 ; 
+
+     ConstTerm = 0.0 ; 
+
+     InitialPower = 158.07 ; 
+
+     InitUpDownTime = 1 ; 
+
+     MinDownTime = 0 ; 
+
+    } // group UnitBlock_0
+
+  group: UnitBlock_1 { 
+    dimensions:
+    	NumberIntervals = 1 ; 
+    variables:
+    	double MinPower ;
+    	double MaxPower ;
+    	double MaxReactivePower ;
+    	double VoltageMagnitude ;
+    	double LinearTerm ;
+    	double ConstTerm ;
+    	double InitialPower ;
+    	uint InitUpDownTime ;
+    	uint MinDownTime ;
+
+    // group attributes:
+    		:type = "ThermalUnitBlock" ;
+    		:name = "G2" ; 
+    data:
+     MinPower = 0.0 ; 
+     MaxPower = 1500.0 ; 
+     MaxReactivePower = 1000.0 ; 
+
+     VoltageMagnitude = 1.0 ; 
+
+     LinearTerm = 1.2 ; 
+
+     ConstTerm = 0.0 ; 
+
+     InitialPower = 160.0 ; 
+
+     InitUpDownTime = 1 ; 
+
+     MinDownTime = 0 ; 
+
+    } // group UnitBlock_1
+
+  group: UnitBlock_2 { 
+    dimensions:
+    	NumberIntervals = 1 ; 
+    variables:
+    	double MinPower ;
+    	double MaxPower ;
+    	double MaxReactivePower ;
+    	double VoltageMagnitude ;
+    	double LinearTerm ;
+    	double ConstTerm ;
+    	double InitialPower ;
+    	uint InitUpDownTime ;
+    	uint MinDownTime ;
+
+    // group attributes:
+    		:type = "ThermalUnitBlock" ;
+    		:name = "G3" ; 
+    data:
+     MinPower = 0.0 ; 
+     MaxPower = 0.0 ; 
+     MaxReactivePower = 1000.0 ; 
+
+     VoltageMagnitude = 1.0 ; 
+
+     LinearTerm = 0.0 ; 
+
+     ConstTerm = 0.0 ; 
+
+     InitialPower = 0.0 ; 
+
+     InitUpDownTime = 1 ; 
+
+     MinDownTime = 0 ; 
+
+    } // group UnitBlock_2
+
+  } // group Block_0
+}

@@ -1,0 +1,62 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - MILPCfg.txt - - - - - - - - - - - - - - - - -
+#
+# A txt description of a ComputeConfig for a :MILPSolver solving the
+# deterministic equivalent of a TwoStageStochasticBlock
+#
+#   Donato Meoli
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ComputeConfig         # exact type of the ComputeConfig object
+
+1  # f_diff == 0 ==> all non-provided parameters are set to the default value
+   # f_diff == 1 ==> all non-provided parameters are not changed
+
+3 # number of integer parameters
+
+# now all the integer parameters
+intLogVerb      0 # log verbosity of the MILPSolver
+intRelaxIntVars 1 # nonzero if the continuous relaxation is solved
+intCutSepPar    7 # separate user cuts + lazy constraints
+
+1 # number of double parameters
+
+# now all the double parameters
+dblRelAcc       1e-8 # relative accuracy required to solution
+
+2 # number of string parameters
+
+# now all the string parameters
+# HiGHSMILPSolver-specific options (this test registers a HiGHSMILPSolver so it
+# can run on a CI without commercial solvers). The energy-community LP
+# relaxations are highly degenerate, where HiGHS dual simplex is very slow,
+# while the interior point method solves them almost instantly; crossover to a
+# vertex is skipped since only the objective value is needed.
+solver        ipm # interior point method for the (LP) relaxation
+run_crossover off # skip crossover to a vertex (only the objective is needed)
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# end of ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END MILPCfg.txt - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -44,13 +44,24 @@ using namespace SMSpp_di_unipi_it;
 /*--------------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-int main( int argc, char ** argv )
+int main( int argc , char ** argv )
 {
  // override the default terminate handler to print the exception message
  std::set_terminate( smspp_terminate );
  
  // manage options and help, see common_utils.h- - - - - - - - - - - - - - - -
- docopt_desc = "SMS++ generic Block solver";
+ docopt_desc =
+  "SMS++ generic Block solver: loads any SMS++ Block and solves it with the\n"
+  "Solvers of its BlockSolverConfig.\n";
+ docopt_args =
+  "  <file>    SMS++ netCDF file (.nc4): a Block file, each of whose Blocks\n"
+  "            is solved with -B and -S, or a problem file, each of whose\n"
+  "            problems is solved with its own configuration\n";
+ docopt_examples =
+  "  block_solver -S BSCfg.txt instance.nc4\n"
+  "      solve the Blocks of instance.nc4 with the Solvers of BSCfg.txt\n"
+  "  block_solver -B BCfg.txt -S BSCfg.txt instance.nc4\n"
+  "      the same, after configuring the Blocks with BCfg.txt\n";
  process_args( argc , argv );
 
  // read nc4 file- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -69,30 +80,26 @@ int main( int argc, char ** argv )
  for( auto & g : groups ) {
   // get the Block and its BlockConfig, BlockSolverConfig
   Block * block = nullptr;
-  BlockConfig * b_config = nullptr;
-  BlockSolverConfig * s_config = nullptr;
+  Configuration * s_config = nullptr;
 
   if( type == eProbFile ) {
    std::cout << "Problem: " << g.first << std::endl;
-   get_all( g.second , block , b_config , s_config );
+   get_all( g.second , block , s_config );
    }
   else {
    std::cout << "Block: " << g.first << std::endl;
-   get_all( g.second , bconf_file , sconf_file ,
-	    block , b_config , s_config );
+   get_all( g.second , bconf_file , sconf_file , block , s_config );
    }
 
   set_solver_logs( block );
 
   solve_all( block );  // compute()
 
-  // apply() the clear()-ed BlockSolverConfig to remove the Solver
-  if( s_config )
-   s_config->apply( block );
+  // apply() the clear()-ed BlockSolverConfig[s] to remove the Solver
+  cleanup_bsc( block , s_config );
 
   // cleanup
   delete s_config;
-  delete b_config;
   delete block;
 
   }  // end( for( all group ) )

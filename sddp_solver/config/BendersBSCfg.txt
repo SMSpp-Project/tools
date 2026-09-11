@@ -1,0 +1,81 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - BendersBSCfg.txt- - - - - - - - - - - - - - - -
+#
+# A txt description of the default BlockSolverConfig for the inner Block of
+# each BendersBFunction of the SDDPBlock, used by build_BlockConfig() of
+# sddp_solver when no BlockConfig (-B) and no BlockSolverConfig (-S) are
+# provided: the continuous relaxation is solved by a :MILPSolver with
+# presolve disabled, throwing an exception if reduced costs are not
+# available.
+#
+#   Donato Meoli
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+1  # number of (the names of) Solver in this BlockSolverConfig
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+#CPXMILPSolver    # name of 1st Solver
+#GRBMILPSolver    # name of 1st Solver
+HiGHSMILPSolver   # name of 1st Solver
+
+1  # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# ComputeConfig of the :MILPSolver
+
+ComputeConfig # exact type of the ComputeConfig object
+
+1  # f_diff == 0 ==> all non-provided parameters are set to the default value
+   # f_diff == 1 ==> all non-provided parameters are not changed
+
+1 # number of integer parameters
+
+# now all the integer parameters
+intThrowReducedCostException     1 # throw if reduced costs are unavailable
+# All specific CPLEX parameter (uncomment based on Solver)
+#CPXPARAM_Preprocessing_Presolve  0 # disable presolve
+# All specific GUROBI parameter (uncomment based on Solver)
+#Presolve                         0 # disable presolve
+
+0 # number of double parameters
+
+# now all the double parameters
+# [none]
+
+1 # number of string parameters
+
+# now all the string parameters
+# All specific HiGHS parameter (uncomment based on Solver)
+presolve off # disable presolve
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# end of 1st ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - END BendersBSCfg.txt- - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

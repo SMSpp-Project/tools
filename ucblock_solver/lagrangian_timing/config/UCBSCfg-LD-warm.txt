@@ -1,0 +1,110 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - UCBSCfg-LD-warm.txt - - - - - - - - - - - - - -
+#
+# A txt description of a BlockSolverConfig for a UCBlock to be solved by a
+# warm-started Lagrangian dual: a PrimalProximalHeur with dbl_penaltyFactor
+# 0 and a single outer iteration degenerates into a LagrangianDualSolver
+# whose multipliers start from the duals of the LP relaxation (solved by
+# the Solver in WarmStartCfg.txt), followed by the primal recovery of
+# RecoveryCfg.txt, so one solve yields both a lower bound (the Lagrangian
+# dual, budgeted by intMaxIter) and, when the recovery succeeds, a
+# genuinely feasible upper bound. The inner units are solved by their
+# specialised Solver through the meta BlockSolverConfig InnerBSCfg.txt
+# (ThermalUnitBlock -> ThermalUnitExtDPSolver).
+#
+#   Donato Meoli
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+1  # number of (the names of) Solver in this BlockSolverConfig
+
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+PrimalProximalHeur
+
+1  # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# ComputeConfig of the PrimalProximalHeur in warm-started-LD mode
+
+ComputeConfig  # exact type of the ComputeConfig object
+
+1  # f_diff == 0 ==> all non-provided parameters are set to the default value
+   # f_diff == 1 ==> all non-provided parameters are not changed
+
+24 # number of integer parameters
+
+# now all the integer parameters
+intMaxIterPPH       1 # a single outer iteration: no proximal loop
+intDoEasy           1 # do easy components for (some) LagBFunction
+intMaxIter        200 # max number of iterations of the (inner) LD call:
+                      # the budget of the Lagrangian dual (dblMaxTime does
+                      # not currently reach the inner Solver on this path)
+intMaxThread        1 # MaxThread, max number of new tasks to spawn
+intLogVerb          3 # log verbosity of main Bundle algorithm
+intWZNorm           2 # which norm to use in the norm-based stopping condition
+intBPar1           20 # discard items when they have been useless for <this> iterations
+intBPar2          100 # max bundle size per component
+intBPar3            1 # max n. of items to fetch from Fi() at each iteration
+intBPar4            1 # min n. of items to fetch from Fi() at each iteration
+intBPar6            0 # second parameter for dynamic max n. of items per iteration
+intBPar7           11 # how to deal with the global pools
+intMnSSC            0 # min number of consecutive SS with the same t for a t increase
+intMnNSC            1 # min number of consecutive NS with the same t for a t decrease
+inttSPar1          12 # long-term t-strategy (0 = none, 4 = soft, 8 = hard, 12 = balancing)
+intMaxNrEvls        2 # maximum number of function evaluations at each iteration
+intMPName          15 # MP solver: 7 = Cplex/Gurobi quadratic stab. + 8 = dup-check
+intMPlvl            4 # log verbosity of Master Problem
+intQPmp1            0 # MxAdd, how many variables can be added to the base (0 = at will)
+intQPmp2            0 # MxRmv, how many variables can be removed from the base (0 = at will)
+intOSImp1           0 # Osi(Cpx/Grb)Solver algorithm (0 = auto)
+intOSImp2           0 # pre-processing (reduction)
+intOSImp3           1 # threads
+intRstAlg           2 # parameter to handle the reset of the algorithm
+
+5 # number of double parameters
+
+# now all the double parameters
+dblMaxTime          600 # max CPU time (s) of each inner LD call
+dblRelAcc          1e-4 # relative accuracy required to solution
+dblNZEps           1e+2 # stopping parameter: threshold to declare 0 the || residual ||
+dbltStar             -1 # stopping parameter: multiplied to || residual || to estimate gap
+dbl_penaltyFactor     0 # no proximal penalty: pure warm-started Lagrangian dual
+
+2 # number of string parameters
+
+# now all the string parameters
+str_LDSlv_ISName           BundleSolver # the inner Solver used by LagrangianDualSolver
+str_LagBF_BSCfg  InnerBSCfg.txt  # DP-based BlockSolverConfig for the LagBFunctions
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# end of ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# end of BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - END UCBSCfg-LD-warm.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

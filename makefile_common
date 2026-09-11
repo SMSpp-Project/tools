@@ -4,6 +4,22 @@
 #                                                                            #
 #   parts of makefile that should be common to them all                      #
 #                                                                            #
+#   Input:  none                                                             #
+#                                                                            #
+#   Output: COMMON_SW   = common flags to all compile mode                   #
+#           SW_DEBUG , SW_DEBUG_ASAN , SW_RELEASE_ASAN , SW_RELEASE =        #
+#           switches for the four different compile modes                    #
+#           CC          = c++ compiler command                               #
+#           default: , debug: , debug_asan: , release: , release_asan: ,     #
+#           clean:: , distclean: , install: , uninstall: = targets           #
+#                                                                            #
+#           $(SMS++SDR) , $(SMS++INC) , $(SMS++OBJ) , $(SMS++H) and          #
+#           $(SMS++INC) coming from having included the SMS++ core           #
+#                                                                            #
+#           $(CMMNUOBJ) = the commun_utils objects                           #
+#           $(CMMNUH)   = the .h files to include for the commun_utils       #
+#           $(CMMNUINC) = all the -I$( include dirs ) of the commun_utils    #
+#                                                                            #
 #                              Antonio Frangioni                             #
 #                          Dipartimento di Informatica                       #
 #                              Universita' di Pisa                           #
@@ -52,7 +68,7 @@ release_asan: $(DIR)/$(NAME)
 # clean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 clean::
-	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/$(NAME)
+	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/$(NAME) ../common_utils.o
 
 # distclean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -77,5 +93,44 @@ uninstall:
 # phony targets - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 .PHONY: debug debug_asan release release_asan clean distclean
+
+# common_utils stuff- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# define & include the necessary modules- - - - - - - - - - - - - - - - - - -
+# if a module is not used in the current configuration, just comment out the
+# corresponding include line
+# each module outputs some macros to be used here:
+# *OBJ is the final object(s) / library
+# *LIB is the external libraries + -L< libdirs >
+# *H   is the list of all include files
+# *INC is the -I< include directories >
+
+# define input macros for SMS++ complete makefile, then include it
+SMS++SDR = ../../SMS++
+include $(SMS++SDR)/lib/makefile-c
+
+# dependencies: every .o from its .cpp + every recursively included .h- - - -
+
+CMMNUOBJ = ../common_utils.o
+CMMNUH = ../common_utils.h
+CMMNUINC = -I..
+
+$(CMMNUOBJ): $(CMMNUH) $(SMS++H) ../common_utils.cpp
+	$(CC) -c ../common_utils.cpp -o $@ $(CMMNUINC) \
+	$(SMS++INC) $(SW)
+
+# ml_utils stuff- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# the model-agnostic machine learning scaffolding, which the tools training a
+# model use; it depends on nothing but the standard library
+
+MLUTOBJ = ../ml_utils.o
+MLUTH = ../ml_utils.h
+MLUTINC = -I..
+
+$(MLUTOBJ): $(MLUTH) ../ml_utils.cpp
+	$(CC) -c ../ml_utils.cpp -o $@ $(MLUTINC) $(SW)
+
+clean::
+	rm -f $(MLUTOBJ)
 
 ############################ End of makefile #################################

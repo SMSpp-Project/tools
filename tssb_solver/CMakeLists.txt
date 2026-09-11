@@ -3,9 +3,7 @@
 # may wrongly appear unused, and by default the linker does not include them,
 # so we have to force the linking.
 if (BUILD_SHARED_LIBS)
-    if (MSVC)
-        add_link_options("/OPT:NOREF")
-    elseif (UNIX AND (NOT APPLE))
+    if (UNIX AND (NOT APPLE))
         add_link_options("-Wl,--no-as-needed")
     endif ()
 else ()
@@ -37,9 +35,10 @@ endif ()
 if (TARGET SMS++::UCBlock AND
     TARGET SMS++::TwoStageStochasticBlock)
 
-    add_executable(tssb_solver tssb_solver.cpp)
+    add_executable(tssb_solver ../common_utils.cpp
+                               tssb_solver.cpp)
     target_compile_features(tssb_solver PUBLIC cxx_std_17)
-    target_include_directories(tssb_solver PRIVATE ../block_solver ../ucblock_solver)
+    target_include_directories(tssb_solver PRIVATE .. ../ucblock_solver)
     target_link_libraries(tssb_solver PRIVATE
                           SMS++::UCBlock
                           SMS++::TwoStageStochasticBlock)
@@ -57,10 +56,12 @@ if (TARGET SMS++::UCBlock AND
     endif ()
 
     # Install
-    install(TARGETS tssb_solver
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    smspp_install(tssb_solver)
+    smspp_install_data(tssb_solver "solve a two-stage stochastic problem"
+            examples/toy_tssb.nc4)
 
     # Generate and install shell completion scripts
+    set(toolName tssb_solver)
     configure_file(../cmake/completion.bash.in tssb_solver-completion.bash)
     configure_file(../cmake/completion.zsh.in tssb_solver-completion.zsh)
 

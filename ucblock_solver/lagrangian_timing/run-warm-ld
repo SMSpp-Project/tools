@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+#
+# run-warm-ld < out.csv > [instance ...]
+#
+# For each single-bus UCBlock instance, solve it with the warm-started
+# Lagrangian dual of UCBSCfg-LD-warm.txt (a PrimalProximalHeur with no
+# proximal penalty: LP relaxation -> duals -> Lagrangian dual with the DP
+# inner solvers -> primal recovery) and tabulate the lower bound, the upper
+# bound the recovery produces (inf when no stage yields one) and the wall
+# clock. One solve therefore gives both sides of the gap.
+#
+# The Lagrangian dual is budgeted by iterations, per horizon (intMaxIter is
+# patched into a per-run copy of the config): from a warm dual point an
+# iteration costs little (the master starts small), so a moderate budget
+# closes most of the way to the LP bound; the LP itself dominates the time.
+# The CSV columns are:
+#   instance,wld_status,wld_lb,pph_ub,wld_time
+#
+# Findings (seed 1, 10/20/50 units x day/week/month, both reserve arms; full
+# table in results/config_c/ldtpc/warm_ld_all.csv and README.md): the bound
+# lands within 0.4-1% of the LP bound at day in ~70-100 s, within 0.6-3.3%
+# at week, within 1.1-6% at month, where the seeding LP dominates the time
+# (a warm master iteration costs ~1.4 s even at 50 units x month). The
+# reactive arm trails throughout: the LP is blind to the reactive fields,
+# so those multipliers cannot be warm-started. At day the recovery returns
+# a feasible schedule in the same run (~1.5% certified gap in ~70 s).
+#
+# Run on a QUIET machine: the LP, the LD master and the recovery MI(QC)Ps
+# all peg the cores, so a concurrent job corrupts the timings.
+
+set -u
+HERE="$(cd "$(dirname "$0")" && pwd)"
+cd "$HERE/.."                      # tools/ucblock_solver (so config/ resolves)
+
+SOLVER="${UCBLOCK_SOLVER:-../../cmake-build-debug/tools/ucblock_solver/ucblock_solver}"
+[ -x "$SOLVER" ] || { echo "ucblock_solver not found at $SOLVER (set UCBLOCK_SOLVER)" >&2; exit 1; }
+
+OUT="${1:?usage: run-warm-ld out.csv [instance ...]}"; shift
+INSTANCES=( "$@" )
+if [ "${#INSTANCES[@]}" -eq 0 ]; then
+  # default sweep: the reserve instances with and without reactive power,
+  # ALL sizes and horizons, seed 1 (the LD-vs-TPC sweep of run-ld-vs-tpc)
+  mapfile -t INSTANCES < <(ls ../../UCBlock/data/nc4/UC_singlebus/sb_*u_*_res_*reac_seed1.nc4)
+fi
+
+# LD iteration budget per horizon (day/week/month in the instance name) and
+# outer timeouts (s), just slack around LP + LD + recovery
+it_of()  { case "$1" in *_day_*) echo "${IT_DAY:-200}";; *_week_*) echo "${IT_WEEK:-100}";;
+                       *_month_*) echo "${IT_MONTH:-50}";; *) echo 100;; esac; }
+to_of()  { case "$1" in *_day_*) echo 1800;; *_week_*) echo 3600;;
+                       *_month_*) echo 10800;; *) echo 3600;; esac; }
+
+base=lagrangian_timing/config/UCBSCfg-LD-warm.txt
+tmp=lagrangian_timing/config/UCBSCfg-LD-warm-run.txt
+trap 'rm -f "$tmp"' EXIT
+
+field() { grep -iE "$1" | tail -1 | grep -oE '[-+]?[0-9]+\.?[0-9]*([eE][-+]?[0-9]+)?' | tail -1; }
+status() { grep -iE 'Status =' | tail -1 | grep -oE 'Status = [0-9]+' | grep -oE '[0-9]+'; }
+
+echo "instance,wld_status,wld_lb,pph_ub,wld_time" > "$OUT"
+
+for inst in "${INSTANCES[@]}"; do
+  name="$(basename "$inst" .nc4)"
+  it="$(it_of "$name")"
+  sed -E "s/^(intMaxIter)[[:space:]]+[0-9]+/\1        $it/" "$base" > "$tmp"
+  echo "==== $name  it=$it  $(date '+%F %H:%M:%S') ===="
+
+  out="$( timeout "$(to_of "$name")" "$SOLVER" -c lagrangian_timing/config/ -B InnerBCfg.txt -S "$(basename "$tmp")" "$inst" 2>&1 )"
+  st="$( echo "$out" | status )";              st="${st:-NA}"
+  lb="$( echo "$out" | field 'Lower bound' )"; lb="${lb:-NA}"
+  ub="$( echo "$out" | field 'Upper bound' )"; ub="${ub:-NA}"
+  t="$(  echo "$out" | field 'Elapsed time' )"; t="${t:-NA}"
+
+  echo "$name,$st,$lb,$ub,$t" >> "$OUT"
+  tail -1 "$OUT"
+done
+
+echo "==== done  $(date '+%F %H:%M:%S')  ->  $OUT ===="
+
+# the end - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
