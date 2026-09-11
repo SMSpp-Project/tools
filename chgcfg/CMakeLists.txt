@@ -13,6 +13,7 @@ target_link_libraries(chgcfg PRIVATE SMS++::SMS++)
 
 install(TARGETS chgcfg
         RUNTIME DESTINATION ${SMSPP_TOOLS_INSTALL_DIR})
+smspp_install_data(chgcfg "change parameters of an SMS++ configuration file")
 
 set(toolName chgcfg)
 

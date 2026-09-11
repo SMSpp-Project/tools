@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - an empty name given to -B or -S, as in -B '', means no file at all
 
+- `chgcfg` has --help, --version and a man page, as every other tool
+
 - `mcfblock_solver`, `bkblock_solver`, `cflblock_solver`, `mmcfblock_solver`
   and `sfdcrblock_solver`, the solvers of MCFBlock, BinaryKnapsackBlock,
   CapacitatedFacilityLocationBlock, MMCFBlock and SingleFlowDCRBlock, which

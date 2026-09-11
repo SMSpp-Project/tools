@@ -52,8 +52,48 @@
 
 #include "common_utils.h"
 
+#if __has_include( <SMS++_toolsConfig.h> )
+ #include <SMS++_toolsConfig.h>
+#endif
+
 /*--------------------------------------------------------------------------*/
 /*----------------------------- FUNCTIONS ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+static void usage( std::ostream & os , const char * exe )
+{
+ os << "Usage: " << exe
+    << " <in_cfg> <out_cfg> [<par1> <val1> [<par2> <val2> ...]]" << std::endl
+    << "  or:  " << exe << " -h | --help" << std::endl
+    << "  or:  " << exe << " -V | --version" << std::endl;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+static void docopt( const char * exe )
+{
+ usage( std::cout , exe );
+ std::cout << std::endl
+  << "Changes parameters of an SMS++ configuration file: <out_cfg> is a copy\n"
+     "of <in_cfg> in which each parameter <par> given is set to its <val>,\n"
+     "stripped of comments and extra whitespace.\n"
+     "\n"
+     "Each parameter given is replaced once, at its first occurrence in\n"
+     "<in_cfg>: a parameter found several times is changed at as many\n"
+     "occurrences by giving it as many times.\n"
+     "\n"
+     "Options:\n"
+     "  -h, --help     print this help\n"
+     "  -V, --version  print the SMS++ tools version and exit\n"
+     "\n"
+     "Examples:\n"
+     "  chgcfg BSCfg.txt BSCfg-2.txt intMaxIter 100\n"
+     "      a copy of BSCfg.txt with 100 as intMaxIter\n"
+     "\n"
+     "Exit status:\n"
+     "  0 if <out_cfg> is written, nonzero otherwise." << std::endl;
+ }
+
 /*--------------------------------------------------------------------------*/
 
 int main( int argc , char ** argv )
@@ -61,10 +101,25 @@ int main( int argc , char ** argv )
  // override the default terminate handler to print the exception message
  std::set_terminate( smspp_terminate );
 
+ if( argc == 2 ) {
+  const std::string opt( argv[ 1 ] );
+  if( ( opt == "-h" ) || ( opt == "--help" ) ) {
+   docopt( argv[ 0 ] );
+   return( 0 );
+   }
+  if( ( opt == "-V" ) || ( opt == "--version" ) ) {
+   #ifdef SMSpp_tools_VERSION
+    std::cout << "SMS++ tools version " << SMSpp_tools_VERSION << std::endl;
+   #else
+    std::cout << "SMS++ tools version not available" << std::endl;
+   #endif
+   return( 0 );
+   }
+  }
+
  // check command line parameters
  if( ( argc < 3 ) || ( ! ( argc % 2 ) ) ) {
-  std::cerr << "Usage: " << argv[ 0 ]
-       << "in_cfg out_cfg [ par1 val1 [ par2 val2 [ ... ] ] ]" << std::endl;
+  usage( std::cerr , argv[ 0 ] );
   return( 1 );
   }
 
