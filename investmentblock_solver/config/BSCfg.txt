@@ -61,6 +61,16 @@ intLogVerb          0    # LogVerb, log verbosity of the MILPSolver
 intRelaxIntVars     1    # nonzero if the continuous relaxation is solved
 intCutSepPar        7    # separate user cuts + lazy constraints
 
+# The feasibility cut of the InvestmentFunction, and nothing else, needs the
+# multipliers of an unbounded dual direction to be homogeneous, i.e. - A'y
+# rather than c - A'y: without this the vertical linearization reaches the
+# master with all its coefficients zero, so the master states 0 <= b with
+# b > 0 and is infeasible at the first iteration. HiGHS cannot honour the
+# request and refuses the parameter, hence the line is commented here, where
+# HiGHS is the Solver above: uncomment it together with CPLEX or Gurobi, and
+# raise the count above by one.
+#intHomogeneousDirection 1
+
 # All specific CPLEX parameter (uncomment based on Solver)
 #CPXPARAM_Preprocessing_Presolve  0   # disable presolve for reproducibility
 #CPXPARAM_Emphasis_Numerical      1   # numerical precision emphasis
