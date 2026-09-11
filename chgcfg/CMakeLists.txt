@@ -12,7 +12,7 @@ target_include_directories(chgcfg PRIVATE ..)
 target_link_libraries(chgcfg PRIVATE SMS++::SMS++)
 
 install(TARGETS chgcfg
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+        RUNTIME DESTINATION ${SMSPP_TOOLS_INSTALL_DIR})
 
 configure_file(../cmake/completion.bash.in chgcfg-completion.bash)
 configure_file(../cmake/completion.zsh.in chgcfg-completion.zsh)

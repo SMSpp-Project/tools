@@ -47,7 +47,7 @@ function(smspp_install target_name)
     endif ()
 
     install(TARGETS ${target_name}
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+            RUNTIME DESTINATION ${SMSPP_TOOLS_INSTALL_DIR})
 endfunction()
 
 # Installs the config/ directory of a tool, if any, which the tool uses when
@@ -64,7 +64,7 @@ function(smspp_install_data target_name description)
 
         # The tool finds its config/ relative to the directory of the
         # executable, so that the installed tree can be moved as a whole
-        file(RELATIVE_PATH configRelDir ${CMAKE_INSTALL_FULL_BINDIR}
+        file(RELATIVE_PATH configRelDir ${toolsFullDir}
                 ${fullDataDir}/config)
         target_compile_definitions(${target_name} PRIVATE
                 SMSPP_TOOL_CONFIG_DIR="${configRelDir}")
@@ -117,18 +117,26 @@ configure_file(cmake/${modName}Config.h.in ${modName}Config.h)
 include_directories(${PROJECT_BINARY_DIR})
 
 # ----- Settings ------------------------------------------------------------ #
+# The tools are installed in bin/, unless a package manager wants them
+# elsewhere (e.g. vcpkg in tools/<port>); every path the tools compute
+# relative to their own location starts from there.
+include(GNUInstallDirs)
+set(SMSPP_TOOLS_INSTALL_DIR ${CMAKE_INSTALL_BINDIR}
+    CACHE STRING "Directory where the tools are installed")
+cmake_path(ABSOLUTE_PATH SMSPP_TOOLS_INSTALL_DIR
+           BASE_DIRECTORY ${CMAKE_INSTALL_PREFIX}
+           OUTPUT_VARIABLE toolsFullDir)
+
 # The installed tools look for the SMS++ libraries relative to their own
 # location, so that the installed tree can be moved as a whole, and for the
 # external libraries where they were found at link time.
-include(GNUInstallDirs)
 if (NOT CMAKE_INSTALL_RPATH)
     if (APPLE)
         set(rpathOrigin "@loader_path")
     else ()
         set(rpathOrigin "$ORIGIN")
     endif ()
-    file(RELATIVE_PATH binToLib ${CMAKE_INSTALL_FULL_BINDIR}
-            ${CMAKE_INSTALL_FULL_LIBDIR})
+    file(RELATIVE_PATH binToLib ${toolsFullDir} ${CMAKE_INSTALL_FULL_LIBDIR})
     set(CMAKE_INSTALL_RPATH "${rpathOrigin}/${binToLib}")
 endif ()
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
