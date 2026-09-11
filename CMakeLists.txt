@@ -50,45 +50,59 @@ function(smspp_install target_name)
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endfunction()
 
-# Installs the config/ directory of a tool, which the tool uses when -c is
-# not given and no configuration file is found in the current directory,
-# together with the given example files, and generates the man page of the
-# tool from its --help if help2man is available.
+# Installs the config/ directory of a tool, if any, which the tool uses when
+# -c is not given and no configuration file is found in the current
+# directory, together with the given example files, and generates the man
+# page of the tool from its --help if help2man is available.
 function(smspp_install_data target_name description)
     set(dataDir ${CMAKE_INSTALL_DATADIR}/${modName}/${target_name})
     set(fullDataDir ${CMAKE_INSTALL_FULL_DATADIR}/${modName}/${target_name})
+    set(manFilesText "")
 
-    install(DIRECTORY config/ DESTINATION ${dataDir}/config)
-    install(FILES ${ARGN} DESTINATION ${dataDir}/examples)
+    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/config)
+        install(DIRECTORY config/ DESTINATION ${dataDir}/config)
 
-    # The tool finds its config/ relative to the directory of the executable,
-    # so that the installed tree can be moved as a whole
-    file(RELATIVE_PATH configRelDir ${CMAKE_INSTALL_FULL_BINDIR}
-            ${fullDataDir}/config)
-    target_compile_definitions(${target_name} PRIVATE
-            SMSPP_TOOL_CONFIG_DIR="${configRelDir}")
+        # The tool finds its config/ relative to the directory of the
+        # executable, so that the installed tree can be moved as a whole
+        file(RELATIVE_PATH configRelDir ${CMAKE_INSTALL_FULL_BINDIR}
+                ${fullDataDir}/config)
+        target_compile_definitions(${target_name} PRIVATE
+                SMSPP_TOOL_CONFIG_DIR="${configRelDir}")
+
+        string(APPEND manFilesText
+                ".TP\n"
+                ".I ${fullDataDir}/config/\n"
+                "the configuration installed with ${target_name}, used when "
+                "\\fB-c\\fR is not given and no configuration file is found "
+                "in the current directory\n")
+    endif ()
+
+    if (ARGN)
+        install(FILES ${ARGN} DESTINATION ${dataDir}/examples)
+        string(APPEND manFilesText
+                ".TP\n"
+                ".I ${fullDataDir}/examples/\n"
+                "example input files\n")
+    endif ()
 
     find_program(HELP2MAN help2man)
     if (HELP2MAN)
         set(manPage ${CMAKE_CURRENT_BINARY_DIR}/${target_name}.1)
         set(manFiles ${CMAKE_CURRENT_BINARY_DIR}/${target_name}.h2m)
-        file(WRITE ${manFiles}
-                "[FILES]\n"
-                ".TP\n"
-                ".I ${fullDataDir}/config/\n"
-                "the configuration installed with ${target_name}, used when "
-                "\\fB-c\\fR is not given and no configuration file is found "
-                "in the current directory\n"
-                ".TP\n"
-                ".I ${fullDataDir}/examples/\n"
-                "example input files\n")
+        set(manInclude "")
+        set(manDepends ${target_name})
+        if (manFilesText)
+            file(WRITE ${manFiles} "[FILES]\n${manFilesText}")
+            set(manInclude --include=${manFiles})
+            list(APPEND manDepends ${manFiles})
+        endif ()
         add_custom_command(OUTPUT ${manPage}
                 COMMAND ${HELP2MAN} --no-info --no-discard-stderr
-                        --name=${description} --include=${manFiles}
+                        --name=${description} ${manInclude}
                         --version-string=${PROJECT_VERSION}
                         --source=${PROJECT_DESCRIPTION}
                         --output=${manPage} $<TARGET_FILE:${target_name}>
-                DEPENDS ${target_name} ${manFiles}
+                DEPENDS ${manDepends}
                 COMMENT "Generating the man page of ${target_name}"
                 VERBATIM)
         add_custom_target(${target_name}_man ALL DEPENDS ${manPage})

@@ -18,18 +18,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `svm_solver` uses, i.e., the splits, the scores and the grid; it depends on
   nothing but the standard library, so any tool training a model can use it
 
-- `ucblock_solver` installs its configuration, an example instance and a man
-  page generated from its --help; without -c, when no configuration file is
-  found in the current directory, it uses the installed configuration
+- every tool installs its configuration, its example instances and a man
+  page generated from its --help; without -c, when none of its configuration
+  files is found with its own prefix, it uses the installed configuration
 
-- the --help of every tool follows the GNU layout, and describes how the
-  configuration files are looked up and the exit status; `ucblock_solver`
-  also describes its input file and gives some examples
+- the --help of every tool follows the GNU layout, and describes its input
+  file, how the configuration files are looked up, some examples and the
+  exit status
+
+- an empty name given to -B or -S, as in -B '', means no file at all
 
 ### Changed
 
-- the default configuration of `ucblock_solver` solves with
-  HiGHSMILPSolver, which needs no license
+- the default configurations of `ucblock_solver`, `tssb_solver` and
+  `sddp_solver` solve with HiGHSMILPSolver, which needs no license
+
+- the default -B of `ucblock_solver` is InnerBCfg.txt, which chooses the
+  formulation of the units and of the network
 
 - -n writes the problem on the file it is given, and -v takes its level only
   when attached, as in -v2 or --verbose=2, so that -v can precede the input

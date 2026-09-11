@@ -54,6 +54,7 @@ if (TARGET SMS++::SVMBlock)
 
     # Install
     smspp_install(svm_solver)
+    smspp_install_data(svm_solver "train a Support Vector Machine")
 
     # Generate and install shell completion scripts
     configure_file(../cmake/completion.bash.in svm_solver-completion.bash)

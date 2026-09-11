@@ -217,6 +217,14 @@ int read_open_netCDF( netCDF::NcFile & f , std::string fn );
 void docopt( void );
 
 /*--------------------------------------------------------------------------*/
+/// removes one of the default command-line options
+/** Removes the long options and the line of the help of the default option
+ * \p opt, so that a tool can give that letter a meaning of its own; to be
+ * called before the tool adds its options. */
+
+void drop_standard_option( char opt );
+
+/*--------------------------------------------------------------------------*/
 /// processes any one of the default command-line arguments
 
 bool process_standard_arg( int opt );

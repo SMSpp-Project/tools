@@ -679,7 +679,23 @@ int main( int argc , char ** argv )
  // override the default terminate handler to print the exception message
  std::set_terminate( smspp_terminate );
 
- docopt_desc = "SMS++ SVM solver.\n";
+ docopt_desc =
+  "SMS++ SVM solver: trains a Support Vector Machine (an SVMBlock), and\n"
+  "optionally performs the model selection around the training.\n";
+ docopt_args =
+  "  <file>    the SVMBlock, in an SMS++ netCDF file (.nc4, a Block or a\n"
+  "            problem file) or in a plain text format of SVMBlock, the\n"
+  "            dense one or, with -l, the sparse one of the LIBSVM data\n"
+  "            sets\n";
+ docopt_examples =
+  "  svm_solver -O model.nc4 data.nc4\n"
+  "      train on all the samples and write the trained model\n"
+  "  svm_solver -l -k 5 -g \"C=0.1,1,10\" data.txt\n"
+  "      compare three values of C by 5-fold cross-validation on a data\n"
+  "      set in the LIBSVM format\n"
+  "  svm_solver -c myconfig/ data.nc4\n"
+  "      use the Configuration files in myconfig/, e.g. a modified copy\n"
+  "      of the installed ones\n";
 
  // Configuration files live in config/ by default; an explicit -c overrides
  // this. Default -B / -S so that a plain run needs neither: SVMCfg.txt is

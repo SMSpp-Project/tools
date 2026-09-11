@@ -90,10 +90,10 @@ Options:
   -h, --help                      print this help
   -V, --version                   print the SMS++ tools version and exit
   -a, --save-state <file>         save State of the Solver
-  -B, --blockcfg <file>           Block Configuration [BCfg.txt]
+  -B, --blockcfg <file>           Block Configuration
   -b, --load-state <file>         load State for the Solver
   -p, --prefix <path>             the prefix for all Block filenames
-  -S, --solvercfg <file>          Solver Configuration [BSCfg.txt]
+  -S, --solvercfg <file>          Solver Configuration
   -c, --configdir <path>          the prefix for all Config filenames
   -I, --inputsol <file>           input Solution
   -O, --outputsol <file>          output Solution
@@ -119,7 +119,7 @@ up relative to the `-c` prefix. For `sddp_solver`, `tssb_solver` and
 | `tssb_solver`            | `TSSBCfg.txt`                         | `TSSBSCfg.txt` |
 | `mssb_solver`            | `InnerBCfg.txt`                       | `MSSBSCfg.txt` |
 | `investmentblock_solver` | `InnerBCfg.txt`                       | `BSPar.txt`    |
-| `ucblock_solver`         | optional (deserialized formulation)   | `BSCfg.txt`    |
+| `ucblock_solver`         | `InnerBCfg.txt`                       | `BSCfg.txt`    |
 | `block_solver`           | `BCfg.txt`                            | `BSCfg.txt`    |
 
 For `sddp_solver` the default `-B` is applied through the inner-Block "meta"
@@ -128,7 +128,8 @@ LagrangianDualSolver), which linearises the `PolyhedralFunctionBlock` and
 shapes the network/units; passing a generic `BCfg.txt` instead is wrong and
 makes the MILPSolver throw "Unknown type of Objective Function". The fallback
 applies only when the file is actually reachable, so a missing default is
-silently ignored, and explicit `-B`/`-S` always take precedence.
+silently ignored, and explicit `-B`/`-S` always take precedence; an empty
+name, as in `-B ''`, means no file at all.
 
 The `-c` prefix is applied to *every* Configuration filename, not only the
 top-level `-B`/`-S` files but also every filename referenced from inside a
@@ -141,15 +142,18 @@ location). Consequently, filenames referenced from inside a config file are
 written *bare* (e.g. `*PFBCfg.txt`, `strInnerBSC UCBSCfg.txt`), without a
 `config/` component, since `-c` supplies the base directory.
 
-A tool that installs its `config/` directory (at the moment `ucblock_solver`,
-under `share/SMS++_tools/<tool>/config`) uses it when `-c` is not given and
-none of its Configuration files is found in the current directory: the whole
+Every tool with a `config/` directory installs it, under
+`share/SMS++_tools/<tool>/config`, and uses it when `-c` is not given and
+none of its Configuration files is found with its own prefix: the whole
 configuration then comes from the installed directory, which the tool finds
 relative to its executable, so an installed tool runs from anywhere with no
 option at all. A file in the current directory, or an explicit `-c`, always
 takes precedence; `--help` prints the installed directory, and `-v` which
 files are in use. `--help` also lists the exit status: 0 when the run
-completes, whatever the status of the Solvers, nonzero on errors.
+completes, whatever the status of the Solvers, nonzero on errors. Next to its
+configuration each tool installs its example instances, under
+`share/SMS++_tools/<tool>/examples`, and a man page generated from its
+`--help` when help2man is available.
 
 ### Quick start (run the bundled example)
 
@@ -159,7 +163,7 @@ From each tool's own directory, a plain run on the bundled example is:
 cd sddp_solver            && sddp_solver SDDPBlock.nc4 -p examples/
 cd tssb_solver            && tssb_solver examples/toy_tssb.nc4
 cd mssb_solver            && mssb_solver examples/big_baked_L8.nc4
-cd ucblock_solver         && ucblock_solver examples/Bus_Test.nc4 -c config/ -B InnerBCfg.txt
+cd ucblock_solver         && ucblock_solver examples/Bus_Test.nc4 -c config/
 cd investmentblock_solver && investmentblock_solver InvestmentBlockBus.nc4 -c config/ -p examples/
 ```
 
@@ -362,11 +366,9 @@ the initial state is specified.
 basic ones. The input netCDF file may be either a Block file or a problem
 file, of which only the Block is used, the configuration always coming from
 `-B` and `-S`. The default configuration solves the UCBlock with
-HiGHSMILPSolver; `-B InnerBCfg.txt` chooses the formulation of the units and
-of the network, which is needed, e.g., by the instances whose objective
-contains a PolyhedralFunction. Once installed, `ucblock_solver` also installs
-an example instance under `share/SMS++_tools/ucblock_solver/examples` and a
-man page.
+HiGHSMILPSolver, and its `InnerBCfg.txt` chooses the formulation of the units
+and of the network, which is needed, e.g., by the instances whose objective
+contains a PolyhedralFunction; `-B ''` keeps the formulation of the file.
 
 ### TwoStageStochasticBlock solver
 

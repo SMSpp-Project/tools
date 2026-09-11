@@ -70,6 +70,7 @@ endif ()
 
 # Install
 smspp_install(block_solver)
+smspp_install_data(block_solver "solve any SMS++ Block")
 
 # Generate and install shell completion scripts
 configure_file(../cmake/completion.bash.in block_solver-completion.bash)

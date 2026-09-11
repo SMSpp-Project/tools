@@ -1688,12 +1688,32 @@ int main( int argc , char ** argv )
  // note that the local options are inserted right before the last (nullptr)
  // record in long_opts
  
- docopt_desc = "SMS++ SDDP solver";
+ docopt_desc =
+  "SMS++ SDDP solver: loads a multi-stage stochastic problem (an SDDPBlock)\n"
+  "and solves it by Stochastic Dual Dynamic Programming, or simulates the\n"
+  "policy of given cuts.\n";
+ docopt_args =
+  "  <file>    SMS++ netCDF file (.nc4) holding an SDDPBlock: a Block file,\n"
+  "            or a problem file, whose own configuration is then used and\n"
+  "            -B and -S are ignored; <file> and the files of the stages it\n"
+  "            refers to are looked up under the -p prefix\n";
+ docopt_examples =
+  "  sddp_solver -p dir/ SDDPBlock.nc4\n"
+  "      solve dir/SDDPBlock.nc4, whose stages are in dir/ too, with the\n"
+  "      default configuration\n"
+  "  sddp_solver -d out/ -p dir/ SDDPBlock.nc4\n"
+  "      the same, writing the Bellman values and the solutions in out/,\n"
+  "      which must exist\n"
+  "  sddp_solver -c myconfig/ -p dir/ SDDPBlock.nc4\n"
+  "      use the Configuration files in myconfig/, e.g. a modified copy\n"
+  "      of the installed ones\n";
 
  // the Configuration files of this tool live in config/ by default; an
  // explicit -c overrides this
  conf_prefix = "config/";
 
+ // -n is the number of sub-Blocks per stage here, not the nc4 problem
+ drop_standard_option( 'n' );
  short_opts.append( my_short_opts );
  long_opts.insert( std::prev( long_opts.end() ) ,
                    my_long_opts.begin() , my_long_opts.end() );

@@ -62,6 +62,8 @@ if (TARGET SMS++::InvestmentBlock)
 
     # Install
     smspp_install(investmentblock_solver)
+    smspp_install_data(investmentblock_solver "solve an investment problem"
+            examples/InvestmentBlockBus.nc4)
 
     # Generate and install shell completion scripts
     configure_file(../cmake/completion.bash.in investmentblock_solver-completion.bash)

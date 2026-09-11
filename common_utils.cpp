@@ -155,10 +155,10 @@ std::string help =
  "  -h, --help                      print this help\n"
  "  -V, --version                   print the SMS++ tools version and exit\n"
  "  -a, --save-state <file>         save State of the Solver\n"
- "  -B, --blockcfg <file>           Block Configuration [BCfg.txt]\n"
+ "  -B, --blockcfg <file>           Block Configuration\n"
  "  -b, --load-state <file>         load State for the Solver\n"
  "  -p, --prefix <path>             the prefix for all Block filenames\n"
- "  -S, --solvercfg <file>          Solver Configuration [BSCfg.txt]\n"
+ "  -S, --solvercfg <file>          Solver Configuration\n"
  "  -c, --configdir <path>          the prefix for all Config filenames\n"
  "  -I, --inputsol <file>           input Solution\n"
  "  -O, --outputsol <file>          output Solution\n"
@@ -211,6 +211,8 @@ namespace {
 
 std::string tool_conf_prefix {};   ///< the -c prefix set by the tool, if any
 bool conf_prefix_given = false;    ///< true if -c is on the command line
+bool bconf_given = false;          ///< true if -B is on the command line
+bool sconf_given = false;          ///< true if -S is on the command line
 
 /// true if any of the Configuration files is found with conf_prefix
 bool config_found( void )
@@ -221,8 +223,8 @@ bool config_found( void )
   };
 
  return( found( bconf_file ) || found( sconf_file ) || found( sol_cfg_file ) ||
-	 ( bconf_file.empty() && found( default_bconf_name ) ) ||
-	 ( sconf_file.empty() && found( default_sconf_name ) ) );
+	 ( ( ! bconf_given ) && found( default_bconf_name ) ) ||
+	 ( ( ! sconf_given ) && found( default_sconf_name ) ) );
  }
 
 }  // anonymous namespace
@@ -235,17 +237,21 @@ void docopt( void )
  std::cout << "Usage: " << exe << " [options] <file>" << std::endl
            << "  or:  " << exe << " -h | --help" << std::endl
            << "  or:  " << exe << " -V | --version" << std::endl << std::endl;
- if( ! docopt_desc.empty() ) {
-  std::cout << docopt_desc;
-  if( docopt_desc.back() != '\n' )
+ // a block of text, possibly under a title, followed by an empty line
+ auto section = []( const std::string & title , const std::string & text ) {
+  if( text.empty() )
+   return;
+  if( ! title.empty() )
+   std::cout << title << std::endl;
+  std::cout << text;
+  if( text.back() != '\n' )
    std::cout << std::endl;
   std::cout << std::endl;
-  }
+  };
 
- if( ! docopt_args.empty() )
-  std::cout << "Arguments:" << std::endl << docopt_args << std::endl;
-
- std::cout << "Options:"  << std::endl << help << std::endl;
+ section( "" , docopt_desc );
+ section( "Arguments:" , docopt_args );
+ section( "Options:" , help );
 
  // how the Configuration files are looked up, the same for every tool
  std::cout << "Configuration files:" << std::endl
@@ -254,10 +260,16 @@ void docopt( void )
 	   << "  up under the -c prefix ["
 	   << ( tool_conf_prefix.empty() ? "current directory"
 		                         : tool_conf_prefix )
-	   << "]. Without -B and -S, " << default_bconf_name << " and"
-	   << std::endl
-	   << "  " << default_sconf_name << " are used if they exist."
-	   << std::endl;
+	   << "]." << std::endl;
+
+ std::string defaults;
+ if( ! default_bconf_name.empty() )
+  defaults = "-B " + default_bconf_name;
+ if( ! default_sconf_name.empty() )
+  defaults += ( defaults.empty() ? "-S " : ", -S " ) + default_sconf_name;
+ if( ! defaults.empty() )
+  std::cout << "  Defaults, used if they exist: " << defaults << std::endl;
+ std::cout << "  An empty name, as in -B '', means no file." << std::endl;
 
  if( auto dir = installed_config_dir() ; ! dir.empty() )
   std::cout << "  Without -c, if none of these files is found, the "
@@ -266,8 +278,7 @@ void docopt( void )
 	    << "    " << dir << std::endl;
  std::cout << std::endl;
 
- if( ! docopt_examples.empty() )
-  std::cout << "Examples:" << std::endl << docopt_examples << std::endl;
+ section( "Examples:" , docopt_examples );
 
  std::cout << "Exit status:" << std::endl
 	   << "  0 if the run completes, whatever the status of the Solvers,"
@@ -277,18 +288,45 @@ void docopt( void )
 
 /*--------------------------------------------------------------------------*/
 
+void drop_standard_option( char opt )
+{
+ // the long options, but the final nullptr record
+ long_opts.erase( std::remove_if( long_opts.begin() ,
+				  std::prev( long_opts.end() ) ,
+				  [ opt ]( const option & o ) {
+				   return( o.val == opt ); } ) ,
+		  std::prev( long_opts.end() ) );
+
+ // the line of the help
+ const std::string head = std::string( "  -" ) + opt + ",";
+ for( std::size_t pos = 0 ; pos < help.size() ; ) {
+  auto end = help.find( '\n' , pos );
+  end = ( end == std::string::npos ) ? help.size() : end + 1;
+  if( help.compare( pos , head.size() , head ) == 0 )
+   help.erase( pos , end - pos );
+  else
+   pos = end;
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+
 bool process_standard_arg( int opt )
 {
  switch( opt ) {
   case 'a': state_out_file = std::string( optarg ); break;
-  case 'B': bconf_file = std::string( optarg ); break;
+  case 'B': bconf_file = std::string( optarg );
+            bconf_given = true;
+            break;
   case 'b': state_in_file = std::string( optarg ); break;
   case 'p' : {
    block_prefix = normalize_prefix( std::string( optarg ) );
    Block::set_filename_prefix( std::string( block_prefix ) );
    break;
   }
-  case 'S': sconf_file = std::string( optarg ); break;
+  case 'S': sconf_file = std::string( optarg );
+            sconf_given = true;
+            break;
   case 'c': conf_prefix = normalize_prefix( std::string( optarg ) );
             conf_prefix_given = true;
             break;
@@ -373,9 +411,9 @@ void process_args( int argc , char ** argv ,
  // directory then needs no -B / -S, while a missing default is silently
  // ignored (so it produces no spurious "cannot open" message and -B stays
  // genuinely optional). See default_config_file() for the lookup rules
- if( bconf_file.empty() )
+ if( ! bconf_given )
   bconf_file = default_config_file( default_bconf_name );
- if( sconf_file.empty() )
+ if( ! sconf_given )
   sconf_file = default_config_file( default_sconf_name );
 
  // hand the (final) -c prefix to Configuration, so that it is applied not only

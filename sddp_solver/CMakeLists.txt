@@ -57,6 +57,10 @@ if (TARGET SMS++::UCBlock AND
 
     # Install
     smspp_install(sddp_solver)
+    smspp_install_data(sddp_solver
+            "solve a multi-stage stochastic problem by SDDP"
+            examples/SDDPBlock.nc4 examples/Block_0.nc4
+            examples/Block_1.nc4 examples/Block_2.nc4)
 
     # Generate and install shell completion scripts
     configure_file(../cmake/completion.bash.in sddp_solver-completion.bash)

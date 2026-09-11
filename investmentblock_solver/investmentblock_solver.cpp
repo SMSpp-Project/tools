@@ -1083,7 +1083,24 @@ int main( int argc , char ** argv )
   boost::mpi::environment env( argc , argv );
  #endif
 
- docopt_desc = "SMS++ investment solver\n";
+ docopt_desc =
+  "SMS++ investment solver: loads an investment problem (an InvestmentBlock)\n"
+  "and solves it with the Solvers of its BlockSolverConfig, a BundleSolver\n"
+  "on the investment decisions by default.\n";
+ docopt_args =
+  "  <file>    SMS++ netCDF file (.nc4) holding an InvestmentBlock: a Block\n"
+  "            file, or a problem file, whose own configuration is then\n"
+  "            used and -B and -S are ignored\n";
+ docopt_examples =
+  "  investmentblock_solver instance.nc4\n"
+  "      solve with the default configuration\n"
+  "  investmentblock_solver -r instance.nc4\n"
+  "      the same, with the integer variables relaxed\n"
+  "  investmentblock_solver -c myconfig/ instance.nc4\n"
+  "      use the Configuration files in myconfig/, e.g. a modified copy\n"
+  "      of the installed ones\n";
+ // -n is the number of sub-Blocks per stage here, not the nc4 problem
+ drop_standard_option( 'n' );
  short_opts.append( my_short_opts );
  long_opts.insert( std::prev( long_opts.end() ) ,
 		   my_long_opts.begin() , my_long_opts.end() );

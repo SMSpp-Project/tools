@@ -144,7 +144,20 @@ int main( int argc , char ** argv )
  // note that the last nullptr record in long_opts is overwritten since the
  // new one is further down from there
 
- docopt_desc = "SMS++ MSSB solver.\n";
+ docopt_desc =
+  "SMS++ MSSB solver: loads a multi-stage stochastic problem (a\n"
+  "MultiStageStochasticBlock) and solves it with the Solvers of its\n"
+  "BlockSolverConfig.\n";
+ docopt_args =
+  "  <file>    SMS++ netCDF file (.nc4) holding a MultiStageStochasticBlock:\n"
+  "            a Block file, or a problem file, whose own configuration is\n"
+  "            then used and -B and -S are ignored\n";
+ docopt_examples =
+  "  mssb_solver instance.nc4\n"
+  "      solve the deterministic equivalent with a :MILPSolver\n"
+  "  mssb_solver -c myconfig/ instance.nc4\n"
+  "      use the Configuration files in myconfig/, e.g. a modified copy\n"
+  "      of the installed ones\n";
 
  // Configuration files live in config/ by default; an explicit -c overrides
  // this. Default -B / -S so a plain run needs neither: InnerBCfg.txt is the

@@ -99,16 +99,21 @@ int main( int argc , char ** argv )
   "            or a problem file of which only the Block is used;\n"
   "            <file>[i] selects the i-th Block (or problem) of the file\n";
  docopt_examples =
-  "  ucblock_solver -B InnerBCfg.txt instance.nc4\n"
-  "      solve with the default configuration, InnerBCfg.txt choosing the\n"
-  "      formulation of the units and of the network\n"
   "  ucblock_solver instance.nc4\n"
+  "      solve with the default configuration\n"
+  "  ucblock_solver -B '' instance.nc4\n"
   "      the same, with the formulation stored in instance.nc4\n"
-  "  ucblock_solver -B InnerBCfg.txt -O sol.nc4 -C OSolCfg.txt instance.nc4\n"
+  "  ucblock_solver -O sol.nc4 -C OSolCfg.txt instance.nc4\n"
   "      also save the Solution of the units and of the network in sol.nc4\n"
   "  ucblock_solver -c myconfig/ instance.nc4\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
+ // the default -B is the "meta" BlockConfig InnerBCfg.txt, which chooses the
+ // formulation of the units and of the network and linearizes the
+ // PolyhedralFunctionBlock, without which a :MILPSolver cannot handle the
+ // objective of the instances that have one
+ default_bconf_name = "InnerBCfg.txt";
+
  /*short_opts.append( my_short_opts );
  long_opts.insert( std::prev( long_opts.end() ) ,
 		   my_long_opts.begin() , my_long_opts.end() );
@@ -127,9 +132,9 @@ int main( int argc , char ** argv )
   }
 
  // BlockConfig-ure and BlockSolverConfig-ure the [UC]Block - - - - - - - - -
- // only the BlockSolverConfig (-S) is mandatory; the BlockConfig (-B, the
- // formulation) is optional, defaulting to the deserialized formulation when
- // not given (see the default file lookup in process_args())
+ // only the BlockSolverConfig (-S) is mandatory; without a BlockConfig (-B,
+ // the formulation, InnerBCfg.txt by default) the UCBlock is solved in the
+ // formulation it is deserialized with
  require_solver_config( sconf_file );
 
  auto b_config = get_config( bconf_file );
