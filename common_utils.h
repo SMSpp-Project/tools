@@ -85,6 +85,8 @@ using namespace SMSpp_di_unipi_it;
  *  @{ */
 
 extern std::string docopt_desc;     ///< tool description
+extern std::string docopt_args;     ///< description of the <file> argument
+extern std::string docopt_examples; ///< usage examples printed by --help
 
 extern std::string filename;        ///< input filename
 extern std::string bconf_file;      ///< BlockConfig filename
@@ -112,6 +114,7 @@ extern std::string sol_cfg_file;    ///< filename of output Solution Configurati
 extern bool output_solution;   ///< true if solution has be output
 extern bool sol_verbose;       ///< if the Solver should be verbose
 extern bool writeprob;         ///< if the problem should be written back
+extern std::string prob_file;  ///< filename of the problem written back (-n)
 extern bool dryrun;            ///< if compute() need not really ba called
 
 extern int verbosity_level;    ///< verbosity level (0 = silent, >0 = verbose output)
@@ -229,7 +232,10 @@ void process_args( int argc , char ** argv );
  * every option that process_standard_arg() does not recognise. \p custom_arg
  * must return true if it consumed \p opt, false otherwise (which prints the
  * usage hint and exits 1). Sets \p exe and \p filename as side effects, and
- * resolves the standard Configuration filenames with \p conf_prefix. */
+ * resolves the standard Configuration filenames with \p conf_prefix. When -c
+ * is not given and none of the Configuration files is found with the prefix
+ * of the tool, \p conf_prefix becomes installed_config_dir(), if any: the
+ * whole configuration then comes from the installed directory. */
 
 void process_args( int argc , char ** argv ,
                    bool ( *custom_arg )( int opt ) );
@@ -309,6 +315,19 @@ void report_config_file( const std::string & what , const std::string & file );
  * BlockSolverConfig of investmentblock_solver). */
 
 std::string default_config_file( const std::string & name );
+
+/*--------------------------------------------------------------------------*/
+/// the Configuration directory installed with the tool, if any
+/** Returns the directory holding the Configuration files installed together
+ * with the tool, as a prefix ending with a separator, or an empty string if
+ * the tool has none. The directory is found relative to the executable (the
+ * relative path is the SMSPP_TOOL_CONFIG_DIR macro, set by CMake for the
+ * tools that install their config/ directory), so that the installed tree
+ * can be moved as a whole; symbolic links to the executable are resolved
+ * first. process_args() falls back to this directory when -c is not given
+ * and no Configuration file is found in the current one. */
+
+std::string installed_config_dir( void );
 
 /*--------------------------------------------------------------------------*/
 /// BlockConfig-ure and BlockSolverConfig-ure a Block
@@ -405,6 +424,8 @@ int solve_all( Block * block );
 
 /*--------------------------------------------------------------------------*/
 /// writes a new nc4 problem using the Block and its Configuration(s)
+/** The file is the one given to -n or, if that is empty, the input filename
+ * with its extension replaced by "_problem.nc4". */
 
 void write_nc4problem( Block * block ,
 		       Configuration * b_config , Configuration * s_config );

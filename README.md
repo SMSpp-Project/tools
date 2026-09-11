@@ -82,12 +82,13 @@ The Block solver (`block_solver`) and the Unit Commitment solver (`ucblock_solve
 share the same interface:
 
 ```sh
-Usage:
-  <*_solver> [options] <file>
-  <*_solver> -h | --help
+Usage: <*_solver> [options] <file>
+  or:  <*_solver> -h | --help
+  or:  <*_solver> -V | --version
 
 Options:
   -h, --help                      print this help
+  -V, --version                   print the SMS++ tools version and exit
   -a, --save-state <file>         save State of the Solver
   -B, --blockcfg <file>           Block Configuration [BCfg.txt]
   -b, --load-state <file>         load State for the Solver
@@ -139,6 +140,16 @@ lets an external driver such as pySMSpp invoke the tool from an arbitrary
 location). Consequently, filenames referenced from inside a config file are
 written *bare* (e.g. `*PFBCfg.txt`, `strInnerBSC UCBSCfg.txt`), without a
 `config/` component, since `-c` supplies the base directory.
+
+A tool that installs its `config/` directory (at the moment `ucblock_solver`,
+under `share/SMS++_tools/<tool>/config`) uses it when `-c` is not given and
+none of its Configuration files is found in the current directory: the whole
+configuration then comes from the installed directory, which the tool finds
+relative to its executable, so an installed tool runs from anywhere with no
+option at all. A file in the current directory, or an explicit `-c`, always
+takes precedence; `--help` prints the installed directory, and `-v` which
+files are in use. `--help` also lists the exit status: 0 when the run
+completes, whatever the status of the Solvers, nonzero on errors.
 
 ### Quick start (run the bundled example)
 
@@ -348,9 +359,14 @@ the initial state is specified.
 ### Unit Commitment solver
 
 `ucblock_solver` does not add any tool-specific command-line option to the
-basic ones. The input netCDF file may be either a problem file (containing
-the Block, BlockConfig and BlockSolverConfig) or a Block file; in the latter
-case, if `-B` and/or `-S` are not provided, default configurations are used.
+basic ones. The input netCDF file may be either a Block file or a problem
+file, of which only the Block is used, the configuration always coming from
+`-B` and `-S`. The default configuration solves the UCBlock with
+HiGHSMILPSolver; `-B InnerBCfg.txt` chooses the formulation of the units and
+of the network, which is needed, e.g., by the instances whose objective
+contains a PolyhedralFunction. Once installed, `ucblock_solver` also installs
+an example instance under `share/SMS++_tools/ucblock_solver/examples` and a
+man page.
 
 ### TwoStageStochasticBlock solver
 

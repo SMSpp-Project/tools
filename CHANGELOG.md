@@ -18,7 +18,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `svm_solver` uses, i.e., the splits, the scores and the grid; it depends on
   nothing but the standard library, so any tool training a model can use it
 
+- `ucblock_solver` installs its configuration, an example instance and a man
+  page generated from its --help; without -c, when no configuration file is
+  found in the current directory, it uses the installed configuration
+
+- the --help of every tool follows the GNU layout, and describes how the
+  configuration files are looked up and the exit status; `ucblock_solver`
+  also describes its input file and gives some examples
+
 ### Changed
+
+- the default configuration of `ucblock_solver` solves with
+  HiGHSMILPSolver, which needs no license
+
+- -n writes the problem on the file it is given, and -v takes its level only
+  when attached, as in -v2 or --verbose=2, so that -v can precede the input
+  file
 
 - `svm_solver` takes the kernel from the command line with -K, one of linear,
   poly, gaussian, laplacian and sigmoid, which overrides the one the instance
@@ -45,6 +60,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `svm_solver` reads a netCDF SVMBlock again, and looks for the input file at
   the -p prefix whatever its format
+
+- the tools report a missing input file and an unknown option on the
+  standard error
 
 ## [0.5.4] - 2025-12-12
 
