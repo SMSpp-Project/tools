@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added 
+### Added
+
+### Changed
+
+### Fixed
+
+## [0.6.0] - 2026-09-12
+
+### Added
 
 - `svm_solver`, a SVMBlock solver that trains a Support Vector Machine and
   performs the model selection around it: hold-out and k-fold
@@ -69,7 +77,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every proximal iteration to convergence, and follows the parameters of
   PrimalProximalHeur being now named after the algorithm they belong to
 
-### Fixed 
+- the version of the module is the git tag of its repository, or the
+  VERSION.txt of a release tarball, and the shared library carries it: its
+  SONAME is major.minor while the major is 0, and it is installed with an
+  RPATH relative to itself, so that an installed tree keeps working wherever
+  it is moved
+
+### Fixed
 
 - `svm_solver` reads a netCDF SVMBlock again, and looks for the input file at
   the -p prefix whatever its format
@@ -211,8 +225,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First test release.
 
-[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.5.4...develop
-[0.5.4]: https://gitlab.com/smspp/tools/-/compare/0.5.3...0.5.3
+[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.6.0...develop
+[0.6.0]: https://gitlab.com/smspp/tools/-/compare/0.5.4...0.6.0
+[0.5.4]: https://gitlab.com/smspp/tools/-/compare/0.5.3...0.5.4
 [0.5.3]: https://gitlab.com/smspp/tools/-/compare/0.5.2...0.5.3
 [0.5.2]: https://gitlab.com/smspp/tools/-/compare/0.5.1...0.5.2
 [0.5.1]: https://gitlab.com/smspp/tools/-/compare/0.5.0...0.5.1
