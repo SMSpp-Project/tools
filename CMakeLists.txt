@@ -149,6 +149,11 @@ add_subdirectory(tssb_solver)
 add_subdirectory(mssb_solver)
 add_subdirectory(svm_solver)
 add_subdirectory(ucblock_solver)
+add_subdirectory(mcfblock_solver)
+add_subdirectory(bkblock_solver)
+add_subdirectory(cflblock_solver)
+add_subdirectory(mmcfblock_solver)
+add_subdirectory(sfdcrblock_solver)
 
 add_subdirectory(chgcfg)
 

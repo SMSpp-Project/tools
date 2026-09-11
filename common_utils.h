@@ -61,7 +61,9 @@
  #define __COMMON_UTILS
 
 #include <getopt.h>      // for getting command line parameters
+#include <iomanip>
 #include <filesystem>    // for portable path handling
+#include <functional>
 #include <cerrno>
 #include <cstdlib>
 #include <iostream>
@@ -115,6 +117,7 @@ extern bool output_solution;   ///< true if solution has be output
 extern bool sol_verbose;       ///< if the Solver should be verbose
 extern bool writeprob;         ///< if the problem should be written back
 extern std::string prob_file;  ///< filename of the problem written back (-n)
+extern char input_format;      ///< native format of the input file (-f)
 extern bool dryrun;            ///< if compute() need not really ba called
 
 extern int verbosity_level;    ///< verbosity level (0 = silent, >0 = verbose output)
@@ -225,6 +228,14 @@ void docopt( void );
 void drop_standard_option( char opt );
 
 /*--------------------------------------------------------------------------*/
+/// adds the -f option, the native format of the input file, to the tool
+/** For the tools whose input file can also be in the native text format(s)
+ * of their Block: -f <c> sets input_format to c, and \p formats is added to
+ * the help to describe the formats; to be called before process_args(). */
+
+void add_format_option( const std::string & formats );
+
+/*--------------------------------------------------------------------------*/
 /// processes any one of the default command-line arguments
 
 bool process_standard_arg( int opt );
@@ -257,6 +268,19 @@ void smspp_terminate( void );
 /// get Block from file
 
 Block * get_Block( const std::string & b_file );
+
+/*--------------------------------------------------------------------------*/
+/// get Block from file, an SMS++ netCDF one or one in a native format
+/** If \p b_file is an SMS++ netCDF file, or has the "<file>[i]" form that
+ * selects one of its Block, the Block is deserialized from it as by
+ * get_Block( b_file ). Otherwise, a Block of class \p classname is created
+ * by the factory and load()-ed from the file in its native format \p frmt
+ * (0 for the default one of the Block); an empty \p classname means that
+ * only the netCDF format is accepted. The file is looked up under the -p
+ * prefix in both cases. */
+
+Block * get_Block( const std::string & b_file , const std::string & classname ,
+                   char frmt );
 
 /*--------------------------------------------------------------------------*/
 /// get Block from group
@@ -437,6 +461,56 @@ int solve_all( Block * block );
 
 void write_nc4problem( Block * block ,
 		       Configuration * b_config , Configuration * s_config );
+
+/*--------------------------------------------------------------------------*/
+/// the run of a tool that solves the Block of class B in the input file
+/** Reads the Block of class \p classname (of type B) from the input file,
+ * either an SMS++ netCDF file or one in the native format input_format (see
+ * get_Block( b_file , classname , frmt )), unless \p native is false, in
+ * which case only the netCDF format is accepted; configures the Block with
+ * -B and -S, writes the problem back if -n is given, solves it with all the
+ * Solver(s) and cleans up; returns the exit status of the tool. If given,
+ * \p prepare is called on the Block between its BlockConfig and its
+ * BlockSolverConfig, i.e., before any Solver is registered to it. */
+
+template< class B >
+int solve_Block_file( const std::string & classname , bool native = true ,
+                      const std::function< void( B * ) > & prepare = {} )
+{
+ Block * block = get_Block( filename , native ? classname : std::string() ,
+                            input_format );
+
+ auto b = dynamic_cast< B * >( block );
+ if( ! b ) {
+  std::cerr << exe << ": " << filename << " is not a " << classname
+            << std::endl;
+  exit( 1 );
+  }
+
+ require_solver_config( sconf_file );
+
+ auto b_config = get_config( bconf_file );
+ auto s_config = get_config( sconf_file );
+
+ config_Block( block , b_config , nullptr );
+ if( prepare )
+  prepare( b );
+ config_Block( block , nullptr , s_config );
+
+ if( writeprob )
+  write_nc4problem( block , b_config , s_config );
+
+ std::cout.setf( std::ios::scientific , std::ios::floatfield );
+ std::cout << std::setprecision( 8 );
+ solve_all( block );
+
+ cleanup_bsc( block , s_config );
+ delete s_config;
+ delete b_config;
+ delete block;
+
+ return( 0 );
+ }
 
 /** @} ---------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/

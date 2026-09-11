@@ -24,6 +24,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 
 #if defined( __APPLE__ )
@@ -123,6 +124,7 @@ bool output_solution = false;   ///< true if solution has be output
 bool sol_verbose = false;       ///< if the Solver should be verbose
 bool writeprob = false;         ///< if the problem should be written back
 std::string prob_file {};       ///< filename of the problem written back (-n)
+char input_format = 0;          ///< native format of the input file (-f)
 bool dryrun = false;            ///< if compute() need not really ba called
 
 int verbosity_level = 0;        ///< verbosity level (0 = silent, >0 = verbose output)
@@ -311,6 +313,18 @@ void drop_standard_option( char opt )
 
 /*--------------------------------------------------------------------------*/
 
+void add_format_option( const std::string & formats )
+{
+ short_opts += "f:";
+ long_opts.insert( std::prev( long_opts.end() ) ,
+                   { "format" , required_argument , nullptr , 'f' } );
+ help += "  -f, --format <c>                native format of the input file, "
+         "if not\n"
+         "                                  netCDF, among:\n" + formats;
+ }
+
+/*--------------------------------------------------------------------------*/
+
 bool process_standard_arg( int opt )
 {
  switch( opt ) {
@@ -338,6 +352,7 @@ bool process_standard_arg( int opt )
             prob_file = std::string( optarg );
             break;
   case 'D': dryrun = true; break;
+  case 'f': input_format = optarg[ 0 ]; break;
   case 'v': {
    sol_verbose = true;
    verbosity_level = optarg ? std::atoi( optarg ) : 1;
@@ -467,6 +482,45 @@ Block * get_Block( const std::string & b_file )
   exit( 1 );
   }
 
+ return( block );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+Block * get_Block( const std::string & b_file , const std::string & classname ,
+                   char frmt )
+{
+ // the "<file>[i]" form only exists for netCDF files
+ if( ( ! b_file.empty() ) && ( b_file.back() == ']' ) )
+  return( get_Block( b_file ) );
+
+ // a netCDF file starts with "CDF" (classic) or "\x89HDF" (netCDF-4)
+ const auto fn = resolve_with_prefix( block_prefix , b_file );
+ std::ifstream in( fn , std::ios::binary );
+ if( ! in ) {
+  std::cerr << exe << ": cannot open " << fn << std::endl;
+  exit( 1 );
+  }
+ char magic[ 4 ] = { 0 , 0 , 0 , 0 };
+ in.read( magic , 4 );
+ in.close();
+ if( ( std::string( magic , 3 ) == "CDF" ) ||
+     ( std::string( magic + 1 , 3 ) == "HDF" ) )
+  return( get_Block( b_file ) );
+
+ // a native format: the Block is created and load()-ed from the file
+ if( classname.empty() ) {
+  std::cerr << exe << ": " << fn << " is not an SMS++ netCDF file"
+            << std::endl;
+  exit( 1 );
+  }
+ auto block = Block::new_Block( classname );
+ if( ! block ) {
+  std::cerr << exe << ": no " << classname << " in this executable"
+            << std::endl;
+  exit( 1 );
+  }
+ block->load( fn , frmt );
  return( block );
  }
 

@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - an empty name given to -B or -S, as in -B '', means no file at all
 
+- `mcfblock_solver`, `bkblock_solver`, `cflblock_solver`, `mmcfblock_solver`
+  and `sfdcrblock_solver`, the solvers of MCFBlock, BinaryKnapsackBlock,
+  CapacitatedFacilityLocationBlock, MMCFBlock and SingleFlowDCRBlock, which
+  read their Block from an SMS++ netCDF file or from a native text format of
+  it, chosen by -f
+
 ### Changed
 
 - the default configurations of `ucblock_solver`, `tssb_solver` and
@@ -68,6 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - the tools report a missing input file and an unknown option on the
   standard error
+
+- the shell completions of the tools name their tool, instead of nothing
 
 ## [0.5.4] - 2025-12-12
 

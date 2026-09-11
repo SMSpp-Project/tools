@@ -1,0 +1,11 @@
+# A small Binary Knapsack instance in the native format of
+# BinaryKnapsackBlock: the most profitable items fitting the capacity are
+# the 1st, the 2nd and the 4th, of profit 15.
+# number of items
+5
+# capacity of the knapsack
+10
+# weights of the items
+2 3 4 5 9
+# profits of the items
+3 4 5 8 10
