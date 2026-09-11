@@ -73,6 +73,7 @@ smspp_install(block_solver)
 smspp_install_data(block_solver "solve any SMS++ Block")
 
 # Generate and install shell completion scripts
+set(toolName block_solver)
 configure_file(../cmake/completion.bash.in block_solver-completion.bash)
 configure_file(../cmake/completion.zsh.in block_solver-completion.zsh)
 

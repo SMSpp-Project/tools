@@ -66,6 +66,7 @@ if (TARGET SMS++::InvestmentBlock)
             examples/InvestmentBlockBus.nc4)
 
     # Generate and install shell completion scripts
+    set(toolName investmentblock_solver)
     configure_file(../cmake/completion.bash.in investmentblock_solver-completion.bash)
     configure_file(../cmake/completion.zsh.in investmentblock_solver-completion.zsh)
 

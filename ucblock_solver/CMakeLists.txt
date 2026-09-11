@@ -56,6 +56,7 @@ if (TARGET SMS++::UCBlock)
             examples/Bus_Test.nc4)
 
     # Generate and install shell completion scripts
+    set(toolName ucblock_solver)
     configure_file(../cmake/completion.bash.in ucblock_solver-completion.bash)
     configure_file(../cmake/completion.zsh.in ucblock_solver-completion.zsh)
 

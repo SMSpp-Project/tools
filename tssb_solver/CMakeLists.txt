@@ -61,6 +61,7 @@ if (TARGET SMS++::UCBlock AND
             examples/toy_tssb.nc4)
 
     # Generate and install shell completion scripts
+    set(toolName tssb_solver)
     configure_file(../cmake/completion.bash.in tssb_solver-completion.bash)
     configure_file(../cmake/completion.zsh.in tssb_solver-completion.zsh)
 

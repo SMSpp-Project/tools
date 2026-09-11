@@ -62,6 +62,7 @@ if (TARGET SMS++::UCBlock AND
     smspp_install_data(mssb_solver "solve a multi-stage stochastic problem")
 
     # Generate and install shell completion scripts
+    set(toolName mssb_solver)
     configure_file(../cmake/completion.bash.in mssb_solver-completion.bash)
     configure_file(../cmake/completion.zsh.in mssb_solver-completion.zsh)
 

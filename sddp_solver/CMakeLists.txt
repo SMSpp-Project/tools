@@ -63,6 +63,7 @@ if (TARGET SMS++::UCBlock AND
             examples/Block_1.nc4 examples/Block_2.nc4)
 
     # Generate and install shell completion scripts
+    set(toolName sddp_solver)
     configure_file(../cmake/completion.bash.in sddp_solver-completion.bash)
     configure_file(../cmake/completion.zsh.in sddp_solver-completion.zsh)
 
