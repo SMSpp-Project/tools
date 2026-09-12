@@ -7,6 +7,7 @@
 # of the UCBlock regardless of where they sit:
 #
 #   ThermalUnitBlock        -> its formulation / P-C parameters (TUBCfg.txt)
+#   NuclearUnitBlock        -> the same as the ThermalUnitBlock (TUBCfg.txt)
 #   DCNetworkBlock          -> its formulation selector (DCNBCfg.txt)
 #   ACNetworkBlock          -> its scaling factors (ACBCfg.txt)
 #   PolyhedralFunctionBlock -> its "linearized" representation (PFBCfg.txt)
@@ -19,9 +20,10 @@
 # a "meta"-BlockConfig , i.e., a map classname --> its BlockConfig
 SimpleConfiguration<std::map<std::string,Configuration*>>
 
-4 # the number of elements in the map
+5 # the number of elements in the map
 
 ThermalUnitBlock        *TUBCfg.txt
+NuclearUnitBlock        *TUBCfg.txt
 DCNetworkBlock          *DCNBCfg.txt
 ACNetworkBlock          *ACBCfg.txt
 PolyhedralFunctionBlock *PFBCfg.txt

@@ -6,7 +6,10 @@
 # the back-end here by un-commenting exactly one of the four names below. The
 # unit is solved on the formulation chosen by the companion BlockConfig (see
 # TUBCfg-tpc.txt, the T + Perspective-Cuts formulation), as an INTEGER problem
-# (intRelaxIntVars 0) so it is the same problem the exact DP solvers solve.
+# (intRelaxIntVars 0) so it is the same problem the exact DP solvers solve. The
+# Perspective Cuts are separated as user cuts and lazy constraints
+# (intCutSepPar 7): without them the quadratic cost is not represented, and
+# the MILP solves a relaxation whose value is below the true optimum.
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -31,10 +34,11 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-3  # number of integer parameters
+4  # number of integer parameters
 
 # now all the integer parameters
 intLogVerb      0    # log verbosity of the MILPSolver
+intCutSepPar    7    # separate user cuts + lazy constraints (needed by P/C)
 intRelaxIntVars 0    # 0 ==> solve the integer MILP (not the LP relaxation)
 Threads         1    # one core, like the DP solvers it is compared against:
                      # left free, GUROBI takes every core of the machine and

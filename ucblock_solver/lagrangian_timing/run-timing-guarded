@@ -62,6 +62,8 @@ say()   { echo "[$(date +%m-%d_%H:%M)] $*"; }
 [ -e "$dumps/config/TUBCfg-tpc.txt" ] || { echo "run-timing-guarded: $dumps/config does not resolve" >&2; exit 1; }
 grep -q '^Threads' "$dumps/config/TUBSCfg-MILP.txt" || {
   echo "run-timing-guarded: the MILP is not held to one core, the comparison would not be like-for-like" >&2; exit 1; }
+grep -q '^intCutSepPar' "$dumps/config/TUBSCfg-MILP.txt" || {
+  echo "run-timing-guarded: the MILP does not separate the Perspective Cuts, it would solve a relaxation" >&2; exit 1; }
 
 try=0
 while [ $try -lt "$TRIES" ]; do

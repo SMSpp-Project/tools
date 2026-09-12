@@ -8,6 +8,8 @@
 # of a given type is solved by the same (type-appropriate) Solver:
 #
 #   ThermalUnitBlock      -> ThermalUnitExtDPSolver  (the efficient thermal DP)
+#   NuclearUnitBlock      -> NuclearUnitExtDPSolver  (the same DP with the
+#                            operating rules of the nuclear units)
 #   HydroSystemUnitBlock  -> its own Solver
 #   *  (catch-all)        -> :MILPSolver  (every other "hard" unit)
 #
@@ -25,9 +27,10 @@
 # a "meta"-BlockConfig , i.e., a map classname --> its BlockConfig
 SimpleConfiguration<std::map<std::string,Configuration*>>
 
-3 # the number of elements in the map
+4 # the number of elements in the map
 
 ThermalUnitBlock        *TUBSCfg-DP.txt
+NuclearUnitBlock        *NUBSCfg-DP.txt
 HydroSystemUnitBlock    *HSUBSCfg.txt
 *                       *OUBSCfg.txt
 

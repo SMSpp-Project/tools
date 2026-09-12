@@ -17,13 +17,20 @@
  *   - "MILP"  : a :MILPSolver on the T + Perspective-Cuts formulation,
  *               solved as a MILP (intRelaxIntVars 0)
  *
+ * A unit that is a NuclearUnitBlock is timed by two solvers only, "extDP" being
+ * then the NuclearUnitExtDPSolver and "MILP" the same :MILPSolver on the T +
+ * Perspective-Cuts formulation with the operating rules of the nuclear units:
+ * the ThermalUnitDPSolver does not know those rules, hence it would solve a
+ * different problem.
+ *
  * The timing mirrors how a LagrangianDualSolver actually uses the single-unit
  * solver: the instance is loaded ONCE and the Solver is attached ONCE; from one
  * Lagrangian iteration to the next ONLY the Lagrangian costs change (the
- * active-power linear term and, when the unit prices reserve, the primary/
- * secondary spinning-reserve costs), and the dual pushes them into the same
- * attached Block via set_linear_term() / set_*_spinning_reserve_cost() and
- * re-solves: it never detaches/re-attaches the Solver or rebuilds the model.
+ * active-power linear term and, when the unit prices reserve or reactive power,
+ * the primary/secondary spinning-reserve costs and the reactive linear term),
+ * and the dual pushes them into the same attached Block via set_linear_term() /
+ * set_*_spinning_reserve_cost() / set_reactive_linear_term() and re-solves: it
+ * never detaches/re-attaches the Solver or rebuilds the model.
  * Accordingly, for each unit this harness deserializes its first dump, attaches
  * the Solver, and times:
  *   - the first solve once  -> phase "cold" : the one-off model build + solve;
@@ -45,6 +52,7 @@
  *   - TUBSCfg-stdDP.txt : BlockSolverConfig -> ThermalUnitDPSolver (serial)
  *   - TUBSCfg-parDP.txt : BlockSolverConfig -> ThermalUnitDPSolver (parallel)
  *   - TUBSCfg-DP.txt    : BlockSolverConfig -> ThermalUnitExtDPSolver
+ *   - NUBSCfg-DP.txt    : BlockSolverConfig -> NuclearUnitExtDPSolver
  *   - TUBSCfg-MILP.txt  : BlockSolverConfig -> a :MILPSolver (integer)
  *   - TUBCfg-tpc.txt    : BlockConfig       -> the T+P/C formulation (wf = 9)
  *
@@ -73,6 +81,7 @@
 #include "Block.h"
 #include "BlockSolverConfig.h"
 #include "ThermalUnitBlock.h"
+#include "NuclearUnitBlock.h"
 
 using namespace SMSpp_di_unipi_it;
 
@@ -100,12 +109,14 @@ static BlockSolverConfig * get_bsc( const std::string & path )
 /*--------------------------------------------------------------------------*/
 /* The Lagrangian costs a LagrangianDualSolver changes from one iteration to the
  * next and pushes into the inner unit: the per-period active-power linear term
- * (set_linear_term, the dual of the power balance) and the primary/secondary
+ * (set_linear_term, the dual of the power balance), the primary/secondary
  * spinning-reserve linear costs (set_*_spinning_reserve_cost, the dual of the
- * reserve demand). The reserve vectors are empty when the unit prices no
- * reserve (energy-only instances or units that offer none). */
+ * reserve demand) and the reactive linear term (set_reactive_linear_term, the
+ * dual of the reactive-power balance). The reserve and reactive vectors are
+ * empty when the unit prices none (instances without them, or units that
+ * offer none). */
 
-struct Costs { std::vector< double > lin, pr, sc; };
+struct Costs { std::vector< double > lin, pr, sc, rq; };
 
 /* Read all the changing costs from a TUB dump (empty .lin on failure). */
 static Costs read_costs( const std::string & nc4 )
@@ -119,6 +130,12 @@ static Costs read_costs( const std::string & nc4 )
    c.lin[ t ] = tub->get_linear_term( t );  // handles the broadcast case
   c.pr = tub->get_primary_spinning_reserve_cost();    // copy (may be empty)
   c.sc = tub->get_secondary_spinning_reserve_cost();
+  const auto & rq = tub->get_reactive_linear_term();  // empty, 1 or n
+  if( ! rq.empty() ) {
+   c.rq.resize( n );
+   for( decltype( n ) t = 0 ; t < n ; ++t )
+    c.rq[ t ] = rq[ rq.size() == 1 ? 0 : t ];
+   }
   }
  delete b;
  return( c );
@@ -126,7 +143,8 @@ static Costs read_costs( const std::string & nc4 )
 
 /* Push the costs into the attached unit, exactly the modifications the dual
  * issues each iteration; the attached Solver consumes them and re-optimizes on
- * the next compute(). Reserve setters are skipped when the unit prices none. */
+ * the next compute(). Reserve and reactive setters are skipped when the unit
+ * prices none. */
 static void apply_costs( ThermalUnitBlock * tub , const Costs & c )
 {
  tub->set_linear_term( c.lin.begin() );
@@ -134,6 +152,17 @@ static void apply_costs( ThermalUnitBlock * tub , const Costs & c )
   tub->set_primary_spinning_reserve_cost( c.pr.begin() );
  if( ! c.sc.empty() )
   tub->set_secondary_spinning_reserve_cost( c.sc.begin() );
+ if( ! c.rq.empty() )
+  tub->set_reactive_linear_term( c.rq.begin() );
+ }
+
+/* True if the dump is a NuclearUnitBlock. */
+static bool is_nuclear( const std::string & nc4 )
+{
+ Block * b = Block::deserialize( nc4 );
+ const bool nuc = ( dynamic_cast< NuclearUnitBlock * >( b ) != nullptr );
+ delete b;
+ return( nuc );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -142,10 +171,11 @@ struct Row { int iter; double time_us; const char * phase; };
 
 /*--------------------------------------------------------------------------*/
 /* Time a Solver over a unit's iteration sequence the way a LagrangianDualSolver
- * uses it (see the file header). dumps is (iter, path) sorted by iter; if
- * bc_path is non-empty it is the formulation BlockConfig (T+P/C) applied -- and
- * the abstract representation generated -- before the Solver is attached, as a
- * :MILPSolver needs (the DP solvers read the physical data and ignore it).
+ * uses it (see the file header). dumps is (iter, path) sorted by iter; the
+ * abstract Variables are generated before the Solver is attached, and if
+ * bc_path is non-empty it is the formulation BlockConfig (T+P/C) applied
+ * before, and the Objective is generated too, as a :MILPSolver needs (the DP
+ * solvers read the physical data and ignore it).
  * Returns one Row per dump (the first "cold", the rest "warm"); empty on any
  * setup failure. */
 
@@ -163,19 +193,28 @@ static std::vector< Row > time_unit(
  auto tub = dynamic_cast< ThermalUnitBlock * >( b );
  if( ! tub ) { delete b; return( out ); }
 
+ // what the parent UCBlock would set, as tests/ThermalUnitBlock_Solver does:
+ // the reserve variables (a no-op without reserve data) and, if the dual
+ // priced it, the reactive power, without which the unit has no q and every
+ // Solver ignores its reactive price
+ tub->set_reserve_vars( 3 );
+ if( ! tub->get_reactive_linear_term().empty() )
+  tub->set_reactive_power( true );
+
  if( ! bc_path.empty() ) {
-  // formulation from a BlockConfig file (set_BlockConfig takes ownership), then
-  // generate the abstract representation a :MILPSolver needs; set_reserve_vars
-  // generates the reserve vars the parent UCBlock would (no-op without reserve
-  // data), as tests/ThermalUnitBlock_Solver does
+  // formulation from a BlockConfig file (set_BlockConfig takes ownership),
+  // then the abstract representation a :MILPSolver needs
   auto bc = dynamic_cast< BlockConfig * >(
                                     Configuration::deserialize( bc_path ) );
   if( ! bc ) { delete b; return( out ); }
   tub->set_BlockConfig( bc );
-  tub->set_reserve_vars( 3 );
   tub->generate_abstract_variables();
   tub->generate_objective( nullptr );
   }
+ else
+  // the DP solvers read the physical data, but the reactive power is known
+  // to exist only through its Variable
+  tub->generate_abstract_variables();
 
  BlockSolverConfig * bsc = get_bsc( bsc_path );
  if( ! bsc ) { delete b; return( out ); }
@@ -241,6 +280,7 @@ int main( int argc , char ** argv )
  const std::string stdDP_bsc = cfg + "/TUBSCfg-stdDP.txt";
  const std::string parDP_bsc = cfg + "/TUBSCfg-parDP.txt";
  const std::string extDP_bsc = cfg + "/TUBSCfg-DP.txt";
+ const std::string nucDP_bsc = cfg + "/NUBSCfg-DP.txt";
  const std::string milp_bsc  = cfg + "/TUBSCfg-MILP.txt";
  const std::string tpc_bc    = cfg + "/TUBCfg-tpc.txt";
 
@@ -269,9 +309,13 @@ int main( int argc , char ** argv )
   };
 
  for( auto & [ unit , dumps ] : by_unit ) {
-  emit( unit , "stdDP" , time_unit( dumps , stdDP_bsc , "" , dp_reps ) );
-  emit( unit , "parDP" , time_unit( dumps , parDP_bsc , "" , dp_reps ) );
-  emit( unit , "extDP" , time_unit( dumps , extDP_bsc , "" , dp_reps ) );
+  if( is_nuclear( dumps.front().second ) )
+   emit( unit , "extDP" , time_unit( dumps , nucDP_bsc , "" , dp_reps ) );
+  else {
+   emit( unit , "stdDP" , time_unit( dumps , stdDP_bsc , "" , dp_reps ) );
+   emit( unit , "parDP" , time_unit( dumps , parDP_bsc , "" , dp_reps ) );
+   emit( unit , "extDP" , time_unit( dumps , extDP_bsc , "" , dp_reps ) );
+   }
 
   if( milp_reps > 0 ) {
    auto m = time_unit( dumps , milp_bsc , tpc_bc , milp_reps );
