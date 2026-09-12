@@ -72,16 +72,4 @@ endif ()
 smspp_install(block_solver)
 smspp_install_data(block_solver "solve any SMS++ Block")
 
-# Generate and install shell completion scripts
-set(toolName block_solver)
-configure_file(../cmake/completion.bash.in block_solver-completion.bash)
-configure_file(../cmake/completion.zsh.in block_solver-completion.zsh)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/block_solver-completion.bash
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
-        RENAME block_solver)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/block_solver-completion.zsh
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
-        RENAME "_block_solver")
-
 # --------------------------------------------------------------------------- #

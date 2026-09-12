@@ -48,19 +48,6 @@ if (TARGET SMS++::BinaryKnapsackBlock)
             "solve a Binary Knapsack problem"
             examples/example.txt)
 
-    # Generate and install shell completion scripts
-    set(toolName bkblock_solver)
-    configure_file(../cmake/completion.bash.in
-            bkblock_solver-completion.bash)
-    configure_file(../cmake/completion.zsh.in
-            bkblock_solver-completion.zsh)
-
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/bkblock_solver-completion.bash
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
-            RENAME bkblock_solver)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/bkblock_solver-completion.zsh
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
-            RENAME "_bkblock_solver")
 endif ()
 
 # --------------------------------------------------------------------------- #

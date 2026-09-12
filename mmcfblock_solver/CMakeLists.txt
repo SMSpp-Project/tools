@@ -60,19 +60,6 @@ if (TARGET SMS++::MMCFBlock)
             "solve a Multicommodity Min-Cost Flow problem"
             examples/small.std)
 
-    # Generate and install shell completion scripts
-    set(toolName mmcfblock_solver)
-    configure_file(../cmake/completion.bash.in
-            mmcfblock_solver-completion.bash)
-    configure_file(../cmake/completion.zsh.in
-            mmcfblock_solver-completion.zsh)
-
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mmcfblock_solver-completion.bash
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
-            RENAME mmcfblock_solver)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mmcfblock_solver-completion.zsh
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
-            RENAME "_mmcfblock_solver")
 endif ()
 
 # --------------------------------------------------------------------------- #

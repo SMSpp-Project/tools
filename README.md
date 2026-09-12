@@ -28,6 +28,12 @@ At the moment we provide:
 - `chgcfg`: a small utility to change some parameters in a configuration
   file while leaving all the rest unchanged
 
+The installed executables carry the name of the project, e.g.
+`smspp_ucblock_solver` and `smspp_chgcfg`, so that they are recognisable
+among all the others in a directory such as `/usr/bin`. Each of them is also
+installed under the name it had before, `ucblock_solver` and `chgcfg`, which
+is a link to it.
+
 
 ## Getting started
 

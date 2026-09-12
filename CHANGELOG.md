@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the installed executables carry the name of the project, e.g.
+  `smspp_ucblock_solver` and `smspp_chgcfg`, so that they are recognisable
+  among all the others where they are installed; each of them is also
+  installed under the name it had before, which is a link to it and which a
+  later release will drop, and both names have their shell completions and
+  their man page
+
 ### Fixed
 
 ## [0.6.0] - 2026-09-12
