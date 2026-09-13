@@ -336,6 +336,8 @@ static Solver * setup( SVMBlock * svm , Configuration * b_config ,
   exit( 1 );
   }
 
+ set_solver_logs( svm );
+
  return( solvers.front() );
 
  }  // end( setup )

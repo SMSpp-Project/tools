@@ -48,19 +48,6 @@ if (TARGET SMS++::CapacitatedFacilityLocationBlock)
             "solve a Capacitated Facility Location problem"
             examples/example.txt)
 
-    # Generate and install shell completion scripts
-    set(toolName cflblock_solver)
-    configure_file(../cmake/completion.bash.in
-            cflblock_solver-completion.bash)
-    configure_file(../cmake/completion.zsh.in
-            cflblock_solver-completion.zsh)
-
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cflblock_solver-completion.bash
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
-            RENAME cflblock_solver)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cflblock_solver-completion.zsh
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
-            RENAME "_cflblock_solver")
 endif ()
 
 # --------------------------------------------------------------------------- #

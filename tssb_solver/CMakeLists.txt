@@ -60,17 +60,6 @@ if (TARGET SMS++::UCBlock AND
     smspp_install_data(tssb_solver "solve a two-stage stochastic problem"
             examples/toy_tssb.nc4)
 
-    # Generate and install shell completion scripts
-    set(toolName tssb_solver)
-    configure_file(../cmake/completion.bash.in tssb_solver-completion.bash)
-    configure_file(../cmake/completion.zsh.in tssb_solver-completion.zsh)
-
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tssb_solver-completion.bash
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
-            RENAME tssb_solver)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tssb_solver-completion.zsh
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
-            RENAME "_tssb_solver")
 endif ()
 
 # --------------------------------------------------------------------------- #

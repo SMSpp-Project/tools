@@ -55,7 +55,12 @@ intUseWarmStartPSol 0 # 1 = the primal solution of the warm start is the
 intDoEasy           1 # do easy components for (some) LagBFunction
 intInnerMaxIter   500 # max number of iterations of each (inner) LD call
 intMaxThread        1 # MaxThread, max number of new tasks to spawn
-intLogVerb          3 # log verbosity of main Bundle algorithm
+intLogVerb         12 # log verbosity, split between the two levels of the
+                      # heuristic: ( value & 3 ) is that of the primal-
+                      # proximal loop (0 = silent, 2 = iteration-by-
+                      # iteration), ( value >> 2 ) that of the inner
+                      # Bundle, so 12 = 0 + 4 * 3 is a silent loop
+                      # around a Bundle at verbosity 3
 intWZNorm           2 # which norm to use in the norm-based stopping condition
 intBPar1           20 # discard items when they have been useless for <this> iterations
 intBPar2          100 # max bundle size per component

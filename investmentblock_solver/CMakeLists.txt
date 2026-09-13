@@ -65,17 +65,6 @@ if (TARGET SMS++::InvestmentBlock)
     smspp_install_data(investmentblock_solver "solve an investment problem"
             examples/InvestmentBlockBus.nc4)
 
-    # Generate and install shell completion scripts
-    set(toolName investmentblock_solver)
-    configure_file(../cmake/completion.bash.in investmentblock_solver-completion.bash)
-    configure_file(../cmake/completion.zsh.in investmentblock_solver-completion.zsh)
-
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/investmentblock_solver-completion.bash
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
-            RENAME investmentblock_solver)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/investmentblock_solver-completion.zsh
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
-            RENAME "_investmentblock_solver")
 endif ()
 
 # --------------------------------------------------------------------------- #

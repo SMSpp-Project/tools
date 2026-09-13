@@ -47,19 +47,6 @@ if (TARGET SMS++::SingleFlowDCRBlock)
     smspp_install_data(sfdcrblock_solver
             "solve a Single-flow Delay-Constrained Routing problem")
 
-    # Generate and install shell completion scripts
-    set(toolName sfdcrblock_solver)
-    configure_file(../cmake/completion.bash.in
-            sfdcrblock_solver-completion.bash)
-    configure_file(../cmake/completion.zsh.in
-            sfdcrblock_solver-completion.zsh)
-
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sfdcrblock_solver-completion.bash
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
-            RENAME sfdcrblock_solver)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/sfdcrblock_solver-completion.zsh
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
-            RENAME "_sfdcrblock_solver")
 endif ()
 
 # --------------------------------------------------------------------------- #

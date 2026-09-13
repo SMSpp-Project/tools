@@ -56,17 +56,6 @@ if (TARGET SMS++::SVMBlock)
     smspp_install(svm_solver)
     smspp_install_data(svm_solver "train a Support Vector Machine")
 
-    # Generate and install shell completion scripts
-    set(toolName svm_solver)
-    configure_file(../cmake/completion.bash.in svm_solver-completion.bash)
-    configure_file(../cmake/completion.zsh.in svm_solver-completion.zsh)
-
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/svm_solver-completion.bash
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
-            RENAME svm_solver)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/svm_solver-completion.zsh
-            DESTINATION ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
-            RENAME "_svm_solver")
 endif ()
 
 # --------------------------------------------------------------------------- #

@@ -46,8 +46,38 @@ function(smspp_install target_name)
                 COMMENT "Copying runtime DLLs next to ${target_name}.exe")
     endif ()
 
+    # the executables carry the name of the project, since they are installed
+    # among those of everything else: smspp_ucblock_solver, smspp_chgcfg, ...
+    set_target_properties(${target_name} PROPERTIES
+            OUTPUT_NAME smspp_${target_name})
+
     install(TARGETS ${target_name}
             RUNTIME DESTINATION ${SMSPP_TOOLS_INSTALL_DIR})
+
+    # the name without the prefix keeps working, for whoever calls the tool
+    # from a script written before the release that renamed them
+    if (WIN32)
+        install(PROGRAMS $<TARGET_FILE:${target_name}>
+                DESTINATION ${SMSPP_TOOLS_INSTALL_DIR}
+                RENAME ${target_name}.exe)
+    else ()
+        install(CODE "file(CREATE_LINK smspp_${target_name} \
+                \"\$ENV{DESTDIR}${toolsFullDir}/${target_name}\" SYMBOLIC)")
+    endif ()
+
+    # the completions, of both names, since both are commands
+    foreach (toolName ${target_name} smspp_${target_name})
+        configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/cmake/completion.bash.in
+                ${toolName}-completion.bash @ONLY)
+        configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/cmake/completion.zsh.in
+                ${toolName}-completion.zsh @ONLY)
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${toolName}-completion.bash
+                DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
+                RENAME ${toolName})
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${toolName}-completion.zsh
+                DESTINATION ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
+                RENAME "_${toolName}")
+    endforeach ()
 endfunction()
 
 # Installs the config/ directory of a tool, if any, which the tool uses when
@@ -87,7 +117,7 @@ function(smspp_install_data target_name description)
 
     find_program(HELP2MAN help2man)
     if (HELP2MAN)
-        set(manPage ${CMAKE_CURRENT_BINARY_DIR}/${target_name}.1)
+        set(manPage ${CMAKE_CURRENT_BINARY_DIR}/smspp_${target_name}.1)
         set(manFiles ${CMAKE_CURRENT_BINARY_DIR}/${target_name}.h2m)
         set(manInclude "")
         set(manDepends ${target_name})
@@ -107,6 +137,11 @@ function(smspp_install_data target_name description)
                 VERBATIM)
         add_custom_target(${target_name}_man ALL DEPENDS ${manPage})
         install(FILES ${manPage} DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+
+        # the page of the name without the prefix is the one of the tool
+        set(manAlias ${CMAKE_CURRENT_BINARY_DIR}/${target_name}.1)
+        file(WRITE ${manAlias} ".so man1/smspp_${target_name}.1\n")
+        install(FILES ${manAlias} DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
     endif ()
 endfunction()
 
