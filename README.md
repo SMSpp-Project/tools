@@ -39,6 +39,15 @@ is a link to it.
 
 These instructions will let you build SMS++ Tools on your system.
 
+The tools also come ready-made, one package each: `sudo apt install
+smspp-ucblock` from the [PPA of the
+project](https://launchpad.net/~smspp/+archive/ubuntu/ppa) gives
+`smspp_ucblock_solver` with its configuration files, its examples and its man
+page, and `smspp-project` gives them all; `conda install -c conda-forge
+smspp-project` and `brew install smspp` carry them too. A tool of a package
+finds its configuration next to its own executable, so it runs with no `-S` or
+`-B`. What follows is about building them yourself.
+
 ### Requirements
 
 - [SMS++ core library](https://gitlab.com/smspp/smspp)
