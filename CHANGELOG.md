@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+## [0.7.1] - 2026-09-14
+
+### Fixed
+
+- the link that carries the name a tool had before the prefix is made in the
+  directory of the install and not in the one of the configure, so that
+  `cmake --install --prefix` puts it next to the tool instead of failing on
+  the directory of the machine
+
 ## [0.7.0] - 2026-09-13
 
 ### Changed

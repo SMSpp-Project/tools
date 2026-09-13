@@ -61,8 +61,15 @@ function(smspp_install target_name)
                 DESTINATION ${SMSPP_TOOLS_INSTALL_DIR}
                 RENAME ${target_name}.exe)
     else ()
-        install(CODE "file(CREATE_LINK smspp_${target_name} \
-                \"\$ENV{DESTDIR}${toolsFullDir}/${target_name}\" SYMBOLIC)")
+        # the directory is the one of the install and not the one of the
+        # configure, so that the link follows the tool wherever
+        # `cmake --install --prefix` puts it
+        install(CODE "
+            set(toolsDir \"${SMSPP_TOOLS_INSTALL_DIR}\")
+            cmake_path(ABSOLUTE_PATH toolsDir
+                       BASE_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\")
+            file(CREATE_LINK smspp_${target_name}
+                 \"\$ENV{DESTDIR}\${toolsDir}/${target_name}\" SYMBOLIC)")
     endif ()
 
     # the completions, of both names, since both are commands
