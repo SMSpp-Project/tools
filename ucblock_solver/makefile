@@ -38,9 +38,10 @@ include $(UCBckDIR)/lib/makefile
 BNDSLVSDR = ../../BundleSolver
 include $(BNDSLVSDR)/makefile-s
 
-# LagrangianDualSolver
+# LagrangianDualSolver; the plain makefile, since SMS++ and MILPSolver are
+# already there, brought in by BundleSolver
 LgDSLVSDR = ../../LagrangianDualSolver
-include $(LgDSLVSDR)/makefile-s
+include $(LgDSLVSDR)/makefile
 
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
