@@ -378,6 +378,8 @@ class UCBlockSolutionOutput
 
   const auto number_pollutants = uc_block->get_number_pollutants();
 
+  // the constraints of the zones of all the pollutants, one after the other
+  Index first_zone = 0;
   for( Index p = 0 ; p < number_pollutants ; ++p ) {
 
    std::ofstream output( get_filepath( get_marginal_pollutant_filename( p ) ) ,
@@ -386,14 +388,16 @@ class UCBlockSolutionOutput
    // Header
 
    for( Index z = 0 ; z < uc_block->get_number_pollutant_zones()[ p ] ; ++z )
-    output << separator_character << "Zone_" << 0;
+    output << separator_character << "Zone_" << z;
    output << std::endl;
 
    // Values
    for( Index z = 0 ; z < uc_block->get_number_pollutant_zones()[ p ] ; ++z ) {
     if( z > 0 ) output << separator_character;
-    output << uc_block->get_pollutant_constraints()[ p ][ z ].get_dual();
+    output << uc_block->get_pollutant_constraints()[ first_zone + z ]
+                                                              .get_dual();
    }
+   first_zone += uc_block->get_number_pollutant_zones()[ p ];
 
    output.close();
   }
