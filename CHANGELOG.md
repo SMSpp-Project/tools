@@ -13,10 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- the output of `sddp_solver` reads the duals of the pollutant budget
-  constraints of `UCBlock` from the vector that holds the zones of all the
-  pollutants one after the other, and the header of each file names the
-  zones rather than repeating `Zone_0`
+- the header of each file of the pollutant duals written by `sddp_solver`
+  names the zones rather than repeating `Zone_0`
 
 ## [0.7.1] - 2026-09-14
 
