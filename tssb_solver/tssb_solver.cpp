@@ -144,7 +144,23 @@ int main( int argc , char ** argv )
  // note that the last nullptr record in long_opts is overwritten since the
  // new one is further down from there
 
- docopt_desc = "SMS++ TSSB solver.\n";
+ docopt_desc =
+  "SMS++ TSSB solver: loads a two-stage stochastic problem (a\n"
+  "TwoStageStochasticBlock) and solves it with the Solvers of its\n"
+  "BlockSolverConfig.\n";
+ docopt_args =
+  "  <file>    SMS++ netCDF file (.nc4) holding a TwoStageStochasticBlock:\n"
+  "            a Block file, or a problem file, whose own configuration is\n"
+  "            then used and -B and -S are ignored\n";
+ docopt_examples =
+  "  tssb_solver instance.nc4\n"
+  "      solve the deterministic equivalent with a :MILPSolver\n"
+  "  tssb_solver -S TSSBSCfg-LD.txt instance.nc4\n"
+  "      solve the Lagrangian dual of the scenario decomposition, whose\n"
+  "      master problem needs CPLEX or Gurobi\n"
+  "  tssb_solver -c myconfig/ instance.nc4\n"
+  "      use the Configuration files in myconfig/, e.g. a modified copy\n"
+  "      of the installed ones\n";
 
  // Configuration files live in config/ by default; an explicit -c overrides
  // this. Default -B / -S so a plain run needs neither: TSSBCfg.txt is the

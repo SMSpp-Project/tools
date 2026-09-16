@@ -20,13 +20,43 @@ At the moment we provide:
   k-fold cross-validation, both stratified, and grid search over the
   hyper-parameters
 
+- `mcfblock_solver`, `bkblock_solver`, `cflblock_solver`,
+  `mmcfblock_solver` and `sfdcrblock_solver`: the solvers of MCFBlock,
+  BinaryKnapsackBlock, CapacitatedFacilityLocationBlock, MMCFBlock and
+  SingleFlowDCRBlock, which also read the native text formats of their Block
+
 - `chgcfg`: a small utility to change some parameters in a configuration
   file while leaving all the rest unchanged
+
+The installed executables carry the name of the project, e.g.
+`smspp_ucblock_solver` and `smspp_chgcfg`, so that they are recognisable
+among all the others in a directory such as `/usr/bin`. Each of them is also
+installed under the name it had before, `ucblock_solver` and `chgcfg`, which
+is a link to it.
 
 
 ## Getting started
 
 These instructions will let you build SMS++ Tools on your system.
+
+The tools also come ready-made, one package each, in any of
+
+```sh
+sudo add-apt-repository ppa:smspp-project/smspp   # Ubuntu
+sudo apt install smspp-ucblock                    # and smspp-project for them all
+
+conda install -c conda-forge smspp-project        # Linux, macOS, Windows
+
+brew tap SMSpp-Project/smspp                      # macOS, Linux
+brew install smspp
+
+vcpkg install "smspp[core,ucblock,tools]"         # from the sources
+```
+
+where a package gives the tool, here `smspp_ucblock_solver`, with its
+configuration files, its examples and its man page. A tool finds its
+configuration next to its own executable, so it runs with no `-S` or `-B`.
+What follows is about building them yourself.
 
 ### Requirements
 
@@ -46,6 +76,13 @@ These instructions will let you build SMS++ Tools on your system.
 - [SVMBlock](https://gitlab.com/smspp/svmblock)
 
 - [UCBlock](https://gitlab.com/smspp/ucblock)
+
+- [MCFBlock](https://gitlab.com/smspp/mcfblock),
+  [BinaryKnapsackBlock](https://gitlab.com/smspp/binaryknapsackblock),
+  [CapacitatedFacilityLocationBlock](https://gitlab.com/smspp/capacitatedfacilitylocationblock),
+  [MMCFBlock](https://gitlab.com/smspp/mmcfblock) and
+  [SingleFlowDCRBlock](https://gitlab.com/smspp/singleflowdcrblock), each for
+  its own solver
 
 ### Build and install with CMake
 
@@ -82,17 +119,18 @@ The Block solver (`block_solver`) and the Unit Commitment solver (`ucblock_solve
 share the same interface:
 
 ```sh
-Usage:
-  <*_solver> [options] <file>
-  <*_solver> -h | --help
+Usage: <*_solver> [options] <file>
+  or:  <*_solver> -h | --help
+  or:  <*_solver> -V | --version
 
 Options:
   -h, --help                      print this help
+  -V, --version                   print the SMS++ tools version and exit
   -a, --save-state <file>         save State of the Solver
-  -B, --blockcfg <file>           Block Configuration [BCfg.txt]
+  -B, --blockcfg <file>           Block Configuration
   -b, --load-state <file>         load State for the Solver
   -p, --prefix <path>             the prefix for all Block filenames
-  -S, --solvercfg <file>          Solver Configuration [BSCfg.txt]
+  -S, --solvercfg <file>          Solver Configuration
   -c, --configdir <path>          the prefix for all Config filenames
   -I, --inputsol <file>           input Solution
   -O, --outputsol <file>          output Solution
@@ -118,8 +156,9 @@ up relative to the `-c` prefix. For `sddp_solver`, `tssb_solver` and
 | `tssb_solver`            | `TSSBCfg.txt`                         | `TSSBSCfg.txt` |
 | `mssb_solver`            | `InnerBCfg.txt`                       | `MSSBSCfg.txt` |
 | `investmentblock_solver` | `InnerBCfg.txt`                       | `BSPar.txt`    |
-| `ucblock_solver`         | optional (deserialized formulation)   | `BSCfg.txt`    |
+| `ucblock_solver`         | `InnerBCfg.txt`                       | `BSCfg.txt`    |
 | `block_solver`           | `BCfg.txt`                            | `BSCfg.txt`    |
+| `mcfblock_solver` and the other four | `BCfg.txt`                | `BSCfg.txt`    |
 
 For `sddp_solver` the default `-B` is applied through the inner-Block "meta"
 BlockConfig (`SDDPBCfg.txt`, or `SDDPBCfg-LD.txt` when the SDDPSolver drives a
@@ -127,7 +166,8 @@ LagrangianDualSolver), which linearises the `PolyhedralFunctionBlock` and
 shapes the network/units; passing a generic `BCfg.txt` instead is wrong and
 makes the MILPSolver throw "Unknown type of Objective Function". The fallback
 applies only when the file is actually reachable, so a missing default is
-silently ignored, and explicit `-B`/`-S` always take precedence.
+silently ignored, and explicit `-B`/`-S` always take precedence; an empty
+name, as in `-B ''`, means no file at all.
 
 The `-c` prefix is applied to *every* Configuration filename, not only the
 top-level `-B`/`-S` files but also every filename referenced from inside a
@@ -140,6 +180,19 @@ location). Consequently, filenames referenced from inside a config file are
 written *bare* (e.g. `*PFBCfg.txt`, `strInnerBSC UCBSCfg.txt`), without a
 `config/` component, since `-c` supplies the base directory.
 
+Every tool with a `config/` directory installs it, under
+`share/SMS++_tools/<tool>/config`, and uses it when `-c` is not given and
+none of its Configuration files is found with its own prefix: the whole
+configuration then comes from the installed directory, which the tool finds
+relative to its executable, so an installed tool runs from anywhere with no
+option at all. A file in the current directory, or an explicit `-c`, always
+takes precedence; `--help` prints the installed directory, and `-v` which
+files are in use. `--help` also lists the exit status: 0 when the run
+completes, whatever the status of the Solvers, nonzero on errors. Next to its
+configuration each tool installs its example instances, under
+`share/SMS++_tools/<tool>/examples`, and a man page generated from its
+`--help` when help2man is available.
+
 ### Quick start (run the bundled example)
 
 From each tool's own directory, a plain run on the bundled example is:
@@ -148,7 +201,7 @@ From each tool's own directory, a plain run on the bundled example is:
 cd sddp_solver            && sddp_solver SDDPBlock.nc4 -p examples/
 cd tssb_solver            && tssb_solver examples/toy_tssb.nc4
 cd mssb_solver            && mssb_solver examples/big_baked_L8.nc4
-cd ucblock_solver         && ucblock_solver examples/Bus_Test.nc4 -c config/ -B InnerBCfg.txt
+cd ucblock_solver         && ucblock_solver examples/Bus_Test.nc4 -c config/
 cd investmentblock_solver && investmentblock_solver InvestmentBlockBus.nc4 -c config/ -p examples/
 ```
 
@@ -348,9 +401,37 @@ the initial state is specified.
 ### Unit Commitment solver
 
 `ucblock_solver` does not add any tool-specific command-line option to the
-basic ones. The input netCDF file may be either a problem file (containing
-the Block, BlockConfig and BlockSolverConfig) or a Block file; in the latter
-case, if `-B` and/or `-S` are not provided, default configurations are used.
+basic ones. The input netCDF file may be either a Block file or a problem
+file, of which only the Block is used, the configuration always coming from
+`-B` and `-S`. The default configuration solves the UCBlock with
+HiGHSMILPSolver, and its `InnerBCfg.txt` chooses the formulation of the units
+and of the network, which is needed, e.g., by the instances whose objective
+contains a PolyhedralFunction; `-B ''` keeps the formulation of the file.
+
+### MCFBlock, BinaryKnapsackBlock, CapacitatedFacilityLocationBlock, MMCFBlock and SingleFlowDCRBlock solvers
+
+`mcfblock_solver`, `bkblock_solver`, `cflblock_solver`, `mmcfblock_solver`
+and `sfdcrblock_solver` read their Block either from an SMS++ netCDF file, a
+Block file or a problem file of which only the Block is used, or from a file
+in a native text format of the Block, that its `load()` reads: DIMACS for
+MCFBlock, and the formats that `-f` selects for the other three. The format is
+told by the file itself, a netCDF one or not, while
+
+```sh
+  -f, --format <c>                native format of the input file, if not
+                                  netCDF
+```
+
+chooses among the native ones, e.g. `-f P` for the Pisinger benchmarks of
+BinaryKnapsackBlock or `-f m` for the Mnetgen instances of MMCFBlock. The
+DIMACS format of SingleFlowDCRBlock does not carry the delay data, so
+`sfdcrblock_solver` only reads netCDF files.
+
+Their default configurations solve the problem with no license needed: the
+MCFSimplex of MCFClass for MCFBlock, the core Dynamic Programming for
+BinaryKnapsackBlock, HiGHS on the MILP for CapacitatedFacilityLocationBlock
+and MMCFBlock, and the Benders Solver of SingleFlowDCRBlock, whose `MILPCfg.txt`
+and `PCCfg.txt` solve its P/C formulation with a :MILPSolver instead.
 
 ### TwoStageStochasticBlock solver
 

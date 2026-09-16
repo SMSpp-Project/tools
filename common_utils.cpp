@@ -24,7 +24,12 @@
 /*--------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include <fstream>
 #include <iostream>
+
+#if defined( __APPLE__ )
+ #include <mach-o/dyld.h>  // for _NSGetExecutablePath()
+#endif
 
 #include <Block.h>
 #include <BlockSolverConfig.h>
@@ -97,6 +102,8 @@ static SmsppMpiSafeEnvInit smspp_mpi_safe_env_init_;
  *  @{ */
 
 std::string docopt_desc {};     ///< tool description
+std::string docopt_args {};     ///< description of the <file> argument
+std::string docopt_examples {}; ///< usage examples printed by --help
 
 std::string filename {};        ///< input filename
 std::string bconf_file {};      ///< BlockConfig filename
@@ -116,12 +123,14 @@ std::string sol_cfg_file {};    ///< filename of output Solution Configuration
 bool output_solution = false;   ///< true if solution has be output
 bool sol_verbose = false;       ///< if the Solver should be verbose
 bool writeprob = false;         ///< if the problem should be written back
+std::string prob_file {};       ///< filename of the problem written back (-n)
+char input_format = 0;          ///< native format of the input file (-f)
 bool dryrun = false;            ///< if compute() need not really ba called
 
 int verbosity_level = 0;        ///< verbosity level (0 = silent, >0 = verbose output)
 
 /// default short command-line options
-std::string short_opts = "a:B:b:p:S:c:on:I:O:C:Dv:hV";
+std::string short_opts = "a:B:b:p:S:c:on:I:O:C:Dv::hV";
 
 /// default long command-line options
 std::vector< option > long_opts = {
@@ -148,10 +157,10 @@ std::string help =
  "  -h, --help                      print this help\n"
  "  -V, --version                   print the SMS++ tools version and exit\n"
  "  -a, --save-state <file>         save State of the Solver\n"
- "  -B, --blockcfg <file>           Block Configuration [BCfg.txt]\n"
+ "  -B, --blockcfg <file>           Block Configuration\n"
  "  -b, --load-state <file>         load State for the Solver\n"
  "  -p, --prefix <path>             the prefix for all Block filenames\n"
- "  -S, --solvercfg <file>          Solver Configuration [BSCfg.txt]\n"
+ "  -S, --solvercfg <file>          Solver Configuration\n"
  "  -c, --configdir <path>          the prefix for all Config filenames\n"
  "  -I, --inputsol <file>           input Solution\n"
  "  -O, --outputsol <file>          output Solution\n"
@@ -200,14 +209,118 @@ int read_open_netCDF( netCDF::NcFile & f , std::string fn )
 
 /*--------------------------------------------------------------------------*/
 
+namespace {
+
+std::string tool_conf_prefix {};   ///< the -c prefix set by the tool, if any
+bool conf_prefix_given = false;    ///< true if -c is on the command line
+bool bconf_given = false;          ///< true if -B is on the command line
+bool sconf_given = false;          ///< true if -S is on the command line
+
+/// true if any of the Configuration files is found with conf_prefix
+bool config_found( void )
+{
+ auto found = []( const std::string & name ) {
+  return( ( ! name.empty() ) &&
+	  std::filesystem::exists( resolve_with_prefix( conf_prefix , name ) ) );
+  };
+
+ return( found( bconf_file ) || found( sconf_file ) || found( sol_cfg_file ) ||
+	 ( ( ! bconf_given ) && found( default_bconf_name ) ) ||
+	 ( ( ! sconf_given ) && found( default_sconf_name ) ) );
+ }
+
+}  // anonymous namespace
+
+/*--------------------------------------------------------------------------*/
+
 void docopt( void )
 {
- // http://docopt.org
- std::cout << docopt_desc << std::endl;
- std::cout << "Usage:" << std::endl
-           << "  " << exe << " [options] <file>" << std::endl
-           << "  " << exe << " -h | --help" << std::endl << std::endl
-           << "Options:"  << std::endl << help << std::endl;
+ // the layout of GNU --help, which help2man turns into a man page
+ std::cout << "Usage: " << exe << " [options] <file>" << std::endl
+           << "  or:  " << exe << " -h | --help" << std::endl
+           << "  or:  " << exe << " -V | --version" << std::endl << std::endl;
+ // a block of text, possibly under a title, followed by an empty line
+ auto section = []( const std::string & title , const std::string & text ) {
+  if( text.empty() )
+   return;
+  if( ! title.empty() )
+   std::cout << title << std::endl;
+  std::cout << text;
+  if( text.back() != '\n' )
+   std::cout << std::endl;
+  std::cout << std::endl;
+  };
+
+ section( "" , docopt_desc );
+ section( "Arguments:" , docopt_args );
+ section( "Options:" , help );
+
+ // how the Configuration files are looked up, the same for every tool
+ std::cout << "Configuration files:" << std::endl
+	   << "  The files given to -B, -S and -C, and those included by them, "
+	   << "are looked" << std::endl
+	   << "  up under the -c prefix ["
+	   << ( tool_conf_prefix.empty() ? "current directory"
+		                         : tool_conf_prefix )
+	   << "]." << std::endl;
+
+ std::string defaults;
+ if( ! default_bconf_name.empty() )
+  defaults = "-B " + default_bconf_name;
+ if( ! default_sconf_name.empty() )
+  defaults += ( defaults.empty() ? "-S " : ", -S " ) + default_sconf_name;
+ if( ! defaults.empty() )
+  std::cout << "  Defaults, used if they exist: " << defaults << std::endl;
+ std::cout << "  An empty name, as in -B '', means no file." << std::endl;
+
+ if( auto dir = installed_config_dir() ; ! dir.empty() )
+  std::cout << "  Without -c, if none of these files is found, the "
+	    << "configuration installed" << std::endl
+	    << "  with the tool is used instead:" << std::endl
+	    << "    " << dir << std::endl;
+ std::cout << std::endl;
+
+ section( "Examples:" , docopt_examples );
+
+ std::cout << "Exit status:" << std::endl
+	   << "  0 if the run completes, whatever the status of the Solvers,"
+	   << " nonzero if" << std::endl
+	   << "  the input or a configuration cannot be used." << std::endl;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+void drop_standard_option( char opt )
+{
+ // the long options, but the final nullptr record
+ long_opts.erase( std::remove_if( long_opts.begin() ,
+				  std::prev( long_opts.end() ) ,
+				  [ opt ]( const option & o ) {
+				   return( o.val == opt ); } ) ,
+		  std::prev( long_opts.end() ) );
+
+ // the line of the help
+ const std::string head = std::string( "  -" ) + opt + ",";
+ for( std::size_t pos = 0 ; pos < help.size() ; ) {
+  auto end = help.find( '\n' , pos );
+  end = ( end == std::string::npos ) ? help.size() : end + 1;
+  if( help.compare( pos , head.size() , head ) == 0 )
+   help.erase( pos , end - pos );
+  else
+   pos = end;
+  }
+ }
+
+/*--------------------------------------------------------------------------*/
+
+void add_format_option( const std::string & formats )
+{
+ short_opts += "f:";
+ long_opts.insert( std::prev( long_opts.end() ) ,
+                   { "format" , required_argument , nullptr , 'f' } );
+ help += "  -f, --format <c>                native format of the input file, "
+         "if not\n"
+         "                                  netCDF, among:\n" + formats;
  }
 
 /*--------------------------------------------------------------------------*/
@@ -216,22 +329,30 @@ bool process_standard_arg( int opt )
 {
  switch( opt ) {
   case 'a': state_out_file = std::string( optarg ); break;
-  case 'B': bconf_file = std::string( optarg ); break;
+  case 'B': bconf_file = std::string( optarg );
+            bconf_given = true;
+            break;
   case 'b': state_in_file = std::string( optarg ); break;
   case 'p' : {
    block_prefix = normalize_prefix( std::string( optarg ) );
    Block::set_filename_prefix( std::string( block_prefix ) );
    break;
   }
-  case 'S': sconf_file = std::string( optarg ); break;
+  case 'S': sconf_file = std::string( optarg );
+            sconf_given = true;
+            break;
   case 'c': conf_prefix = normalize_prefix( std::string( optarg ) );
+            conf_prefix_given = true;
             break;
   case 'o': output_solution = true; break;
   case 'I': sol_input = std::string( optarg ); break;
   case 'O': sol_output = std::string( optarg ); break;
   case 'C': sol_cfg_file = std::string( optarg ); break;
-  case 'n': writeprob = true; break;
+  case 'n': writeprob = true;
+            prob_file = std::string( optarg );
+            break;
   case 'D': dryrun = true; break;
+  case 'f': input_format = optarg[ 0 ]; break;
   case 'v': {
    sol_verbose = true;
    verbosity_level = optarg ? std::atoi( optarg ) : 1;
@@ -258,9 +379,10 @@ void process_args( int argc , char ** argv ,
                    bool ( *custom_arg )( int opt ) )
 {
  exe = get_filename( argv[ 0 ] );
+ tool_conf_prefix = conf_prefix;
  if( argc < 2 ) {
-  std::cout << exe << ": no input file" << std::endl
-	    << "Try " << exe << "' --help' for more information" << std::endl;
+  std::cerr << exe << ": no input file" << std::endl
+	    << "Try '" << exe << " --help' for more information" << std::endl;
   exit( 1 );
   }
 
@@ -277,7 +399,7 @@ void process_args( int argc , char ** argv ,
   if( process_standard_arg( opt ) )  // if it is a standard one
    continue;                         // next
 
-  std::cout << "Try '" << exe << " --help' for more information"
+  std::cerr << "Try '" << exe << " --help' for more information"
 	    << std::endl;
   exit( 1 );
   }
@@ -285,10 +407,18 @@ void process_args( int argc , char ** argv ,
  if( optind < argc )  // last argument == [Block] filename
   filename = std::string( argv[ optind ] );
  else {
-  std::cout << exe << ": no input file" << std::endl
+  std::cerr << exe << ": no input file" << std::endl
             << "Try '" << exe << " --help' for more information" << std::endl;
   exit( 1 );
   }
+
+ // without -c, a run that finds none of its Configuration files with the
+ // prefix of the tool takes the whole configuration from the directory
+ // installed with the tool, if any: a single prefix serves all the files, so
+ // that the files included by the installed ones are found among them
+ if( ( ! conf_prefix_given ) && ( ! config_found() ) )
+  if( auto dir = installed_config_dir() ; ! dir.empty() )
+   conf_prefix = dir;
 
  // if -B / -S was not given on the command line, fall back to the
  // conventional default file name, but only when the file is actually
@@ -296,9 +426,9 @@ void process_args( int argc , char ** argv ,
  // directory then needs no -B / -S, while a missing default is silently
  // ignored (so it produces no spurious "cannot open" message and -B stays
  // genuinely optional). See default_config_file() for the lookup rules
- if( bconf_file.empty() )
+ if( ! bconf_given )
   bconf_file = default_config_file( default_bconf_name );
- if( sconf_file.empty() )
+ if( ! sconf_given )
   sconf_file = default_config_file( default_sconf_name );
 
  // hand the (final) -c prefix to Configuration, so that it is applied not only
@@ -352,6 +482,45 @@ Block * get_Block( const std::string & b_file )
   exit( 1 );
   }
 
+ return( block );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+Block * get_Block( const std::string & b_file , const std::string & classname ,
+                   char frmt )
+{
+ // the "<file>[i]" form only exists for netCDF files
+ if( ( ! b_file.empty() ) && ( b_file.back() == ']' ) )
+  return( get_Block( b_file ) );
+
+ // a netCDF file starts with "CDF" (classic) or "\x89HDF" (netCDF-4)
+ const auto fn = resolve_with_prefix( block_prefix , b_file );
+ std::ifstream in( fn , std::ios::binary );
+ if( ! in ) {
+  std::cerr << exe << ": cannot open " << fn << std::endl;
+  exit( 1 );
+  }
+ char magic[ 4 ] = { 0 , 0 , 0 , 0 };
+ in.read( magic , 4 );
+ in.close();
+ if( ( std::string( magic , 3 ) == "CDF" ) ||
+     ( std::string( magic + 1 , 3 ) == "HDF" ) )
+  return( get_Block( b_file ) );
+
+ // a native format: the Block is created and load()-ed from the file
+ if( classname.empty() ) {
+  std::cerr << exe << ": " << fn << " is not an SMS++ netCDF file"
+            << std::endl;
+  exit( 1 );
+  }
+ auto block = Block::new_Block( classname );
+ if( ! block ) {
+  std::cerr << exe << ": no " << classname << " in this executable"
+            << std::endl;
+  exit( 1 );
+  }
+ block->load( fn , frmt );
  return( block );
  }
 
@@ -462,6 +631,51 @@ std::string default_config_file( const std::string & name )
  if( std::filesystem::exists( resolve_with_prefix( conf_prefix , name ) ) )
   return( name );
  return( std::string{} );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+std::string installed_config_dir( void )
+{
+ #ifdef SMSPP_TOOL_CONFIG_DIR
+  static const std::string dir = []() -> std::string {
+   // the path of the running executable
+   std::error_code ec;
+   std::filesystem::path self;
+   #if defined( _WIN32 )
+    char * p = nullptr;
+    if( ( _get_pgmptr( &p ) == 0 ) && p )
+     self = p;
+   #elif defined( __APPLE__ )
+    uint32_t size = 0;
+    _NSGetExecutablePath( nullptr , &size );
+    std::string buf( size , '\0' );
+    if( _NSGetExecutablePath( buf.data() , &size ) == 0 )
+     self = buf.c_str();
+   #else
+    self = std::filesystem::read_symlink( "/proc/self/exe" , ec );
+   #endif
+   if( self.empty() )
+    return( std::string() );
+
+   // resolve the links first, so that a link to the executable (as the ones
+   // a package manager puts in its bin/) leads to the real installed tree
+   self = std::filesystem::weakly_canonical( self , ec );
+   if( ec )
+    return( std::string() );
+
+   auto cfg = self.parent_path() / SMSPP_TOOL_CONFIG_DIR;
+   cfg = cfg.lexically_normal();
+   if( ! std::filesystem::is_directory( cfg , ec ) )
+    return( std::string() );
+
+   return( normalize_prefix( cfg.string() ) );
+   }();
+
+  return( dir );
+ #else
+  return( std::string() );
+ #endif
  }
 
 /*--------------------------------------------------------------------------*/
@@ -865,8 +1079,11 @@ int solve_all( Block * block )
 void write_nc4problem( Block * block ,
 		       Configuration * b_config , Configuration * s_config )
 {
- std::size_t found = filename.find_last_of( '.' );
- std::string nc4_file = filename.substr( 0 , found ) + "_problem.nc4";
+ std::string nc4_file = prob_file;
+ if( nc4_file.empty() ) {
+  std::size_t found = filename.find_last_of( '.' );
+  nc4_file = filename.substr( 0 , found ) + "_problem.nc4";
+  }
 
  netCDF::NcFile outfile;
  try {

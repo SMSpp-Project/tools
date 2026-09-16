@@ -61,7 +61,9 @@
  #define __COMMON_UTILS
 
 #include <getopt.h>      // for getting command line parameters
+#include <iomanip>
 #include <filesystem>    // for portable path handling
+#include <functional>
 #include <cerrno>
 #include <cstdlib>
 #include <iostream>
@@ -85,6 +87,8 @@ using namespace SMSpp_di_unipi_it;
  *  @{ */
 
 extern std::string docopt_desc;     ///< tool description
+extern std::string docopt_args;     ///< description of the <file> argument
+extern std::string docopt_examples; ///< usage examples printed by --help
 
 extern std::string filename;        ///< input filename
 extern std::string bconf_file;      ///< BlockConfig filename
@@ -112,6 +116,8 @@ extern std::string sol_cfg_file;    ///< filename of output Solution Configurati
 extern bool output_solution;   ///< true if solution has be output
 extern bool sol_verbose;       ///< if the Solver should be verbose
 extern bool writeprob;         ///< if the problem should be written back
+extern std::string prob_file;  ///< filename of the problem written back (-n)
+extern char input_format;      ///< native format of the input file (-f)
 extern bool dryrun;            ///< if compute() need not really ba called
 
 extern int verbosity_level;    ///< verbosity level (0 = silent, >0 = verbose output)
@@ -214,6 +220,22 @@ int read_open_netCDF( netCDF::NcFile & f , std::string fn );
 void docopt( void );
 
 /*--------------------------------------------------------------------------*/
+/// removes one of the default command-line options
+/** Removes the long options and the line of the help of the default option
+ * \p opt, so that a tool can give that letter a meaning of its own; to be
+ * called before the tool adds its options. */
+
+void drop_standard_option( char opt );
+
+/*--------------------------------------------------------------------------*/
+/// adds the -f option, the native format of the input file, to the tool
+/** For the tools whose input file can also be in the native text format(s)
+ * of their Block: -f <c> sets input_format to c, and \p formats is added to
+ * the help to describe the formats; to be called before process_args(). */
+
+void add_format_option( const std::string & formats );
+
+/*--------------------------------------------------------------------------*/
 /// processes any one of the default command-line arguments
 
 bool process_standard_arg( int opt );
@@ -229,7 +251,10 @@ void process_args( int argc , char ** argv );
  * every option that process_standard_arg() does not recognise. \p custom_arg
  * must return true if it consumed \p opt, false otherwise (which prints the
  * usage hint and exits 1). Sets \p exe and \p filename as side effects, and
- * resolves the standard Configuration filenames with \p conf_prefix. */
+ * resolves the standard Configuration filenames with \p conf_prefix. When -c
+ * is not given and none of the Configuration files is found with the prefix
+ * of the tool, \p conf_prefix becomes installed_config_dir(), if any: the
+ * whole configuration then comes from the installed directory. */
 
 void process_args( int argc , char ** argv ,
                    bool ( *custom_arg )( int opt ) );
@@ -243,6 +268,19 @@ void smspp_terminate( void );
 /// get Block from file
 
 Block * get_Block( const std::string & b_file );
+
+/*--------------------------------------------------------------------------*/
+/// get Block from file, an SMS++ netCDF one or one in a native format
+/** If \p b_file is an SMS++ netCDF file, or has the "<file>[i]" form that
+ * selects one of its Block, the Block is deserialized from it as by
+ * get_Block( b_file ). Otherwise, a Block of class \p classname is created
+ * by the factory and load()-ed from the file in its native format \p frmt
+ * (0 for the default one of the Block); an empty \p classname means that
+ * only the netCDF format is accepted. The file is looked up under the -p
+ * prefix in both cases. */
+
+Block * get_Block( const std::string & b_file , const std::string & classname ,
+                   char frmt );
 
 /*--------------------------------------------------------------------------*/
 /// get Block from group
@@ -309,6 +347,19 @@ void report_config_file( const std::string & what , const std::string & file );
  * BlockSolverConfig of investmentblock_solver). */
 
 std::string default_config_file( const std::string & name );
+
+/*--------------------------------------------------------------------------*/
+/// the Configuration directory installed with the tool, if any
+/** Returns the directory holding the Configuration files installed together
+ * with the tool, as a prefix ending with a separator, or an empty string if
+ * the tool has none. The directory is found relative to the executable (the
+ * relative path is the SMSPP_TOOL_CONFIG_DIR macro, set by CMake for the
+ * tools that install their config/ directory), so that the installed tree
+ * can be moved as a whole; symbolic links to the executable are resolved
+ * first. process_args() falls back to this directory when -c is not given
+ * and no Configuration file is found in the current one. */
+
+std::string installed_config_dir( void );
 
 /*--------------------------------------------------------------------------*/
 /// BlockConfig-ure and BlockSolverConfig-ure a Block
@@ -405,9 +456,61 @@ int solve_all( Block * block );
 
 /*--------------------------------------------------------------------------*/
 /// writes a new nc4 problem using the Block and its Configuration(s)
+/** The file is the one given to -n or, if that is empty, the input filename
+ * with its extension replaced by "_problem.nc4". */
 
 void write_nc4problem( Block * block ,
 		       Configuration * b_config , Configuration * s_config );
+
+/*--------------------------------------------------------------------------*/
+/// the run of a tool that solves the Block of class B in the input file
+/** Reads the Block of class \p classname (of type B) from the input file,
+ * either an SMS++ netCDF file or one in the native format input_format (see
+ * get_Block( b_file , classname , frmt )), unless \p native is false, in
+ * which case only the netCDF format is accepted; configures the Block with
+ * -B and -S, writes the problem back if -n is given, solves it with all the
+ * Solver(s) and cleans up; returns the exit status of the tool. If given,
+ * \p prepare is called on the Block between its BlockConfig and its
+ * BlockSolverConfig, i.e., before any Solver is registered to it. */
+
+template< class B >
+int solve_Block_file( const std::string & classname , bool native = true ,
+                      const std::function< void( B * ) > & prepare = {} )
+{
+ Block * block = get_Block( filename , native ? classname : std::string() ,
+                            input_format );
+
+ auto b = dynamic_cast< B * >( block );
+ if( ! b ) {
+  std::cerr << exe << ": " << filename << " is not a " << classname
+            << std::endl;
+  exit( 1 );
+  }
+
+ require_solver_config( sconf_file );
+
+ auto b_config = get_config( bconf_file );
+ auto s_config = get_config( sconf_file );
+
+ config_Block( block , b_config , nullptr );
+ if( prepare )
+  prepare( b );
+ config_Block( block , nullptr , s_config );
+
+ if( writeprob )
+  write_nc4problem( block , b_config , s_config );
+
+ std::cout.setf( std::ios::scientific , std::ios::floatfield );
+ std::cout << std::setprecision( 8 );
+ solve_all( block );
+
+ cleanup_bsc( block , s_config );
+ delete s_config;
+ delete b_config;
+ delete block;
+
+ return( 0 );
+ }
 
 /** @} ---------------------------------------------------------------------*/
 /*--------------------------------------------------------------------------*/

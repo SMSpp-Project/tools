@@ -46,8 +46,110 @@ function(smspp_install target_name)
                 COMMENT "Copying runtime DLLs next to ${target_name}.exe")
     endif ()
 
+    # the executables carry the name of the project, since they are installed
+    # among those of everything else: smspp_ucblock_solver, smspp_chgcfg, ...
+    set_target_properties(${target_name} PROPERTIES
+            OUTPUT_NAME smspp_${target_name})
+
     install(TARGETS ${target_name}
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+            RUNTIME DESTINATION ${SMSPP_TOOLS_INSTALL_DIR})
+
+    # the name without the prefix keeps working, for whoever calls the tool
+    # from a script written before the release that renamed them
+    if (WIN32)
+        install(PROGRAMS $<TARGET_FILE:${target_name}>
+                DESTINATION ${SMSPP_TOOLS_INSTALL_DIR}
+                RENAME ${target_name}.exe)
+    else ()
+        # the directory is the one of the install and not the one of the
+        # configure, so that the link follows the tool wherever
+        # `cmake --install --prefix` puts it
+        install(CODE "
+            set(toolsDir \"${SMSPP_TOOLS_INSTALL_DIR}\")
+            cmake_path(ABSOLUTE_PATH toolsDir
+                       BASE_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\")
+            file(CREATE_LINK smspp_${target_name}
+                 \"\$ENV{DESTDIR}\${toolsDir}/${target_name}\" SYMBOLIC)")
+    endif ()
+
+    # the completions, of both names, since both are commands
+    foreach (toolName ${target_name} smspp_${target_name})
+        configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/cmake/completion.bash.in
+                ${toolName}-completion.bash @ONLY)
+        configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/cmake/completion.zsh.in
+                ${toolName}-completion.zsh @ONLY)
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${toolName}-completion.bash
+                DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
+                RENAME ${toolName})
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${toolName}-completion.zsh
+                DESTINATION ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
+                RENAME "_${toolName}")
+    endforeach ()
+endfunction()
+
+# Installs the config/ directory of a tool, if any, which the tool uses when
+# -c is not given and no configuration file is found in the current
+# directory, together with the given example files, and generates the man
+# page of the tool from its --help if help2man is available.
+function(smspp_install_data target_name description)
+    set(dataDir ${CMAKE_INSTALL_DATADIR}/${modName}/${target_name})
+    set(fullDataDir ${CMAKE_INSTALL_FULL_DATADIR}/${modName}/${target_name})
+    set(manFilesText "")
+
+    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/config)
+        install(DIRECTORY config/ DESTINATION ${dataDir}/config)
+
+        # The tool finds its config/ relative to the directory of the
+        # executable, so that the installed tree can be moved as a whole
+        file(RELATIVE_PATH configRelDir ${toolsFullDir}
+                ${fullDataDir}/config)
+        target_compile_definitions(${target_name} PRIVATE
+                SMSPP_TOOL_CONFIG_DIR="${configRelDir}")
+
+        string(APPEND manFilesText
+                ".TP\n"
+                ".I ${fullDataDir}/config/\n"
+                "the configuration installed with ${target_name}, used when "
+                "\\fB-c\\fR is not given and no configuration file is found "
+                "in the current directory\n")
+    endif ()
+
+    if (ARGN)
+        install(FILES ${ARGN} DESTINATION ${dataDir}/examples)
+        string(APPEND manFilesText
+                ".TP\n"
+                ".I ${fullDataDir}/examples/\n"
+                "example input files\n")
+    endif ()
+
+    find_program(HELP2MAN help2man)
+    if (HELP2MAN)
+        set(manPage ${CMAKE_CURRENT_BINARY_DIR}/smspp_${target_name}.1)
+        set(manFiles ${CMAKE_CURRENT_BINARY_DIR}/${target_name}.h2m)
+        set(manInclude "")
+        set(manDepends ${target_name})
+        if (manFilesText)
+            file(WRITE ${manFiles} "[FILES]\n${manFilesText}")
+            set(manInclude --include=${manFiles})
+            list(APPEND manDepends ${manFiles})
+        endif ()
+        add_custom_command(OUTPUT ${manPage}
+                COMMAND ${HELP2MAN} --no-info --no-discard-stderr
+                        --name=${description} ${manInclude}
+                        --version-string=${PROJECT_VERSION}
+                        --source=${PROJECT_DESCRIPTION}
+                        --output=${manPage} $<TARGET_FILE:${target_name}>
+                DEPENDS ${manDepends}
+                COMMENT "Generating the man page of ${target_name}"
+                VERBATIM)
+        add_custom_target(${target_name}_man ALL DEPENDS ${manPage})
+        install(FILES ${manPage} DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+
+        # the page of the name without the prefix is the one of the tool
+        set(manAlias ${CMAKE_CURRENT_BINARY_DIR}/${target_name}.1)
+        file(WRITE ${manAlias} ".so man1/smspp_${target_name}.1\n")
+        install(FILES ${manAlias} DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+    endif ()
 endfunction()
 
 # ----- Configuration header ------------------------------------------------ #
@@ -57,9 +159,29 @@ configure_file(cmake/${modName}Config.h.in ${modName}Config.h)
 include_directories(${PROJECT_BINARY_DIR})
 
 # ----- Settings ------------------------------------------------------------ #
-# This is needed for setting the runtime path when installing.
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+# The tools are installed in bin/, unless a package manager wants them
+# elsewhere (e.g. vcpkg in tools/<port>); every path the tools compute
+# relative to their own location starts from there.
 include(GNUInstallDirs)
+set(SMSPP_TOOLS_INSTALL_DIR ${CMAKE_INSTALL_BINDIR}
+    CACHE STRING "Directory where the tools are installed")
+cmake_path(ABSOLUTE_PATH SMSPP_TOOLS_INSTALL_DIR
+           BASE_DIRECTORY ${CMAKE_INSTALL_PREFIX}
+           OUTPUT_VARIABLE toolsFullDir)
+
+# The installed tools look for the SMS++ libraries relative to their own
+# location, so that the installed tree can be moved as a whole, and for the
+# external libraries where they were found at link time.
+if (NOT CMAKE_INSTALL_RPATH)
+    if (APPLE)
+        set(rpathOrigin "@loader_path")
+    else ()
+        set(rpathOrigin "$ORIGIN")
+    endif ()
+    file(RELATIVE_PATH binToLib ${toolsFullDir} ${CMAKE_INSTALL_FULL_LIBDIR})
+    set(CMAKE_INSTALL_RPATH "${rpathOrigin}/${binToLib}")
+endif ()
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # ----- Tools --------------------------------------------------------------- #
 add_subdirectory(block_solver)
@@ -69,6 +191,11 @@ add_subdirectory(tssb_solver)
 add_subdirectory(mssb_solver)
 add_subdirectory(svm_solver)
 add_subdirectory(ucblock_solver)
+add_subdirectory(mcfblock_solver)
+add_subdirectory(bkblock_solver)
+add_subdirectory(cflblock_solver)
+add_subdirectory(mmcfblock_solver)
+add_subdirectory(sfdcrblock_solver)
 
 add_subdirectory(chgcfg)
 

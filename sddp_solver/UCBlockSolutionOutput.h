@@ -386,7 +386,7 @@ class UCBlockSolutionOutput
    // Header
 
    for( Index z = 0 ; z < uc_block->get_number_pollutant_zones()[ p ] ; ++z )
-    output << separator_character << "Zone_" << 0;
+    output << separator_character << "Zone_" << z;
    output << std::endl;
 
    // Values
