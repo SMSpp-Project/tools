@@ -170,8 +170,10 @@ std::string help =
  "  -o, --output-solution           output the solutions\n"
  "  -n, --nc4problem <file>         write nc4 problem on file\n"
  "  -D, --dryrun                    skip the compute() call\n"
- "  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic, 2 = debug,\n"
- "                                  with the Solver logs and parameters)\n";
+ "  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic,\n"
+ "                                  2 = debug, with the Solver logs and the\n"
+ "                                  parameters of the Solvers of the Block,\n"
+ "                                  3 = those of the sub-Blocks' Solvers too)\n";
 
 /** @} ---------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -1019,8 +1021,9 @@ void print_solver_parameters( const std::vector< Block * > & roots )
    else
     ++it->count;
    }
-  for( auto sb : b->get_nested_Blocks() )
-   visit( sb );
+  if( verbosity_level >= 3 )
+   for( auto sb : b->get_nested_Blocks() )
+    visit( sb );
   };
  for( auto b : roots )
   visit( b );
