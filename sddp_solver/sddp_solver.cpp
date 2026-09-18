@@ -608,6 +608,8 @@ void simulate( SDDPBlock * sddp_block )
  // load the given State (the cuts), if provided - - - - - - - - - - - - - - -
  get_initial_State( solver );
 
+ print_solver_parameters( sddp_block );
+
  auto status = solver->compute();
 
  #ifdef USE_MPI
@@ -702,6 +704,8 @@ void solve( SDDPBlock * sddp_block )
 
  // load the given State, if provided - - - - - - - - - - - - - - - - - - - -
  get_initial_State( solver );
+
+ print_solver_parameters( sddp_block );
 
  // solve the stochastic problem - - - - - - - - - - - - - - - - - - - - - - -
  if( ! dryrun ) {
@@ -1618,6 +1622,11 @@ void multiple_simulations( const netCDF::NcFile & file )
     solver->set_par( SDDPGreedySolver::strSimulationData ,
                      subgradients_filename_prefix + "." + std::to_string( i )
                      );
+
+   // printed for the first simulation only, the others differ from it just
+   // in the initial state and in the file of the subgradients
+   if( i == 0 )
+    print_solver_parameters( sddp_block );
 
    // Try to solve the SDDPBlock
    while( true ) {

@@ -645,6 +645,8 @@ void invest( InvestmentBlock * investment_block )
  // load the given State, if provided - - - - - - - - - - - - - - - - - - - -
  get_initial_State( investment_solver );
 
+ print_solver_parameters( { investment_block , investment_function } );
+
  // solve the investment problem- - - - - - - - - - - - - - - - - - - - - - -
  if( ! dryrun ) {
   auto status = investment_solver->compute();

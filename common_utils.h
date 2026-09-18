@@ -450,7 +450,27 @@ void write_final_Solution( Block * block , Configuration * cfg = nullptr ,
 void write_final_State( Solver * solver , bool replace = false );
 
 /*--------------------------------------------------------------------------*/
+/// print the parameters of every Solver in the Block tree, if -v 2 is given
+/** When verbosity_level >= 2, prints what print_parameters() says of every
+ * Solver registered to \p block or to any of its sub-Blocks, recursively,
+ * i.e., the value each parameter has been actually given, after the
+ * BlockSolverConfig, along with its default. The Solvers of the same class
+ * registered to Blocks of the same class and with the very same parameters,
+ * as those of the many sub-Blocks of a decomposition typically are, are
+ * printed once, with their number. The Blocks in \p roots are all walked,
+ * for the Block trees that a Function holds apart from that of the Block
+ * using it [see InvestmentFunction], each Block being visited once. A no-op
+ * when verbosity_level < 2. */
+
+void print_solver_parameters( const std::vector< Block * > & roots );
+
+inline void print_solver_parameters( Block * block ) {
+ print_solver_parameters( std::vector< Block * >{ block } );
+ }
+
+/*--------------------------------------------------------------------------*/
 /// compute() the Block with all available Solver(s) (unless dry run)
+/** With -v 2, print_solver_parameters() is called first. */
 
 int solve_all( Block * block );
 

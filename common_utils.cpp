@@ -26,6 +26,8 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <set>
+#include <sstream>
 
 #if defined( __APPLE__ )
  #include <mach-o/dyld.h>  // for _NSGetExecutablePath()
@@ -168,7 +170,8 @@ std::string help =
  "  -o, --output-solution           output the solutions\n"
  "  -n, --nc4problem <file>         write nc4 problem on file\n"
  "  -D, --dryrun                    skip the compute() call\n"
- "  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic, 2 = debug)\n";
+ "  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic, 2 = debug,\n"
+ "                                  with the Solver logs and parameters)\n";
 
 /** @} ---------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -985,6 +988,55 @@ void write_final_State( Solver * solver , bool replace )
 
 /*--------------------------------------------------------------------------*/
 
+void print_solver_parameters( const std::vector< Block * > & roots )
+{
+ if( verbosity_level < 2 )
+  return;
+
+ // one entry per distinct ( Solver class , Block class , parameters ), in
+ // the order they are first met, with the number of Solvers sharing it
+ struct Entry {
+  std::string solver , owner , pars;
+  std::size_t count;
+  };
+ std::vector< Entry > entries;
+ std::set< Block * > visited;
+
+ std::function< void( Block * ) > visit = [ & ]( Block * b ) {
+  if( ( ! b ) || ( ! visited.insert( b ).second ) )
+   return;
+  for( auto solver : b->get_registered_solvers() ) {
+   std::ostringstream pars;
+   solver->print_parameters( pars );
+   Entry e{ solver->classname() , b->classname() , pars.str() , 1 };
+   auto it = std::find_if( entries.begin() , entries.end() ,
+                           [ & ]( const Entry & o ) {
+                            return( ( o.solver == e.solver ) &&
+                                    ( o.owner == e.owner ) &&
+                                    ( o.pars == e.pars ) ); } );
+   if( it == entries.end() )
+    entries.push_back( std::move( e ) );
+   else
+    ++it->count;
+   }
+  for( auto sb : b->get_nested_Blocks() )
+   visit( sb );
+  };
+ for( auto b : roots )
+  visit( b );
+
+ for( const auto & e : entries ) {
+  std::cout << std::endl << "--- parameters of " << e.solver << " on "
+            << e.owner;
+  if( e.count > 1 )
+   std::cout << " (" << e.count << " Solvers)";
+  std::cout << std::endl << e.pars;
+  }
+ std::cout << std::endl;
+ }
+
+/*--------------------------------------------------------------------------*/
+
 int solve_all( Block * block )
 {
  // load initial Solution, if provided - - - - - - - - - - - - - - - - - - - -
@@ -1014,6 +1066,8 @@ int solve_all( Block * block )
    "no Solver registered to the Block: a BlockSolverConfig must be provided "
    "(did you forget the -S option?)" ) );
   }
+
+ print_solver_parameters( block );
 
  // for each of the registered Solver- - - - - - - - - - - - - - - - - - - - -
  //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
