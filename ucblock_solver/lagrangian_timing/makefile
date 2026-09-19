@@ -29,7 +29,7 @@ DIR = .
 
 CC = clang++
 
-COMMON_SW = -std=c++20 -ferror-limit=1 -Wno-deprecated-declarations -Wno-enum-compare -Wno-backslash-newline-escape -DCLANG_1200_0_32_27_PATCH
+COMMON_SW = -std=c++20 -ferror-limit=1 -Wno-deprecated-declarations -Wno-enum-compare -Wno-backslash-newline-escape
 SW_RELEASE = -O3 $(COMMON_SW) -DNDEBUG
 
 # study switches: SAVE_TUB is always on here
