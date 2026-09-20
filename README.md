@@ -138,8 +138,17 @@ Options:
   -o, --output-solution           output the solutions
   -n, --nc4problem <file>         write nc4 problem on file
   -D, --dryrun                    skip the compute() call
-  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic, 2 = debug)
+  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic,
+                                  2 = debug, with the Solver logs and the
+                                  parameters of the Solvers of the Block,
+                                  3 = those of the sub-Blocks' Solvers too)
 ```
+
+With `-v 2` the tool prints, before solving, the value each parameter of
+the Solvers of the Block has actually been given, along with its default;
+with `-v 3` it does the same for the Solvers of all the sub-Blocks, those
+identical to each other printed once with their number. Together with `-D`
+this checks a configuration without solving anything.
 
 See the [`examples`](ucblock_solver/examples) directory for sample
 input files and configurations.

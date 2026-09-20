@@ -6,7 +6,7 @@
 # identical to UCBSCfg-LD.txt but forcing intDoEasy = 0.
 #
 # It is meant for instances whose components are all "easy" (e.g. the
-# resilient-data instances): with intDoEasy = 1 the BundleSolver would abort
+# pypsa-data instances): with intDoEasy = 1 the BundleSolver would abort
 # with "all components are easy, this is no supported", so here the base
 # ComputeConfig in config/LDCfg.txt is overridden to disable easy components.
 #

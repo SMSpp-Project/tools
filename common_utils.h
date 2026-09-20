@@ -450,7 +450,30 @@ void write_final_Solution( Block * block , Configuration * cfg = nullptr ,
 void write_final_State( Solver * solver , bool replace = false );
 
 /*--------------------------------------------------------------------------*/
+/// print the parameters of the Solvers, if -v 2 or -v 3 is given
+/** Prints what print_parameters() says of the Solvers, i.e., the value each
+ * parameter has been actually given, after the BlockSolverConfig, along with
+ * its default. With verbosity_level == 2 these are only the Solvers
+ * registered to the Blocks in \p roots (for a Solver that wraps another one,
+ * as LagrangianDualSolver does, the parameters of the wrapped one are shown
+ * too, since they are in its index space); with verbosity_level >= 3 they
+ * are those registered to any of their sub-Blocks as well, recursively. The
+ * Solvers of the same class registered to Blocks of the same class and with
+ * the very same parameters, as those of the many sub-Blocks of a
+ * decomposition typically are, are printed once, with their number. The
+ * Blocks in \p roots are all considered, for the Block trees that a Function
+ * holds apart from that of the Block using it [see InvestmentFunction], each
+ * Block being visited once. A no-op when verbosity_level < 2. */
+
+void print_solver_parameters( const std::vector< Block * > & roots );
+
+inline void print_solver_parameters( Block * block ) {
+ print_solver_parameters( std::vector< Block * >{ block } );
+ }
+
+/*--------------------------------------------------------------------------*/
 /// compute() the Block with all available Solver(s) (unless dry run)
+/** With -v 2, print_solver_parameters() is called first. */
 
 int solve_all( Block * block );
 
