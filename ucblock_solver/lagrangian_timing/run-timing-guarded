@@ -81,6 +81,16 @@ while [ $try -lt "$TRIES" ]; do
     say "$(basename "$out"): the MILP was asked for and not one solve was timed, see ${out%.csv}.err"
     mv "$out.part" "${out%.csv}.NO-MILP.csv"; exit 1
   fi
+  # a solve that throws takes the harness down with it, and what is left behind
+  # is a file that looks like a measurement and is a truncated sweep: the units
+  # differ from one another, so the fleet has to be timed whole or not at all
+  units=$(ls "$dumps"/*.nc4 2>/dev/null |
+          sed 's/.*TUB-\([0-9]*\)-[0-9]*\.nc4/\1/' | sort -u | wc -l)
+  seen=$(awk -F, 'NR>1{ u[ $1 ] = 1 } END{ print length( u ) }' "$out.part")
+  if [ "$seen" -lt "$units" ]; then
+    say "$(basename "$out"): $seen of $units units were timed, see ${out%.csv}.err"
+    mv "$out.part" "${out%.csv}.PARTIAL-try$try.csv"; sleep 600; continue
+  fi
   if awk -v x="$l1" -v q="$QUIET" 'BEGIN{exit !(x<q)}'; then
     mv "$out.part" "$out"
     say "$(basename "$out"): done in $((SECONDS-t0))s, $rows rows, load $l0 -> $l1"

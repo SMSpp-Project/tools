@@ -77,6 +77,7 @@
 #include <filesystem>
 #include <regex>
 #include <cstdlib>
+#include <thread>
 
 #include "Block.h"
 #include "BlockSolverConfig.h"
@@ -223,15 +224,33 @@ static std::vector< Row > time_unit(
   bsc->clear(); bsc->apply( tub ); delete bsc; delete b; return( out ); }
  Solver * s = tub->get_registered_solvers().back();
 
+ // the license service of a commercial solver refuses a request every now and
+ // then, in the middle of a campaign and for reasons that have nothing to do
+ // with the problem at hand, and a refusal throws; since a refused solve is
+ // not a measurement and a missing sample is not an experimental fact, it is
+ // waited out and asked again until it goes through, the wait growing up to a
+ // minute so that a service that is down for a while is not hammered
  auto timed_compute = [ & ]() -> double {
-  auto t0 = std::chrono::steady_clock::now();
-  s->compute();
-  auto t1 = std::chrono::steady_clock::now();
-  return( std::chrono::duration< double , std::micro >( t1 - t0 ).count() );
+  for( unsigned int trial = 0 ; ; ++trial ) {
+   try {
+    auto t0 = std::chrono::steady_clock::now();
+    s->compute();
+    auto t1 = std::chrono::steady_clock::now();
+    return( std::chrono::duration< double , std::micro >( t1 - t0 ).count() );
+    }
+   catch( const std::exception & e ) {
+    std::cerr << "timing_harness: a solve was refused (" << e.what()
+	      << "), asking again" << std::endl;
+    std::this_thread::sleep_for( std::chrono::seconds(
+                                  std::min( 5u << std::min( trial , 4u ) ,
+                                            60u ) ) );
+    }
+   }
   };
 
  // cold: the one-off first solve (model build + solve) - - - - - - - - - - -
- out.push_back( { dumps.front().first , timed_compute() , "cold" } );
+ if( auto c = timed_compute() ; c >= 0 )
+  out.push_back( { dumps.front().first , c , "cold" } );
 
  // warm: push each later iteration's Lagrangian costs into the SAME Block and
  // re-optimize, as the dual does (no detach/re-attach, no rebuild) - - - - - -
@@ -242,14 +261,16 @@ static std::vector< Row > time_unit(
   std::vector< double > ts; ts.reserve( reps );
   for( int r = 0 ; r < reps ; ++r ) {
    apply_costs( tub , cur );              // issues the Modifications the Solver
-   ts.push_back( timed_compute() );       // consumes -> warm re-optimization
+   if( auto t = timed_compute() ; t >= 0 ) // consumes -> warm re-optimization
+    ts.push_back( t );
    // re-dirty with the previous costs so the next timed solve does real work
    // (re-setting the same costs would be a no-op the Solver could skip)
    if( ( r + 1 < reps ) && ( ! prev.lin.empty() ) ) {
     apply_costs( tub , prev );
-    s->compute();
+    try { s->compute(); } catch( const std::exception & ) {}
     }
    }
+  if( ts.empty() ) { prev = std::move( cur ); continue; }
   out.push_back( { dumps[ i ].first , median( ts ) , "warm" } );
   prev = std::move( cur );
   }
