@@ -8,7 +8,7 @@
  * file. This tool can be executed as follows:
  *
  *   ./tssb_solver [-s] [-e] [-m NUMBER] [-B FILE] [-S FILE] [-p PATH]
- *                 [-c PATH] < nc4-file >
+ *                 [-c PATH] [-k] < nc4-file >
  *
  * The only mandatory argument is the netCDF file containing the description
  * of the TwoStageStochasticBlock. This can be either a BlockFile or
@@ -34,6 +34,14 @@
  * options is not provided when the given netCDF file is a BlockFile, then
  * default configurations are considered.
  *
+ * The -k option solves the Benders form of each TwoStageStochasticBlock
+ * rather than the TwoStageStochasticBlock itself [see
+ * TwoStageStochasticBlock::get_Benders_form()]: the BlockConfig is applied
+ * to the TwoStageStochasticBlock, the Benders form is assembled around it,
+ * and the BlockSolverConfig is applied to the root of the form, which is
+ * where a Benders decomposition Solver is attached. The form is given back
+ * once solved. It is only available for a BlockFile.
+ *
  * \author Antonio Frangioni \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
@@ -51,6 +59,8 @@
 #include <iomanip>
 #include <iostream>
 
+#include <AbstractBlock.h>
+
 #include <TwoStageStochasticBlock.h>
 
 #include "common_utils.h"
@@ -64,19 +74,41 @@ using namespace SMSpp_di_unipi_it;
 /*--------------------------------------------------------------------------*/
 /*------------------------------- GLOBALS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+bool benders_form = false;  ///< solve the Benders form (-k)
+
+const std::string my_short_opts = "k";
+
+const std::vector< option > my_long_opts = {
+  { "benders" , no_argument , nullptr , 'k' }
+  };
+
+const std::string my_help =
+ "  -k, --benders                   solve the Benders form of the problem,\n"
+ "                                  the Solver being attached to its root";
+
+/*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 static bool process_specific_arg( int opt )
 {
- // tssb_solver has no tool-specific options
- return( false );
+ switch( opt ) {  // non-standard options
+  case 'k': benders_form = true; return( true );
+  default: return( false );
+  }
  }
 
 /*--------------------------------------------------------------------------*/
 
 void process_prob_file( const netCDF::NcFile & file )
 {
+ if( benders_form ) {
+  std::cout << "Error: the Benders form (-k) needs a Block file, whose "
+               "BlockSolverConfig is given by -S" << std::endl;
+  exit( 1 );
+  }
+
  auto problems = file.getGroups();
 
  for( auto & problem : problems ) {  // for each problem descriptor:
@@ -106,11 +138,65 @@ void process_prob_file( const netCDF::NcFile & file )
 
 /*--------------------------------------------------------------------------*/
 
+/// solves the Benders form of the TwoStageStochasticBlock in \p group
+/** The BlockConfig is applied to the TwoStageStochasticBlock, whose abstract
+ * representation is then generated, since the form is read off it; the
+ * BlockSolverConfig is applied to the root of the form. */
+
+static void solve_Benders_form( const std::string & name ,
+                                const netCDF::NcGroup & group )
+{
+ require_solver_config( sconf_file );
+ auto block = get_Block( group );
+ auto tssb = dynamic_cast< TwoStageStochasticBlock * >( block );
+ if( ! tssb ) {
+  std::cout << "Error: " << name << " not a TwoStageStochasticBlock"
+            << std::endl;
+  exit( 1 );
+  }
+
+ auto b_config = get_config( bconf_file );
+ config_Block( block , b_config , nullptr );
+ delete b_config;
+
+ tssb->generate_abstract_variables();
+ tssb->generate_abstract_constraints();
+ tssb->generate_objective();
+
+ auto form = tssb->get_Benders_form();
+ if( ! form ) {
+  std::cout << "Error: " << name << " declares no here-and-now Variable, "
+               "hence it has no Benders form" << std::endl;
+  exit( 1 );
+  }
+
+ auto s_config = get_config( sconf_file );
+ config_Block( form , nullptr , s_config );
+
+ set_solver_logs( form );
+
+ // Solve
+ solve_all( form );
+
+ // cleanup
+ cleanup_bsc( form , s_config );
+ delete s_config;
+ tssb->give_back_Benders_form( form );
+ delete block;
+ }
+
+/*--------------------------------------------------------------------------*/
+
 void process_block_file( const netCDF::NcFile & file )
 {
  auto blocks = file.getGroups();
 
  for( auto & b : blocks ) {  // for each Block descriptor
+  if( benders_form ) {
+   solve_Benders_form( b.first , b.second );
+   continue;
+   }
+
   Block * block;
   Configuration * s_config;
   get_all( b.second , bconf_file , sconf_file , block , s_config );
@@ -158,6 +244,9 @@ int main( int argc , char ** argv )
   "  tssb_solver -S TSSBSCfg-LD.txt instance.nc4\n"
   "      solve the Lagrangian dual of the scenario decomposition, whose\n"
   "      master problem needs CPLEX or Gurobi\n"
+  "  tssb_solver -k -S TSSBSCfg-BDS.txt instance.nc4\n"
+  "      solve the Benders form of the problem with the\n"
+  "      BendersDecompositionSolver of TSSBSCfg-BDS.txt\n"
   "  tssb_solver -c myconfig/ instance.nc4\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
@@ -171,6 +260,11 @@ int main( int argc , char ** argv )
  default_sconf_name = "TSSBSCfg.txt";
 
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
+
+ short_opts.append( my_short_opts );
+ long_opts.insert( std::prev( long_opts.end() ) ,
+                   my_long_opts.begin() , my_long_opts.end() );
+ help.append( my_help );
 
  process_args( argc , argv , process_specific_arg );
 
