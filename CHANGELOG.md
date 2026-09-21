@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `-R, --recover <file>` in `tssb_solver`: a feasible solution is recovered
+  after a Solver that only gives a bound, e.g., a LagrangianDualSolver: the
+  here-and-now Variable of every leaf are fixed to their mean over the
+  leaves, rounded where they are integer, each leaf is solved alone with the
+  BlockSolverConfig in `<file>`, and the value of the solution is printed
+  with its gap to the bound
 - `-k, --benders` in `tssb_solver`: the Benders form of the problem is
   assembled around it [see TwoStageStochasticBlock::get_Benders_form()] and
   the BlockSolverConfig of `-S` is applied to its root, which is where a
