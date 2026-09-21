@@ -49,7 +49,9 @@
  * alone with the BlockSolverConfig given to -R, and the sum of their values
  * is the value of a feasible solution, printed with the gap to the bound.
  * The primal solution the Solver gives, if any, is written first, so that
- * the mean is taken on it. It is only available for a BlockFile.
+ * the mean is taken on it. The leaves, independent once the design is
+ * fixed, are solved by the number of threads given to -j. It is only
+ * available for a BlockFile.
  *
  * \author Antonio Frangioni \n
  *         Dipartimento di Informatica \n
@@ -74,7 +76,15 @@
 
 #include <chrono>
 
+#include <atomic>
+
 #include <cmath>
+
+#include <exception>
+
+#include <mutex>
+
+#include <thread>
 
 #include <TwoStageStochasticBlock.h>
 
@@ -94,11 +104,14 @@ bool benders_form = false;  ///< solve the Benders form (-k)
 
 std::string recover_sconf;  ///< BlockSolverConfig of the leaves (-R)
 
-const std::string my_short_opts = "kR:";
+int recover_threads = 1;    ///< threads solving the leaves in -R (-j)
+
+const std::string my_short_opts = "kR:j:";
 
 const std::vector< option > my_long_opts = {
   { "benders" , no_argument , nullptr , 'k' } ,
-  { "recover" , required_argument , nullptr , 'R' }
+  { "recover" , required_argument , nullptr , 'R' } ,
+  { "threads" , required_argument , nullptr , 'j' }
   };
 
 const std::string my_help =
@@ -107,7 +120,9 @@ const std::string my_help =
  "  -R, --recover <file>            recover a feasible solution by fixing\n"
  "                                  the here-and-now Variable to their mean\n"
  "                                  over the leaves and solving each leaf\n"
- "                                  with the BlockSolverConfig in <file>";
+ "                                  with the BlockSolverConfig in <file>\n"
+ "  -j, --threads <n>               threads solving the leaves in -R\n"
+ "                                  [default: 1]";
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -118,6 +133,7 @@ static bool process_specific_arg( int opt )
  switch( opt ) {  // non-standard options
   case 'k': benders_form = true; return( true );
   case 'R': recover_sconf = std::string( optarg ); return( true );
+  case 'j': recover_threads = std::atoi( optarg ); return( true );
   default: return( false );
   }
  }
@@ -255,9 +271,15 @@ static void recover_primal( TwoStageStochasticBlock * tssb , double lb )
   exit( 1 );
   }
 
- double ub = 0;
- bool feasible = true;
- for( Index l = 0 ; ( l < L ) && feasible ; ++l ) {
+ /* The leaves are independent once the design is fixed: each one has its
+  * own Variable, its own copy of the BlockSolverConfig and so its own
+  * Solver, hence they are solved by recover_threads threads, each writing
+  * the value of its leaf into its own slot, and summed at the end. */
+
+ std::vector< double > value( L , 0 );
+ std::vector< char > solved( L , 0 );
+
+ auto one = [ & ]( Index l ) {
   auto leaf = tssb->get_leaf_block( l );
   std::vector< bool > was_fixed( n );
   for( Index j = 0 ; j < n ; ++j ) {
@@ -269,17 +291,14 @@ static void recover_primal( TwoStageStochasticBlock * tssb , double lb )
   // a copy per leaf, clear()-ing it being what detaches its Solver
   auto lbsc = bsc->clone();
   lbsc->apply( leaf );
-  if( leaf->get_registered_solvers().empty() ) {
-   std::cout << "Error: " << recover_sconf << " attaches no Solver to leaf "
-             << l << std::endl;
-   exit( 1 );
+  if( ! leaf->get_registered_solvers().empty() ) {
+   auto solver = leaf->get_registered_solvers().front();
+   const auto status = solver->compute();
+   if( ( status == Solver::kOK ) || ( status == Solver::kLowPrecision ) ) {
+    value[ l ] = solver->get_ub();
+    solved[ l ] = 1;
+    }
    }
-  auto solver = leaf->get_registered_solvers().front();
-  const auto status = solver->compute();
-  if( ( status == Solver::kOK ) || ( status == Solver::kLowPrecision ) )
-   ub += solver->get_ub();
-  else
-   feasible = false;
 
   lbsc->clear();
   lbsc->apply( leaf );
@@ -287,6 +306,40 @@ static void recover_primal( TwoStageStochasticBlock * tssb , double lb )
   for( Index j = 0 ; j < n ; ++j )
    if( ! was_fixed[ j ] )
     xk[ l ][ j ]->is_fixed( false , eNoMod );
+  };
+
+ const Index nt = std::min( Index( std::max( recover_threads , 1 ) ) , L );
+ std::atomic< Index > next( 0 );
+ std::exception_ptr error;
+ std::mutex error_mutex;
+ auto worker = [ & ]( void ) {
+  for( Index l ; ( l = next++ ) < L ; )
+   try {
+    one( l );
+    }
+   catch( ... ) {
+    std::lock_guard< std::mutex > guard( error_mutex );
+    if( ! error )
+     error = std::current_exception();
+    next = L;
+    return;
+    }
+  };
+
+ std::vector< std::thread > pool;
+ for( Index t = 1 ; t < nt ; ++t )
+  pool.emplace_back( worker );
+ worker();
+ for( auto & th : pool )
+  th.join();
+ if( error )
+  std::rethrow_exception( error );
+
+ double ub = 0;
+ bool feasible = true;
+ for( Index l = 0 ; l < L ; ++l ) {
+  feasible = feasible && solved[ l ];
+  ub += value[ l ];
   }
 
  delete bsc;

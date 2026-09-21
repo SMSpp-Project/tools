@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   leaves, rounded where they are integer, each leaf is solved alone with the
   BlockSolverConfig in `<file>`, and the value of the solution is printed
   with its gap to the bound
+- `-j, --threads <n>` in `tssb_solver`: the leaves of `-R`, independent once
+  the design is fixed, are solved by `<n>` threads
 - `-k, --benders` in `tssb_solver`: the Benders form of the problem is
   assembled around it [see TwoStageStochasticBlock::get_Benders_form()] and
   the BlockSolverConfig of `-S` is applied to its root, which is where a
