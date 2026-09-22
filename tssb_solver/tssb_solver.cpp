@@ -42,6 +42,12 @@
  * where a Benders decomposition Solver is attached. The form is given back
  * once solved. It is only available for a BlockFile.
  *
+ * A MultiStageStochasticBlock is a TwoStageStochasticBlock, and this tool
+ * solves it as well when it is built with that module: with -k, the
+ * sub-Block of the form are the leaves of the scenario tree, which is the
+ * Benders form of the problem as long as the only here-and-now Variable are
+ * those of the root.
+ *
  * The -R option recovers a feasible solution after a Solver that only gives
  * a bound, e.g., a LagrangianDualSolver relaxing the non-anticipativity
  * Constraint: the here-and-now Variable of every leaf are fixed to their

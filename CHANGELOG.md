@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `tssb_solver` also solves a MultiStageStochasticBlock when the module is
+  built, `-k` giving the Benders form over the leaves of its scenario tree
 - `-R, --recover <file>` in `tssb_solver`: a feasible solution is recovered
   after a Solver that only gives a bound, e.g., a LagrangianDualSolver: the
   here-and-now Variable of every leaf are fixed to their mean over the
