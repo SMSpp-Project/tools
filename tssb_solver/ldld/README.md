@@ -54,9 +54,13 @@ umbrella project, `make` builds `ldld_bench` here.
     ./run-campaign results/<name>         # every method on every instance
     python plot_ldld.py results/<name>    # figures and tables.tex
 
-`instances.txt` lists the instances with the arguments of the generator: the
-thermal family is swept along one axis at a time (units, horizon, scenarios,
-buses) around a common point, so that each figure reads one axis. The last
+`instances.txt` lists the instances with the arguments of the generator. They
+are PyPSA networks, written by the generators in `gen/` and converted by
+pypsa2smspp. The scaling axis grows the thermal family in units (10, 20, 50,
+100) and horizon (a day, a week and a month at hourly resolution), with 5
+seeds at each size, whose spread the figures and tables report; the other
+axes sweep one parameter at a time (scenarios, buses) around a common point,
+so that each figure reads one axis. The last
 axis is that of the three-stage trees (`ttr_` instances, by
 `gen/gen_thermal_tree.py`): the outer stage is the climate year, which scales
 the availability of the renewables, the inner one the demand, drawn

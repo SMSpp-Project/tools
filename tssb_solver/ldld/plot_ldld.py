@@ -12,6 +12,11 @@ writes in <out-dir>:
 - on the tree axis the recursive form on the MultiStageStochasticBlock is
   the method LDtree, the others being run on the TwoStageStochasticBlock of
   the same leaves (<name>_2s), and the abscissa is the number of leaves;
+- on the scaling axis, whose instances come in 5 seeds per size, the time of
+  a method at a size is the geometric mean over the seeds it solved, and
+  time-scaling-u<units>.pdf draws it against the horizon, one figure per
+  number of units, while its table gives, for each size and method, that
+  time, the number of seeds solved and the mean gap of the bound;
 - tables.tex, one table per axis: for each instance and method the time,
   the relative gap of the bound to the reference value and, for the methods
   with a primal recovery, the gap of the recovered solution to the bound.
@@ -24,8 +29,11 @@ noise any comparison between two methods is to be read against. A run whose
 load at the end was above QUIET is left out, since it is not a measure.
 """
 
+import re
 import sys
 from pathlib import Path
+
+import numpy as np
 
 import pandas as pd
 import matplotlib
@@ -40,9 +48,7 @@ METHODS = ["MILP", "MILP1", "LP", "LD", "LDLD", "LDrec", "LDtree"]
 STYLE = {"MILP": ("k", "s"), "MILP1": ("0.5", "s"), "LP": ("0.7", "v"),
          "LD": ("tab:blue", "o"), "LDLD": ("tab:green", "^"),
          "LDrec": ("tab:red", "D"), "LDtree": ("tab:purple", "P")}
-AXIS = {"units": ("u", "number of units"),
-        "horizon": ("t", "number of periods"),
-        "scenarios": ("s", "number of scenarios"),
+AXIS = {"scenarios": ("s", "number of scenarios"),
         "buses": ("b", "number of buses"),
         "tree": ("cd", "number of leaves")}
 COLS = ["instance", "method", "status", "lb", "ub", "time", "iter", "rss",
@@ -96,6 +102,7 @@ def main(out):
     ref = ref.set_index("instance")["ub"]
 
     tables = []
+    tables.append(scaling(agg, ref, inst, out))
     for axis, (key, label) in AXIS.items():
         names = inst[inst["axis"] == axis]["instance"]
         sub = agg[agg["instance"].isin(names)].copy()
@@ -153,6 +160,70 @@ def main(out):
             "\\midrule\n" + "\n".join(rows) + "\n\\bottomrule\n\\end{tabular}"
             f"\n% axis: {axis}\n")
     (out / "tables.tex").write_text("\n".join(tables))
+
+
+def scaling(agg, ref, inst, out):
+    """The scaling axis: sizes in units x horizon, seeds aggregated."""
+    names = set(inst[inst["axis"] == "scaling"]["instance"])
+    sub = agg[agg["instance"].isin(names)].copy()
+    if sub.empty:
+        return ""
+    sub["size"] = sub["instance"].str.replace(r"_k\d+$", "", regex=True)
+    sub["u"] = sub["size"].map(lambda n: value_of(n, "u"))
+    sub["t"] = sub["size"].map(lambda n: value_of(n, "t"))
+    sub["ref"] = sub["instance"].map(ref)
+    sub["solved"] = sub["status"].isin(OK)
+    sub["bgap"] = 100 * (sub["ref"] - sub["lb"]) / sub["ref"].abs()
+
+    def geomean(x):
+        return float(np.exp(np.log(x).mean())) if len(x) else np.nan
+
+    rows = []
+    for (size, m), d in sub.groupby(["size", "method"]):
+        ok = d[d["solved"]]
+        rows.append({"size": size, "u": d["u"].iloc[0], "t": d["t"].iloc[0],
+                     "method": m, "time": geomean(ok["time"]),
+                     "solved": len(ok), "seeds": len(d),
+                     "gap": ok["bgap"].mean()})
+    res = pd.DataFrame(rows)
+
+    for u, du in res.groupby("u"):
+        fig, ax = plt.subplots(figsize=(4.5, 3.2))
+        for m in METHODS:
+            d = du[du["method"] == m].sort_values("t")
+            if d.empty:
+                continue
+            c, mk = STYLE[m]
+            ax.plot(d["t"], d["time"], mk + "-", color=c, lw=1, label=m)
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_xlabel("number of periods")
+        ax.set_ylabel("time (s), geometric mean over the seeds")
+        ax.set_title(f"{u} units", fontsize=9)
+        ax.legend(fontsize=7, frameon=False)
+        fig.tight_layout()
+        fig.savefig(out / f"time-scaling-u{u}.pdf")
+        plt.close(fig)
+
+    cols = ["MILP", "MILP1", "LD", "LDLD", "LDrec"]
+    lines = []
+    for (u, t), d in res.groupby(["u", "t"]):
+        row = [str(u), str(t)]
+        for m in cols:
+            e = d[d["method"] == m]
+            if e.empty:
+                row += ["", ""]
+                continue
+            e = e.iloc[0]
+            row += ["--" if np.isnan(e["time"]) else f"{e['time']:.1f}",
+                    f"{e['solved']}/{e['seeds']}"]
+        lines.append(" & ".join(row) + r" \\")
+    head = " & ".join(rf"\multicolumn{{2}}{{c}}{{{m}}}" for m in cols)
+    return ("\\begin{tabular}{rr" + "rr" * len(cols) + "}\n\\toprule\n"
+            f"$u$ & $n$ & {head} \\\\\n"
+            " & " + " & time & solved" * len(cols) + " \\\\\n\\midrule\n"
+            + "\n".join(lines) + "\n\\bottomrule\n\\end{tabular}\n"
+            "% axis: scaling\n")
 
 
 if __name__ == "__main__":
