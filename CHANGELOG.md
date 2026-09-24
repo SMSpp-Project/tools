@@ -123,7 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.4] - 2025-12-12
 
-### Added 
+### Added
 
 - support fir set\_solver\_log() in all solvers
 
@@ -137,7 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - support for reading initial Solution and writing the final one
 
-### Changed 
+### Changed
 
 - all things that can be changed, and the common definitions, are
   now in makefile\_common to reduce code duplication within makefiles
@@ -148,7 +148,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - updated block solver handling in CutProcessing
 
-### Fixed 
+### Fixed
 
 - consider UnitBlock scaling when outputting the solution
 
@@ -157,7 +157,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.3] - 2024-02-29
 
-### Changed 
+### Changed
 
 - adapted to new CMake / makefile organisation
 
@@ -190,6 +190,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The initial up and downtimes of thermal units are only updated in
   investment_solver when a single scenario is being simulated.
+
 - Linearization of InvestmentFunction.
 
 ## [0.5.1] - 2022-07-01
@@ -197,7 +198,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - The investment_solver tool to solve an InvestmentBlock.
+
 - The chgcfg tool to change configuration files.
+
 - Consecutive simulations to sddp_solver.
 
 ## [0.5.0] - 2021-12-08
@@ -205,13 +208,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Multiple parameters to sddp_solver.
-- Consecutive simulations to sddp_solver.
+
 - MPI support to sddp_solver.
+
 - Configuration of LagrangianDualSolver in sddp_solver.
 
 ### Fixed
 
 - Output of UCBlock solution.
+
 - Initial conditions for simulation in sddp_solver.
 
 ## [0.4.0] - 2021-02-05
@@ -223,6 +228,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Block/ucblock/thermalunit solvers have now the same interface.
+
 - Major review of project tree.
 
 ## [0.3.1] - 2020-09-28
