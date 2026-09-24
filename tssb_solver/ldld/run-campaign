@@ -24,7 +24,10 @@
 # METHODS (default "0 1 2 3 4 5", the indices of the Solver in
 # config/TSSBSCfg.txt), REPS (default 1), QUIET (default 8), TIMEOUT
 # (seconds of wall time, default 5400, the methods themselves stopping at
-# 3600), JOBS (threads of the primal recovery, default 1).
+# 3600), JOBS (threads of the primal recovery, default 1), BUSY (an
+# extended regular expression on the command lines of the processes of the
+# machine: while one of them runs, e.g., another campaign whose load the
+# threshold would let through, no run is started; default none).
 #
 # A facility location instance (cfl_) runs the MILP, its relaxation and the
 # MILP on one thread with the strong constraints x_ij <= y_i separated
@@ -44,7 +47,14 @@ names=(MILP LP LD LDLD LDrec MILP1)
 recover=(0 0 1 1 1 0)
 
 load()  { cut -d' ' -f1 /proc/loadavg; }
-quiet() { awk -v x="$(load)" -v q="$QUIET" 'BEGIN{exit !(x<q)}'; }
+quiet() {
+  awk -v x="$(load)" -v q="$QUIET" 'BEGIN{exit !(x<q)}' || return 1
+  # the pattern is matched against the others' command lines, this script
+  # and the grep of this very test excluded, which carry it in theirs
+  [ -z "${BUSY:-}" ] ||
+    ! ps -eo args= | grep -v -e "run-campaign" -e "grep" |
+      grep -Eq -- "$BUSY"
+}
 say()   { echo "[$(date +%m-%d_%H:%M)] $*"; }
 
 [ -x "$bench" ] || { echo "run-campaign: no ldld_bench at $bench" >&2; exit 1; }
