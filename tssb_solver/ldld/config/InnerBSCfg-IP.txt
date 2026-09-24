@@ -1,0 +1,22 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - InnerBSCfg-IP.txt - - - - - - - - - - - - - - -
+#
+# The meta-BlockSolverConfig of the LagBFunctions of the scenario
+# decomposition, whose Block is a scenario: the scenario is solved as an
+# integer problem (the entry "*"), the thermal units being given their
+# dynamic programming solver as in InnerBSCfg.txt
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# a "meta"-BlockSolverConfig, i.e., a map classname --> its BlockSolverConfig
+SimpleConfiguration<std::map<std::string,Configuration*>>
+
+2 # the number of elements in the map
+
+ThermalUnitBlock *TUBSCfg-DP.txt
+*                *ScnBSCfg-IP.txt
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - END InnerBSCfg-IP.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

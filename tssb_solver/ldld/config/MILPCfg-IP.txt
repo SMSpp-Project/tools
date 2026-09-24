@@ -1,0 +1,53 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - MILPCfg-IP.txt - - - - - - - - - - - - - - - 
+#
+# The ComputeConfig of the :MILPSolver on the deterministic equivalent: the
+# integer problem, with the Perspective Cuts of the thermal units separated,
+# to the relative gap 1e-6 and one hour at most
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ComputeConfig         # exact type of the ComputeConfig object
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+3 # number of integer parameters
+
+# now all the integer parameters
+intLogVerb      0 # log verbosity of the MILPSolver
+intRelaxIntVars 0 # nonzero if the continuous relaxation is solved
+intCutSepPar    7 # separation of the dynamic constraints
+
+2 # number of double parameters
+
+# now all the double parameters
+dblRelAcc  1e-6 # relative accuracy required to solution
+dblMaxTime 3600 # maximum time for a call
+
+0 # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END MILPCfg-IP.txt - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

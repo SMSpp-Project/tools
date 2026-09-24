@@ -1,0 +1,70 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  UnitBSCfg-LP.txt - - - - - - - - - - - - - - -
+#
+# The BlockSolverConfig of a unit that is not a thermal one, e.g., an
+# intermittent unit or a storage, when it is a component of a Lagrangian
+# dual: the continuous problem, solved by a :MILPSolver
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+1 # number of (the names of) Solver in this BlockSolverConfig
+
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+GRBMILPSolver # 1st Solver: the unit
+
+1 # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig
+
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ComputeConfig         # exact type of the ComputeConfig object
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+4 # number of integer parameters
+
+# now all the integer parameters
+intLogVerb      0 # log verbosity of the MILPSolver
+intRelaxIntVars 1 # nonzero if the continuous relaxation is solved
+Presolve        0 # Gurobi: presolve off, for reproducibility
+NumericFocus    3 # Gurobi: the most numerical care
+
+1 # number of double parameters
+
+# now all the double parameters
+dblRelAcc 1e-8 # relative accuracy required to solution
+
+0 # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - -  END UnitBSCfg-LP.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

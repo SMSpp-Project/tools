@@ -1,0 +1,32 @@
+# The instances of the study: one per line, the name followed by the
+# arguments of gen/gen_thermal_tssb.py. The thermal family is swept along
+# one axis at a time around a common point, so that each figure of the
+# paper reads one axis:
+#   units      u in {10, 20, 40, 80, 160}, 96 periods, 5 scenarios
+#   horizon    t in {24, 48, 96, 168, 336, 720}, 80 units, 3 scenarios
+#   scenarios  s in {3, 5, 10, 20, 50}, 40 units, 96 periods
+#   buses      b in {1, 2, 4, 8, 15}, 80 units, 96 periods, 3 scenarios
+# The seed is that of the generator, fixed, so that the files are rebuilt
+# identical from this list.
+#
+# name                  axis       arguments
+tuc_u10_t96_s5_b1       units      --units 10 --snapshots 96 --scenarios 5 --buses 1
+tuc_u20_t96_s5_b1       units      --units 20 --snapshots 96 --scenarios 5 --buses 1
+tuc_u40_t96_s5_b1       units      --units 40 --snapshots 96 --scenarios 5 --buses 1
+tuc_u80_t96_s5_b1       units      --units 80 --snapshots 96 --scenarios 5 --buses 1
+tuc_u160_t96_s5_b1      units      --units 160 --snapshots 96 --scenarios 5 --buses 1
+tuc_u80_t24_s3_b1       horizon    --units 80 --snapshots 24 --scenarios 3 --buses 1
+tuc_u80_t48_s3_b1       horizon    --units 80 --snapshots 48 --scenarios 3 --buses 1
+tuc_u80_t96_s3_b1       horizon    --units 80 --snapshots 96 --scenarios 3 --buses 1
+tuc_u80_t168_s3_b1      horizon    --units 80 --snapshots 168 --scenarios 3 --buses 1
+tuc_u80_t336_s3_b1      horizon    --units 80 --snapshots 336 --scenarios 3 --buses 1
+tuc_u80_t720_s3_b1      horizon    --units 80 --snapshots 720 --scenarios 3 --buses 1
+tuc_u40_t96_s3_b1       scenarios  --units 40 --snapshots 96 --scenarios 3 --buses 1
+tuc_u40_t96_s5_b1       scenarios  --units 40 --snapshots 96 --scenarios 5 --buses 1
+tuc_u40_t96_s10_b1      scenarios  --units 40 --snapshots 96 --scenarios 10 --buses 1
+tuc_u40_t96_s20_b1      scenarios  --units 40 --snapshots 96 --scenarios 20 --buses 1
+tuc_u40_t96_s50_b1      scenarios  --units 40 --snapshots 96 --scenarios 50 --buses 1
+tuc_u80_t96_s3_b2       buses      --units 80 --snapshots 96 --scenarios 3 --buses 2
+tuc_u80_t96_s3_b4       buses      --units 80 --snapshots 96 --scenarios 3 --buses 4
+tuc_u80_t96_s3_b8       buses      --units 80 --snapshots 96 --scenarios 3 --buses 8
+tuc_u80_t96_s3_b15      buses      --units 80 --snapshots 96 --scenarios 3 --buses 15

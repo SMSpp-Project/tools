@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `tssb_solver/ldld`, the computational study on the nested and the
+  recursive Lagrangian dual of a `TwoStageStochasticBlock`: a driver of its
+  own (`ldld_bench`, which runs one `Solver` of a `BlockSolverConfig` per
+  process and prints its bound, time, iterations and peak memory, with an
+  optional primal recovery), the configuration of the six methods, the
+  generation of the instances, the campaign guarded by the load of the
+  machine and the figures and tables; it depends on nothing else in the
+  tools and is built on its own, with CMake against an installation or with
+  its makefile
+
 ### Changed
 
 ### Fixed

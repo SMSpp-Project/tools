@@ -1,0 +1,52 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - LDCfg-TSSB.txt - - - - - - - - - - - - - - - 
+#
+# The ComputeConfig of a LagrangianDualSolver attached to the
+# TwoStageStochasticBlock, i.e., of the dual over the scenarios, common to
+# the scenario decomposition, the nested and the recursive form: one hour at
+# most, as the MILP it is compared with, and the log that the profiles of
+# convergence are read from
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+*LDCfg.txt +
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+2 # number of integer parameters
+
+# now all the integer parameters
+int_LDSlv_iBCopy 0 # 1 if sub-Block must be R3B-copied
+intLogVerb       1 # log verbosity of main Bundle algorithm
+
+3 # number of double parameters
+
+# now all the double parameters
+dblMaxTime  3600 # maximum time for a call
+dbltStar   -1e+0 # multiplied to || residual || to estimate the gap
+dbltInit    1e-3 # initial value for t
+
+0 # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END LDCfg-TSSB.txt - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

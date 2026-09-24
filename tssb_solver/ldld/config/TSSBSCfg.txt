@@ -1,0 +1,204 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -  TSSBSCfg.txt - - - - - - - - - - - - - - - -
+#
+# The BlockSolverConfig of the TwoStageStochasticBlock: one Solver per
+# method of the study, ldld_bench -k choosing the one to run, so that each
+# method runs alone in its own process:
+#   0  MILP   the deterministic equivalent, integer
+#   1  LP     its continuous relaxation
+#   2  LD     the dual over the scenarios, each scenario solved as a MILP
+#   3  LDLD   the nested form, each scenario solved by an inner dual
+#   4  LDrec  the recursive form, the units of all the scenarios at once
+#   5  MILP1  the MILP of 0 on one thread, as the duals run
+# The nested and the recursive form give the same bound
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+6 # number of (the names of) Solver in this BlockSolverConfig
+
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+GRBMILPSolver        # 1st Solver: MILP
+GRBMILPSolver        # 2nd Solver: LP
+LagrangianDualSolver # 3rd Solver: LD
+LagrangianDualSolver # 4th Solver: LDLD
+LagrangianDualSolver # 5th Solver: LDrec
+GRBMILPSolver        # 6th Solver: MILP1
+
+6 # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig
+
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+*MILPCfg-IP.txt
+
+# 2nd ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+*MILPCfg-IP.txt +
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+1 # number of integer parameters
+
+# now all the integer parameters
+intRelaxIntVars 1 # nonzero if the continuous relaxation is solved
+
+0 # number of double parameters
+
+# now all the double parameters
+# [none]
+
+0 # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# 3rd ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+*LDCfg-TSSB.txt +
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+1 # number of integer parameters
+
+# now all the integer parameters
+intTrgtMng 0 # no targets: the components are exact MILPs
+
+0 # number of double parameters
+
+# now all the double parameters
+# [none]
+
+1 # number of string parameters
+
+# now all the string parameters
+str_LagBF_BSCfg InnerBSCfg-IP.txt # BlockSolverConfig of the LagBF
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# 4th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+*LDCfg-LDLD.txt
+
+# 5th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+*LDCfg-LDLD.txt +
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+1 # number of integer parameters
+
+# now all the integer parameters
+intRecursive 1 # decompose the descendants too
+
+0 # number of double parameters
+
+# now all the double parameters
+# [none]
+
+1 # number of string parameters
+
+# now all the string parameters
+str_LagBF_BSCfg InnerBSCfg.txt # BlockSolverConfig of the LagBF
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# 6th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+*MILPCfg-IP.txt +
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+1 # number of integer parameters
+
+# now all the integer parameters
+Threads 1 # Gurobi: one thread
+
+0 # number of double parameters
+
+# now all the double parameters
+# [none]
+
+0 # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  END TSSBSCfg.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+#
+# run-campaign < out-dir > [ name ... ]
+#
+# Runs every method of the study on every instance of instances.txt (or on
+# those named) and appends one line per run to <out-dir>/runs.csv:
+#
+#   instance,method,status,lb,ub,time,iter,rss,rub,rtime,gap,rep,l0,l1
+#
+# the first eleven fields being those of ldld_bench (rub, rtime and gap are
+# empty for a method with no primal recovery), rep the repetition, l0 and l1
+# the load of the machine at the start and at the end of the run. The log of
+# each run goes to <out-dir>/logs/<instance>.<method>.<rep>.log.
+#
+# Each run is a process of its own, one at a time, and starts only when the
+# load is below $QUIET: the times of the paper are taken on an otherwise idle
+# machine, and a run whose load was above $QUIET at its end is marked by its
+# l1 and is to be repeated, not quoted. A run already in runs.csv is skipped,
+# so that an interrupted campaign is resumed by launching it again. With
+# REPS=2 every run is repeated, which measures the noise (the same method
+# against itself) before two methods are compared.
+#
+# Environment: BENCH (the ldld_bench to run, default build/ldld_bench),
+# METHODS (default "0 1 2 3 4 5", the indices of the Solver in
+# config/TSSBSCfg.txt), REPS (default 1), QUIET (default 8), TIMEOUT
+# (seconds of wall time, default 5400, the methods themselves stopping at
+# 3600), JOBS (threads of the primal recovery, default 1).
+
+set -u
+out=${1:?usage: run-campaign <out-dir> [name ...]}
+shift
+here=$(cd "$(dirname "$0")" && pwd)
+bench=${BENCH:-$here/build/ldld_bench}
+methods=${METHODS:-0 1 2 3 4 5}
+reps=${REPS:-1}
+QUIET=${QUIET:-8}
+timeout=${TIMEOUT:-5400}
+jobs=${JOBS:-1}
+names=(MILP LP LD LDLD LDrec MILP1)
+recover=(0 0 1 1 1 0)
+
+load()  { cut -d' ' -f1 /proc/loadavg; }
+quiet() { awk -v x="$(load)" -v q="$QUIET" 'BEGIN{exit !(x<q)}'; }
+say()   { echo "[$(date +%m-%d_%H:%M)] $*"; }
+
+[ -x "$bench" ] || { echo "run-campaign: no ldld_bench at $bench" >&2; exit 1; }
+mkdir -p "$out/logs"
+csv=$out/runs.csv
+
+# the configuration the campaign runs with is copied next to its results,
+# so that a result can always be traced to the files that produced it
+[ -d "$out/config" ] || cp -r "$here/config" "$out/config"
+[ -e "$out/machine.txt" ] || {
+  uname -a; lscpu | grep -E 'Model name|^CPU\(s\)|Thread|Socket'
+  free -g | head -2; date; } > "$out/machine.txt"
+
+grep -v '^#' "$here/instances.txt" | grep -v '^ *$' |
+while read -r name axis args; do
+  if [ $# -gt 0 ] && ! printf '%s\n' "$@" | grep -qx "$name"; then
+    continue
+  fi
+  file=$here/instances/smspp_$name.nc4
+  [ -e "$file" ] || { say "$name: no instance, run make-instances"; continue; }
+  for k in $methods; do
+    m=${names[$k]}
+    for rep in $(seq 1 "$reps"); do
+      if [ -e "$csv" ] && grep -q "^smspp_$name,$m,.*,$rep,[^,]*,[^,]*\$" "$csv"
+      then continue; fi
+      until quiet; do sleep 120; done
+      l0=$(load)
+      opt=( -c "$out/config/" -k "$k" -m "$m"
+            -l "$out/logs/$name.$m.$rep.log" )
+      [ "${recover[$k]}" = 1 ] && opt+=( -R ScnBSCfg-IP.txt -j "$jobs" )
+      line=$(timeout "$timeout" "$bench" "${opt[@]}" "$file" 2>> "$out/errors" |
+             tail -1)
+      l1=$(load)
+      [ -n "$line" ] || line="smspp_$name,$m,timeout,,,$timeout,,"
+      # the fields of the recovery are empty where there is none
+      nf=$(echo "$line" | awk -F, '{print NF}')
+      [ "$nf" -lt 11 ] && line="$line,,,"
+      echo "$line,$rep,$l0,$l1" >> "$csv"
+      say "$name $m rep $rep: $(echo "$line" | cut -d, -f3-6) (load $l0 -> $l1)"
+    done
+  done
+done

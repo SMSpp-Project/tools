@@ -1,0 +1,60 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - LDCfg-LDLD.txt - - - - - - - - - - - - - - - 
+#
+# The ComputeConfig of the nested form: each component of the dual over the
+# scenarios is a scenario, solved by an inner LagrangianDualSolver over its
+# units (ScnBSCfg-LD.txt). The recursive form is the same ComputeConfig with
+# intRecursive 1 and the units as components (InnerBSCfg.txt), which is how
+# TSSBSCfg.txt writes it
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+*LDCfg-TSSB.txt +
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+1 # number of integer parameters
+
+# now all the integer parameters
+intTrgtMng 31 # bit-wise targets and accuracies management:
+              # bit 0: lower/upper target to each convex/concave
+              #        component
+              # bit 1: upper/lower target to each convex/concave
+              #        component
+              # bit 2-3: accuracy (2 = upper - lower, 3 = EpsU)
+              # bit 4: Lipschitz constant in the upper model
+
+4 # number of double parameters
+
+# now all the double parameters
+dblMinNrEvls   -1 # every component is evaluated at each iteration,
+                  # an iteration made on a part of them buying
+                  # little and costing a master problem anyway
+dblRelAcc    1e-5 # relative accuracy required to solution
+dblmxIncr       2 # max increase of t
+dbltMaior    1e+9 # maximum value for t
+
+1 # number of string parameters
+
+# now all the string parameters
+str_LagBF_BSCfg ScnBSCfg-LD.txt # BlockSolverConfig of the LagBF
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END LDCfg-LDLD.txt - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

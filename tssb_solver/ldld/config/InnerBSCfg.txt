@@ -1,0 +1,21 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - InnerBSCfg.txt - - - - - - - - - - - - - - - 
+#
+# The meta-BlockSolverConfig of the LagBFunctions whose Block is a unit, in
+# the inner dual of the nested form and in the recursive form: the thermal
+# units by dynamic programming, any other unit by its continuous problem
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# a "meta"-BlockSolverConfig, i.e., a map classname --> its BlockSolverConfig
+SimpleConfiguration<std::map<std::string,Configuration*>>
+
+2 # the number of elements in the map
+
+ThermalUnitBlock *TUBSCfg-DP.txt
+*                *UnitBSCfg-LP.txt
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END InnerBSCfg.txt - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

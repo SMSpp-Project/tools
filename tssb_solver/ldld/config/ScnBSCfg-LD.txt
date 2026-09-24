@@ -1,0 +1,71 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  ScnBSCfg-LD.txt - - - - - - - - - - - - - - - 
+#
+# The BlockSolverConfig of a scenario in the nested form: an inner
+# LagrangianDualSolver over the units of the scenario, whose LagBFunctions
+# are the units (InnerBSCfg.txt). The cap on the iterations is not binding,
+# the inner dual stopping on its own criteria first; it must not be lowered
+# to go faster, since then the nested bound falls below the recursive one
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+1 # number of (the names of) Solver in this BlockSolverConfig
+
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+LagrangianDualSolver # 1st Solver: the inner dual of the scenario
+
+1 # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig
+
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+*LDCfg.txt +
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+2 # number of integer parameters
+
+# now all the integer parameters
+intDoEasy     3 # do easy components for (some) LagBFunction
+intMaxIter 1000 # max number of iterations for each call
+
+2 # number of double parameters
+
+# now all the double parameters
+dblRelAcc 1e-4 # relative accuracy required to solution
+dbltInit  1e+0 # initial value for t
+
+1 # number of string parameters
+
+# now all the string parameters
+str_LagBF_BSCfg InnerBSCfg.txt # BlockSolverConfig of the LagBF
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - -  END ScnBSCfg-LD.txt - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

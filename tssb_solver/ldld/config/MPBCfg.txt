@@ -1,0 +1,76 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - MPBCfg.txt - - - - - - - - - - - - - - - - 
+#
+# The BlockSolverConfig of the master problem of every bundle: the dual
+# simplex on one thread, since the barrier breaks the stopping test, and the
+# tolerances the bundle needs to certify its gap
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+1 # number of (the names of) Solver in this BlockSolverConfig
+
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+GRBMILPSolver # 1st Solver: the master problem
+
+1 # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig
+
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ComputeConfig         # exact type of the ComputeConfig object
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+6 # number of integer parameters
+
+# now all the integer parameters
+intLogVerb      0 # log verbosity of the MILPSolver
+intRelaxIntVars 1 # nonzero if the continuous relaxation is solved
+intCutSepPar    7 # separation of the dynamic constraints
+intMaxThread    1 # max number of threads
+Method          1 # Gurobi: dual simplex
+NumericFocus    1 # Gurobi: some numerical care
+
+5 # number of double parameters
+
+# now all the double parameters
+dblRelAcc      1e-08 # relative accuracy required to solution
+dblAAccSol     1e-08 # absolute accuracy of the solution
+dblRAccSol     1e-08 # relative accuracy of the solution
+FeasibilityTol 1e-09 # Gurobi: primal feasibility tolerance
+OptimalityTol  1e-09 # Gurobi: dual feasibility tolerance
+
+0 # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END MPBCfg.txt - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
