@@ -17,13 +17,13 @@
 1 # number of integer parameters
 
 # now all the integer parameters
-intTrgtMng 31 # bit-wise targets and accuracies management:
-              # bit 0: lower/upper target to each convex/concave
-              #        component
-              # bit 1: upper/lower target to each convex/concave
-              #        component
-              # bit 2-3: accuracy (2 = upper - lower, 3 = EpsU)
-              # bit 4: Lipschitz constant in the upper model
+intTrgtMng 3 # the lower and upper targets are set to the
+             # components, not their accuracy: the one the bundle
+             # sets is never tighter than its own relative
+             # accuracy, so that the errors of the scenarios add up
+             # to its whole tolerance and the noise reduction never
+             # ends; the scenarios keep the accuracy of
+             # ScnBSCfg-LD.txt, a hundredth of the outer one
 
 4 # number of double parameters
 

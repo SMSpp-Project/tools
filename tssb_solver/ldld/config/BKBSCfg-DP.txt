@@ -1,11 +1,9 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - -  ScnBSCfg-LD.txt - - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - BKBSCfg-DP.txt - - - - - - - - - - - - - - - 
 #
-# The BlockSolverConfig of a scenario in the nested form: an inner
-# LagrangianDualSolver over the units of the scenario, whose LagBFunctions
-# are the units (InnerBSCfg.txt). The cap on the iterations is not binding,
-# the inner dual stopping on its own criteria first; it must not be lowered
-# to go faster, since then the nested bound falls below the recursive one
+# The BlockSolverConfig of the knapsack of a facility: the dynamic
+# programming solver of the binary knapsack, whose continuous items (the
+# assignments of the customers) it handles as well
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -17,7 +15,7 @@ BlockSolverConfig     # exact type of the Configuration object
 1 # number of (the names of) Solver in this BlockSolverConfig
 
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
-LagrangianDualSolver # 1st Solver: the inner dual of the scenario
+CoreDPBinaryKnapsackSolver # 1st Solver: the knapsack
 
 1 # number of ComputeConfig in this BlockSolverConfig
 
@@ -25,27 +23,24 @@ LagrangianDualSolver # 1st Solver: the inner dual of the scenario
 
 # 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-*LDCfg.txt +
+ComputeConfig         # exact type of the ComputeConfig object
 
 1  # f_diff == 1 ==> only the entries listed below are changed
 
-2 # number of integer parameters
+0 # number of integer parameters
 
 # now all the integer parameters
-intDoEasy     3 # do easy components for (some) LagBFunction
-intMaxIter 1000 # max number of iterations for each call
+# [none]
 
-2 # number of double parameters
+0 # number of double parameters
 
 # now all the double parameters
-dblRelAcc 1e-6 # relative accuracy required to solution, a
-               # hundredth of that of the outer dual
-dbltInit  1e+0 # initial value for t
+# [none]
 
-1 # number of string parameters
+0 # number of string parameters
 
 # now all the string parameters
-str_LagBF_BSCfg InnerBSCfg.txt # BlockSolverConfig of the LagBF
+# [none]
 
 0 # number of vector-of-int parameters
 
@@ -68,5 +63,5 @@ str_LagBF_BSCfg InnerBSCfg.txt # BlockSolverConfig of the LagBF
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - -  END ScnBSCfg-LD.txt - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - END BKBSCfg-DP.txt - - - - - - - - - - - - - - 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

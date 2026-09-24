@@ -58,36 +58,51 @@ include $(BNDSLVSDR)/makefile-s
 LgDSLVSDR = ../../../LagrangianDualSolver
 include $(LgDSLVSDR)/makefile
 
+# CapacitatedFacilityLocationBlock (and BinaryKnapsackBlock with it)
+CFLBkSDR = ../../../CapacitatedFacilityLocationBlock
+include $(CFLBkSDR)/makefile-s
+
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(SMS++OBJ) $(MSSBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ)
+MOBJ =  $(SMS++OBJ) $(MSSBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) \
+	$(CFLBkOBJ)
 
 # libraries
-MLIB =  $(SMS++LIB) $(MSSBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
+MLIB =  $(SMS++LIB) $(MSSBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB) \
+	$(CFLBkLIB)
 
-all: $(DIR)/ldld_bench
+all: $(DIR)/ldld_bench $(DIR)/cfl_tssb_gen
 
 $(DIR)/ldld_bench: $(DIR)/ldld_bench.o $(MOBJ)
 	$(CC) -o $(DIR)/ldld_bench $^ $(MLIB) $(SW)
 
+# the generator of the stochastic facility location instances
+$(DIR)/cfl_tssb_gen: $(DIR)/cfl_tssb_gen.o $(MOBJ)
+	$(CC) -o $(DIR)/cfl_tssb_gen $^ $(MLIB) $(SW)
+
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
-MINC =  $(SMS++INC) $(MSSBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC)
+MINC =  $(SMS++INC) $(MSSBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) \
+	$(CFLBkINC)
 
 # includes
-MH =    $(SMS++H) $(MSSBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH)
+MH =    $(SMS++H) $(MSSBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) \
+	$(CFLBkH)
 
 # compile command
 
 $(DIR)/ldld_bench.o: $(DIR)/ldld_bench.cpp $(MH)
 	$(CC) -c $(DIR)/ldld_bench.cpp -o $@ $(MINC) $(SW)
 
+$(DIR)/cfl_tssb_gen.o: $(DIR)/gen/cfl_tssb_gen.cpp $(MH)
+	$(CC) -c $(DIR)/gen/cfl_tssb_gen.cpp -o $@ $(MINC) $(SW)
+
 # clean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 clean::
-	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/ldld_bench
+	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/ldld_bench $(DIR)/cfl_tssb_gen
 
 .PHONY: all clean
 

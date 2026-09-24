@@ -17,6 +17,9 @@ writes in <out-dir>:
   time-scaling-u<units>.pdf draws it against the horizon, one figure per
   number of units, while its table gives, for each size and method, that
   time, the number of seeds solved and the mean gap of the bound;
+- on the cfl-size axis the instances of the same size (facilities x
+  customers) are aggregated as the seeds of the scaling axis, the
+  abscissa of time-cfl-size.pdf being the size;
 - tables.tex, one table per axis: for each instance and method the time,
   the relative gap of the bound to the reference value and, for the methods
   with a primal recovery, the gap of the recovered solution to the bound.
@@ -50,7 +53,8 @@ STYLE = {"MILP": ("k", "s"), "MILP1": ("0.5", "s"), "LP": ("0.7", "v"),
          "LDrec": ("tab:red", "D"), "LDtree": ("tab:purple", "P")}
 AXIS = {"scenarios": ("s", "number of scenarios"),
         "buses": ("b", "number of buses"),
-        "tree": ("cd", "number of leaves")}
+        "tree": ("cd", "number of leaves"),
+        "cfl-scen": ("s", "number of scenarios")}
 COLS = ["instance", "method", "status", "lb", "ub", "time", "iter", "rss",
         "rub", "rtime", "gap", "rep", "l0", "l1"]
 
@@ -60,6 +64,8 @@ def value_of(name, key):
     # leaves c * d of a tree
     if key == "cd":
         return value_of(name, "c") * value_of(name, "d")
+    if key == "fc":
+        return value_of(name, "f") * value_of(name, "c")
     for part in name.split("_"):
         if part.startswith(key) and part[len(key):].isdigit():
             return int(part[len(key):])
@@ -103,6 +109,7 @@ def main(out):
 
     tables = []
     tables.append(scaling(agg, ref, inst, out))
+    tables.append(scaling(agg, ref, inst, out, "cfl-size"))
     for axis, (key, label) in AXIS.items():
         names = inst[inst["axis"] == axis]["instance"]
         sub = agg[agg["instance"].isin(names)].copy()
@@ -162,15 +169,19 @@ def main(out):
     (out / "tables.tex").write_text("\n".join(tables))
 
 
-def scaling(agg, ref, inst, out):
-    """The scaling axis: sizes in units x horizon, seeds aggregated."""
-    names = set(inst[inst["axis"] == "scaling"]["instance"])
+def scaling(agg, ref, inst, out, axis="scaling"):
+    """An axis of sizes whose instances come in several seeds: units x
+    horizon for the scaling axis, facilities x customers for cfl-size,
+    whose seeds are the different ORLib instances of a size."""
+    names = set(inst[inst["axis"] == axis]["instance"])
     sub = agg[agg["instance"].isin(names)].copy()
     if sub.empty:
         return ""
-    sub["size"] = sub["instance"].str.replace(r"_k\d+$", "", regex=True)
-    sub["u"] = sub["size"].map(lambda n: value_of(n, "u"))
-    sub["t"] = sub["size"].map(lambda n: value_of(n, "t"))
+    # the size is the name without its last part, the seed
+    sub["size"] = sub["instance"].str.replace(r"_[^_]+$", "", regex=True)
+    a, b = ("u", "t") if axis == "scaling" else ("f", "c")
+    sub["u"] = sub["size"].map(lambda n: value_of(n, a))
+    sub["t"] = sub["size"].map(lambda n: value_of(n, b))
     sub["ref"] = sub["instance"].map(ref)
     sub["solved"] = sub["status"].isin(OK)
     sub["bgap"] = 100 * (sub["ref"] - sub["lb"]) / sub["ref"].abs()
@@ -187,7 +198,25 @@ def scaling(agg, ref, inst, out):
                      "gap": ok["bgap"].mean()})
     res = pd.DataFrame(rows)
 
-    for u, du in res.groupby("u"):
+    if axis != "scaling":  # one figure, against the size
+        res["x"] = res["u"] * res["t"]
+        fig, ax = plt.subplots(figsize=(4.5, 3.2))
+        for m in METHODS:
+            d = res[res["method"] == m].sort_values("x")
+            if d.empty:
+                continue
+            c, mk = STYLE[m]
+            ax.plot(d["x"], d["time"], mk + "-", color=c, lw=1, label=m)
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_xlabel("facilities x customers")
+        ax.set_ylabel("time (s), geometric mean over the instances")
+        ax.legend(fontsize=7, frameon=False)
+        fig.tight_layout()
+        fig.savefig(out / f"time-{axis}.pdf")
+        plt.close(fig)
+
+    for u, du in (res.groupby("u") if axis == "scaling" else []):
         fig, ax = plt.subplots(figsize=(4.5, 3.2))
         for m in METHODS:
             d = du[du["method"] == m].sort_values("t")
@@ -219,11 +248,12 @@ def scaling(agg, ref, inst, out):
                     f"{e['solved']}/{e['seeds']}"]
         lines.append(" & ".join(row) + r" \\")
     head = " & ".join(rf"\multicolumn{{2}}{{c}}{{{m}}}" for m in cols)
+    h1, h2 = ("$u$", "$n$") if axis == "scaling" else ("$f$", "$c$")
     return ("\\begin{tabular}{rr" + "rr" * len(cols) + "}\n\\toprule\n"
-            f"$u$ & $n$ & {head} \\\\\n"
+            f"{h1} & {h2} & {head} \\\\\n"
             " & " + " & time & solved" * len(cols) + " \\\\\n\\midrule\n"
             + "\n".join(lines) + "\n\\bottomrule\n\\end{tabular}\n"
-            "% axis: scaling\n")
+            f"% axis: {axis}\n")
 
 
 if __name__ == "__main__":

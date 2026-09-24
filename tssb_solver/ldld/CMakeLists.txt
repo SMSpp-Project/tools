@@ -44,6 +44,8 @@ find_package(UCBlock REQUIRED)
 find_package(LagrangianDualSolver REQUIRED)
 find_package(BundleSolver REQUIRED)
 find_package(MILPSolver REQUIRED)
+find_package(CapacitatedFacilityLocationBlock REQUIRED)
+find_package(BinaryKnapsackBlock REQUIRED)
 
 add_executable(ldld_bench ldld_bench.cpp)
 target_link_libraries(ldld_bench PRIVATE
@@ -52,4 +54,12 @@ target_link_libraries(ldld_bench PRIVATE
                       SMS++::UCBlock
                       SMS++::LagrangianDualSolver
                       SMS++::BundleSolver
-                      SMS++::MILPSolver)
+                      SMS++::MILPSolver
+                      SMS++::CapacitatedFacilityLocationBlock
+                      SMS++::BinaryKnapsackBlock)
+
+# the generator of the stochastic facility location instances
+add_executable(cfl_tssb_gen gen/cfl_tssb_gen.cpp)
+target_link_libraries(cfl_tssb_gen PRIVATE
+                      SMS++::CapacitatedFacilityLocationBlock
+                      SMS++::TwoStageStochasticBlock)

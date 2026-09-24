@@ -73,7 +73,26 @@ which requires an `FRealObjective` that a `TwoStageStochasticBlock` has not;
 the recursive form goes through the three levels down to the units. The same
 leaves as a single `TwoStageStochasticBlock` (`<name>_2s`) have the same
 optimum and the same bound, and all the other methods run on it; in the
-figures and tables the recursive form on the tree is `LDtree`. The
+figures and tables the recursive form on the tree is `LDtree`.
+
+The last two axes are a second problem, the stochastic capacitated facility
+location (`cfl_` instances, by `gen/cfl_tssb_gen`, out of the ORLib instances
+of the `CapacitatedFacilityLocationBlock` module): the openings of the
+facilities are decided before the demands of the customers are known, and
+each scenario is a `CapacitatedFacilityLocationBlock`. In its knapsack
+formulation each facility is a `BinaryKnapsackBlock`, solved by dynamic
+programming, whose last item is the opening; the nested form relaxes the
+non-anticipativity of the openings over the scenarios and, in each scenario,
+the demand constraints, and the recursive form relaxes both at once, its
+components being the knapsacks of all the scenarios. The Lagrangian methods
+run on the knapsack formulation (`InnerBCfg.txt`, whose
+`CFLBCfg-KF.txt` makes the knapsacks the structure of the Block, so that the
+recursive form sees them), and so do the MILP and its relaxation, which add
+the strong constraints x_ij <= y_i (`InnerBCfg-MILP.txt`), as `run-campaign`
+chooses by itself; the demands of the scenarios are integer, as the dynamic
+programming of the knapsacks wants them. `cfl-size` takes 4 instances per size, from 16 x 50 to
+100 x 1000 facilities x customers, with 10 scenarios each, and `cfl-scen`
+one instance of 50 x 50 with 5 to 100 scenarios. The
 generation needs a Python with `pypsa` and `pypsa2smspp`, and its seed is
 fixed, so that the files are rebuilt identical from the list.
 

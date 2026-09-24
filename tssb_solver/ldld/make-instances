@@ -6,12 +6,18 @@
 # (all of them, or those named): a tuc_ instance by gen/gen_thermal_tssb.py
 # and gen/emit_thermal_tssb.py, a ttr_ one by gen/gen_thermal_tree.py and
 # gen/emit_thermal_mssb.py, together with the TwoStageStochasticBlock of the
-# same leaves (<name>_2s); a file already there is left alone. It needs a
-# Python with pypsa and pypsa2smspp (PYTHON, default python3).
+# same leaves (<name>_2s), and a cfl_ one by cfl_tssb_gen (built with
+# ldld_bench, BENCH_DIR, default build/) out of the data of the
+# CapacitatedFacilityLocationBlock module (CFL_DATA, default
+# ../../../CapacitatedFacilityLocationBlock/data); a file already there is
+# left alone. The PyPSA ones need a Python with pypsa and pypsa2smspp
+# (PYTHON, default python3).
 
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 py=${PYTHON:-python3}
+bin=${BENCH_DIR:-$here/build}
+cfl=${CFL_DATA:-$here/../../../CapacitatedFacilityLocationBlock/data}
 mkdir -p "$here/instances"
 
 grep -v '^#' "$here/instances.txt" | grep -v '^ *$' |
@@ -25,6 +31,11 @@ while read -r name axis args; do
   fi
   echo "$name: generating ($axis)"
   case $name in
+    cfl_*)
+      read -r -a a <<< "$args"
+      [ "${a[0]}" = -i ] || { echo "$name: -i first" >&2; exit 1; }
+      "$bin/cfl_tssb_gen" -i "$cfl/${a[1]}" "${a[@]:2}" \
+                          -o "$here/instances/smspp_$name.nc4" ;;
     ttr_*)
       "$py" "$here/gen/gen_thermal_tree.py" $args --name "$name"
       "$py" "$here/gen/emit_thermal_mssb.py" "$name"

@@ -10,6 +10,11 @@
 #   buses      b in {1, 2, 4, 8, 15}, 80 units, 96 periods, 3 scenarios
 #   tree       c x d leaves of a three-stage tree, c climates over d
 #              demands each, 40 units, 96 periods
+#   cfl-size   stochastic capacitated facility location: the ORLib
+#              instances of 16 x 50, 25 x 50, 50 x 50 and 100 x 1000
+#              facilities x customers, 4 per size, each with 10 scenarios
+#              of the demands
+#   cfl-scen   cap131 (50 x 50) with 5 to 100 scenarios
 #
 # An instance whose name starts with tuc_ is a TwoStageStochasticBlock
 # (gen/gen_thermal_tssb.py); one whose name starts with ttr_ is a
@@ -19,7 +24,12 @@
 # that a TwoStageStochasticBlock has not) and the other methods run on the
 # flat equivalent, whose optimum and bound are those of the tree. The seed
 # of an instance is in its name (_k<seed>, the default one when absent), so
-# that the files are rebuilt identical from this list.
+# that the files are rebuilt identical from this list. An instance whose
+# name starts with cfl_ is a TwoStageStochasticBlock over a
+# CapacitatedFacilityLocationBlock (gen/cfl_tssb_gen), whose instance file
+# is given relative to the data of the CapacitatedFacilityLocationBlock
+# module (CFL_DATA); its name says the size (f<facilities>_c<customers>),
+# the number of scenarios and the ORLib instance it comes from.
 #
 # name axis arguments
 tuc_u10_t24_s5_b1_k1 scaling --units 10 --snapshots 24 --scenarios 5 --seed 1
@@ -98,3 +108,24 @@ ttr_u40_t96_c4_d4_b1 tree --units 40 --snapshots 96 --climates 4 --demands 4
 ttr_u40_t96_c5_d5_b1 tree --units 40 --snapshots 96 --climates 5 --demands 5
 ttr_u40_t96_c3_d10_b1 tree --units 40 --snapshots 96 --climates 3 --demands 10
 ttr_u40_t96_c10_d3_b1 tree --units 40 --snapshots 96 --climates 10 --demands 3
+cfl_f16_c50_s10_cap41 cfl-size -i txt/ORLib/cap41.txt -n 10 -v 0.2 -s 1
+cfl_f16_c50_s10_cap42 cfl-size -i txt/ORLib/cap42.txt -n 10 -v 0.2 -s 1
+cfl_f16_c50_s10_cap43 cfl-size -i txt/ORLib/cap43.txt -n 10 -v 0.2 -s 1
+cfl_f16_c50_s10_cap44 cfl-size -i txt/ORLib/cap44.txt -n 10 -v 0.2 -s 1
+cfl_f25_c50_s10_cap91 cfl-size -i txt/ORLib/cap91.txt -n 10 -v 0.2 -s 1
+cfl_f25_c50_s10_cap102 cfl-size -i txt/ORLib/cap102.txt -n 10 -v 0.2 -s 1
+cfl_f25_c50_s10_cap103 cfl-size -i txt/ORLib/cap103.txt -n 10 -v 0.2 -s 1
+cfl_f25_c50_s10_cap104 cfl-size -i txt/ORLib/cap104.txt -n 10 -v 0.2 -s 1
+cfl_f50_c50_s10_cap121 cfl-size -i txt/ORLib/cap121.txt -n 10 -v 0.2 -s 1
+cfl_f50_c50_s10_cap131 cfl-size -i txt/ORLib/cap131.txt -n 10 -v 0.2 -s 1
+cfl_f50_c50_s10_cap132 cfl-size -i txt/ORLib/cap132.txt -n 10 -v 0.2 -s 1
+cfl_f50_c50_s10_cap134 cfl-size -i txt/ORLib/cap134.txt -n 10 -v 0.2 -s 1
+cfl_f100_c1000_s10_capa1 cfl-size -i txt/ORLib/capa1.txt -n 10 -v 0.2 -s 1
+cfl_f100_c1000_s10_capb1 cfl-size -i txt/ORLib/capb1.txt -n 10 -v 0.2 -s 1
+cfl_f100_c1000_s10_capc1 cfl-size -i txt/ORLib/capc1.txt -n 10 -v 0.2 -s 1
+cfl_f100_c1000_s10_capa2 cfl-size -i txt/ORLib/capa2.txt -n 10 -v 0.2 -s 1
+cfl_f50_c50_s5_cap131 cfl-scen -i txt/ORLib/cap131.txt -n 5 -v 0.2 -s 1
+cfl_f50_c50_s10_cap131 cfl-scen -i txt/ORLib/cap131.txt -n 10 -v 0.2 -s 1
+cfl_f50_c50_s20_cap131 cfl-scen -i txt/ORLib/cap131.txt -n 20 -v 0.2 -s 1
+cfl_f50_c50_s50_cap131 cfl-scen -i txt/ORLib/cap131.txt -n 50 -v 0.2 -s 1
+cfl_f50_c50_s100_cap131 cfl-scen -i txt/ORLib/cap131.txt -n 100 -v 0.2 -s 1

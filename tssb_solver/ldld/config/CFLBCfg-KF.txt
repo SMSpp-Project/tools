@@ -1,0 +1,55 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - CFLBCfg-KF.txt - - - - - - - - - - - - - - - 
+#
+# The BlockConfig of a facility location Block for the Lagrangian methods:
+# the knapsack formulation, with one BinaryKnapsackBlock per facility built
+# as the structure, i.e., when the BlockConfig is applied, so that a
+# recursive dual sees them, and the demand and capacity constraints, which
+# a component solved by a MILP needs (a knapsack solved by dynamic
+# programming handles its capacity by itself)
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockConfig # exact type of the Configuration object
+
+1  # the BlockConfig is a "differential" one
+
+2  # version of the BlockConfig format
+
+# the structure: the knapsacks of the facilities
+SimpleConfiguration<int>
+1    # 1 = knapsack
+
+# static_constraints
+SimpleConfiguration<int>
+3    # the demand constraints, and the capacities in the knapsacks
+
+# dynamic_constraints
+*    # [none]
+
+# static_variables
+SimpleConfiguration<int>
+1    # formulation: 0 = natural, 1 = knapsack
+
+# dynamic_variables
+*    # [none]
+
+# objective
+*    # [none]
+
+# is_feasible
+*    # [none]
+
+# is_optimal
+*    # [none]
+
+# solution
+*    # [none]
+
+# extra
+*    # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END CFLBCfg-KF.txt - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

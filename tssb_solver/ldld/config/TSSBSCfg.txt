@@ -5,7 +5,8 @@
 # method of the study, ldld_bench -k choosing the one to run, so that each
 # method runs alone in its own process:
 #   0  MILP   the deterministic equivalent, integer
-#   1  LP     its continuous relaxation
+#   1  LP     its continuous relaxation, the dynamic constraints (the
+#             strong ones of the facility location) being separated
 #   2  LD     the dual over the scenarios, each scenario solved as a MILP
 #   3  LDLD   the nested form, each scenario solved by an inner dual
 #   4  LDrec  the recursive form, the units of all the scenarios at once
@@ -43,15 +44,19 @@ GRBMILPSolver        # 6th Solver: MILP1
 
 1  # f_diff == 1 ==> only the entries listed below are changed
 
-1 # number of integer parameters
+4 # number of integer parameters
 
 # now all the integer parameters
-intRelaxIntVars 1 # nonzero if the continuous relaxation is solved
+intRelaxIntVars     2 # the root node alone, the dynamic constraints
+                      # being separated there
+intCutSepPar        1 # separation of the dynamic constraints
+intMaxCutPasses 10000 # until no violated one is left
+Cuts                0 # Gurobi: none of its own cuts
 
-0 # number of double parameters
+1 # number of double parameters
 
 # now all the double parameters
-# [none]
+NodeLimit 0 # Gurobi: no branching
 
 0 # number of string parameters
 

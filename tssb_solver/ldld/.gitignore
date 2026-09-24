@@ -5,3 +5,4 @@ results/
 *.o
 ldld_bench
 __pycache__/
+cfl_tssb_gen

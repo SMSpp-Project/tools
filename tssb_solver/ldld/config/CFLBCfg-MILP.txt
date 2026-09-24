@@ -1,0 +1,56 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  CFLBCfg-MILP.txt - - - - - - - - - - - - - - -
+#
+# The BlockConfig of a facility location Block for the MILP and its
+# continuous relaxation: the knapsack formulation of CFLBCfg-KF.txt, whose
+# paths the here-and-now variables of the instances follow, with the strong
+# constraints x_ij <= y_i separated in addition, which make its continuous
+# relaxation the strong one
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockConfig # exact type of the Configuration object
+
+1  # the BlockConfig is a "differential" one
+
+2  # version of the BlockConfig format
+
+# the structure: the knapsacks of the facilities
+SimpleConfiguration<int>
+1    # 1 = knapsack
+
+# static_constraints
+SimpleConfiguration<int>
+7    # demands, capacities in the knapsacks, strong constraints
+
+# dynamic_constraints: how the strong constraints are separated
+SimpleConfiguration<std::pair<int,double>>
+375  # the separation parameter of the strong constraints
+1e-4 # their violation tolerance
+
+# static_variables
+SimpleConfiguration<int>
+1    # formulation: 0 = natural, 1 = knapsack
+
+# dynamic_variables
+*    # [none]
+
+# objective
+*    # [none]
+
+# is_feasible
+*    # [none]
+
+# is_optimal
+*    # [none]
+
+# solution
+*    # [none]
+
+# extra
+*    # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - -  END CFLBCfg-MILP.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
