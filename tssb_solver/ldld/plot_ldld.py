@@ -9,6 +9,9 @@ writes in <out-dir>:
   horizon, scenarios, buses): the running time and the peak memory of each
   method against the value of that axis, on a logarithmic scale, a run that
   did not finish being drawn at the time limit with an empty marker;
+- on the tree axis the recursive form on the MultiStageStochasticBlock is
+  the method LDtree, the others being run on the TwoStageStochasticBlock of
+  the same leaves (<name>_2s), and the abscissa is the number of leaves;
 - tables.tex, one table per axis: for each instance and method the time,
   the relative gap of the bound to the reference value and, for the methods
   with a primal recovery, the gap of the recovered solution to the bound.
@@ -33,20 +36,24 @@ import matplotlib.pyplot as plt
 HERE = Path(__file__).resolve().parent
 QUIET = 8.0
 OK = {"10", "11"}  # kOK and kLowPrecision
-METHODS = ["MILP", "MILP1", "LP", "LD", "LDLD", "LDrec"]
+METHODS = ["MILP", "MILP1", "LP", "LD", "LDLD", "LDrec", "LDtree"]
 STYLE = {"MILP": ("k", "s"), "MILP1": ("0.5", "s"), "LP": ("0.7", "v"),
          "LD": ("tab:blue", "o"), "LDLD": ("tab:green", "^"),
-         "LDrec": ("tab:red", "D")}
+         "LDrec": ("tab:red", "D"), "LDtree": ("tab:purple", "P")}
 AXIS = {"units": ("u", "number of units"),
         "horizon": ("t", "number of periods"),
         "scenarios": ("s", "number of scenarios"),
-        "buses": ("b", "number of buses")}
+        "buses": ("b", "number of buses"),
+        "tree": ("cd", "number of leaves")}
 COLS = ["instance", "method", "status", "lb", "ub", "time", "iter", "rss",
         "rub", "rtime", "gap", "rep", "l0", "l1"]
 
 
 def value_of(name, key):
-    # tuc_u80_t96_s3_b1 -> the number after key
+    # tuc_u80_t96_s3_b1 -> the number after key; "cd" is the number of
+    # leaves c * d of a tree
+    if key == "cd":
+        return value_of(name, "c") * value_of(name, "d")
     for part in name.split("_"):
         if part.startswith(key) and part[len(key):].isdigit():
             return int(part[len(key):])
@@ -59,6 +66,12 @@ def main(out):
                        dtype={"status": str})
     runs = runs[runs["l1"] < QUIET]
     runs["instance"] = runs["instance"].str.replace("smspp_", "", regex=False)
+    # a tree: the recursive form on the MultiStageStochasticBlock is LDtree,
+    # and the flat equivalent <name>_2s stands for the tree in the rest
+    tree = runs["instance"].str.startswith("ttr_")
+    flat = runs["instance"].str.endswith("_2s")
+    runs.loc[tree & ~flat, "method"] = "LDtree"
+    runs.loc[flat, "instance"] = runs.loc[flat, "instance"].str[:-3]
 
     inst = []
     for line in (HERE / "instances.txt").read_text().splitlines():
@@ -115,7 +128,7 @@ def main(out):
         for name in names:
             row = [name.replace("_", r"\_")]
             r = ref.get(name)
-            for m in ["MILP", "LD", "LDLD", "LDrec"]:
+            for m in ["MILP", "LD", "LDLD", "LDrec", "LDtree"]:
                 d = sub[(sub["instance"] == name) & (sub["method"] == m)]
                 if d.empty:
                     row += ["", ""]
@@ -131,10 +144,12 @@ def main(out):
                 row += [t, g]
             rows.append(" & ".join(row) + r" \\")
         tables.append(
-            "\\begin{tabular}{l" + "rr" * 4 + "}\n\\toprule\n"
+            "\\begin{tabular}{l" + "rr" * 5 + "}\n\\toprule\n"
             "instance & \\multicolumn{2}{c}{MILP} & \\multicolumn{2}{c}{LD} & "
-            "\\multicolumn{2}{c}{LDLD} & \\multicolumn{2}{c}{LDrec} \\\\\n"
-            " & time & & time & gap & time & gap & time & gap \\\\\n"
+            "\\multicolumn{2}{c}{LDLD} & \\multicolumn{2}{c}{LDrec} & "
+            "\\multicolumn{2}{c}{LDtree} \\\\\n"
+            " & time & & time & gap & time & gap & time & gap & time & gap "
+            "\\\\\n"
             "\\midrule\n" + "\n".join(rows) + "\n\\bottomrule\n\\end{tabular}"
             f"\n% axis: {axis}\n")
     (out / "tables.tex").write_text("\n".join(tables))

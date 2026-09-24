@@ -126,7 +126,11 @@ def scenario_axis(number):
     return demand, availability, weights / weights.sum()
 
 
-def build(args):
+def build(args, axis=None):
+    """The network of the instance; its scenario axis is that of
+    scenario_axis(), or, if given, axis = (names, demand multipliers,
+    availability multipliers, probabilities), one entry per scenario, which
+    is how gen_thermal_tree.py lays the leaves of its tree on it."""
     rng = np.random.default_rng(args.seed)
     snapshots = pd.RangeIndex(args.snapshots)
 
@@ -210,8 +214,11 @@ def build(args):
     base_solar = pd.Series(solar_profile(args.snapshots), index=snapshots)
     base_wind = pd.Series(wind_profile(args.snapshots, rng), index=snapshots)
 
-    demand, availability, probability = scenario_axis(args.scenarios)
-    names = [f"s{index}" for index in range(args.scenarios)]
+    if axis is None:
+        demand, availability, probability = scenario_axis(args.scenarios)
+        names = [f"s{index}" for index in range(args.scenarios)]
+    else:
+        names, demand, availability, probability = axis
 
     n.set_scenarios(dict(zip(names, probability.astype(float))))
     for scenario, multiplier, factor in zip(names, demand, availability):

@@ -56,7 +56,20 @@ umbrella project, `make` builds `ldld_bench` here.
 
 `instances.txt` lists the instances with the arguments of the generator: the
 thermal family is swept along one axis at a time (units, horizon, scenarios,
-buses) around a common point, so that each figure reads one axis. The
+buses) around a common point, so that each figure reads one axis. The last
+axis is that of the three-stage trees (`ttr_` instances, by
+`gen/gen_thermal_tree.py`): the outer stage is the climate year, which scales
+the availability of the renewables, the inner one the demand, drawn
+conditional on the climate, and the fleet is that of the two-stage family.
+Such an instance is a `MultiStageStochasticBlock`, whose sub-Blocks are one
+`TwoStageStochasticBlock` per climate, and on it the recursive form is the
+only Lagrangian decomposition that applies, since the dual over the climates
+would have a `TwoStageStochasticBlock` as the Block of each `LagBFunction`,
+which requires an `FRealObjective` that a `TwoStageStochasticBlock` has not;
+the recursive form goes through the three levels down to the units. The same
+leaves as a single `TwoStageStochasticBlock` (`<name>_2s`) have the same
+optimum and the same bound, and all the other methods run on it; in the
+figures and tables the recursive form on the tree is `LDtree`. The
 generation needs a Python with `pypsa` and `pypsa2smspp`, and its seed is
 fixed, so that the files are rebuilt identical from the list.
 

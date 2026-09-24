@@ -6,6 +6,15 @@
 #   horizon    t in {24, 48, 96, 168, 336, 720}, 80 units, 3 scenarios
 #   scenarios  s in {3, 5, 10, 20, 50}, 40 units, 96 periods
 #   buses      b in {1, 2, 4, 8, 15}, 80 units, 96 periods, 3 scenarios
+#   tree       c x d leaves of a three-stage tree, c climates over d
+#              demands each, 40 units, 96 periods
+# An instance whose name starts with tuc_ is a TwoStageStochasticBlock
+# (gen/gen_thermal_tssb.py); one whose name starts with ttr_ is a
+# MultiStageStochasticBlock (gen/gen_thermal_tree.py), which comes with the
+# TwoStageStochasticBlock of the same leaves, <name>_2s, since on the tree
+# only the recursive form applies (a LagBFunction needs the FRealObjective
+# that a TwoStageStochasticBlock has not) and the other methods run on the
+# flat equivalent, whose optimum and bound are those of the tree.
 # The seed is that of the generator, fixed, so that the files are rebuilt
 # identical from this list.
 #
@@ -30,3 +39,9 @@ tuc_u80_t96_s3_b2       buses      --units 80 --snapshots 96 --scenarios 3 --bus
 tuc_u80_t96_s3_b4       buses      --units 80 --snapshots 96 --scenarios 3 --buses 4
 tuc_u80_t96_s3_b8       buses      --units 80 --snapshots 96 --scenarios 3 --buses 8
 tuc_u80_t96_s3_b15      buses      --units 80 --snapshots 96 --scenarios 3 --buses 15
+ttr_u40_t96_c2_d2_b1    tree       --units 40 --snapshots 96 --climates 2 --demands 2 --buses 1
+ttr_u40_t96_c3_d3_b1    tree       --units 40 --snapshots 96 --climates 3 --demands 3 --buses 1
+ttr_u40_t96_c4_d4_b1    tree       --units 40 --snapshots 96 --climates 4 --demands 4 --buses 1
+ttr_u40_t96_c5_d5_b1    tree       --units 40 --snapshots 96 --climates 5 --demands 5 --buses 1
+ttr_u40_t96_c3_d10_b1   tree       --units 40 --snapshots 96 --climates 3 --demands 10 --buses 1
+ttr_u40_t96_c10_d3_b1   tree       --units 40 --snapshots 96 --climates 10 --demands 3 --buses 1

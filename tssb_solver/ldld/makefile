@@ -42,9 +42,9 @@ SW = -O3 $(COMMON_SW) -DNDEBUG
 SMS++SDR = ../../../SMS++
 include $(SMS++SDR)/lib/makefile-c
 
-# TwoStageStochasticBlock
-TSSBkSDR = ../../../TwoStageStochasticBlock
-include $(TSSBkSDR)/makefile-s
+# MultiStageStochasticBlock (and TwoStageStochasticBlock with it)
+MSSBkSDR = ../../../MultiStageStochasticBlock
+include $(MSSBkSDR)/makefile-s
 
 # UCBlock
 UCBckDIR = ../../../UCBlock
@@ -61,10 +61,10 @@ include $(LgDSLVSDR)/makefile
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(SMS++OBJ) $(TSSBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ)
+MOBJ =  $(SMS++OBJ) $(MSSBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ)
 
 # libraries
-MLIB =  $(SMS++LIB) $(TSSBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
+MLIB =  $(SMS++LIB) $(MSSBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
 
 all: $(DIR)/ldld_bench
 
@@ -74,10 +74,10 @@ $(DIR)/ldld_bench: $(DIR)/ldld_bench.o $(MOBJ)
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
-MINC =  $(SMS++INC) $(TSSBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC)
+MINC =  $(SMS++INC) $(MSSBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC)
 
 # includes
-MH =    $(SMS++H) $(TSSBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH)
+MH =    $(SMS++H) $(MSSBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH)
 
 # compile command
 

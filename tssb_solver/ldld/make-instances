@@ -3,8 +3,10 @@
 # make-instances [ name ... ]
 #
 # Builds in instances/ the Block files of the study listed in instances.txt
-# (all of them, or those named), each by gen/gen_thermal_tssb.py and then
-# gen/emit_thermal_tssb.py; a file already there is left alone. It needs a
+# (all of them, or those named): a tuc_ instance by gen/gen_thermal_tssb.py
+# and gen/emit_thermal_tssb.py, a ttr_ one by gen/gen_thermal_tree.py and
+# gen/emit_thermal_mssb.py, together with the TwoStageStochasticBlock of the
+# same leaves (<name>_2s); a file already there is left alone. It needs a
 # Python with pypsa and pypsa2smspp (PYTHON, default python3).
 
 set -eu
@@ -22,6 +24,13 @@ while read -r name axis args; do
     continue
   fi
   echo "$name: generating ($axis)"
-  "$py" "$here/gen/gen_thermal_tssb.py" $args --name "$name"
-  "$py" "$here/gen/emit_thermal_tssb.py" "$name"
+  case $name in
+    ttr_*)
+      "$py" "$here/gen/gen_thermal_tree.py" $args --name "$name"
+      "$py" "$here/gen/emit_thermal_mssb.py" "$name"
+      "$py" "$here/gen/emit_thermal_tssb.py" "$name" "smspp_${name}_2s" ;;
+    *)
+      "$py" "$here/gen/gen_thermal_tssb.py" $args --name "$name"
+      "$py" "$here/gen/emit_thermal_tssb.py" "$name" ;;
+  esac
 done

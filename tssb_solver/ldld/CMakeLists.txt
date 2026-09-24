@@ -39,6 +39,7 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../../../SMS++/cmake)
 endif ()
 
 find_package(TwoStageStochasticBlock REQUIRED)
+find_package(MultiStageStochasticBlock REQUIRED)
 find_package(UCBlock REQUIRED)
 find_package(LagrangianDualSolver REQUIRED)
 find_package(BundleSolver REQUIRED)
@@ -47,6 +48,7 @@ find_package(MILPSolver REQUIRED)
 add_executable(ldld_bench ldld_bench.cpp)
 target_link_libraries(ldld_bench PRIVATE
                       SMS++::TwoStageStochasticBlock
+                      SMS++::MultiStageStochasticBlock
                       SMS++::UCBlock
                       SMS++::LagrangianDualSolver
                       SMS++::BundleSolver

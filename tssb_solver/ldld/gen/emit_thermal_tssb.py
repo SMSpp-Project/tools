@@ -1,13 +1,13 @@
 """Turn a network written by gen_thermal_tssb.py into a TwoStageStochasticBlock.
 
-    python emit_thermal_tssb.py tuc_u20_t48_s3_b1
+    python emit_thermal_tssb.py tuc_u20_t48_s3_b1 [output name]
 
 The conversion is the ordinary two-stage one of pypsa2smspp, with the thermal
 units switched on (`enable_thermal_units=True`) and only the two renewable
 carriers declared intermittent, so that every unit of the fleet becomes a
 ThermalUnitBlock with its own commitment variables. It reads
-../instances/<name>_flat.nc and writes ../instances/smspp_<name>.nc4, the
-Block file that ldld_bench reads.
+../instances/<name>_flat.nc and writes ../instances/smspp_<name>.nc4 (or
+../instances/<output name>.nc4), the Block file that ldld_bench reads.
 """
 
 import sys
@@ -24,6 +24,7 @@ DATA = HERE.parent / "instances"
 CONFIG = HERE.parent / "config" / "TSSBSCfg.txt"
 
 name = sys.argv[1] if len(sys.argv) > 1 else "tuc_u20_t48_s3_b1"
+output = sys.argv[2] if len(sys.argv) > 2 else f"smspp_{name}"
 WORK = DATA / "work"
 WORK.mkdir(parents=True, exist_ok=True)
 
@@ -41,5 +42,5 @@ t = Transformation(
     fp_temp="smspp_{name}_temp.nc",
 )
 t.create_model(n, verbose=False)
-t.sms_network.to_netcdf(str(DATA / f"smspp_{name}.nc4"), force=True)
-print("[written]", DATA / f"smspp_{name}.nc4")
+t.sms_network.to_netcdf(str(DATA / f"{output}.nc4"), force=True)
+print("[written]", DATA / f"{output}.nc4")

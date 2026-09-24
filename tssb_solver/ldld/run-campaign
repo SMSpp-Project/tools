@@ -59,27 +59,36 @@ while read -r name axis args; do
   if [ $# -gt 0 ] && ! printf '%s\n' "$@" | grep -qx "$name"; then
     continue
   fi
-  file=$here/instances/smspp_$name.nc4
-  [ -e "$file" ] || { say "$name: no instance, run make-instances"; continue; }
-  for k in $methods; do
+  # a tree runs the recursive form on the MultiStageStochasticBlock and
+  # every method on the TwoStageStochasticBlock of the same leaves
+  case $name in
+    ttr_*) runs="${name}:4 ${name}_2s:$(echo $methods | tr ' ' ,)" ;;
+    *)     runs="${name}:$(echo $methods | tr ' ' ,)" ;;
+  esac
+  for run in $runs; do
+  inst=${run%%:*}
+  file=$here/instances/smspp_$inst.nc4
+  [ -e "$file" ] || { say "$inst: no instance, run make-instances"; continue; }
+  for k in $(echo "${run#*:}" | tr , ' '); do
     m=${names[$k]}
     for rep in $(seq 1 "$reps"); do
-      if [ -e "$csv" ] && grep -q "^smspp_$name,$m,.*,$rep,[^,]*,[^,]*\$" "$csv"
+      if [ -e "$csv" ] && grep -q "^smspp_$inst,$m,.*,$rep,[^,]*,[^,]*\$" "$csv"
       then continue; fi
       until quiet; do sleep 120; done
       l0=$(load)
       opt=( -c "$out/config/" -k "$k" -m "$m"
-            -l "$out/logs/$name.$m.$rep.log" )
+            -l "$out/logs/$inst.$m.$rep.log" )
       [ "${recover[$k]}" = 1 ] && opt+=( -R ScnBSCfg-IP.txt -j "$jobs" )
       line=$(timeout "$timeout" "$bench" "${opt[@]}" "$file" 2>> "$out/errors" |
              tail -1)
       l1=$(load)
-      [ -n "$line" ] || line="smspp_$name,$m,timeout,,,$timeout,,"
+      [ -n "$line" ] || line="smspp_$inst,$m,timeout,,,$timeout,,"
       # the fields of the recovery are empty where there is none
       nf=$(echo "$line" | awk -F, '{print NF}')
       [ "$nf" -lt 11 ] && line="$line,,,"
       echo "$line,$rep,$l0,$l1" >> "$csv"
-      say "$name $m rep $rep: $(echo "$line" | cut -d, -f3-6) (load $l0 -> $l1)"
+      say "$inst $m rep $rep: $(echo "$line" | cut -d, -f3-6) (load $l0 -> $l1)"
     done
+  done
   done
 done
