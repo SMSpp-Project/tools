@@ -20,7 +20,10 @@ writes in <out-dir>:
 - on the cfl-size axis the instances of the same size (facilities x
   customers) are aggregated as the seeds of the scaling axis, the
   abscissa of time-cfl-size.pdf being the size;
-- tables.tex, one table per axis: for each instance and method the time,
+- tables.tex, one table per axis, whose last two columns are the speed-up
+  of the recursive form (LDtree on the tree axis) over the two references,
+  i.e., the time of the MILP and that of the monolithic dual LD over its
+  own: for each instance and method the time,
   the relative gap of the bound to the reference value and, for the methods
   with a primal recovery, the gap of the recovered solution to the bound.
 
@@ -70,6 +73,18 @@ def value_of(name, key):
         if part.startswith(key) and part[len(key):].isdigit():
             return int(part[len(key):])
     return None
+
+
+def speedup(sub, name, base, rec):
+    """time of base over time of rec on the instance, when both finished"""
+    b = sub[(sub["instance"] == name) & (sub["method"] == base)]
+    r = sub[(sub["instance"] == name) & (sub["method"] == rec)]
+    if b.empty or r.empty:
+        return ""
+    b, r = b.iloc[0], r.iloc[0]
+    if (b["status"] not in OK) or (r["status"] not in OK):
+        return "--"
+    return f"{b['time'] / r['time']:.1f}"
 
 
 def main(out):
@@ -156,14 +171,20 @@ def main(out):
                 else:
                     g = "--"
                 row += [t, g]
+            # the speed-up of the recursive form (on the tree, LDtree) over
+            # the two references, the MILP and the monolithic dual LD
+            rec = "LDtree" if axis == "tree" else "LDrec"
+            row += [speedup(sub, name, "MILP", rec),
+                    speedup(sub, name, "LD", rec)]
             rows.append(" & ".join(row) + r" \\")
         tables.append(
-            "\\begin{tabular}{l" + "rr" * 5 + "}\n\\toprule\n"
+            "\\begin{tabular}{l" + "rr" * 5 + "rr}\n\\toprule\n"
             "instance & \\multicolumn{2}{c}{MILP} & \\multicolumn{2}{c}{LD} & "
             "\\multicolumn{2}{c}{LDLD} & \\multicolumn{2}{c}{LDrec} & "
-            "\\multicolumn{2}{c}{LDtree} \\\\\n"
+            "\\multicolumn{2}{c}{LDtree} & "
+            "\\multicolumn{2}{c}{speed-up} \\\\\n"
             " & time & & time & gap & time & gap & time & gap & time & gap "
-            "\\\\\n"
+            "& MILP & LD \\\\\n"
             "\\midrule\n" + "\n".join(rows) + "\n\\bottomrule\n\\end{tabular}"
             f"\n% axis: {axis}\n")
     (out / "tables.tex").write_text("\n".join(tables))
@@ -246,12 +267,20 @@ def scaling(agg, ref, inst, out, axis="scaling"):
             e = e.iloc[0]
             row += ["--" if np.isnan(e["time"]) else f"{e['time']:.1f}",
                     f"{e['solved']}/{e['seeds']}"]
+        # the speed-up of LDrec over the MILP and over LD, as the ratio of
+        # their geometric means
+        tm = dict(zip(d["method"], d["time"]))
+        for base in ("MILP", "LD"):
+            a, b = tm.get(base, np.nan), tm.get("LDrec", np.nan)
+            row.append("--" if np.isnan(a) or np.isnan(b) else f"{a / b:.1f}")
         lines.append(" & ".join(row) + r" \\")
     head = " & ".join(rf"\multicolumn{{2}}{{c}}{{{m}}}" for m in cols)
     h1, h2 = ("$u$", "$n$") if axis == "scaling" else ("$f$", "$c$")
-    return ("\\begin{tabular}{rr" + "rr" * len(cols) + "}\n\\toprule\n"
-            f"{h1} & {h2} & {head} \\\\\n"
-            " & " + " & time & solved" * len(cols) + " \\\\\n\\midrule\n"
+    return ("\\begin{tabular}{rr" + "rr" * len(cols) + "rr}\n\\toprule\n"
+            f"{h1} & {h2} & {head} & \\multicolumn{{2}}{{c}}{{speed-up}} "
+            "\\\\\n"
+            " & " + " & time & solved" * len(cols) + " & MILP & LD "
+            "\\\\\n\\midrule\n"
             + "\n".join(lines) + "\n\\bottomrule\n\\end{tabular}\n"
             f"% axis: {axis}\n")
 
