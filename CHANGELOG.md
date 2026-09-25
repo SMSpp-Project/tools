@@ -137,6 +137,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the `MPBCfg.txt` of `ucblock_solver`, `tssb_solver`, `sddp_solver` and
+  `investmentblock_solver`, which every default configuration with a
+  BundleSolver names, asked for Gurobi, so that these tools stopped at once
+  where only HiGHS is there, e.g., in the conda packages: the master is now
+  solved by HiGHS, Gurobi being one uncommented line away as the other
+  :MILPSolver are
+
 - `sddp_solver` solves an `SDDPBlock` whose scenarios come from a
   `ScenarioGenerator`, such as `examples/SDDPBlock-new.nc4`, also when the
   stages are solved by a `LagrangianDualSolver`: it set scenario 0 at every
