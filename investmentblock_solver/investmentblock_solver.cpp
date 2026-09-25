@@ -45,12 +45,13 @@
  * is given by the initial point as described above: a given point provided by
  * the -x option or the default initial point.
  *
- * The -B and -S options are only considered if the given netCDF file is a
- * BlockFile. The -B option specifies a BlockConfig file to be applied to
- * every InvestmentBlock; while the -S option specifies a BlockSolverConfig
- * file for every InvestmentBlock. If the -B option is not provided when the
- * given netCDF file is a BlockFile, then a default configuration is
- * considered. The -B file can also contain a "meta"-BlockConfig, i.e., a
+ * The -S option is only considered if the given netCDF file is a BlockFile,
+ * and so is the -B option, except for the inner Block described below. The -B
+ * option specifies a BlockConfig file to be applied to every InvestmentBlock;
+ * while the -S option specifies a BlockSolverConfig file for every
+ * InvestmentBlock. If the -B option is not provided when the given netCDF
+ * file is a BlockFile, then a default configuration is considered. The -B
+ * file can also contain a "meta"-BlockConfig, i.e., a
  *
  *   SimpleConfiguration< std::map< std::string , Configuration * > >
  *
@@ -60,10 +61,14 @@
  * InvestmentFunction, so it can be used to select the formulation of, e.g.,
  * the ThermalUnitBlock or the DCNetworkBlock of the inner UCBlock.
  *
- * The BlockSolverConfig for the inner Block of the InvestmentFunction (the
- * UCBlock) is indicated by the strInnerBSC string parameter in the
- * ComputeConfig of the Solver of the InvestmentBlock found in the -S file
- * (see config/BSPar.txt).
+ * The BlockSolverConfig for the inner Block of the InvestmentFunction (a
+ * UCBlock, a TwoStageStochasticBlock or an SDDPBlock) is indicated by the
+ * strInnerBSC string parameter in the ComputeConfig of the Solver of the
+ * InvestmentBlock, found in the -S file for a BlockFile and in the
+ * BlockSolver group for a ProbFile (see config/BSPar.txt); for an SDDPBlock
+ * it is mandatory. The UCBlock of each stage of an SDDPBlock, which sits
+ * behind a BendersBFunction, gets the -B "meta"-BlockConfig, if given, for a
+ * BlockFile and a ProbFile alike, and the default configuration otherwise.
  *
  * \author Rafael Durbano Lobato \n
  *         Dipartimento di Informatica \n
@@ -772,6 +777,90 @@ void set_log( SDDPBlock * sddp_block , std::ostream * output_stream )
  }
 
 /*--------------------------------------------------------------------------*/
+/// configures the UCBlock of every stage of an SDDPBlock
+/** The UCBlock of a stage sits behind a BendersBFunction, which the
+ * nested-Block BFS of config_Block() cannot cross: the given
+ * [meta]BlockConfig is dispatched to each of them here, and the default
+ * configuration is applied when none is given. */
+
+void configure_stages( SDDPBlock * sddp_block , Configuration * block_config )
+{
+ for( Index stage = 0 ; stage < sddp_block->get_time_horizon() ; ++stage )
+  for( Index j = 0 ; j < sddp_block->get_num_sub_blocks_per_stage() ; ++j ) {
+   auto block = get_uc_block( sddp_block , stage , j );
+   if( block_config )
+    config_Block( block , block_config , nullptr );
+   else
+    if( auto ucblock = dynamic_cast< UCBlock * >( block ) )
+     configure_Blocks( ucblock , relax_integrality , false );
+   }
+ }
+
+/*--------------------------------------------------------------------------*/
+/// takes the strInnerBSC parameter out of a BlockSolverConfig
+/** The BlockSolverConfig for the inner Block of the InvestmentFunction is
+ * indicated by the strInnerBSC parameter in the ComputeConfig of (one of) the
+ * Solver of the InvestmentBlock; since it is not a real parameter of that
+ * Solver, it is removed from the ComputeConfig before this is applied, and
+ * returned (empty if it is not there). */
+
+std::string take_inner_bsc( BlockSolverConfig * solver_config )
+{
+ for( Index i = 0 ; i < solver_config->num_ComputeConfig() ; ++i ) {
+  auto compute_config = solver_config->get_SolverConfig( i );
+  if( ! compute_config )
+   continue;
+  auto inner_bsc_filename = get_str_par( compute_config , "strInnerBSC" );
+  if( inner_bsc_filename.empty() )
+   continue;
+  erase_str_par( compute_config , "strInnerBSC" );
+  return( inner_bsc_filename );
+  }
+
+ return( std::string() );
+ }
+
+/*--------------------------------------------------------------------------*/
+/// gives the inner Block of the InvestmentFunction its BlockSolverConfig
+/** The BlockSolverConfig read from the given file reaches the inner Block as
+ * the "extra" Configuration of the ComputeConfig of the InvestmentFunction.
+ * When the inner Block is an SDDPBlock, the SDDPGreedySolver registered in
+ * this way simulate the scenarios one stage after the other, and each of them
+ * is given the callback() that passes the final state of a stage to the
+ * next. */
+
+void set_inner_BlockSolverConfig( InvestmentFunction * investment_function ,
+                                  const std::string & inner_bsc_filename )
+{
+ auto inner_solver_config = get_blocksolverconfig( inner_bsc_filename );
+
+ if( ! inner_solver_config ) {
+  std::cerr << "File " << inner_bsc_filename << " was not found or "
+            << "its Configuration is invalid." << std::endl;
+  exit( 1 );
+  }
+
+ ComputeConfig investment_function_config;
+
+ investment_function_config.f_extra_Configuration =
+  new SimpleConfiguration< std::map< std::string , Configuration * > >
+  ( { { "BlockSolverConfig" , inner_solver_config } } );
+
+ investment_function->set_ComputeConfig( &investment_function_config );
+
+ for( auto block : investment_function->get_nested_Blocks() )
+  if( auto sddp_block = dynamic_cast< SDDPBlock * >( block ) )
+   for( auto solver : sddp_block->get_registered_solvers() )
+    if( auto greedy = dynamic_cast< SDDPGreedySolver * >( solver ) ) {
+     const auto sub_block_index = Index( greedy->get_int_par(
+                                     SDDPGreedySolver::intSubBlockIndex ) );
+     greedy->set_callback( [ sddp_block , sub_block_index ]( Index stage ) {
+                            callback( sddp_block , stage , sub_block_index );
+                            } );
+     }
+ }
+
+/*--------------------------------------------------------------------------*/
 
 void process_prob_file( const netCDF::NcFile & file )
 {
@@ -847,6 +936,27 @@ void process_prob_file( const netCDF::NcFile & file )
 	       BlockSolverConfig::new_Configuration( solver_config_group ) );
   if( ! block_solver_config )
    throw( std::logic_error( "BlockSolver group was not properly provided" ) );
+
+  // the BlockConfig and the BlockSolverConfig of the problem do not reach
+  // inside the InvestmentFunction: the stages of the SDDPBlock take the -B
+  // [meta]BlockConfig, if any, and the SDDPBlock takes the BlockSolverConfig
+  // named by strInnerBSC, as for a Block file
+  auto inner_bsc_filename = take_inner_bsc( block_solver_config );
+  if( inner_bsc_filename.empty() ) {
+   std::cerr << "The BlockSolverConfig for the SDDPBlock inside the "
+             << "InvestmentFunction must be given via the strInnerBSC "
+             << "parameter in the ComputeConfig of the Solver of the "
+             << "InvestmentBlock." << std::endl;
+   exit( 1 );
+   }
+
+  auto inner_block_config = get_config( bconf_file );
+  for( auto sddp_block_ : investment_function->get_nested_Blocks() )
+   configure_stages( static_cast< SDDPBlock * >( sddp_block_ ) ,
+                     inner_block_config );
+
+  set_inner_BlockSolverConfig( investment_function , inner_bsc_filename );
+
   block_solver_config->apply( investment_block );
   block_solver_config->clear();
 
@@ -871,6 +981,7 @@ void process_prob_file( const netCDF::NcFile & file )
   delete block_solver_config;
 
   delete investment_block;
+  delete inner_block_config;
   }
  }
 
@@ -898,21 +1009,8 @@ void process_block_file( const netCDF::NcFile & file )
   exit( 1 );
   }
 
- // the BlockSolverConfig for the inner Block of the InvestmentFunction is
- // indicated by the strInnerBSC parameter in the ComputeConfig of (one of)
- // the Solver of the InvestmentBlock; since it is not a real parameter of
- // that Solver, it is removed from the ComputeConfig before this is applied
- std::string inner_bsc_filename;
- for( Index i = 0 ; i < solver_config->num_ComputeConfig() ; ++i ) {
-  auto compute_config = solver_config->get_SolverConfig( i );
-  if( ! compute_config )
-   continue;
-  inner_bsc_filename = get_str_par( compute_config , "strInnerBSC" );
-  if( inner_bsc_filename.empty() )
-   continue;
-  erase_str_par( compute_config , "strInnerBSC" );
-  break;
-  }
+ auto inner_bsc_filename = take_inner_bsc( solver_config );
+ const bool inner_bsc_given = ! inner_bsc_filename.empty();
 
  // if strInnerBSC was not given, fall back to the conventional inner
  // BlockSolverConfig, but only when it is actually reachable, so a plain run
@@ -964,14 +1062,27 @@ void process_block_file( const netCDF::NcFile & file )
 				        investment_block->get_function() );
 
   // the inner Block may also be a stochastic one, in which case the
-  // investment is the here-and-now decision taken above the scenarios
+  // investment is the here-and-now decision taken above the scenarios, or
+  // an SDDPBlock, in which case it is taken above the stages
   for( auto block_ : investment_function->get_nested_Blocks() )
    if( ! ( dynamic_cast< UCBlock * >( block_ ) ||
-           dynamic_cast< TwoStageStochasticBlock * >( block_ ) ) ) {
+           dynamic_cast< TwoStageStochasticBlock * >( block_ ) ||
+           dynamic_cast< SDDPBlock * >( block_ ) ) ) {
     std::cerr << "The sub-Block of the InvestmentBlock is neither a UCBlock "
-              << "nor a TwoStageStochasticBlock." << std::endl;
+              << "nor a TwoStageStochasticBlock nor an SDDPBlock."
+              << std::endl;
     exit( 1 );
     }
+   else
+    // the conventional BSCfg.txt is meant for a UCBlock: the Solver of an
+    // SDDPBlock have to be named explicitly
+    if( dynamic_cast< SDDPBlock * >( block_ ) && ( ! inner_bsc_given ) ) {
+     std::cerr << "The BlockSolverConfig for the SDDPBlock inside the "
+               << "InvestmentFunction must be given via the strInnerBSC "
+               << "parameter in the ComputeConfig of the Solver of the "
+               << "InvestmentBlock." << std::endl;
+     exit( 1 );
+     }
 
   // Configure the Block
   if( given_block_config ) {
@@ -982,21 +1093,28 @@ void process_block_file( const netCDF::NcFile & file )
    config_Block( investment_block , given_block_config , nullptr );
    if( ! given_plain_block_config )
     for( auto block_ : investment_function->get_nested_Blocks() )
-     config_Block( block_ , given_block_config , nullptr );
+     if( auto sddp_block = dynamic_cast< SDDPBlock * >( block_ ) )
+      configure_stages( sddp_block , given_block_config );
+     else
+      config_Block( block_ , given_block_config , nullptr );
    }
   else
    for( auto block_ : investment_function->get_nested_Blocks() ) {
     bool is_using_lagrangian_dual_solver = false;
-    if( auto block = dynamic_cast< UCBlock * >( block_ ) )
-     configure_Blocks( block , relax_integrality ,
-                       is_using_lagrangian_dual_solver );
+    if( auto sddp_block = dynamic_cast< SDDPBlock * >( block_ ) )
+     configure_stages( sddp_block , nullptr );
     else
-     // a stochastic inner Block holds one UCBlock per scenario: each of them
-     // is configured, the stochastic Block itself having nothing to configure
-     for( auto scenario : block_->get_nested_Blocks() )
-      if( auto block = dynamic_cast< UCBlock * >( scenario ) )
-       configure_Blocks( block , relax_integrality ,
-                         is_using_lagrangian_dual_solver );
+     if( auto block = dynamic_cast< UCBlock * >( block_ ) )
+      configure_Blocks( block , relax_integrality ,
+                        is_using_lagrangian_dual_solver );
+     else
+      // a stochastic inner Block holds one UCBlock per scenario: each of
+      // them is configured, the stochastic Block itself having nothing to
+      // configure
+      for( auto scenario : block_->get_nested_Blocks() )
+       if( auto block = dynamic_cast< UCBlock * >( scenario ) )
+        configure_Blocks( block , relax_integrality ,
+                          is_using_lagrangian_dual_solver );
     }
 
   if( reformulate_variable_bounds ) {
@@ -1011,25 +1129,9 @@ void process_block_file( const netCDF::NcFile & file )
    investment_block->set_BlockConfig( config );
    }
 
-  // Configure the Solver
+  // Configure the Solver of the inner Block
 
-  auto ucblock_solver_config = get_blocksolverconfig( inner_bsc_filename );
-
-  if( ! ucblock_solver_config ) {
-   std::cerr << "File " << inner_bsc_filename << " was not found or "
-             << "its Configuration is invalid." << std::endl;
-   exit( 1 );
-   }
-
-  // Construct the ComputeConfig for the InvestmentFunction
-
-  ComputeConfig investment_function_config;
-
-  investment_function_config.f_extra_Configuration =
-   new SimpleConfiguration< std::map< std::string , Configuration * > >
-   ( { { "BlockSolverConfig" , ucblock_solver_config  } } );
-
-  investment_function->set_ComputeConfig( &investment_function_config );
+  set_inner_BlockSolverConfig( investment_function , inner_bsc_filename );
 
   // Possibly set the initial point
 
@@ -1041,11 +1143,13 @@ void process_block_file( const netCDF::NcFile & file )
 
   // Set the output stream for the log of the inner Solvers
 
-  for( auto block : investment_function->get_nested_Blocks() ) {
-   for( auto solver : block->get_registered_solvers() )
-    if( solver )
-     solver->set_log( &std::cout );
-   }
+  for( auto block : investment_function->get_nested_Blocks() )
+   if( auto sddp_block = dynamic_cast< SDDPBlock * >( block ) )
+    set_log( sddp_block , &std::cout );
+   else
+    for( auto solver : block->get_registered_solvers() )
+     if( solver )
+      solver->set_log( &std::cout );
 
   // Solve
   invest( investment_block );

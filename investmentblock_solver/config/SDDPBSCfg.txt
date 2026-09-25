@@ -1,0 +1,34 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - SDDPBSCfg.txt - - - - - - - - - - - - - - - -
+#
+# The BlockSolverConfig of the SDDPBlock inside an InvestmentBlock:
+# InvestmentFunction needs a (Parallel)SDDPSolver, which trains the cuts, and
+# one SDDPGreedySolver per sub-Block of a stage, which simulates the
+# scenarios. The backward pass solves the stages via LagrangianDualSolver,
+# whose cuts may lie above the continuous relaxation the forward pass
+# computes, the stages having binary variables: from an investment of 1.75 up
+# the curves then cross and the training stops [see SDDPBSCfg-LP.txt].
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+2  # number of (the names of) Solver in this BlockSolverConfig
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+ParallelSDDPSolver    # name of 1st Solver (the trainer)
+SDDPGreedySolver      # name of 2nd Solver (the simulator)
+
+2  # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - -
+*SDDPCfg.txt
+*GreedyCfg.txt
+
+# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END SDDPBSCfg.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

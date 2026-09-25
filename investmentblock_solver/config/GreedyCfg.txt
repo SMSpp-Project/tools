@@ -1,0 +1,37 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - GreedyCfg.txt - - - - - - - - - - - - - - - -
+#
+# The ComputeConfig of the SDDPGreedySolver that simulates the SDDPBlock
+# inside an InvestmentBlock, one scenario at a time (the InvestmentFunction
+# sets intScenarioId): it reuses the Solver of the stages that the
+# ParallelSDDPSolver registers, the continuous relaxation of BSPar-LD.txt
+# used by the forward pass, and must not unregister them between two
+# scenarios.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ComputeConfig # exact type of the ComputeConfig object
+
+1  # f_diff
+
+2 # number of integer parameters
+
+# now all the integer parameters
+intLogVerb 0          # log verbosity
+intUnregisterSolver 0 # keep the trainer's inner-Block Solvers registered
+
+0 # number of double parameters
+
+0 # number of string parameters
+
+0 # number of vector-of-int parameters
+0 # number of vector-of-double parameters
+0 # number of vector-of-string parameters
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END GreedyCfg.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -1,0 +1,52 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - SDDPBSCfg-LP.txt  - - - - - - - - - - - - - - -
+#
+# The BlockSolverConfig of SDDPBSCfg.txt with the backward pass on the
+# continuous relaxation of the stages, as the forward pass: the cuts and the
+# forward values then come from the same model, and the training converges at
+# every investment.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+2  # number of (the names of) Solver in this BlockSolverConfig
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+ParallelSDDPSolver    # name of 1st Solver (the trainer)
+SDDPGreedySolver      # name of 2nd Solver (the simulator)
+
+2  # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - -
+*SDDPCfg.txt +
+
+1  # f_diff == 1 ==> only the entries below are changed
+
+1  # number of integer parameters
+
+# now all the integer parameters
+intBackwardSolverIndex 0  # the continuous relaxation, as the forward pass
+
+0  # number of double parameters
+
+0  # number of string parameters
+
+0  # number of vector-of-int parameters
+
+0  # number of vector-of-double parameters
+
+0  # number of vector-of-string parameters
+
+# pointer to the "extra" Configuration
+* # [none]
+
+*GreedyCfg.txt
+
+# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - END SDDPBSCfg-LP.txt  - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

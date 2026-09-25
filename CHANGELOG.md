@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `investmentblock_solver` solves an `InvestmentBlock` whose inner Block is an
+  `SDDPBlock`, from a Block file as from a problem file: the UCBlock of each
+  stage, which sits behind a `BendersBFunction` that no BlockConfig crosses,
+  gets the `-B` "meta"-BlockConfig, the `SDDPBlock` gets the
+  BlockSolverConfig named by `strInnerBSC`, and each `SDDPGreedySolver`
+  passes the final state of a stage to the next; the problem file used to
+  leave the `SDDPBlock` with no Solver, and the Block file refused it.
+  `examples/instance-3` is such an instance, with 3 stages and 5 scenarios,
+  solved with `config/BSPar-SDDP.txt`
+
 - `svm_solver` estimates the leave-p-out error on a sample of the subsets
   (-P), repeats an estimate with one seed per repetition (-r), writes the
   seconds and the score of each point of the grid on each split (--csv), asks
@@ -68,6 +78,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   BendersDecompositionSolver when CMake finds it, the makefile does not
 
 ### Changed
+
+- the ComputeConfig of the `BundleSolver` of `investmentblock_solver` is a
+  fragment of its own (`config/BundleCfg.txt`), which `BSPar.txt` includes
+  as it stands and `BSPar-SDDP.txt` with the BlockSolverConfig of an inner
+  `SDDPBlock`; the values are those `BSPar.txt` had
 
 - the makefile asks for `-O3 -DNDEBUG` and nothing else, the macro of the
   patch for `boost::any` on macOS having no reason to be there since there is

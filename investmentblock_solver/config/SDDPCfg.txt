@@ -1,0 +1,54 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - SDDPCfg.txt - - - - - - - - - - - - - - - -
+#
+# The ComputeConfig of the ParallelSDDPSolver that trains the SDDPBlock
+# inside an InvestmentBlock, run once per new investment to rebuild the cuts:
+# it must end with kOK, so the accuracy has to be attainable. The number of
+# simulations equals the 5 scenarios of examples/instance-3: with fewer, the
+# backward pass keeps a fixed subset of the scenarios while the forward pass
+# draws another at every pass, and the curves cross. The backward pass solves
+# the stages via LagrangianDualSolver, the forward one on the continuous
+# relaxation [see BSPar-LD.txt].
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ComputeConfig # exact type of the ComputeConfig object
+
+1  # f_diff == 0 ==> all non-provided parameters are set to the default value
+   # f_diff == 1 ==> all non-provided parameters are not changed
+
+10 # number of integer parameters
+
+# now all the integer parameters
+intMaxIter              60
+intLogVerb               1 # log verbosity
+intNStepConv             1 # frequency at which convergence is checked
+intPrintTime             1 # whether computational time should be displayed
+intNbSimulCheckForConv   5 # simulations when checking convergence (<= #scen)
+intNbSimulForward        5 # simulations in the forward pass (<= #scenarios)
+intNbSimulBackward       5 # simulations in the backward pass (<= #scenarios)
+intOutputFrequency       1
+intBackwardSolverIndex   1 # the LagrangianDualSolver of BSPar-LD.txt
+intForwardSolverIndex    0 # the continuous relaxation of BSPar-LD.txt
+
+1 # number of double parameters
+
+# now all the double parameters
+dblAccuracy 0.002 # attainable: the gap is ~0.018% at the second iteration
+
+1 # number of string parameters
+
+# now all the string parameters
+strInnerBSC   BSPar-LD.txt          # BlockSolverConfig for the stage UCBlock
+
+0 # number of vector-of-int parameters
+0 # number of vector-of-double parameters
+0 # number of vector-of-string parameters
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END SDDPCfg.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

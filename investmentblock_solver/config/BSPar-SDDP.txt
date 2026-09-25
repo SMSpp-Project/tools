@@ -1,9 +1,11 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - BSPar.txt - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - BSPar-SDDP.txt  - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for an InvestmentBlock to be
-# solved by a BundleSolver, whose inner Block is a UCBlock (or a
-# TwoStageStochasticBlock of UCBlock).
+# solved by a BundleSolver, whose inner Block is an SDDPBlock: the one of
+# BSPar.txt, with the BlockSolverConfig of the SDDPBlock (SDDPBSCfg-LP.txt)
+# as that of the inner Block. SDDPBSCfg.txt is the alternative whose backward
+# pass solves the stages via LagrangianDualSolver.
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -19,10 +21,30 @@ BundleSolver    # name of Solver
 1  # number of ComputeConfig in this BlockSolverConfig
 
 # now all the ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - -
-*BundleCfg.txt
+*BundleCfg.txt +
+
+1  # f_diff == 1 ==> only the entries below are changed
+
+0  # number of integer parameters
+
+0  # number of double parameters
+
+1  # number of string parameters
+
+# now all the string parameters
+strInnerBSC  SDDPBSCfg-LP.txt  # BlockSolverConfig for the inner SDDPBlock
+
+0  # number of vector-of-int parameters
+
+0  # number of vector-of-double parameters
+
+0  # number of vector-of-string parameters
+
+# pointer to the "extra" Configuration
+* # [none]
 
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - END BSPar.txt - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END BSPar-SDDP.txt  - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
