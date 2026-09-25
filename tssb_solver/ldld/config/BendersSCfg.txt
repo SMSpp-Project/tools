@@ -9,9 +9,11 @@
 #             (on a TwoStageStochasticBlock over a MMCFBlock the Farkas
 #             certificate gives a wrong cut, which makes the master
 #             infeasible)
-# The scenarios solved by a Lagrangian dual (SubBSCfg-LDrec.txt) are not a
-# method yet: in the Benders form each scenario is wrapped in a Block that
-# has Variable of its own, which a LagrangianDualSolver does not accept
+#   1  BDSLD  the scenarios by the recursive Lagrangian dual, which gives
+#             no Farkas certificate and whose own phase one would be a flat
+#             replica it cannot decompose: the scenarios must be feasible
+#             whatever the master decides, i.e., the instance must have
+#             complete recourse (mmcf_tssb_gen -r)
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -20,12 +22,13 @@ BlockSolverConfig     # exact type of the Configuration object
 
 1  # the BlockSolverConfig is a "differential" one
 
-1 # number of (the names of) Solver in this BlockSolverConfig
+2 # number of (the names of) Solver in this BlockSolverConfig
 
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
 BendersDecompositionSolver # 1st Solver: BDS
+BendersDecompositionSolver # 2nd Solver: BDSLD
 
-1 # number of ComputeConfig in this BlockSolverConfig
+2 # number of ComputeConfig in this BlockSolverConfig
 
 # now all the ComputeConfig
 
@@ -51,6 +54,48 @@ int_BDSlv_FeasCut 3 # feasibility cuts by phase one
 
 # now all the string parameters
 str_Bsub_BSCfg    SubBSCfg-LP.txt # BlockSolverConfig of the subproblems
+str_Mstr_BSCfg MstrBSCfg-MILP.txt # BlockSolverConfig of the master
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# 2nd ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ComputeConfig         # exact type of the ComputeConfig object
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+3 # number of integer parameters
+
+# now all the integer parameters
+int_BDSlv_Regime  1 # the master is a MILP
+int_BDSlv_Restore 1 # the subproblems are reformulated each time
+int_BDSlv_FeasCut 0 # always feasible scenarios
+
+0 # number of double parameters
+
+# now all the double parameters
+# [none]
+
+2 # number of string parameters
+
+# now all the string parameters
+str_Bsub_BSCfg SubBSCfg-LDrec.txt # BlockSolverConfig of the subproblems
 str_Mstr_BSCfg MstrBSCfg-MILP.txt # BlockSolverConfig of the master
 
 0 # number of vector-of-int parameters

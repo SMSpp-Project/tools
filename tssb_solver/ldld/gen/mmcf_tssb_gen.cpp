@@ -14,11 +14,26 @@
  * item.
  *
  *   mmcf_tssb_gen -i <instance> -o <output.nc4> [-f <format>] [-n <scenarios>]
- *                 [-v <variation>] [-s <seed>]
+ *                 [-v <variation>] [-u <upward variation>] [-s <seed>]
+ *                 [-r <penalty>]
  *
  * The demand of commodity k in a scenario is its deterministic demand times
- * a multiplier drawn uniformly in [ 1 - v , 1 + v ], independently for every
- * commodity and scenario; the scenarios have the same probability. The
+ * a multiplier drawn uniformly in [ 1 - v , 1 + u ], u being v unless given,
+ * independently for every commodity and scenario; the scenarios have the
+ * same probability. With u = 0 the demands only decrease, which keeps every
+ * scenario feasible when the deterministic instance is and its capacities
+ * are tight, as in small.std.
+ *
+ * With -r (Canad format only), the instance gets complete recourse: for each
+ * commodity, two arcs between its origin and its destination, one per
+ * direction, with no fixed cost, a capacity that no scenario can exceed and
+ * a unit cost that is <penalty> times the largest unit cost of the
+ * instance, i.e., the demand that the network built cannot carry is served
+ * at a high price. The recourse arcs are not design decisions (they have no
+ * AbstractPath), i.e., they are always there, at their price. Every scenario
+ * is then feasible whatever arcs are built,
+ * which Benders' decomposition needs when its subproblems are solved by a
+ * Lagrangian dual, which gives no Farkas certificate. The
  * format of the deterministic instance is that of
  * MMCFBlock::load( std::istream & , char ), 's' (the Canad one) by default.
  *
@@ -42,6 +57,7 @@
 #include <iostream>
 #include <numeric>
 #include <random>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -60,7 +76,8 @@ static void usage( const char * exe )
 {
  std::cerr << "usage: " << exe << " -i <instance> -o <output.nc4>"
            << " [-f <format>] [-n <scenarios>] [-v <variation>]"
-           << " [-s <seed>]" << std::endl;
+           << " [-u <upward variation>] [-s <seed>] [-r <penalty>]"
+           << std::endl;
  exit( 1 );
  }
 
@@ -72,16 +89,20 @@ int main( int argc , char ** argv )
  char format = 0;
  int N = 10;
  double v = 0.2;
+ double u = -1;  // the upward variation, v unless given
+ double r = 0;   // the penalty of the complete recourse, none if 0
  unsigned seed = 1;
 
  int opt;
- while( ( opt = getopt( argc , argv , "i:o:f:n:v:s:h" ) ) != -1 )
+ while( ( opt = getopt( argc , argv , "i:o:f:n:v:u:s:r:h" ) ) != -1 )
   switch( opt ) {
    case 'i': input = optarg; break;
    case 'o': output = optarg; break;
    case 'f': format = optarg[ 0 ]; break;
    case 'n': N = std::atoi( optarg ); break;
    case 'v': v = std::atof( optarg ); break;
+   case 'u': u = std::atof( optarg ); break;
+   case 'r': r = std::atof( optarg ); break;
    case 's': seed = std::atoi( optarg ); break;
    default: usage( argv[ 0 ] );
    }
@@ -95,16 +116,72 @@ int main( int argc , char ** argv )
   std::cerr << "mmcf_tssb_gen: cannot open " << input << std::endl;
   return( 1 );
   }
- MMCFBlock mmcf;
- mmcf.load( in , format ? format : 's' );
+ if( u < 0 )
+  u = v;
 
- const auto na = mmcf.get_NArcs();
+ MMCFBlock mmcf;
+ std::size_t design = 0;  // how many arcs are design decisions, all if 0
+ if( r > 0 ) {  // the complete recourse, written into the Canad text
+  std::size_t nn , na , nk;
+  in >> nn >> na >> nk;
+  design = na;  // the recourse arcs come after the original ones
+  std::ostringstream arcs;
+  double maxc = 0;
+  for( std::size_t i = 0 ; i < na ; ++i ) {
+   std::size_t e , st , h;
+   double f , cap;
+   in >> e >> st >> f >> cap >> h;
+   arcs << e << " " << st << " " << f << " " << cap << " " << h << "\n";
+   for( ; h-- ; ) {
+    std::size_t k;
+    double c , uk;
+    in >> k >> c >> uk;
+    maxc = std::max( maxc , c );
+    arcs << k << " " << c << " " << uk << "\n";
+    }
+   }
+  std::vector< std::size_t > org( nk + 1 , 0 ) , dst( nk + 1 , 0 );
+  std::vector< double > dem( nk + 1 , 0 );
+  std::ostringstream nodes;
+  for( std::size_t k , i ; in >> k >> i ; ) {
+   double f;
+   in >> f;
+   nodes << k << " " << i << " " << f << "\n";
+   if( f > 0 ) { org[ k ] = i; dem[ k ] = f; }
+   if( f < 0 ) dst[ k ] = i;  // a node the commodity does not touch has 0
+   }
+  // every commodity is allowed on every recourse arc, as on the other arcs
+  // of a Canad instance, at the price of the recourse
+  double tot = 0;
+  for( std::size_t k = 1 ; k <= nk ; ++k )
+   tot += dem[ k ];
+  const double cap = 2 * ( 1 + u ) * tot + 1;
+  for( std::size_t k = 1 ; k <= nk ; ++k )
+   for( auto [ a , b ] : { std::pair( org[ k ] , dst[ k ] ) ,
+                           std::pair( dst[ k ] , org[ k ] ) } ) {
+    arcs << a << " " << b << " 0 " << cap << " " << nk << "\n";
+    for( std::size_t q = 1 ; q <= nk ; ++q )
+     arcs << q << " " << r * maxc << " " << cap << "\n";
+    }
+  std::istringstream text( std::to_string( nn ) + " " +
+                           std::to_string( na + 2 * nk ) + " " +
+                           std::to_string( nk ) + "\n" + arcs.str() +
+                           nodes.str() );
+  mmcf.load( text , 's' );
+  }
+ else
+  mmcf.load( in , format ? format : 's' );
+
  const auto nk = mmcf.get_NComm();
+ // the here-and-now decisions: the arcs of the instance, not those of the
+ // recourse, which are always there, at their price
+ const auto na = design ? decltype( mmcf.get_NArcs() )( design )
+                        : mmcf.get_NArcs();
 
  // the scenarios - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
  std::mt19937 gen( seed );
- std::uniform_real_distribution<> mult( 1 - v , 1 + v );
+ std::uniform_real_distribution<> mult( 1 - v , 1 + u );
  std::vector< std::vector< double > > scenarios( N ,
                                               std::vector< double >( nk ) );
  for( auto & s : scenarios )
@@ -202,7 +279,7 @@ int main( int argc , char ** argv )
   dss.serialize( dg );
   }
 
- std::cout << output << ": " << mmcf.get_NNodes() << " nodes, " << na
+ std::cout << output << ": " << mmcf.get_NNodes() << " nodes, " << mmcf.get_NArcs()
            << " arcs, " << nk << " commodities, " << N << " scenarios"
            << std::endl;
  return( 0 );

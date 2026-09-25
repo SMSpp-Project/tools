@@ -18,7 +18,9 @@
 #   mmcf       stochastic multicommodity network design: the Canad
 #              instances p33-p36 (20 nodes, 226 arcs, 40 commodities) and
 #              p41-p44 (20 nodes, 292 arcs, 40 commodities), with 3 and 5
-#              scenarios of the demands
+#              scenarios of the demands and complete recourse (the demand
+#              the network built cannot carry costs 10 times the dearest
+#              unit cost), which Benders with Lagrangian subproblems needs
 #
 # An instance whose name starts with tuc_ is a TwoStageStochasticBlock
 # (gen/gen_thermal_tssb.py); one whose name starts with ttr_ is a
@@ -136,19 +138,19 @@ cfl_f50_c50_s10_cap131 cfl-scen -i txt/ORLib/cap131.txt -n 10 -v 0.2 -s 1
 cfl_f50_c50_s20_cap131 cfl-scen -i txt/ORLib/cap131.txt -n 20 -v 0.2 -s 1
 cfl_f50_c50_s50_cap131 cfl-scen -i txt/ORLib/cap131.txt -n 50 -v 0.2 -s 1
 cfl_f50_c50_s100_cap131 cfl-scen -i txt/ORLib/cap131.txt -n 100 -v 0.2 -s 1
-mmcf_s3_p33 mmcf -i Canad/p33.dat -n 3 -v 0.2 -s 1
-mmcf_s3_p34 mmcf -i Canad/p34.dat -n 3 -v 0.2 -s 1
-mmcf_s3_p35 mmcf -i Canad/p35.dat -n 3 -v 0.2 -s 1
-mmcf_s3_p36 mmcf -i Canad/p36.dat -n 3 -v 0.2 -s 1
-mmcf_s3_p41 mmcf -i Canad/p41.dat -n 3 -v 0.2 -s 1
-mmcf_s3_p42 mmcf -i Canad/p42.dat -n 3 -v 0.2 -s 1
-mmcf_s3_p43 mmcf -i Canad/p43.dat -n 3 -v 0.2 -s 1
-mmcf_s3_p44 mmcf -i Canad/p44.dat -n 3 -v 0.2 -s 1
-mmcf_s5_p33 mmcf -i Canad/p33.dat -n 5 -v 0.2 -s 1
-mmcf_s5_p34 mmcf -i Canad/p34.dat -n 5 -v 0.2 -s 1
-mmcf_s5_p35 mmcf -i Canad/p35.dat -n 5 -v 0.2 -s 1
-mmcf_s5_p36 mmcf -i Canad/p36.dat -n 5 -v 0.2 -s 1
-mmcf_s5_p41 mmcf -i Canad/p41.dat -n 5 -v 0.2 -s 1
-mmcf_s5_p42 mmcf -i Canad/p42.dat -n 5 -v 0.2 -s 1
-mmcf_s5_p43 mmcf -i Canad/p43.dat -n 5 -v 0.2 -s 1
-mmcf_s5_p44 mmcf -i Canad/p44.dat -n 5 -v 0.2 -s 1
+mmcf_s3_p33 mmcf -i Canad/p33.dat -n 3 -v 0.2 -s 1 -r 10
+mmcf_s3_p34 mmcf -i Canad/p34.dat -n 3 -v 0.2 -s 1 -r 10
+mmcf_s3_p35 mmcf -i Canad/p35.dat -n 3 -v 0.2 -s 1 -r 10
+mmcf_s3_p36 mmcf -i Canad/p36.dat -n 3 -v 0.2 -s 1 -r 10
+mmcf_s3_p41 mmcf -i Canad/p41.dat -n 3 -v 0.2 -s 1 -r 10
+mmcf_s3_p42 mmcf -i Canad/p42.dat -n 3 -v 0.2 -s 1 -r 10
+mmcf_s3_p43 mmcf -i Canad/p43.dat -n 3 -v 0.2 -s 1 -r 10
+mmcf_s3_p44 mmcf -i Canad/p44.dat -n 3 -v 0.2 -s 1 -r 10
+mmcf_s5_p33 mmcf -i Canad/p33.dat -n 5 -v 0.2 -s 1 -r 10
+mmcf_s5_p34 mmcf -i Canad/p34.dat -n 5 -v 0.2 -s 1 -r 10
+mmcf_s5_p35 mmcf -i Canad/p35.dat -n 5 -v 0.2 -s 1 -r 10
+mmcf_s5_p36 mmcf -i Canad/p36.dat -n 5 -v 0.2 -s 1 -r 10
+mmcf_s5_p41 mmcf -i Canad/p41.dat -n 5 -v 0.2 -s 1 -r 10
+mmcf_s5_p42 mmcf -i Canad/p42.dat -n 5 -v 0.2 -s 1 -r 10
+mmcf_s5_p43 mmcf -i Canad/p43.dat -n 5 -v 0.2 -s 1 -r 10
+mmcf_s5_p44 mmcf -i Canad/p44.dat -n 5 -v 0.2 -s 1 -r 10
