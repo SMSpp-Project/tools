@@ -29,7 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   here-and-now Variable of every leaf are fixed to their mean over the
   leaves, rounded where they are integer, each leaf is solved alone with the
   BlockSolverConfig in `<file>`, and the value of the solution is printed
-  with its gap to the bound
+  with its gap to the bound; when the Solver ends without a primal solution
+  (e.g., it failed) there is no mean to take, and the recovery says so
+  instead of starting
 
 - `-j, --threads <n>` in `tssb_solver`: the leaves of `-R`, independent once
   the design is fixed, are solved by `<n>` threads

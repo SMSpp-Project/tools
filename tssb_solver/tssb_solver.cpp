@@ -392,20 +392,29 @@ void process_block_file( const netCDF::NcFile & file )
   solve_all( block );
 
   // the bound, and the primal solution the Solver gives, if any, which the
-  // recovery takes the mean on
+  // recovery takes the mean on; without one (e.g., the Solver failed) the
+  // Variable hold no solution and there is nothing to take the mean of
   double lb = - Inf< double >();
+  bool has_sol = false;
   if( ! recover_sconf.empty() )
    for( auto solver : block->get_registered_solvers() ) {
     lb = std::max( lb , solver->get_lb() );
-    if( solver->has_var_solution() )
+    if( solver->has_var_solution() ) {
      solver->get_var_solution();
+     has_sol = true;
+     }
     }
 
   // cleanup
   cleanup_bsc( block , s_config );
 
-  if( ! recover_sconf.empty() )
-   recover_primal( static_cast< TwoStageStochasticBlock * >( block ) , lb );
+  if( ! recover_sconf.empty() ) {
+   if( has_sol )
+    recover_primal( static_cast< TwoStageStochasticBlock * >( block ) , lb );
+   else
+    std::cout << "Recovered primal = none (no primal solution to start from)"
+              << std::endl;
+   }
 
   delete s_config;
   delete block;
