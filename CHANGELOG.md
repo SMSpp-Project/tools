@@ -79,6 +79,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `investmentblock_solver` configures the `LagrangianDualSolver` that may
+  solve the stages of an inner `SDDPBlock` as `sddp_solver` does: the units
+  whose state passes from a stage to the next are hard components, whose
+  primal solution is retrieved, and the `BendersBFunction` of each stage
+  retrieve the dual solution of the `HydroSystemUnitBlock` alone; the
+  function doing it moves out of `sddp_solver` to `sddp_config.cpp`, which
+  both tools compile, and takes as arguments what were the options of
+  `sddp_solver`
+
 - the ComputeConfig of the `BundleSolver` of `investmentblock_solver` is a
   fragment of its own (`config/BundleCfg.txt`), which `BSPar.txt` includes
   as it stands and `BSPar-SDDP.txt` with the BlockSolverConfig of an inner

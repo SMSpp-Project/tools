@@ -39,6 +39,7 @@ endif ()
 if (TARGET SMS++::InvestmentBlock)
 
     add_executable(investmentblock_solver ../common_utils.cpp
+                                          ../sddp_config.cpp
                                           investmentblock_solver.cpp)
     target_include_directories(investmentblock_solver PRIVATE ..)
     target_link_libraries(investmentblock_solver PRIVATE SMS++::InvestmentBlock)

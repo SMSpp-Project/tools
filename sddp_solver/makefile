@@ -50,7 +50,7 @@ include $(UCBckDIR)/lib/makefile
 
 # object files
 MOBJ =  $(SMS++OBJ) $(SDDPBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) \
-	$(CMMNUOBJ)
+	$(CMMNUOBJ) $(DIR)/../sddp_config.o
 
 # libraries
 MLIB =  $(SMS++LIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
@@ -72,5 +72,14 @@ $(DIR)/sddp_solver.o: $(DIR)/sddp_solver.cpp $(MH)
 
 $(DIR)/sddp_solver: $(DIR)/sddp_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/sddp_solver $^ $(MLIB) -I.. $(SW)
+
+# the configuration of the Solver of the stages of an SDDPBlock, shared with
+# investmentblock_solver
+$(DIR)/../sddp_config.o: $(DIR)/../sddp_config.cpp $(DIR)/../sddp_config.h \
+	$(MH)
+	$(CC) -c $(DIR)/../sddp_config.cpp -o $@ $(MINC) $(SW)
+
+clean::
+	rm -f $(DIR)/../sddp_config.o
 
 ############################ End of makefile #################################

@@ -85,6 +85,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "common_utils.h"
+#include "sddp_config.h"
 
 #include <filesystem>
 #include <iomanip>
@@ -824,10 +825,11 @@ std::string take_inner_bsc( BlockSolverConfig * solver_config )
 /// gives the inner Block of the InvestmentFunction its BlockSolverConfig
 /** The BlockSolverConfig read from the given file reaches the inner Block as
  * the "extra" Configuration of the ComputeConfig of the InvestmentFunction.
- * When the inner Block is an SDDPBlock, the SDDPGreedySolver registered in
- * this way simulate the scenarios one stage after the other, and each of them
- * is given the callback() that passes the final state of a stage to the
- * next. */
+ * When the inner Block is an SDDPBlock, the LagrangianDualSolver that may
+ * solve its stages is configured as sddp_solver does, and the
+ * SDDPGreedySolver registered in this way, which simulate the scenarios one
+ * stage after the other, are each given the callback() that passes the final
+ * state of a stage to the next. */
 
 void set_inner_BlockSolverConfig( InvestmentFunction * investment_function ,
                                   const std::string & inner_bsc_filename )
@@ -839,6 +841,23 @@ void set_inner_BlockSolverConfig( InvestmentFunction * investment_function ,
             << "its Configuration is invalid." << std::endl;
   exit( 1 );
   }
+
+ /* When the stages of an SDDPBlock are solved by a LagrangianDualSolver, the
+  * units whose state passes from a stage to the next have to be hard
+  * components, whose primal solution is retrieved, as when sddp_solver
+  * simulates: the SDDPGreedySolver reuse the Solver of the stages that the
+  * trainer registers, and callback() reads those states [see
+  * config_Lagrangian_dual()]. The structure of the stages, and the
+  * BendersBFunction told which dual solution to retrieve, are those of the
+  * first SDDPBlock, which is the only one unless the InvestmentFunction
+  * replicates it. */
+ for( auto block : investment_function->get_nested_Blocks() )
+  if( auto sddp_block = dynamic_cast< SDDPBlock * >( block ) ) {
+   if( using_lagrangian_dual_solver( inner_solver_config ) )
+    config_Lagrangian_dual( inner_solver_config , sddp_block , true , false ,
+                            false , "" );
+   break;
+   }
 
  ComputeConfig investment_function_config;
 
