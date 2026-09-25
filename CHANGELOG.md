@@ -12,15 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `investmentblock_solver` solves an `InvestmentBlock` whose inner Block is an
   `SDDPBlock`, from a Block file as from a problem file: the UCBlock of each
   stage, which sits behind a `BendersBFunction` that no BlockConfig crosses,
-  gets the `-B` "meta"-BlockConfig, the `SDDPBlock` gets the
-  BlockSolverConfig named by `strInnerBSC`, and each `SDDPGreedySolver`
-  passes the final state of a stage to the next; the problem file used to
-  leave the `SDDPBlock` with no Solver, and the Block file refused it.
+  gets the `-B` "meta"-BlockConfig, and each `SDDPGreedySolver` passes the
+  final state of a stage to the next; the problem file used to leave the
+  `SDDPBlock` with no Solver, and the Block file refused it.
   `examples/instance-3` is such an instance, with 3 stages and 5 scenarios,
-  solved with `config/BSPar-SDDP.txt`; with `config/SDDPBSCfg.txt` the
-  stages are solved via `LagrangianDualSolver`, and the components that must
-  be hard and whose primal solution the `SDDPSolver` needs are written in
-  `BSPar-LD.txt` and in the extra Configuration of `SDDPCfg.txt`
+  solved with `-S BSPar.txt -B SDDPBCfg-LD.txt`; with `config/SDDPBSCfg.txt`
+  in `IFCfg-SDDP.txt` the stages are solved via `LagrangianDualSolver`, and
+  the components that must be hard and whose primal solution the
+  `SDDPSolver` needs are written in `BSPar-LD.txt` and in the extra
+  Configuration of `SDDPCfg.txt`
 
 - `svm_solver` estimates the leave-p-out error on a sample of the subsets
   (-P), repeats an estimate with one seed per repetition (-r), writes the
@@ -82,10 +82,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- the ComputeConfig of the `BundleSolver` of `investmentblock_solver` is a
-  fragment of its own (`config/BundleCfg.txt`), which `BSPar.txt` includes
-  as it stands and `BSPar-SDDP.txt` with the BlockSolverConfig of an inner
-  `SDDPBlock`; the values are those `BSPar.txt` had
+- everything `investmentblock_solver` gives the `InvestmentBlock` and its
+  `InvestmentFunction` comes from the configuration files, the tool only
+  reading and applying them: the `OBlockConfig` of the `InvestmentBlock`
+  (`config/IBOCfg.txt`, the `InvestmentBlock` entry of the "meta"-BlockConfig
+  `InnerBCfg.txt`) reformulates the bounds on the investment and gives the
+  `InvestmentFunction` its ComputeConfig (`config/IFCfg.txt`), with the file
+  of the investment candidates and, in the extra Configuration, the
+  BlockSolverConfig of the inner Block; the BlockSolverConfig of the
+  `BundleSolver` no longer carries `strInnerBSC`, a parameter that was not
+  one and that the tool took out before applying it, nor does the tool fall
+  back to `BSCfg.txt`, set the file of the candidates, reformulate the
+  bounds or build a default formulation of the inner Block in code. A Block
+  file now needs a BlockConfig (`-B`, by default `InnerBCfg.txt`)
 
 - the makefile asks for `-O3 -DNDEBUG` and nothing else, the macro of the
   patch for `boost::any` on macOS having no reason to be there since there is
@@ -117,6 +126,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the timing study reaches the nuclear units, and the MILP it compares
   against separates the Perspective Cuts, so that the two arms are the same
   model solved in two ways
+
+### Removed
+
+- the options `-l`, `-n`, `-r` and `-s` of `investmentblock_solver`, which had
+  no effect: the cuts that `-l` named were never loaded, the number of
+  sub-Blocks per stage of `-n` was never set, `-r` only relaxed the default
+  formulation built in code, which is gone, and `-s` was read and never used;
+  `-n` is again the standard option
 
 ### Fixed
 

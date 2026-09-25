@@ -180,8 +180,8 @@ name, as in `-B ''`, means no file at all.
 
 The `-c` prefix is applied to *every* Configuration filename, not only the
 top-level `-B`/`-S` files but also every filename referenced from inside a
-config file: the `*filename` include mechanism and the `strInnerBSC` /
-`str_LagBF_BSCfg` meta-config chains. A run from any working directory therefore
+config file: the `*filename` include mechanism, the `strInnerBSC` of
+`sddp_solver` and the `str_LagBF_BSCfg` meta-config chains. A run from any working directory therefore
 resolves every config relative to `-c`: point `-c` at the directory holding the
 `.txt` files and the tool needs no particular current directory (this is what
 lets an external driver such as pySMSpp invoke the tool from an arbitrary
@@ -237,21 +237,28 @@ files and configurations.
 ones:
 
 ```sh
-  -l, --load-cuts <file>          load cuts from a file
-  -n, --num-blocks <number>       number of sub-Blocks per stage
-  -r, --relax                     relax integer variables
-  -s, --simulate                  simulate the given investment
   -x, --initial-investment <file> initial investment
 ```
 
 The input netCDF file can be a problem file or a block file:
 
 - a problem file already contains a Block configuration and a Solver
-  configuration; any Block or Solver configuration provided by command line
-  will be ignored;
+  configuration for the InvestmentBlock; the `-S` option is ignored, and the
+  `-B` one only concerns the inner Block of the InvestmentFunction;
 
-- for a block file, if a Block configuration or a Solver configuration is not
-  provided, a default configuration will be used.
+- for a block file, `-S` gives the BlockSolverConfig of the InvestmentBlock
+  and `-B` its BlockConfig, by default `BSPar.txt` and `InnerBCfg.txt`.
+
+Everything the InvestmentBlock and its InvestmentFunction receive comes from
+the configuration files. `-B` is typically a "meta"-BlockConfig, a map from a
+Block classname() to its BlockConfig, which the tool dispatches to the
+InvestmentBlock and over the inner Block of its InvestmentFunction, the
+UCBlock of every stage of an SDDPBlock included. Its `InvestmentBlock` entry
+is an OBlockConfig (`IBOCfg.txt`), which reformulates the bounds on the
+investment and gives the InvestmentFunction its ComputeConfig (`IFCfg.txt`):
+the file of the investment candidates and, in the extra Configuration, the
+BlockSolverConfig of the inner Block. `examples/instance-3` holds an
+InvestmentBlock over an SDDPBlock, solved with `-B SDDPBCfg-LD.txt`.
 
 The `-c` option specifies the prefix to the paths to all configuration
 files. This means that if PATH is the value passed to the `-c` option, then
@@ -270,45 +277,7 @@ finite, then x_i = l_i. Otherwise, if the upper bound u_i on the i-th
 investment is finite, then x_i = u_i. Otherwise, if both bounds are not
 finite, then x_i = 0.
 
-To simulate a given investment, i.e., to compute the investment function at a
-given point, the `-s` option must be used. The investment to be simulated is
-given by the initial point as described above: a given point provided by the
-`-x` option or the default initial point.
-
-If the `-o` option is used, then part of the primal and dual solutions of
-every UCBlock for each scenario is output while the investment function is
-computed. Typically, one may want the solutions to be output in simulation
-mode (i.e., when the `-s` option is used).
-
-The `-n` option specifies the number of sub-Blocks of SDDPBlock that must be
-constructed for each stage. By default, SDDPBlock contains a single
-sub-Blocks for each stage. This option must be provided in order to solve
-multiple scenarios in parallel. In this case, the number of scenarios that
-are solved in parallel is n (assuming n is not larger than the number of
-scenarios).
-
-The `-B` and `-S` options are only considered if the given netCDF file is a
-BlockFile. The `-B` option specifies a BlockConfig file to be applied to every
-InvestmentBlock; while the `-S` option specifies a BlockSolverConfig file for
-every InvestmentBlock. If the `-B` option is not provided when the given
-netCDF file is a BlockFile, then a default configuration is considered.
-
-Initial cuts can be provided by using the `-l` option. This option must be
-followed by the path to the file containing the initial cuts. This file
-must have the following format. The first line contains a header and its
-content is ignored. Each of the following lines represent a cut and has the
-following format:
-
-    t, a_0, a_1, ..., a_k, b
-
-where 't' is a stage (an integer between 0 and time horizon minus 1), 'a_0',
-..., 'a_k' are the coefficients of the cut, and 'b' is the constant term of
-the cut.
-
-The `-r` option relaxes the integrality of every integer variable in the
-inner Block (typically the binary commitment variables of every
-ThermalUnitBlock), so that the investment function is evaluated over the
-LP relaxation of the operational problem.
+The `-o` option outputs the investment found and its value.
 
 There are a few ways to specify the initial state for the first stage
 subproblem. This can be done by setting the initial state variable of

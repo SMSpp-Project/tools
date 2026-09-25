@@ -1,9 +1,10 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - SDDPBCfg-LD.txt - - - - - - - - - - - - - - -
 #
-# The "meta" BlockConfig, given with -B, for the UCBlock of each stage of an
-# SDDPBlock inside an InvestmentBlock, when the stages are solved via
-# LagrangianDualSolver: the ThermalUnitBlock gets the reserve variables in
+# The "meta" BlockConfig, given with -B, for an InvestmentBlock whose inner
+# Block is an SDDPBlock, as in examples/instance-3: the InvestmentBlock gets
+# IBOCfg-SDDP.txt, and in the UCBlock of each stage, which may be solved via
+# LagrangianDualSolver, the ThermalUnitBlock gets the reserve variables in
 # the Objective (the reserve demand constraints are dualized) and the
 # IntermittentUnitBlock gets the zero-max-power replacement.
 #
@@ -15,7 +16,8 @@
 
 SimpleConfiguration<std::map<std::string,Configuration*>>
 
-8 # the number of elements in the map
+9 # the number of elements in the map
+InvestmentBlock		*IBOCfg-SDDP.txt  # bounds, and the Solver of the SDDPBlock
 
 PolyhedralFunctionBlock	*PFBCfg.txt    # linearized representation
 SlackUnitBlock		*SUBCfg.txt    # OneVarConstraints
