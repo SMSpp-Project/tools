@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - InnerBSCfg.txt- - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -  InnerBSCfg.txt - - - - - - - - - - - - - - -
 #
 # A "meta" BlockSolverConfig: a map from a Block classname() to the
 # BlockSolverConfig to attach to every Block of that class. It is consumed by
@@ -19,8 +19,6 @@
 # config is reused at every UCBlock level, so it also covers a UCBlock nested
 # inside a TwoStageStochasticBlock.
 #
-#   Donato Meoli
-#
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -35,5 +33,5 @@ HydroSystemUnitBlock    *HSUBSCfg.txt
 *                       *OUBSCfg.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - END InnerBSCfg.txt- - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  END InnerBSCfg.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

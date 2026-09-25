@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - TUBSCfg-MILP.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -  TUBSCfg-MILP.txt - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a ThermalUnitBlock to be solved
 # as an integer MILP by any :MILPSolver. The harness is solver-agnostic: pick
@@ -75,5 +75,5 @@ dblMaxTime 300       # max running time (seconds)
 * # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END TUBSCfg-MILP.txt - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  END TUBSCfg-MILP.txt - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

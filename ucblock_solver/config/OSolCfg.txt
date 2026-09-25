@@ -4,8 +4,6 @@
 # A txt description of a SimpleConfiguration<int> to set the type of the
 # output Solution of the UnitBlock
 #
-#   Antonio Frangioni
-#
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -17,5 +15,5 @@ SimpleConfiguration<int> # exact type of the Configuration object
    # = bit 3 (& 8): the dual variables of the node injection constraints
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END OSolCfg.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END OSolCfg.txt - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

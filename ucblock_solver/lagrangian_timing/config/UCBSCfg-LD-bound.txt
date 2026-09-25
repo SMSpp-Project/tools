@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - UCBSCfg-LD-bound.txt- - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  UCBSCfg-LD-bound.txt - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a UCBlock to be solved by a
 # LagrangianDualSolver (using a [Parallel]BundleSolver as the inner Solver).
@@ -10,8 +10,6 @@
 # to UCBSCfg-LD.txt save that the LagrangianDualSolver is configured by
 # LDCfg-bound.txt, which stops gracefully within a time budget and reports
 # the achieved lower bound.
-#
-#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -31,5 +29,5 @@ LagrangianDualSolver
 *LDCfg-bound.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - END UCBSCfg-LD-bound.txt- - - - - - - - - - - - -
+# - - - - - - - - - - - - -  END UCBSCfg-LD-bound.txt - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -5,8 +5,6 @@
 # of each stage of the SDDPBlock: the continuous relaxation is solved as a
 # whole by a :MILPSolver.
 #
-#   Rafael Durbano Lobato, Donato Meoli
-#
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

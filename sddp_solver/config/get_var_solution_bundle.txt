@@ -10,8 +10,6 @@
 # Note: the component index below assumes that the HydroSystemUnitBlock is
 # the first (index 0) sub-Block of the UCBlock of each stage.
 #
-#   Rafael Durbano Lobato, Donato Meoli
-#
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - BendersBSCfg.txt- - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -  BendersBSCfg.txt - - - - - - - - - - - - - -
 #
 # A txt description of the default BlockSolverConfig for the inner Block of
 # each BendersBFunction of the SDDPBlock, used by build_BlockConfig() of
@@ -7,8 +7,6 @@
 # provided: the continuous relaxation is solved by a :MILPSolver with
 # presolve disabled, throwing an exception if reduced costs are not
 # available.
-#
-#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -77,5 +75,5 @@ presolve off # disable presolve
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - END BendersBSCfg.txt- - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  END BendersBSCfg.txt - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

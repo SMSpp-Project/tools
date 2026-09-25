@@ -1,13 +1,11 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - LDCfg-bound.txt - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - LDCfg-bound.txt - - - - - - - - - - - - - - -
 #
 # A txt description of a ComputeConfig for the LagrangianDualSolver wrapping
 # a BundleSolver as the inner Solver, applied to a UCBlock, identical to
 # LDCfg.txt save that the solve stops gracefully within a time budget
 # (dblMaxTime 600) at a looser relative accuracy (dblRelAcc 1e-4), reporting
 # the achieved lower bound rather than running to full convergence
-#
-#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -108,5 +106,5 @@ strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's So
 # end of ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - END LDCfg-bound.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END LDCfg-bound.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

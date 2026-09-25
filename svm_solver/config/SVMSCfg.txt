@@ -5,8 +5,6 @@
 # ad hoc SMOSolver, which is the default because it needs no external solver
 # and it does not even need the abstract representation to be generated
 #
-#   Donato Meoli
-#
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -61,5 +59,5 @@ dblSMOTol  1e-6 # tolerance on the optimality conditions of the dual
 * # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END SVMSCfg.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END SVMSCfg.txt - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

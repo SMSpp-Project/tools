@@ -4,8 +4,6 @@
 # A txt description of a BlockSolverConfig for the "other" :UnitBlock, which
 # is allowed to be empty if all the "other" :UnitBlock are treated as "easy"
 #
-#   Antonio Frangioni
-#
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -64,5 +62,5 @@ intRelaxIntVars 1 # nonzero if the continuous relaxation is solved
 * # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END OUBSCfg.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END OUBSCfg.txt - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

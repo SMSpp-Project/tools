@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - PCCfg.txt - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - PCCfg.txt - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockConfig for a SingleFlowDCRBlock asking for the
 # "P/C" (Perspective Cuts) formulation of the burst-delay terms, i.e., the
@@ -9,8 +9,6 @@
 # point have not all been generated, which is why a Solver of this
 # formulation is declared to solve a relaxation (see the -R option of the
 # test) unless it separates the cuts itself.
-#
-#   Antonio Frangioni
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

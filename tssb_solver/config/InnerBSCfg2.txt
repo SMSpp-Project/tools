@@ -17,8 +17,6 @@
 # config/TUBSCfg-DP.txt. It mirrors InnerBSCfg1.txt but uses BSCfg2.txt as the
 # catch-all leaf, the Solver tuning of the LD2 variant.
 #
-#   Donato Meoli
-#
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -31,5 +29,5 @@ ThermalUnitBlock        *TUBSCfg-DP.txt
 *                       *BSCfg2.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - -END InnerBSCfg2.txt- - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END InnerBSCfg2.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

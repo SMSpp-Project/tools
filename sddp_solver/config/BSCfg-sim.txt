@@ -1,13 +1,11 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - BSCfg-sim.txt - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - BSCfg-sim.txt - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a SDDPGreedySolver to be used
 # to simulate the SDDPBlock instances in this directory: the inner Block of
 # each stage is Solver-configured lazily (strInnerBSC), just before being
 # solved, so that the callback of sddp_solver can still update the data
 # linking two consecutive stages (e.g. ThermalUnitBlock init up/down time).
-#
-#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -70,5 +68,5 @@ strInnerBSC UCBSCfg.txt # BlockSolverConfig for the UCBlock
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - END BSCfg-sim.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END BSCfg-sim.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

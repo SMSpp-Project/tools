@@ -1,10 +1,8 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - MILPCfg.txt - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - MILPCfg.txt - - - - - - - - - - - - - - - -
 #
 # A txt description of a ComputeConfig for a :MILPSolver solving the
 # deterministic equivalent of a TwoStageStochasticBlock
-#
-#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -58,5 +56,5 @@ run_crossover off # skip crossover to a vertex (only the objective is needed)
 # end of ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - END MILPCfg.txt - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END MILPCfg.txt - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

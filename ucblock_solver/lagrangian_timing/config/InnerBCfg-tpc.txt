@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - InnerBCfg-tpc.txt - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - InnerBCfg-tpc.txt - - - - - - - - - - - - - -
 #
 # A "meta"-BlockConfig (a map from a Block classname() to the BlockConfig to
 # apply to every sub-Block of that class), identical to InnerBCfg.txt save
@@ -7,8 +7,6 @@
 # (T+P/C, wf = 9) formulation rather than the default one. Use it to have a
 # :MILPSolver solve the monolithic UCBlock on the T+P/C formulation, e.g. to
 # compare its bound and time against the Lagrangian dual.
-#
-#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -24,5 +22,6 @@ ACNetworkBlock          *ACBCfg.txt
 PolyhedralFunctionBlock *PFBCfg.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END InnerBCfg-tpc.txt - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - END InnerBCfg-tpc.txt - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

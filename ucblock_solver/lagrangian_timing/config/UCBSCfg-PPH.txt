@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - UCBSCfg-PPH.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - UCBSCfg-PPH.txt - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a UCBlock to be solved by a
 # PrimalProximalHeur, the Lagrangian-based primal-proximal heuristic built
@@ -18,8 +18,6 @@
 # quadratic penalty
 # weight R); everything else is inherited from LagrangianDualSolver and, in
 # turn, from its inner BundleSolver.
-#
-#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -116,5 +114,5 @@ strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's So
 * # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - END UCBSCfg-PPH.txt - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END UCBSCfg-PPH.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

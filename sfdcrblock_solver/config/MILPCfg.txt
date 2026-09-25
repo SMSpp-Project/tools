@@ -7,8 +7,6 @@
 # only outer-approximates the two cones, what is solved is a relaxation of
 # the problem, and the value a lower bound
 #
-#   Donato Meoli
-#
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -70,5 +68,5 @@ dblRelAcc  1e-6 # relative accuracy of the solution
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END MILPCfg.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END MILPCfg.txt - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

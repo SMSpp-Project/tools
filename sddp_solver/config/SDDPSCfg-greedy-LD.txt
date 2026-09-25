@@ -1,9 +1,7 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - SDDPSCfg-greedy-LD.txt- - - - - - - - - - - - - -
+# - - - - - - - - - - - - -  SDDPSCfg-greedy-LD.txt - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a SDDPGreedySolver
-#
-#   Rafael Durbano Lobato
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -68,5 +66,5 @@ strInnerBSC      BSPar-greedy-LD.txt   # BlockSolverConfig for the UCBlock
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - END SDDPSCfg-greedy-LD.txt- - - - - - - - - - - - -
+# - - - - - - - - - - - -  END SDDPSCfg-greedy-LD.txt - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

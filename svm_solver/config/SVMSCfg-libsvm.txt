@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - SVMSCfg-libsvm.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  SVMSCfg-libsvm.txt - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a SVMBlock to be trained by
 # LIBSVMSolver, i.e., by LIBSVM, which is an independent implementation of the
@@ -8,8 +8,6 @@
 # module to have been built with LIBSVM, and it refuses what LIBSVM cannot
 # express, i.e., the squared loss, the regularised bias, a weight of the
 # regularisation term other than one and the Laplacian kernel
-#
-#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -68,5 +66,5 @@ dblLSVMTol 1e-6 # tolerance on the optimality conditions of the dual: the
 * # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - END SVMSCfg-libsvm.txt - - - - - - - - - - - -
+# - - - - - - - - - - - - -  END SVMSCfg-libsvm.txt - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

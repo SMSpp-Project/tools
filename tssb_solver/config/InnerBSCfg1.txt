@@ -17,8 +17,6 @@
 # switch the Solver of *all* the thermal units at once just edit
 # config/TUBSCfg-DP.txt.
 #
-#   Donato Meoli
-#
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -31,5 +29,5 @@ ThermalUnitBlock        *TUBSCfg-DP.txt
 *                       *BSCfg1.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - -END InnerBSCfg1.txt- - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END InnerBSCfg1.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

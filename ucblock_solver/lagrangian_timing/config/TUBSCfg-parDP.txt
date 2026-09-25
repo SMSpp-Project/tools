@@ -33,10 +33,10 @@ ComputeConfig # exact type of the ComputeConfig object
 # now all the integer parameters
 intMaxThread 0  # 0 = all cores as FastFlow workers on compute_EDPs (above
                 # intParMinN); 1 = serial, k = k workers.
-intParMinN   0  # min time horizon for the parallel path; 0 forces it on every
-                # horizon (the study times the parallel DP at day/week too,
-                # below the default break-even threshold) -- a run-time config
-                # parameter, no -DTUDPS_PAR_MIN_N rebuild needed.
+intParMinN   0  # min time horizon for the parallel path; 0 forces it on
+                # every horizon (the study times the parallel DP at day/week
+                # too, below the default break-even threshold) -- a run-time
+                # config parameter, no -DTUDPS_PAR_MIN_N rebuild needed.
 
 0 # number of double parameters
 

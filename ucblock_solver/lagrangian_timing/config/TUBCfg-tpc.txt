@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - TUBCfg-tpc.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -  TUBCfg-tpc.txt - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockConfig that selects the "T + Perspective-Cuts"
 # (T+P/C) formulation of a ThermalUnitBlock, i.e. the static-variables
@@ -42,5 +42,5 @@ SimpleConfiguration<int>
 *  # extra   [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END TUBCfg-tpc.txt - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  END TUBCfg-tpc.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
