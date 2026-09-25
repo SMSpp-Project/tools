@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Downloads the data sets of datasets.txt from the LIBSVM repository into the
+# directory given as argument [data/], skipping those already there.
+set -u
+D=${1:-data}
+B=https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary
+here=$( cd "$( dirname "$0" )" && pwd )
+mkdir -p "$D" && cd "$D" || exit 1
+
+grep -v '^#' "$here/datasets.txt" | while read -r name url tier ; do
+  [ -n "$name" ] || continue
+  [ -f "$name" ] && continue
+  if ! curl -sSLf -o "$url" "$B/$url" ; then
+    echo "FAIL $name" ; rm -f "$url" ; continue
+  fi
+  case "$url" in *.bz2) bunzip2 -f "$url" ;; esac
+  [ -f "$name" ] || mv "${url%.bz2}" "$name"
+  echo "OK $name $( wc -l < "$name" ) samples"
+done

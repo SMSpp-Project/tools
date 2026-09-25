@@ -142,6 +142,27 @@ DataSplit train_test_split( std::size_t n , double test_fraction ,
 std::vector< DataSplit > k_fold( std::size_t n , unsigned k , unsigned seed ,
                                  const std::vector< double > & labels = {} );
 
+/*--------------------------------------------------------------------------*/
+/// the splits of a leave-\p p-out estimate of a data set
+/** Returns \p m splits of the \p n samples, the held-out part of each being a
+ * subset of \p p of them: the leave-\p p-out estimate proper would hold out
+ * each of the \f$ \binom{n}{p} \f$ subsets in turn, which is out of reach
+ * for all but the smallest instances, and is therefore estimated on \p m
+ * subsets drawn out of \p seed, no two of them equal. With \p p = 1 and
+ * \p m = \p n this is the leave-one-out estimate, which k_fold() with as
+ * many folds as samples gives as well and in the order of the samples.
+ *
+ * Each subset is drawn uniformly among those of size \p p; \p labels, if it
+ * is not empty, only orders the samples as in the other splits, since a
+ * subset of a handful of samples cannot keep the proportions of the classes.
+ * The number of distinct subsets bounds \p m, which is lowered to it when it
+ * exceeds it. */
+
+std::vector< DataSplit > leave_p_out( std::size_t n , unsigned p ,
+                                      unsigned m , unsigned seed ,
+                                      const std::vector< double > & labels
+                                                                       = {} );
+
 /** @} ---------------------------------------------------------------------*/
 /*------------------------------- SCORES -----------------------------------*/
 /*--------------------------------------------------------------------------*/

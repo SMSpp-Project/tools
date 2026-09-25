@@ -1,0 +1,251 @@
+#!/usr/bin/env bash
+# The campaign of the study on the model selection of an SVM: each operation
+# a practitioner performs (one training, a cross-validation, leave-one-out,
+# leave-p-out, a grid search, the elimination of the features), done in each
+# of the ways the Solvers allow (from scratch, re-optimizing along C,
+# unlearning the folds along the solution path), by each of the Solvers the
+# SVMBlock is interfaced with, on the data sets of datasets.txt.
+#
+#   run-campaign [out-dir] [section ...]
+#
+# with the sections among single, cv, lpo, grid, rfe and par (all of them if
+# none is given). Every run is appended as one row to out-dir/raw.tsv, with
+# the load of the machine before and after it; a run starts only when the
+# machine is idle, since the times of a shared machine are not comparable
+# otherwise. Each run is done twice (REP) on the small and medium data sets,
+# so that the noise can be measured by comparing a variant with itself.
+#
+# The environment may override SVM_SOLVER (the tool), DATA (the directory of
+# get-data), REP, TIMEOUT (seconds per run), the thresholds of the load
+# (IDLE1, IDLE5) and ONLY, a regular expression the names of the data sets
+# have to match.
+
+set -u
+
+here=$( cd "$( dirname "$0" )" && pwd )
+B=${SVM_SOLVER:-$HOME/smspp-project/build/tools/svm_solver/smspp_svm_solver}
+D=${DATA:-$here/data}
+C=$here/config/
+O=${1:-$HOME/svmms/runs}
+shift $(( $# > 0 ? 1 : 0 ))
+SECTIONS=${*:-"single cv lpo grid rfe par"}
+REP=${REP:-2}
+TIMEOUT=${TIMEOUT:-7200}
+IDLE1=${IDLE1:-8}
+IDLE5=${IDLE5:-10}
+
+mkdir -p "$O/log"
+RAW=$O/raw.tsv
+[ -f "$RAW" ] || printf "section\tdata\ttier\tkernel\tsolver\tmode\tjobs\trep\tseconds\trc\tscore\tload0\tload1\n" > "$RAW"
+
+# the grids: C over 2^-5 .. 2^7, gamma over 2^-7 .. 2^-3
+GC="C=0.03125,0.125,0.5,2,8,32,128"
+GG="gamma=0.0078125,0.03125,0.125"
+
+# returns at once if the load is under the thresholds; otherwise waits until
+# it has been under them for two checks in a row, five minutes apart
+idle () {
+  local l1 l5 rest
+  read -r l1 l5 rest < /proc/loadavg
+  [ "${l1%%.*}" -lt "$IDLE1" ] && [ "${l5%%.*}" -lt "$IDLE5" ]
+}
+
+wait_idle () {
+  idle && return 0
+  local ok=0
+  while [ $ok -lt 2 ] ; do
+    sleep 300
+    if idle ; then ok=$(( ok + 1 )) ; else ok=0 ; fi
+  done
+}
+
+# run <section> <data> <tier> <kernel> <solver> <mode> <jobs> <rep> <args...>
+# where <mode> is a label and <args> what the tool is given besides the data
+run () {
+  local sec=$1 d=$2 tier=$3 k=$4 s=$5 m=$6 j=$7 r=$8
+  shift 8
+  local tag="$sec-$d-$k-$s-$m-j$j-r$r"
+  local log="$O/log/$tag.log"
+  if grep -q -P "^$sec\t$d\t$tier\t$k\t$s\t$m\t$j\t$r\t" "$RAW" ; then
+    return 0                      # done by a previous campaign
+  fi
+  wait_idle
+  local l0 l1 t0 t1 rc secs sc
+  l0=$( cut -d' ' -f1 /proc/loadavg )
+  t0=$( date +%s.%N )
+  ( cd /tmp && timeout "$TIMEOUT" "$B" -c "$C" -S "SVMBSCfg-$s.txt" -l \
+                -K "$k" -j "$j" "$@" "$D/$d" ) > "$log" 2>&1
+  rc=$?
+  t1=$( date +%s.%N )
+  l1=$( cut -d' ' -f1 /proc/loadavg )
+  # with one worker the sum of the units, i.e., of the trainings and of the
+  # walks, which leaves out the start of the thread pool; with more, the
+  # wall clock of the selection; for the elimination of the features, the
+  # sum of its rounds; the wall clock of the process if none of these
+  if [ "$j" = 1 ] ; then
+    secs=$( grep -m1 -oP '^units: \K[0-9.]+' "$log" )
+  else
+    secs=$( grep -m1 -oP '^selection: \K[0-9.]+' "$log" )
+  fi
+  [ -n "$secs" ] || secs=$( grep -oP ' features\s+\K[0-9.]+(?=s)' "$log" |
+                            awk '{ s += $1 } END { if( NR ) print s }' )
+  [ -n "$secs" ] || secs=$( echo "$t1 - $t0" | bc )
+  sc=$( grep -oP '^best: \S+ = \K[0-9.]+' "$log" | head -1 )
+  [ -n "$sc" ] || sc=$( grep -oP '^\s*(training )?(accuracy|R2) = \K[0-9.]+' "$log" |
+                        tail -1 )
+  printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+         "$sec" "$d" "$tier" "$k" "$s" "$m" "$j" "$r" "$secs" "$rc" \
+         "${sc:-NA}" "$l0" "$l1" >> "$RAW"
+}
+
+# the data sets of a tier, in the order of datasets.txt
+tier () {
+  grep -v '^#' "$here/datasets.txt" | awk -v t="$1" '$3 == t { print $1 }' |
+    grep -E "^(${ONLY:-.*})$"
+}
+
+reps () { [ "$1" = large ] && echo 1 || seq 1 "$REP" ; }
+
+nsamples () { grep -c . "$D/$1" ; }
+
+# the largest index of a feature in the file, which is how many there are
+nfeatures () {
+  grep -oP '\s\K[0-9]+(?=:)' "$D/$1" | sort -n | tail -1
+}
+
+want () { [[ " $SECTIONS " == *" $1 "* ]] ; }
+
+# ----- one training --------------------------------------------------------- #
+# SMO and LIBSVM on both kernels; LIBLINEAR, which only has the regularised
+# bias, against SMO on the same variant; Gurobi on the Wolfe dual of the
+# small data sets, where the dense Hessian fits
+
+if want single ; then
+ for t in small medium large ; do
+  for d in $( tier $t ) ; do
+   for r in $( reps $t ) ; do
+    for k in linear gaussian ; do
+     for s in smo libsvm ; do
+      run single $d $t $k $s cold 1 $r -B "" -x 0.2
+     done
+    done
+    for s in smo liblinear ; do
+     run single $d $t linear $s regbias 1 $r -B "" -R -x 0.2
+    done
+    if [ $t = small ] ; then
+     run single $d $t gaussian grb cold 1 $r -B SVMCfg-dual.txt -x 0.2
+    fi
+   done
+  done
+ done
+fi
+
+# ----- cross-validation at one point ------------------------------------------ #
+# k folds trained from scratch, by SMO and by LIBSVM, against the k folds
+# unlearnt out of one model along the exact path and against the k folds
+# removed from one model and put back, SMO re-optimizing after each change;
+# leave-one-out on the small data sets
+
+if want cv ; then
+ for t in small medium large ; do
+  for d in $( tier $t ) ; do
+   folds="5 10" ; [ $t = large ] && folds=5
+   [ $t = small ] && folds="$folds $( nsamples $d )"
+   for r in $( reps $t ) ; do
+    for k in linear gaussian ; do
+     for f in $folds ; do
+      run cv $d $t $k smo cold-k$f 1 $r -B "" -k $f
+      run cv $d $t $k smo path-k$f 1 $r -B "" -k $f -i
+      run cv $d $t $k smo reopt-k$f 1 $r -B "" -k $f -u
+      run cv $d $t $k libsvm cold-k$f 1 $r -B "" -k $f
+     done
+    done
+   done
+  done
+ done
+fi
+
+# ----- leave-p-out ---------------------------------------------------------- #
+# p = 5 on 50 subsets drawn at random, on the small data sets
+
+if want lpo ; then
+ for d in $( tier small ) ; do
+  for r in $( reps small ) ; do
+   run lpo $d small gaussian smo cold 1 $r -B "" -P 5 -r 50
+   run lpo $d small gaussian smo path 1 $r -B "" -P 5 -r 50 -i
+   run lpo $d small gaussian smo reopt 1 $r -B "" -P 5 -r 50 -u
+   run lpo $d small gaussian libsvm cold 1 $r -B "" -P 5 -r 50
+  done
+ done
+fi
+
+# ----- grid search ----------------------------------------------------------- #
+# 5-fold over C x gamma (the Gaussian kernel) or over C (the linear one), in
+# the ways SMO can do it (from scratch or along C, each fold trained, removed
+# and put back, or unlearnt along the exact path) and the two LIBSVM and
+# LIBLINEAR can; the exact path only on the small data sets, where it ends in
+# time, and on the large ones the grid is over C alone
+
+if want grid ; then
+ for t in small medium large ; do
+  for d in $( tier $t ) ; do
+   for r in $( reps $t ) ; do
+    for k in gaussian linear ; do
+     g="$GC" ; [ $k = gaussian ] && [ $t != large ] && g="$GC;$GG"
+     run grid $d $t $k smo cold 1 $r -B "" -k 5 -g "$g"
+     run grid $d $t $k smo warm 1 $r -B "" -k 5 -g "$g" -W
+     run grid $d $t $k smo reopt 1 $r -B "" -k 5 -g "$g" -u
+     run grid $d $t $k smo reopt-warm 1 $r -B "" -k 5 -g "$g" -u -W
+     if [ $t = small ] ; then
+      run grid $d $t $k smo path 1 $r -B "" -k 5 -g "$g" -i
+      run grid $d $t $k smo path-warm 1 $r -B "" -k 5 -g "$g" -i -W
+     fi
+     run grid $d $t $k libsvm cold 1 $r -B "" -k 5 -g "$g"
+     run grid $d $t $k libsvm warm 1 $r -B "" -k 5 -g "$g" -W
+    done
+    for s in smo liblinear ; do
+     run grid $d $t linear $s regbias-cold 1 $r -B "" -R -k 5 -g "$GC"
+     run grid $d $t linear $s regbias-warm 1 $r -B "" -R -k 5 -g "$GC" -W
+    done
+   done
+  done
+ done
+fi
+
+# ----- elimination of the features --------------------------------------------- #
+# the linear kernel, down to one feature, a twentieth of them per round, each
+# round trained from scratch or re-optimized from the previous one
+
+if want rfe ; then
+ for t in small medium ; do
+  for d in $( tier $t ) ; do
+   step=$(( ( $( nfeatures $d ) + 19 ) / 20 ))
+   for r in $( reps $t ) ; do
+    run rfe $d $t linear smo cold 1 $r -B "" -x 0.2 -F 1:$step
+    run rfe $d $t linear smo warm 1 $r -B "" -x 0.2 -F 1:$step -i
+   done
+  done
+ done
+fi
+
+# ----- parallelism ----------------------------------------------------------- #
+# the Gaussian grid of the medium data sets and of a9a on 1, 8 and 64 cores:
+# the trainings from scratch spread over all the cores, while a chain along C
+# (with its folds trained, or removed and put back) is sequential and the
+# cores only share the chains
+
+if want par ; then
+ for d in $( tier medium ) a9a ; do
+  t=medium ; [ $d = a9a ] && t=large
+  for j in 1 8 64 ; do
+   for r in $( reps medium ) ; do
+    run par $d $t gaussian smo cold $j $r -B "" -k 5 -g "$GC;$GG"
+    run par $d $t gaussian smo warm $j $r -B "" -k 5 -g "$GC;$GG" -W
+    run par $d $t gaussian smo reopt-warm $j $r -B "" -k 5 -g "$GC;$GG" -u -W
+    run par $d $t gaussian libsvm cold $j $r -B "" -k 5 -g "$GC;$GG"
+   done
+  done
+ done
+fi
+
+echo CAMPAIGN_DONE >> "$O/done"

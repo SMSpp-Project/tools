@@ -1,0 +1,29 @@
+# The data sets of the study: the name of the file, the name under which the
+# LIBSVM repository of binary classification problems publishes it, and the
+# tier, i.e., which operations are affordable on it:
+#   small   every operation, leave-one-out and the QP solver included
+#   medium  cross-validation, the grids and the elimination of the features
+#   large   one training, a 5-fold at one point and the grid over C alone
+heart_scale              heart_scale                   small
+sonar_scale              sonar_scale                   small
+ionosphere_scale         ionosphere_scale              small
+breast-cancer_scale      breast-cancer_scale           small
+australian_scale         australian_scale              small
+diabetes_scale           diabetes_scale                small
+fourclass_scale          fourclass_scale               small
+german.numer_scale       german.numer_scale            small
+splice_scale             splice_scale                  small
+svmguide3                svmguide3                     small
+a1a                      a1a                           medium
+w1a                      w1a                           medium
+madelon                  madelon                       medium
+svmguide1                svmguide1                     medium
+gisette_scale            gisette_scale.bz2             medium
+mushrooms                mushrooms                     medium
+phishing                 phishing                      medium
+a9a                      a9a                           large
+w8a                      w8a                           large
+ijcnn1                   ijcnn1.bz2                    large
+cod-rna                  cod-rna                       large
+rcv1_train.binary        rcv1_train.binary.bz2         large
+real-sim                 real-sim.bz2                  large

@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `svm_solver` estimates the leave-p-out error on a sample of the subsets
+  (-P), repeats an estimate with one seed per repetition (-r), writes the
+  seconds and the score of each point of the grid on each split (--csv), asks
+  for the bias regularised with the weights (-R), eliminates the features
+  recursively with each round optionally reoptimized (-F), walks the grid
+  along C keeping the Solver and reoptimizing from the previous point (-W),
+  removes each fold from one model and puts it back, the Solver
+  re-optimizing after each change (-u), and prints the wall-clock time of the
+  whole selection and the sum of the times of its trainings; it starts no
+  more workers than there are trainings to run
+
+- `svm_solver/modelsel`, the computational study on the model selection of
+  an SVM: the configuration of the Solvers compared, the download of the data
+  sets, the campaign guarded by the load of the machine and the tables
+
 - `-v 2` prints the parameters of the Solver attached to the Block and `-v 3`
   those of the Solver of the sub-Block as well, which is how a run says what
   it was actually asked, rather than what the configuration files seem to say
