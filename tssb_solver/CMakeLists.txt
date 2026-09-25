@@ -25,8 +25,10 @@ if (NOT hasParent)
     # Blocks
     find_package(UCBlock)
     find_package(TwoStageStochasticBlock)
+    find_package(MultiStageStochasticBlock)
     # Solvers
     find_package(LagrangianDualSolver)
+    find_package(BendersDecompositionSolver)
     find_package(BundleSolver)
     find_package(MILPSolver)
 endif ()
@@ -43,12 +45,22 @@ if (TARGET SMS++::UCBlock AND
                           SMS++::UCBlock
                           SMS++::TwoStageStochasticBlock)
 
+    if (TARGET SMS++::MultiStageStochasticBlock)
+        target_link_libraries(tssb_solver PRIVATE
+                              SMS++::MultiStageStochasticBlock)
+    endif ()
+
     if (TARGET SMS++::LagrangianDualSolver)
         target_link_libraries(tssb_solver PRIVATE SMS++::LagrangianDualSolver)
     endif ()
 
     if (TARGET SMS++::BundleSolver)
         target_link_libraries(tssb_solver PRIVATE SMS++::BundleSolver)
+    endif ()
+
+    if (TARGET SMS++::BendersDecompositionSolver)
+        target_link_libraries(tssb_solver PRIVATE
+                              SMS++::BendersDecompositionSolver)
     endif ()
 
     if (TARGET SMS++::MILPSolver)

@@ -8,7 +8,7 @@
  * file. This tool can be executed as follows:
  *
  *   ./tssb_solver [-s] [-e] [-m NUMBER] [-B FILE] [-S FILE] [-p PATH]
- *                 [-c PATH] < nc4-file >
+ *                 [-c PATH] [-k] < nc4-file >
  *
  * The only mandatory argument is the netCDF file containing the description
  * of the TwoStageStochasticBlock. This can be either a BlockFile or
@@ -34,6 +34,31 @@
  * options is not provided when the given netCDF file is a BlockFile, then
  * default configurations are considered.
  *
+ * The -k option solves the Benders form of each TwoStageStochasticBlock
+ * rather than the TwoStageStochasticBlock itself [see
+ * TwoStageStochasticBlock::get_Benders_form()]: the BlockConfig is applied
+ * to the TwoStageStochasticBlock, the Benders form is assembled around it,
+ * and the BlockSolverConfig is applied to the root of the form, which is
+ * where a Benders decomposition Solver is attached. The form is given back
+ * once solved. It is only available for a BlockFile.
+ *
+ * A MultiStageStochasticBlock is a TwoStageStochasticBlock, and this tool
+ * solves it as well when it is built with that module: with -k, the
+ * sub-Block of the form are the leaves of the scenario tree, which is the
+ * Benders form of the problem as long as the only here-and-now Variable are
+ * those of the root.
+ *
+ * The -R option recovers a feasible solution after a Solver that only gives
+ * a bound, e.g., a LagrangianDualSolver relaxing the non-anticipativity
+ * Constraint: the here-and-now Variable of every leaf are fixed to their
+ * mean over the leaves, rounded where they are integer, each leaf is solved
+ * alone with the BlockSolverConfig given to -R, and the sum of their values
+ * is the value of a feasible solution, printed with the gap to the bound.
+ * The primal solution the Solver gives, if any, is written first, so that
+ * the mean is taken on it. The leaves, independent once the design is
+ * fixed, are solved by the number of threads given to -j. It is only
+ * available for a BlockFile.
+ *
  * \author Antonio Frangioni \n
  *         Dipartimento di Informatica \n
  *         Universita' di Pisa \n
@@ -51,6 +76,22 @@
 #include <iomanip>
 #include <iostream>
 
+#include <AbstractBlock.h>
+
+#include <BlockSolverConfig.h>
+
+#include <chrono>
+
+#include <atomic>
+
+#include <cmath>
+
+#include <exception>
+
+#include <mutex>
+
+#include <thread>
+
 #include <TwoStageStochasticBlock.h>
 
 #include "common_utils.h"
@@ -64,19 +105,55 @@ using namespace SMSpp_di_unipi_it;
 /*--------------------------------------------------------------------------*/
 /*------------------------------- GLOBALS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
+
+bool benders_form = false;  ///< solve the Benders form (-k)
+
+std::string recover_sconf;  ///< BlockSolverConfig of the leaves (-R)
+
+int recover_threads = 1;    ///< threads solving the leaves in -R (-j)
+
+const std::string my_short_opts = "kR:j:";
+
+const std::vector< option > my_long_opts = {
+  { "benders" , no_argument , nullptr , 'k' } ,
+  { "recover" , required_argument , nullptr , 'R' } ,
+  { "threads" , required_argument , nullptr , 'j' }
+  };
+
+const std::string my_help =
+ "  -k, --benders                   solve the Benders form of the problem,\n"
+ "                                  the Solver being attached to its root\n"
+ "  -R, --recover <file>            recover a feasible solution by fixing\n"
+ "                                  the here-and-now Variable to their mean\n"
+ "                                  over the leaves and solving each leaf\n"
+ "                                  with the BlockSolverConfig in <file>\n"
+ "  -j, --threads <n>               threads solving the leaves in -R\n"
+ "                                  [default: 1]";
+
+/*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 static bool process_specific_arg( int opt )
 {
- // tssb_solver has no tool-specific options
- return( false );
+ switch( opt ) {  // non-standard options
+  case 'k': benders_form = true; return( true );
+  case 'R': recover_sconf = std::string( optarg ); return( true );
+  case 'j': recover_threads = std::atoi( optarg ); return( true );
+  default: return( false );
+  }
  }
 
 /*--------------------------------------------------------------------------*/
 
 void process_prob_file( const netCDF::NcFile & file )
 {
+ if( benders_form ) {
+  std::cout << "Error: the Benders form (-k) needs a Block file, whose "
+               "BlockSolverConfig is given by -S" << std::endl;
+  exit( 1 );
+  }
+
  auto problems = file.getGroups();
 
  for( auto & problem : problems ) {  // for each problem descriptor:
@@ -106,11 +183,199 @@ void process_prob_file( const netCDF::NcFile & file )
 
 /*--------------------------------------------------------------------------*/
 
+/// solves the Benders form of the TwoStageStochasticBlock in \p group
+/** The BlockConfig is applied to the TwoStageStochasticBlock, whose abstract
+ * representation is then generated, since the form is read off it; the
+ * BlockSolverConfig is applied to the root of the form. */
+
+static void solve_Benders_form( const std::string & name ,
+                                const netCDF::NcGroup & group )
+{
+ require_solver_config( sconf_file );
+ auto block = get_Block( group );
+ auto tssb = dynamic_cast< TwoStageStochasticBlock * >( block );
+ if( ! tssb ) {
+  std::cout << "Error: " << name << " not a TwoStageStochasticBlock"
+            << std::endl;
+  exit( 1 );
+  }
+
+ auto b_config = get_config( bconf_file );
+ config_Block( block , b_config , nullptr );
+ delete b_config;
+
+ tssb->generate_abstract_variables();
+ tssb->generate_abstract_constraints();
+ tssb->generate_objective();
+
+ auto form = tssb->get_Benders_form();
+ if( ! form ) {
+  std::cout << "Error: " << name << " declares no here-and-now Variable, "
+               "hence it has no Benders form" << std::endl;
+  exit( 1 );
+  }
+
+ auto s_config = get_config( sconf_file );
+ config_Block( form , nullptr , s_config );
+
+ set_solver_logs( form );
+
+ // Solve
+ solve_all( form );
+
+ // cleanup
+ cleanup_bsc( form , s_config );
+ delete s_config;
+ tssb->give_back_Benders_form( form );
+ delete block;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+/// recovers a feasible solution of \p tssb out of the bound \p lb
+/** The here-and-now Variable of every leaf are fixed to their mean over the
+ * leaves, rounded where they are integer; each leaf, whose Objective already
+ * carries the probability of its scenario, is then solved alone with the
+ * BlockSolverConfig of -R, and the sum of their values is the value of a
+ * feasible solution of the two-stage problem. The Variable are unfixed and
+ * the Solver detached at the end. */
+
+static void recover_primal( TwoStageStochasticBlock * tssb , double lb )
+{
+ using Index = Block::Index;
+ const auto start = std::chrono::system_clock::now();
+
+ const Index L = tssb->get_number_leaves();
+ std::vector< std::vector< ColVariable * > > xk( L );
+ for( Index l = 0 ; l < L ; ++l )
+  for( const auto & p : tssb->get_paths_to_static_here_and_now_vars() ) {
+   auto leaf = tssb->get_leaf_block( l );
+   const auto nv = p->get_number_elements< ColVariable >( leaf );
+   auto e = p->get_element< ColVariable >( leaf );
+   for( Index j = 0 ; j < nv ; ++j )
+    xk[ l ].push_back( e + j );
+   }
+
+ const Index n = L ? xk[ 0 ].size() : 0;
+ if( ! n ) {
+  std::cout << "Recovered primal = none (no here-and-now Variable)"
+            << std::endl;
+  return;
+  }
+ std::vector< double > mean( n , 0 );
+ for( Index l = 0 ; l < L ; ++l )
+  for( Index j = 0 ; j < n ; ++j )
+   mean[ j ] += xk[ l ][ j ]->get_value() / L;
+ for( Index j = 0 ; j < n ; ++j )
+  if( xk[ 0 ][ j ]->is_integer() )
+   mean[ j ] = std::round( mean[ j ] );
+
+ auto bsc = dynamic_cast< BlockSolverConfig * >( get_config( recover_sconf ) );
+ if( ! bsc ) {
+  std::cout << "Error: " << recover_sconf << " is not a BlockSolverConfig"
+            << std::endl;
+  exit( 1 );
+  }
+
+ /* The leaves are independent once the design is fixed: each one has its
+  * own Variable, its own copy of the BlockSolverConfig and so its own
+  * Solver, hence they are solved by recover_threads threads, each writing
+  * the value of its leaf into its own slot, and summed at the end. */
+
+ std::vector< double > value( L , 0 );
+ std::vector< char > solved( L , 0 );
+
+ auto one = [ & ]( Index l ) {
+  auto leaf = tssb->get_leaf_block( l );
+  std::vector< bool > was_fixed( n );
+  for( Index j = 0 ; j < n ; ++j ) {
+   was_fixed[ j ] = xk[ l ][ j ]->is_fixed();
+   xk[ l ][ j ]->set_value( mean[ j ] );
+   xk[ l ][ j ]->is_fixed( true , eNoMod );
+   }
+
+  // a copy per leaf, clear()-ing it being what detaches its Solver
+  auto lbsc = bsc->clone();
+  lbsc->apply( leaf );
+  if( ! leaf->get_registered_solvers().empty() ) {
+   auto solver = leaf->get_registered_solvers().front();
+   const auto status = solver->compute();
+   if( ( status == Solver::kOK ) || ( status == Solver::kLowPrecision ) ) {
+    value[ l ] = solver->get_ub();
+    solved[ l ] = 1;
+    }
+   }
+
+  lbsc->clear();
+  lbsc->apply( leaf );
+  delete lbsc;
+  for( Index j = 0 ; j < n ; ++j )
+   if( ! was_fixed[ j ] )
+    xk[ l ][ j ]->is_fixed( false , eNoMod );
+  };
+
+ const Index nt = std::min( Index( std::max( recover_threads , 1 ) ) , L );
+ std::atomic< Index > next( 0 );
+ std::exception_ptr error;
+ std::mutex error_mutex;
+ auto worker = [ & ]( void ) {
+  for( Index l ; ( l = next++ ) < L ; )
+   try {
+    one( l );
+    }
+   catch( ... ) {
+    std::lock_guard< std::mutex > guard( error_mutex );
+    if( ! error )
+     error = std::current_exception();
+    next = L;
+    return;
+    }
+  };
+
+ std::vector< std::thread > pool;
+ for( Index t = 1 ; t < nt ; ++t )
+  pool.emplace_back( worker );
+ worker();
+ for( auto & th : pool )
+  th.join();
+ if( error )
+  std::rethrow_exception( error );
+
+ double ub = 0;
+ bool feasible = true;
+ for( Index l = 0 ; l < L ; ++l ) {
+  feasible = feasible && solved[ l ];
+  ub += value[ l ];
+  }
+
+ delete bsc;
+
+ const std::chrono::duration< double > t =
+                                     std::chrono::system_clock::now() - start;
+ std::cout << std::setprecision( 10 );
+ std::cout << "Recovery time: " << t.count() << " s" << std::endl;
+ if( ! feasible ) {
+  std::cout << "Recovered primal = none (a leaf is not solved)" << std::endl;
+  return;
+  }
+
+ std::cout << "Recovered primal = " << ub << std::endl;
+ std::cout << "Gap to the bound = " << ( ub - lb ) / std::abs( ub )
+           << std::endl;
+ }
+
+/*--------------------------------------------------------------------------*/
+
 void process_block_file( const netCDF::NcFile & file )
 {
  auto blocks = file.getGroups();
 
  for( auto & b : blocks ) {  // for each Block descriptor
+  if( benders_form ) {
+   solve_Benders_form( b.first , b.second );
+   continue;
+   }
+
   Block * block;
   Configuration * s_config;
   get_all( b.second , bconf_file , sconf_file , block , s_config );
@@ -126,8 +391,31 @@ void process_block_file( const netCDF::NcFile & file )
   // Solve
   solve_all( block );
 
+  // the bound, and the primal solution the Solver gives, if any, which the
+  // recovery takes the mean on; without one (e.g., the Solver failed) the
+  // Variable hold no solution and there is nothing to take the mean of
+  double lb = - Inf< double >();
+  bool has_sol = false;
+  if( ! recover_sconf.empty() )
+   for( auto solver : block->get_registered_solvers() ) {
+    lb = std::max( lb , solver->get_lb() );
+    if( solver->has_var_solution() ) {
+     solver->get_var_solution();
+     has_sol = true;
+     }
+    }
+
   // cleanup
   cleanup_bsc( block , s_config );
+
+  if( ! recover_sconf.empty() ) {
+   if( has_sol )
+    recover_primal( static_cast< TwoStageStochasticBlock * >( block ) , lb );
+   else
+    std::cout << "Recovered primal = none (no primal solution to start from)"
+              << std::endl;
+   }
+
   delete s_config;
   delete block;
   }
@@ -158,6 +446,9 @@ int main( int argc , char ** argv )
   "  tssb_solver -S TSSBSCfg-LD.txt instance.nc4\n"
   "      solve the Lagrangian dual of the scenario decomposition, whose\n"
   "      master problem needs CPLEX or Gurobi\n"
+  "  tssb_solver -k -S TSSBSCfg-BDS.txt instance.nc4\n"
+  "      solve the Benders form of the problem with the\n"
+  "      BendersDecompositionSolver of TSSBSCfg-BDS.txt\n"
   "  tssb_solver -c myconfig/ instance.nc4\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
@@ -171,6 +462,11 @@ int main( int argc , char ** argv )
  default_sconf_name = "TSSBSCfg.txt";
 
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -
+
+ short_opts.append( my_short_opts );
+ long_opts.insert( std::prev( long_opts.end() ) ,
+                   my_long_opts.begin() , my_long_opts.end() );
+ help.append( my_help );
 
  process_args( argc , argv , process_specific_arg );
 

@@ -34,9 +34,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tools and is built on its own, with CMake against an installation or with
   its makefile
 
+- `-v 2` prints the parameters of the Solver attached to the Block and `-v 3`
+  those of the Solver of the sub-Block as well, which is how a run says what
+  it was actually asked, rather than what the configuration files seem to say
+
+- `ucblock_solver/lagrangian_timing/rules_cost.py`, which says what the
+  operating rules of a nuclear unit cost inside a Lagrangian decomposition:
+  it reads the CSV that the timing harness writes over two dump sets of the
+  same fleet, the same demand and the same regime, one carrying the whole set
+  of the rules and one reduced to the original model, and reports, per
+  Solver, the median and the worst solve, how many ended on the time limit
+  rather than on the problem, and the factor between the two arms
+
+- `tssb_solver` also solves a MultiStageStochasticBlock when the module is
+  built, `-k` giving the Benders form over the leaves of its scenario tree
+
+- `-R, --recover <file>` in `tssb_solver`: a feasible solution is recovered
+  after a Solver that only gives a bound, e.g., a LagrangianDualSolver: the
+  here-and-now Variable of every leaf are fixed to their mean over the
+  leaves, rounded where they are integer, each leaf is solved alone with the
+  BlockSolverConfig in `<file>`, and the value of the solution is printed
+  with its gap to the bound; when the Solver ends without a primal solution
+  (e.g., it failed) there is no mean to take, and the recovery says so
+  instead of starting
+
+- `-j, --threads <n>` in `tssb_solver`: the leaves of `-R`, independent once
+  the design is fixed, are solved by `<n>` threads
+
+- `-k, --benders` in `tssb_solver`: the Benders form of the problem is
+  assembled around it [see TwoStageStochasticBlock::get_Benders_form()] and
+  the BlockSolverConfig of `-S` is applied to its root, which is where a
+  BendersDecompositionSolver is attached; the tool links the
+  BendersDecompositionSolver when CMake finds it, the makefile does not
+
 ### Changed
 
+- the makefile asks for `-O3 -DNDEBUG` and nothing else, the macro of the
+  patch for `boost::any` on macOS having no reason to be there since there is
+  no `boost::any` left in the core
+
+- the set of instances is named `pypsa-data`, as the folder that holds it
+
+- the parameter that the feasibility cut of the Benders decomposition needs
+  is in the configuration, commented where the Solver refuses it, so that a
+  run that wants that cut is one line away instead of a search through the
+  documentation
+
+- the master of the Lagrangian dual asks Gurobi for its least numerical care
+  and not for none of it, satisfies its own rows tighter than the oracle
+  satisfies its own, and declares the residual zero on the scale of the
+  model: the extra care costs at every one of the thousands of solves of a
+  run, while what the master needs is to be solved consistently
+
+- the configurations of the tools move to the parameter set of BundleSolver
+  2.0, the Solver of the master being configured where the master is and not
+  where the bundle is, and `Method` and `NumericFocus` counting among the
+  integer parameters of that Solver
+
+- a solve that the license service refuses is waited out and tried again, and
+  a sweep that stops part way through says so and leaves no file that looks
+  like a measurement: the units of a fleet differ from one another, so the
+  fleet is timed whole or not at all
+
+- the timing study reaches the nuclear units, and the MILP it compares
+  against separates the Perspective Cuts, so that the two arms are the same
+  model solved in two ways
+
 ### Fixed
+
+- `ucblock_solver` takes `LagrangianDualSolver` from its plain makefile, as
+  the other tools do, rather than from the one that assumes the library was
+  installed
+
+- the duals of the pollutant constraints are read by pollutant and by zone
+  again, a single index having mixed the zones of one pollutant with those of
+  another in the output of the SDDP tool
+
+- `print_status()` closes its parenthesis and goes to a new line whatever the
+  status is, `kLowPrecision` and the ones below it having left the line open
+  and run into what came next
+
+- `ucblock_solver` and `svm_solver` set the log of their Solver as the other
+  tools do, so that `intLogVerb` of a configuration is heard instead of being
+  read and dropped
 
 - the header of each file of the pollutant duals written by
   `smspp_sddp_solver` names the zones rather than repeating `Zone_0`
@@ -178,7 +258,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - consider UnitBlock scaling when outputting the solution
 
 - get\_installed\_quantity in investment\_solver
-
 
 ## [0.5.3] - 2024-02-29
 
