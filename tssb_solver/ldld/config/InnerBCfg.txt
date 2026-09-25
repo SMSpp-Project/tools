@@ -10,13 +10,14 @@
 # a "meta"-BlockConfig, i.e., a map classname --> its BlockConfig
 SimpleConfiguration<std::map<std::string,Configuration*>>
 
-5 # the number of elements in the map
+6 # the number of elements in the map
 
 ThermalUnitBlock                 *TUBCfg.txt
 DCNetworkBlock                   *DCNBCfg.txt
 ACNetworkBlock                   *ACBCfg.txt
 PolyhedralFunctionBlock          *PFBCfg.txt
 CapacitatedFacilityLocationBlock *CFLBCfg-KF.txt
+MMCFBlock                        *MMCFBCfg-KF.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - END InnerBCfg.txt - - - - - - - - - - - - - - -

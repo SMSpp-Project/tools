@@ -1,0 +1,52 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  MMCFBCfg-KF.txt - - - - - - - - - - - - - - - 
+#
+# The BlockConfig of a network design Block for the Lagrangian methods: one
+# BinaryKnapsackBlock per arc, whose last item is the design variable of the
+# arc, built as the structure, i.e., when the BlockConfig is applied, so that
+# a recursive dual sees them, and no strong constraints
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockConfig # exact type of the Configuration object
+
+1  # the BlockConfig is a "differential" one
+
+2  # version of the BlockConfig format
+
+# the structure: the knapsacks of the arcs
+SimpleConfiguration<int>
+1    # 0 = one MCFBlock per commodity, 1 = one BinaryKnapsackBlock per arc
+
+# static_constraints
+SimpleConfiguration<int>
+0    # the strong constraints x^k_ij <= y_ij: no
+
+# dynamic_constraints
+*    # [none]
+
+# static_variables: the structure decides the formulation
+*    # [none]
+
+# dynamic_variables
+*    # [none]
+
+# objective
+*    # [none]
+
+# is_feasible
+*    # [none]
+
+# is_optimal
+*    # [none]
+
+# solution
+*    # [none]
+
+# extra
+*    # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - -  END MMCFBCfg-KF.txt - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

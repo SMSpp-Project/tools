@@ -1,0 +1,75 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  SubBSCfg-LP.txt - - - - - - - - - - - - - - - 
+#
+# The BlockSolverConfig of a scenario of Benders' decomposition solved as a
+# MILP: with the here-and-now decisions fixed the scenario is continuous; the
+# dual simplex without presolve, so that an infeasible scenario gives the
+# Farkas certificate of the feasibility cut
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+1 # number of (the names of) Solver in this BlockSolverConfig
+
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+GRBMILPSolver # 1st Solver: the scenario
+
+1 # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig
+
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ComputeConfig         # exact type of the ComputeConfig object
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+6 # number of integer parameters
+
+# now all the integer parameters
+intLogVerb                   0 # log verbosity of the MILPSolver
+Threads                      1 # Gurobi: one thread
+intRelaxIntVars              1 # nonzero if the continuous relaxation is
+                               # solved
+Method                       1 # Gurobi: dual simplex
+Presolve                     0 # Gurobi: presolve off, for the Farkas
+                               # certificate
+intThrowReducedCostException 0 # reduced costs of the relaxed binaries
+
+1 # number of double parameters
+
+# now all the double parameters
+dblRelAcc 1e-9 # relative accuracy required to solution
+
+0 # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - -  END SubBSCfg-LP.txt - - - - - - - - - - - - - - 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

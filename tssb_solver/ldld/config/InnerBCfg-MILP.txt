@@ -1,10 +1,10 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - InnerBCfg-MILP.txt - - - - - - - - - - - - - - 
 #
-# The meta-BlockConfig of a facility location instance solved as a MILP or as
-# its continuous relaxation (ldld_bench -B, methods 0, 1 and 5): each
-# facility location Block as in InnerBCfg.txt, with the strong constraints
-# x_ij <= y_i separated in addition
+# The meta-BlockConfig of a facility location or network design instance
+# solved as a MILP or as its continuous relaxation (ldld_bench -B, methods 0,
+# 1 and 5): each facility location or network design Block as in
+# InnerBCfg.txt, with the strong constraints x_ij <= y_i in addition
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -12,9 +12,10 @@
 # a "meta"-BlockConfig, i.e., a map classname --> its BlockConfig
 SimpleConfiguration<std::map<std::string,Configuration*>>
 
-1 # the number of elements in the map
+2 # the number of elements in the map
 
 CapacitatedFacilityLocationBlock *CFLBCfg-MILP.txt
+MMCFBlock                        *MMCFBCfg-MILP.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - END InnerBCfg-MILP.txt - - - - - - - - - - - - - 

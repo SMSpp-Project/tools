@@ -62,34 +62,46 @@ include $(LgDSLVSDR)/makefile
 CFLBkSDR = ../../../CapacitatedFacilityLocationBlock
 include $(CFLBkSDR)/makefile-s
 
+# MMCFBlock
+MMCFBkSDR = ../../../MMCFBlock
+include $(MMCFBkSDR)/makefile-s
+
+# BendersDecompositionSolver
+BnDSLVSDR = ../../../BendersDecompositionSolver
+include $(BnDSLVSDR)/makefile-s
+
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
 MOBJ =  $(SMS++OBJ) $(MSSBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) \
-	$(CFLBkOBJ)
+	$(CFLBkOBJ) $(MMCFBkOBJ) $(BnDSLVOBJ)
 
 # libraries
 MLIB =  $(SMS++LIB) $(MSSBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB) \
-	$(CFLBkLIB)
+	$(CFLBkLIB) $(MMCFBkLIB) $(BnDSLVLIB)
 
-all: $(DIR)/ldld_bench $(DIR)/cfl_tssb_gen
+all: $(DIR)/ldld_bench $(DIR)/cfl_tssb_gen $(DIR)/mmcf_tssb_gen
 
 $(DIR)/ldld_bench: $(DIR)/ldld_bench.o $(MOBJ)
 	$(CC) -o $(DIR)/ldld_bench $^ $(MLIB) $(SW)
 
-# the generator of the stochastic facility location instances
+# the generators of the stochastic facility location and network design
+# instances
 $(DIR)/cfl_tssb_gen: $(DIR)/cfl_tssb_gen.o $(MOBJ)
 	$(CC) -o $(DIR)/cfl_tssb_gen $^ $(MLIB) $(SW)
+
+$(DIR)/mmcf_tssb_gen: $(DIR)/mmcf_tssb_gen.o $(MOBJ)
+	$(CC) -o $(DIR)/mmcf_tssb_gen $^ $(MLIB) $(SW)
 
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
 MINC =  $(SMS++INC) $(MSSBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) \
-	$(CFLBkINC)
+	$(CFLBkINC) $(MMCFBkINC) $(BnDSLVINC)
 
 # includes
 MH =    $(SMS++H) $(MSSBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) \
-	$(CFLBkH)
+	$(CFLBkH) $(MMCFBkH) $(BnDSLVH)
 
 # compile command
 
@@ -99,10 +111,13 @@ $(DIR)/ldld_bench.o: $(DIR)/ldld_bench.cpp $(MH)
 $(DIR)/cfl_tssb_gen.o: $(DIR)/gen/cfl_tssb_gen.cpp $(MH)
 	$(CC) -c $(DIR)/gen/cfl_tssb_gen.cpp -o $@ $(MINC) $(SW)
 
+$(DIR)/mmcf_tssb_gen.o: $(DIR)/gen/mmcf_tssb_gen.cpp $(MH)
+	$(CC) -c $(DIR)/gen/mmcf_tssb_gen.cpp -o $@ $(MINC) $(SW)
+
 # clean target- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 clean::
-	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/ldld_bench $(DIR)/cfl_tssb_gen
+	rm -f $(DIR)/*.o $(DIR)/*~ $(DIR)/ldld_bench $(DIR)/cfl_tssb_gen $(DIR)/mmcf_tssb_gen
 
 .PHONY: all clean
 

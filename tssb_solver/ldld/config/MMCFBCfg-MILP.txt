@@ -1,0 +1,53 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - MMCFBCfg-MILP.txt - - - - - - - - - - - - - - -
+#
+# The BlockConfig of a network design Block for the MILP and its continuous
+# relaxation: the knapsack structure of MMCFBCfg-KF.txt, whose paths the
+# here-and-now variables of the instances follow, with the strong constraints
+# x^k_ij <= y_ij in addition, which make its continuous relaxation the strong
+# one
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockConfig # exact type of the Configuration object
+
+1  # the BlockConfig is a "differential" one
+
+2  # version of the BlockConfig format
+
+# the structure: the knapsacks of the arcs
+SimpleConfiguration<int>
+1    # 0 = one MCFBlock per commodity, 1 = one BinaryKnapsackBlock per arc
+
+# static_constraints
+SimpleConfiguration<int>
+1    # the strong constraints x^k_ij <= y_ij: yes
+
+# dynamic_constraints
+*    # [none]
+
+# static_variables: the structure decides the formulation
+*    # [none]
+
+# dynamic_variables
+*    # [none]
+
+# objective
+*    # [none]
+
+# is_feasible
+*    # [none]
+
+# is_optimal
+*    # [none]
+
+# solution
+*    # [none]
+
+# extra
+*    # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - END MMCFBCfg-MILP.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

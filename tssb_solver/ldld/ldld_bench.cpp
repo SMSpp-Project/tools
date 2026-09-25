@@ -25,7 +25,13 @@
  * Usage:
  *
  *   ldld_bench [-c PATH] [-B FILE] [-S FILE] [-k N] [-m NAME] [-R FILE]
- *              [-j N] [-l FILE] < nc4-file >
+ *              [-j N] [-l FILE] [-b] < nc4-file >
+ *
+ * With -b, the Solver is attached to the Benders form of the
+ * TwoStageStochasticBlock [see TwoStageStochasticBlock::get_Benders_form()],
+ * i.e., to a Block whose Variable are the here-and-now ones and whose
+ * sub-Block are the scenarios, as a BendersDecompositionSolver wants it; the
+ * BlockSolverConfig is then one of that Block (e.g., BendersSCfg.txt).
  *
  * \author Antonio Frangioni \n
  *         Dipartimento di Informatica \n
@@ -57,6 +63,7 @@
 #include <sys/resource.h>
 
 #include <BlockSolverConfig.h>
+#include <AbstractBlock.h>
 #include <TwoStageStochasticBlock.h>
 
 /*--------------------------------------------------------------------------*/
@@ -81,6 +88,7 @@ static std::string method;                         // -m
 static std::string recover_sconf;                  // -R
 static int recover_threads = 1;                    // -j
 static std::string log_file;                       // -l
+static bool benders = false;                       // -b
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -89,7 +97,7 @@ static std::string log_file;                       // -l
 static void usage( const char * exe )
 {
  std::cerr << "usage: " << exe << " [-c PATH] [-B FILE] [-S FILE] [-k N]"
-           << " [-m NAME] [-R FILE] [-j N] [-l FILE] <nc4-file>\n"
+           << " [-m NAME] [-R FILE] [-j N] [-l FILE] [-b] <nc4-file>\n"
   "  -c PATH  prefix of the configuration files [config/]\n"
   "  -B FILE  [meta]BlockConfig of the Block tree [InnerBCfg.txt]\n"
   "  -S FILE  BlockSolverConfig of the root [TSSBSCfg.txt]\n"
@@ -98,7 +106,8 @@ static void usage( const char * exe )
   "  -R FILE  recover a primal solution, the leaves being solved with the\n"
   "           BlockSolverConfig in FILE\n"
   "  -j N     threads solving the leaves in -R [1]\n"
-  "  -l FILE  the log of the Solver goes to FILE [none]\n";
+  "  -l FILE  the log of the Solver goes to FILE [none]\n"
+  "  -b       the Solver is attached to the Benders form of the Block\n";
  exit( 1 );
  }
 
@@ -297,11 +306,29 @@ static void run_one( const std::string & instance , const std::string & fn ,
                           ? bsc->get_SolverName( 0 ) + "-" + std::to_string( k )
                           : method;
 
- bsc->apply( block );
+ // the Block the Solver is attached to: the TwoStageStochasticBlock, or its
+ // Benders form, which is constructed out of its abstract representation
+ auto tssb = dynamic_cast< TwoStageStochasticBlock * >( block );
+ Block * target = block;
+ if( benders ) {
+  if( ! tssb )
+   throw( std::invalid_argument( "ldld_bench: -b needs a "
+                                 "TwoStageStochasticBlock" ) );
+  tssb->generate_abstract_variables();
+  tssb->generate_abstract_constraints();
+  tssb->generate_objective();
+  target = tssb->get_Benders_form();
+  if( ! target )
+   throw( std::invalid_argument( "ldld_bench: the Block has no "
+                                 "here-and-now Variable, hence no Benders "
+                                 "form" ) );
+  }
+
+ bsc->apply( target );
  bsc->clear();
- if( block->get_registered_solvers().empty() )
+ if( target->get_registered_solvers().empty() )
   throw( std::invalid_argument( "ldld_bench: no Solver attached" ) );
- auto solver = block->get_registered_solvers().front();
+ auto solver = target->get_registered_solvers().front();
 
  std::ofstream log;
  if( ! log_file.empty() ) {
@@ -322,8 +349,7 @@ static void run_one( const std::string & instance , const std::string & fn ,
            << std::setprecision( 6 ) << t.count() << ","
            << solver->get_elapsed_iterations() << "," << peak_rss();
 
- if( ! recover_sconf.empty() ) {
-  auto tssb = dynamic_cast< TwoStageStochasticBlock * >( block );
+ if( ( ! recover_sconf.empty() ) && ( ! benders ) ) {
   if( ! tssb )
    throw( std::invalid_argument( "ldld_bench: -R needs a "
                                  "TwoStageStochasticBlock" ) );
@@ -342,8 +368,10 @@ static void run_one( const std::string & instance , const std::string & fn ,
  if( log.is_open() )
   solver->set_log( nullptr );
 
- bsc->apply( block );  // the clear()-ed BlockSolverConfig detaches
+ bsc->apply( target );  // the clear()-ed BlockSolverConfig detaches
  delete bsc;
+ if( target != block )
+  tssb->give_back_Benders_form( static_cast< AbstractBlock * >( target ) );
  delete block;
  }
 
@@ -353,7 +381,7 @@ int main( int argc , char ** argv )
 {
  std::string prefix = "config/";
  int opt;
- while( ( opt = getopt( argc , argv , "c:B:S:k:m:R:j:l:h" ) ) != -1 )
+ while( ( opt = getopt( argc , argv , "c:B:S:k:m:R:j:l:bh" ) ) != -1 )
   switch( opt ) {
    case 'c': prefix = optarg; break;
    case 'B': bconf_file = optarg; break;
@@ -363,6 +391,7 @@ int main( int argc , char ** argv )
    case 'R': recover_sconf = optarg; break;
    case 'j': recover_threads = std::atoi( optarg ); break;
    case 'l': log_file = optarg; break;
+   case 'b': benders = true; break;
    default: usage( argv[ 0 ] );
    }
  if( optind != argc - 1 )
