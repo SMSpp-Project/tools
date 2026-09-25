@@ -38,7 +38,7 @@ intMaxNrEvls           2 # max number of function evaluations per iteration
 
 # now all the double parameters
 dblRelAcc  1e-6 # relative accuracy required to solution
-dblNZEps   1e-2 # threshold to declare 0 the || residual ||
+dblNZEps   1e-6 # threshold to declare 0 the || residual ||
 dbltStar  -1e+3 # multiplied to || residual || to estimate the gap
 dblBPar5      4 # first parameter for the dynamic max n. of items
 dblm1     -0.30 # a NS is possible if Fi( L1 ) >= Fi( L ) + | m1 | v*
