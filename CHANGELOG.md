@@ -120,6 +120,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `sddp_solver` solves an `SDDPBlock` whose scenarios come from a
+  `ScenarioGenerator`, such as `examples/SDDPBlock-new.nc4`, also when the
+  stages are solved by a `LagrangianDualSolver`: it set scenario 0 at every
+  stage before attaching the Solver, i.e., before the pool of scenarios the
+  `SDDPSolver` prepares when it is attached, and stopped with "invalid
+  scenario index 0"; that was only there for `OSIMPSolver`, which
+  `BundleSolver` no longer has, and it is gone
+
 - `ucblock_solver` takes `LagrangianDualSolver` from its plain makefile, as
   the other tools do, rather than from the one that assumes the library was
   installed

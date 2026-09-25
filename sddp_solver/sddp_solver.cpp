@@ -1352,18 +1352,6 @@ void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
 
   delete( benders_function_config );
   }
-
- // OSIMPSolver is currently not able to deal with some changes in a Block
- // (for instance, when some bound structure changes). In order to try to
- // avoid this case, we set a scenario, so that when OSIMPSolver is attached
- // to a Block, the data in that Block is a relevant one and, hopefully, will
- // not later be responsible for any other change in the bound structure. If
- // OSIMPSolver still complains, then other actions may be required (for
- // instance, replacing zeros by very small numbers in the scenarios).
-
- for( Index t = 0 ; t < sddp_block->get_time_horizon() ; ++t )
-  for( Index i = 0 ; i < sddp_block->get_num_sub_blocks_per_stage() ; ++i )
-   sddp_block->set_scenario( 0 , t , i );
  }
 
 /*--------------------------------------------------------------------------*/
