@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `svm_solver` estimates the leave-p-out error on a sample of the subsets
+  (-P), repeats an estimate with one seed per repetition (-r), writes the
+  seconds and the score of each point of the grid on each split (--csv), asks
+  for the bias regularised with the weights (-R), eliminates the features
+  recursively with each round optionally reoptimized (-F), walks the grid
+  along C keeping the Solver and reoptimizing from the previous point (-W),
+  removes each fold from one model and puts it back, the Solver
+  re-optimizing after each change (-u), and prints the wall-clock time of the
+  whole selection and the sum of the times of its trainings; it starts no
+  more workers than there are trainings to run
+
+- `svm_solver/modelsel`, the computational study on the model selection of
+  an SVM: the configuration of the Solvers compared, the download of the data
+  sets, the campaign guarded by the load of the machine and the tables
+
 - `tssb_solver/ldld`, the computational study on the nested and the
   recursive Lagrangian dual of a `TwoStageStochasticBlock`: a driver of its
   own (`ldld_bench`, which runs one `Solver` of a `BlockSolverConfig` per
