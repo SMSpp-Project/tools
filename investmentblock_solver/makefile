@@ -55,8 +55,7 @@ include $(LgDSLVSDR)/makefile
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(InvsBkOBJ) $(MSSBkOBJ) $(CMMNUOBJ) \
-	$(DIR)/../sddp_config.o
+MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(InvsBkOBJ) $(MSSBkOBJ) $(CMMNUOBJ)
 
 # libraries
 MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(InvsBkLIB) $(MSSBkLIB)
@@ -76,14 +75,5 @@ MH =    $(BNDSLVH) $(LgDSLVH) $(InvsBkH) $(CMMNUH)
 
 $(DIR)/investmentblock_solver.o: $(DIR)/investmentblock_solver.cpp $(MH)
 	$(CC) -c $(DIR)/investmentblock_solver.cpp -o $@ $(MINC) $(SW)
-
-# the configuration of the Solver of the stages of an SDDPBlock, shared with
-# sddp_solver
-$(DIR)/../sddp_config.o: $(DIR)/../sddp_config.cpp $(DIR)/../sddp_config.h \
-	$(MH)
-	$(CC) -c $(DIR)/../sddp_config.cpp -o $@ $(MINC) $(SW)
-
-clean::
-	rm -f $(DIR)/../sddp_config.o
 
 ############################ End of makefile #################################

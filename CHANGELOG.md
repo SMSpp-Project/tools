@@ -17,7 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   passes the final state of a stage to the next; the problem file used to
   leave the `SDDPBlock` with no Solver, and the Block file refused it.
   `examples/instance-3` is such an instance, with 3 stages and 5 scenarios,
-  solved with `config/BSPar-SDDP.txt`
+  solved with `config/BSPar-SDDP.txt`; with `config/SDDPBSCfg.txt` the
+  stages are solved via `LagrangianDualSolver`, and the components that must
+  be hard and whose primal solution the `SDDPSolver` needs are written in
+  `BSPar-LD.txt` and in the extra Configuration of `SDDPCfg.txt`
 
 - `svm_solver` estimates the leave-p-out error on a sample of the subsets
   (-P), repeats an estimate with one seed per repetition (-r), writes the
@@ -78,15 +81,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   BendersDecompositionSolver when CMake finds it, the makefile does not
 
 ### Changed
-
-- `investmentblock_solver` configures the `LagrangianDualSolver` that may
-  solve the stages of an inner `SDDPBlock` as `sddp_solver` does: the units
-  whose state passes from a stage to the next are hard components, whose
-  primal solution is retrieved, and the `BendersBFunction` of each stage
-  retrieve the dual solution of the `HydroSystemUnitBlock` alone; the
-  function doing it moves out of `sddp_solver` to `sddp_config.cpp`, which
-  both tools compile, and takes as arguments what were the options of
-  `sddp_solver`
 
 - the ComputeConfig of the `BundleSolver` of `investmentblock_solver` is a
   fragment of its own (`config/BundleCfg.txt`), which `BSPar.txt` includes

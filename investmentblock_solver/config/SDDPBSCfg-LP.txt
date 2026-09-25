@@ -15,12 +15,17 @@ BlockSolverConfig     # exact type of the Configuration object
 
 2  # number of (the names of) Solver in this BlockSolverConfig
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
-ParallelSDDPSolver    # name of 1st Solver (the trainer)
-SDDPGreedySolver      # name of 2nd Solver (the simulator)
+SDDPGreedySolver      # name of 1st Solver (the simulator)
+ParallelSDDPSolver    # name of 2nd Solver (the trainer)
 
 2  # number of ComputeConfig in this BlockSolverConfig
 
 # now all the ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - -
+*GreedyCfg.txt
+
+# the ComputeConfig of SDDPCfg.txt with the backward pass changed: being the
+# last one, the override leaves the extra Configuration of SDDPCfg.txt, which
+# a Configuration after it would replace
 *SDDPCfg.txt +
 
 1  # f_diff == 1 ==> only the entries below are changed
@@ -39,11 +44,6 @@ intBackwardSolverIndex 0  # the continuous relaxation, as the forward pass
 0  # number of vector-of-double parameters
 
 0  # number of vector-of-string parameters
-
-# pointer to the "extra" Configuration
-* # [none]
-
-*GreedyCfg.txt
 
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 

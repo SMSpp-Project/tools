@@ -2,7 +2,9 @@
 # - - - - - - - - - - - - - - - BSPar-LD.txt  - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a UCBlock to be solved by a
-# LagrangianDualSolver using a BundleSolver as the inner Solver
+# LagrangianDualSolver using a BundleSolver as the inner Solver, which is the
+# UCBlock of a stage of the SDDPBlock of examples/instance-3: the components
+# that must be hard (vintNoEasy) are those of that instance.
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -116,20 +118,23 @@ dbltSPar2  1e-2   # parameter for the long-term t-strategy
 3 # number of string parameters
 
 # now all the string parameters
-str_LDSlv_ISName	ParallelBundleSolver  # the inner Solver used by
-                                       # LagrangianDualSolver
-# str_LDSlv_ISName        BundleSolver  # the inner Solver used by
-# LagrangianDualSolver
-str_LagBF_BSCfg		InnerBSCfg.txt # meta BlockSolverConfig for the
-                                # LagBFunctions,
-				       # dispatched by inner Block classname()
-strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's
-                             # Solver
+str_LDSlv_ISName  ParallelBundleSolver  # the inner Solver of the
+                                        # LagrangianDualSolver (or
+                                        # BundleSolver)
+str_LagBF_BSCfg   InnerBSCfg.txt        # meta BlockSolverConfig of the
+                                        # LagBFunctions, by classname()
+strMPBSolverCfg   MPBCfg.txt            # BlockSolverConfig of the Solver of
+                                        # the MasterProblemBlock
 
-0 # number of vector-of-int parameters
+1 # number of vector-of-int parameters
 
 # now all the vector-of-int parameters
-# [none]
+# the components of the UCBlock of a stage of examples/instance-3 that are
+# hard: the HydroSystemUnitBlock (0), the ThermalUnitBlock (1 to 25) and the
+# BatteryUnitBlock (35 and 36), whose state passes from a stage to the next,
+# so that the primal solution the SDDPSolver reads is there [see SDDPCfg.txt]
+vintNoEasy 28  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
+              21 22 23 24 25 35 36
 
 0 # number of vector-of-double parameters
 
