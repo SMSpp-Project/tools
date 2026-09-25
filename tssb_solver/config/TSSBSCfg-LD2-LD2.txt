@@ -1,10 +1,8 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - TSSBSCfg-LD2-LD2.txt- - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  TSSBSCfg-LD2-LD2.txt - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a TSSBlock to be solved by a
 # LagrangianDualSolver using a BundleSolver as the inner Solver
-#
-#   Antonio Frangioni, Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -34,26 +32,32 @@ ComputeConfig # exact type of the ComputeConfig object
 # now all the integer parameters
 intMPStbl              0 # stabilization: 0 = proximal, 1 = level, 2 = doubly stabilized
 intPushCostToOwner 1 # whether sub-Block Objective are changed
-intDoEasy 	 0      # do easy components for (some) LagBFunction
-intMaxIter 	 10000  # max number of iterations for each call
-intMaxThread 1	    # MaxThread, max number of new tasks to spawn
-intLogVerb 	 7      # log verbosity of main Bundle algorithm
+intDoEasy        0      # do easy components for (some) LagBFunction
+intMaxIter       10000  # max number of iterations for each call
+intMaxThread 1      # MaxThread, max number of new tasks to spawn
+intLogVerb       7      # log verbosity of main Bundle algorithm
 intWZNorm   2     # which norm to use in the norm-based stopping condition
-intBPar1   20     # discard items when they have been useless for <this> iterations
+intBPar1   20     # discard items when they have been useless for <this>
+                  # iterations
 intBPar2  100     # max bundle size per component
 intBPar3    1     # max n. of items to fetch from Fi() at each iteration
 intBPar4    1     # min n. of items to fetch from Fi() at each iteration
-intBPar6    0     # second parameter for dynamic max n. of items per iteration
+intBPar6    0     # second parameter for dynamic max n. of items per
+                  # iteration
 intBPar7   11     # how to deal with the global pools
-intMnSSC    0     # min number of consecutive SS with the same t for a t increase
-intMnNSC    1     # min number of consecutive NS with the same t for a t decrease
-inttSPar1  12     # long-term t-strategy (0 = none, 4 = soft, 8 = hard, 12 = balancing)
+intMnSSC    0     # min number of consecutive SS with the same t for a t
+                  # increase
+intMnNSC    1     # min number of consecutive NS with the same t for a t
+                  # decrease
+inttSPar1  12     # long-term t-strategy (0 = none, 4 = soft, 8 = hard, 12 =
+                  # balancing)
 intMaxNrEvls 2    # maximum number of function evaluations at each iteration
-intTrgtMng  31    # bit-wise encoding targets and accuracies management:
-                  # bit 0: if lower/upper target is set to each convex/concave component
-                  # bit 1: if upper/lower target is set to each convex/concave component
-                  # bit 2-3: if accuracy is set (2 = upper - lower, 3 = using EpsU)
-                  # bit 4: if Lipschitz constant is used to compute the upper model
+intTrgtMng  31    # bit-wise encoding targets and accuracies management: bit
+                  # 0: if lower/upper target is set to each convex/concave
+                  # component bit 1: if upper/lower target is set to each
+                  # convex/concave component bit 2-3: if accuracy is set (2 =
+                  # upper - lower, 3 = using EpsU) bit 4: if Lipschitz
+                  # constant is used to compute the upper model
 
 intRstAlg  2      # parameter to handle the reset of the algorithm
 
@@ -61,11 +65,15 @@ intRstAlg  2      # parameter to handle the reset of the algorithm
 
 # now all the double parameters
 dblRelAcc  1e-6   # relative accuracy required to solution
-dblNZEps   1e-2   # stopping parameter: threshold to declare 0 the || residual ||
-dbltStar   -1e+0   # stopping parameter: multiplied to || residual || to estimate gap
+dblNZEps   1e-2   # stopping parameter: threshold to declare 0 the ||
+                  # residual ||
+dbltStar   -1e+0   # stopping parameter: multiplied to || residual || to
+                   # estimate gap
 dblBPar5   4      # first parameter for dynamic max n. of items per iteration
-dblm1      -0.30  # a NS is possible if (~) Fi( Lambda1 ) >= Fi( Lambda ) + | m1 | v*
-dblm2      0.90   # a SS is possible if Fi( Lambda1 ) <= Fi( Lambda ) + ( 1 - m2 ) v*
+dblm1      -0.30  # a NS is possible if (~) Fi( Lambda1 ) >= Fi( Lambda ) + |
+                  # m1 | v*
+dblm2      0.90   # a SS is possible if Fi( Lambda1 ) <= Fi( Lambda ) + ( 1 -
+                  # m2 ) v*
 dblm3      0.99   # a NR is computed if \sigma^* < - t * m3 * || z* ||
 dblmxIncr  10     # max increase of t
 dblmnIncr  1.5    # min increase of t (each time it is increased)
@@ -80,9 +88,12 @@ dbltSPar2  1e-2   # parameter for the long-term t-strategy
 
 # now all the string parameters
 #strLogFileName      tssb.log              # filename for the Solver log
-#str_LDSlv_ISName   ParallelBundleSolver   # the inner Solver used by LagrangianDualSolver
-str_LDSlv_ISName    BundleSolver          # the inner Solver used by LagrangianDualSolver
-str_LagBF_BSCfg     LPBSCfg-LD2.txt   	  # BlockSolverConfig for the LagBFunctions
+#str_LDSlv_ISName   ParallelBundleSolver   # the inner Solver used by
+                                           # LagrangianDualSolver
+str_LDSlv_ISName    BundleSolver          # the inner Solver used by
+                                          # LagrangianDualSolver
+str_LagBF_BSCfg     LPBSCfg-LD2.txt       # BlockSolverConfig for the
+                                          # LagBFunctions
 strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's Solver
 
 0 # number of vector-of-int parameters
@@ -108,5 +119,5 @@ strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's So
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - END TSSBSCfg-LD2-LD2.txt- - - - - - - - - - - - - -
+# - - - - - - - - - - - - -  END TSSBSCfg-LD2-LD2.txt - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

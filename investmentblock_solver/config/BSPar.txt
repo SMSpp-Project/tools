@@ -33,7 +33,7 @@ intMPStbl              0 # stabilization: 0 = proximal, 1 = level, 2 = doubly
                          # stabilized
 intDoEasy  0      # do easy components for (some) LagBFunction
 intMaxIter 10000  # max number of iterations for each call
-intMaxThread 6	   # MaxThread, max number of new tasks to spawn
+intMaxThread 6     # MaxThread, max number of new tasks to spawn
 intLogVerb 16      # log verbosity of main Bundle algorithm
 intWZNorm   2     # which norm to use in the norm-based stopping condition
 intBPar1   20     # discard items when they have been useless for <this>

@@ -12,8 +12,6 @@
 # specialised Solver through the meta BlockSolverConfig InnerBSCfg.txt
 # (ThermalUnitBlock -> ThermalUnitExtDPSolver).
 #
-#   Donato Meoli
-#
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -75,7 +73,8 @@ dbl_penaltyFactor     0 # no proximal penalty: pure warm-started Lagrangian dual
 
 # now all the string parameters
 str_LDSlv_ISName           BundleSolver # the inner Solver used by LagrangianDualSolver
-str_LagBF_BSCfg  InnerBSCfg.txt  # DP-based BlockSolverConfig for the LagBFunctions
+str_LagBF_BSCfg  InnerBSCfg.txt  # DP-based BlockSolverConfig for the
+                                 # LagBFunctions
 strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's Solver
 
 0 # number of vector-of-int parameters
@@ -96,10 +95,10 @@ strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's So
 # pointer to the "extra" Configuration
 * # [none]
 
-# end of ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of ComputeConfig  - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# end of BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of BlockSolverConfig  - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - END UCBSCfg-LD-warm.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - END UCBSCfg-LD-warm.txt - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

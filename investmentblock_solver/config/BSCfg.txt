@@ -29,8 +29,6 @@
 # upstream, on QP instances use CPXMILPSolver or GRBMILPSolver for actual
 # investment runs.
 #
-#   Antonio Frangioni, Donato Meoli
-#
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -84,7 +82,8 @@ intCutSepPar        7    # separate user cuts + lazy constraints
 
 # All specific HiGHS parameter (uncomment based on Solver)
 primal_feasibility_tolerance  1e-9
-dual_feasibility_tolerance    1e-5  # HiPO duals on QP have no crossover cleanup
+dual_feasibility_tolerance    1e-5  # HiPO duals on QP have no crossover
+                                    # cleanup
 
 2 # number of string parameters
 
