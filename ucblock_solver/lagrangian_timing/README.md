@@ -117,15 +117,11 @@ measurement is comparable only with others taken by the same binary and the
 same configuration files: the format of the latter has changed at least once
 under a campaign in flight.
 
-**Build pitfalls.** Three traps when building the study binaries from scratch:
+**Build pitfalls.** Two traps when building the study binaries from scratch:
 
-1. the makefile compiles `BundleSolver.o` with the default `WHICH_OSI_QP=2`
-   (Gurobi) while a `libNDO.a` built by CMake wants OsiCpx: the LD then dies
-   with `OSIMPSolver::SetOsi: not an OsiCpx`. Either recompile `BundleSolver.o`
-   with `-DWHICH_OSI_QP=1` or link the CMake-built objects throughout;
-2. `../../common_utils.cpp` includes the generated `SMS++Config.h`, which lives
+1. `../../common_utils.cpp` includes the generated `SMS++Config.h`, which lives
    in the CMake build tree: `make CMMNUINC="-I../.. -I<cmake-build>/SMS++"`;
-3. the dump producer must carry `-DSAVE_TUB=1` (this makefile sets it; a CMake
+2. the dump producer must carry `-DSAVE_TUB=1` (this makefile sets it; a CMake
    `ucblock_solver` needs the flag added when compiling `ucblock_solver.cpp`).
 
 A binary whose `ThermalUnitBlock`-chain objects predate the current sources
