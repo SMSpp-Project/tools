@@ -38,7 +38,7 @@ intMaxIter 1000 # max number of iterations for each call
 2 # number of double parameters
 
 # now all the double parameters
-dblRelAcc 1e-6 # relative accuracy required to solution, a
+dblRelAcc 1e-7 # relative accuracy required to solution, a
                # hundredth of that of the outer dual
 dbltInit  1e+0 # initial value for t
 
