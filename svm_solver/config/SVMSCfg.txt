@@ -1,9 +1,10 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - SVMSCfg.txt - - - - - - - - - - - - - - - -
 #
-# A txt description of a BlockSolverConfig for a SVMBlock to be trained by the
-# ad hoc SMOSolver, which is the default because it needs no external solver
-# and it does not even need the abstract representation to be generated
+# A txt description of a BlockSolverConfig for a SVMBlock to be trained by
+# the ad hoc SMOSolver, which is the default because it needs no external
+# solver and it does not even need the abstract representation to be
+# generated
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

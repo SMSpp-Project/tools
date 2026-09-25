@@ -31,7 +31,8 @@ ComputeConfig # exact type of the ComputeConfig object
 # now all the integer parameters
 intLogVerb 1      # log verbosity
 # intScenarioId 0 # index of the scenario to be considered
-intUnregisterSolver 1 # unregister the Solver of the inner Block after solving it
+intUnregisterSolver 1 # unregister the Solver of the inner Block after
+                      # solving it
 
 0 # number of double parameters
 

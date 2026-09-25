@@ -9,8 +9,8 @@
 # components, every other component is easy and gets the default LP
 # BlockSolverConfig.
 #
-# All filenames are resolved against the directory the tool is run from
-# (the root of the tools/investmentblock_solver directory), as in the other tools.
+# All filenames are resolved against the directory the tool is run from (the
+# root of the tools/investmentblock_solver directory), as in the other tools.
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

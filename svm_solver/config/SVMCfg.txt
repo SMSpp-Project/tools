@@ -2,8 +2,9 @@
 # - - - - - - - - - - - - - - - -  SVMCfg.txt - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockConfig for a SVMBlock. Which formulation of the
-# training problem the abstract representation encodes is not part of the data
-# of the SVMBlock, it is a Configuration matter: this is where it is chosen
+# training problem the abstract representation encodes is not part of the
+# data of the SVMBlock, it is a Configuration matter: this is where it is
+# chosen
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -30,7 +30,8 @@ ComputeConfig # exact type of the ComputeConfig object
 17 # number of integer parameters
 
 # now all the integer parameters
-intMPStbl              0 # stabilization: 0 = proximal, 1 = level, 2 = doubly stabilized
+intMPStbl              0 # stabilization: 0 = proximal, 1 = level, 2 = doubly
+                         # stabilized
 intDoEasy  15     # do easy components for (some) LagBFunction
 intMaxIter 10000  # max number of iterations for each call
 intMaxThread 36   # MaxThread, max number of new tasks to spawn
@@ -86,9 +87,11 @@ str_LDSlv_ISName        ParallelBundleSolver  # the inner Solver used by
                                               # LagrangianDualSolver
 #str_LDSlv_ISName       BundleSolver  # the inner Solver used by
                                       # LagrangianDualSolver
-str_LagBF_BSCfg         InnerBSCfg-sim.txt # meta BlockSolverConfig for the LagBFunctions,
-                                                                  # dispatched by inner Block classname()
-strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's Solver
+str_LagBF_BSCfg         InnerBSCfg-sim.txt # meta BlockSolverConfig for the
+                                           # LagBFunctions, dispatched by
+                                           # inner Block classname()
+strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's
+                             # Solver
 
 0 # number of vector-of-int parameters
 

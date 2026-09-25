@@ -27,11 +27,11 @@ dblRelAcc       1e-8 # relative accuracy required to solution
 2 # number of string parameters
 
 # now all the string parameters
-# HiGHSMILPSolver-specific options (this test registers a HiGHSMILPSolver so it
-# can run on a CI without commercial solvers). The energy-community LP
+# HiGHSMILPSolver-specific options (this test registers a HiGHSMILPSolver so
+# it can run on a CI without commercial solvers). The energy-community LP
 # relaxations are highly degenerate, where HiGHS dual simplex is very slow,
-# while the interior point method solves them almost instantly; crossover to a
-# vertex is skipped since only the objective value is needed.
+# while the interior point method solves them almost instantly; crossover to
+# a vertex is skipped since only the objective value is needed.
 solver        ipm # interior point method for the (LP) relaxation
 run_crossover off # skip crossover to a vertex (only the objective is needed)
 

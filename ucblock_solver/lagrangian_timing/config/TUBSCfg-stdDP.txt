@@ -1,8 +1,9 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - TUBSCfg-stdDP.txt - - - - - - - - - - - - - -
 #
-# A txt description of a BlockSolverConfig for a ThermalUnitBlock that is being
-# solved by a ThermalUnitDPSolver (the "standard" dynamic-programming solver).
+# A txt description of a BlockSolverConfig for a ThermalUnitBlock that is
+# being solved by a ThermalUnitDPSolver (the "standard" dynamic-programming
+# solver).
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

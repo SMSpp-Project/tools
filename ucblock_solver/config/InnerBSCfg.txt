@@ -4,20 +4,19 @@
 # A "meta" BlockSolverConfig: a map from a Block classname() to the
 # BlockSolverConfig to attach to every Block of that class. It is consumed by
 # the LagrangianDualSolver (parameter str_LagBF_BSCfg, set in LDCfg.txt) to
-# configure the inner Block of each LagBFunction by its type, so that every unit
-# of a given type is solved by the same (type-appropriate) Solver:
+# configure the inner Block of each LagBFunction by its type, so that every
+# unit of a given type is solved by the same (type-appropriate) Solver:
 #
-#   ThermalUnitBlock      -> ThermalUnitExtDPSolver  (the efficient thermal DP)
-#   NuclearUnitBlock      -> NuclearUnitExtDPSolver  (the same DP with the
-#                            operating rules of the nuclear units)
-#   HydroSystemUnitBlock  -> its own Solver
-#   *  (catch-all)        -> :MILPSolver  (every other "hard" unit)
+# ThermalUnitBlock      -> ThermalUnitExtDPSolver  (the efficient thermal DP)
+# NuclearUnitBlock      -> NuclearUnitExtDPSolver  (the same DP with the
+# operating rules of the nuclear units) HydroSystemUnitBlock  -> its own
+# Solver *  (catch-all)        -> :MILPSolver  (every other "hard" unit)
 #
-# The "*" entry is the default applied to any inner Block whose classname() is
-# not listed explicitly (BatteryUnitBlock, ...). To switch the Solver of *all*
-# the thermal units at once just edit config/TUBSCfg-DP.txt; the same meta
-# config is reused at every UCBlock level, so it also covers a UCBlock nested
-# inside a TwoStageStochasticBlock.
+# The "*" entry is the default applied to any inner Block whose classname()
+# is not listed explicitly (BatteryUnitBlock, ...). To switch the Solver of
+# *all* the thermal units at once just edit config/TUBSCfg-DP.txt; the same
+# meta config is reused at every UCBlock level, so it also covers a UCBlock
+# nested inside a TwoStageStochasticBlock.
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

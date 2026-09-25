@@ -3,9 +3,10 @@
 #
 # A txt description of a BlockSolverConfig for a MultiStageStochasticBlock to
 # be solved by a :MILPSolver on its deterministic equivalent (the extensive
-# form of the whole multi-stage scenario tree). A second LagrangianDualSolver,
-# relaxing the outer non-anticipativity constraints, can be added here once
-# the nested (Lagrangian-in-Lagrangian) configuration is set up.
+# form of the whole multi-stage scenario tree). A second
+# LagrangianDualSolver, relaxing the outer non-anticipativity constraints,
+# can be added here once the nested (Lagrangian-in-Lagrangian) configuration
+# is set up.
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

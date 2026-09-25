@@ -1,8 +1,8 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - -  NUBSCfg-DP.txt - - - - - - - - - - - - - - -
 #
-# A txt description of a BlockSolverConfig for a NuclearUnitBlock that is being
-# solved by a NuclearUnitExtDPSolver
+# A txt description of a BlockSolverConfig for a NuclearUnitBlock that is
+# being solved by a NuclearUnitExtDPSolver
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

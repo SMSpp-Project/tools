@@ -4,12 +4,12 @@
 # A txt description of a BlockSolverConfig for a UCBlock to be solved by a
 # LagrangianDualSolver (using a [Parallel]BundleSolver as the inner Solver).
 # The Lagrangian dual dualizes the UCBlock coupling constraints (active-power
-# demand and primary/secondary reserve demand); each inner unit is then solved
-# by its own Solver, attached by classname through the meta BlockSolverConfig
-# InnerBSCfg.txt (e.g. ThermalUnitBlock -> ThermalUnitExtDPSolver). Identical
-# to UCBSCfg-LD.txt save that the LagrangianDualSolver is configured by
-# LDCfg-bound.txt, which stops gracefully within a time budget and reports
-# the achieved lower bound.
+# demand and primary/secondary reserve demand); each inner unit is then
+# solved by its own Solver, attached by classname through the meta
+# BlockSolverConfig InnerBSCfg.txt (e.g. ThermalUnitBlock ->
+# ThermalUnitExtDPSolver). Identical to UCBSCfg-LD.txt save that the
+# LagrangianDualSolver is configured by LDCfg-bound.txt, which stops
+# gracefully within a time budget and reports the achieved lower bound.
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

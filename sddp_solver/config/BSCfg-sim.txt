@@ -33,7 +33,8 @@ ComputeConfig # exact type of the ComputeConfig object
 
 # now all the integer parameters
 intLogVerb          1 # log verbosity
-intUnregisterSolver 1 # unregister the Solver of the inner Block after solving it
+intUnregisterSolver 1 # unregister the Solver of the inner Block after
+                      # solving it
 
 0 # number of double parameters
 

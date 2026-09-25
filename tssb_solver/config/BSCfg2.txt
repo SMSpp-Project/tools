@@ -33,12 +33,12 @@ ComputeConfig # exact type of the ComputeConfig object
 intLogVerb      0    # log verbosity of the MILPSolver
 intRelaxIntVars 1    # nonzero if the continuous relaxation is solved
 
-# the LP-relaxation oracle must be reproducible across runs: presolve transforms
-# the model and on degenerate LPs picks a different optimal vertex each time,
-# producing inconsistent subgradients that derail the outer BundleSolver's
-# convergence; with presolve OFF and barrier (= analytic center, unique x*)
-# the MILP solver returns a deterministic point for each Lambda, which is
-# what the bundle method needs to converge.
+# the LP-relaxation oracle must be reproducible across runs: presolve
+# transforms the model and on degenerate LPs picks a different optimal vertex
+# each time, producing inconsistent subgradients that derail the outer
+# BundleSolver's convergence; with presolve OFF and barrier (= analytic
+# center, unique x*) the MILP solver returns a deterministic point for each
+# Lambda, which is what the bundle method needs to converge.
 
 # All specific CPLEX parameter (uncomment based on Solver)
 #CPXPARAM_LPMethod                4   # 0 = auto, 1 = primal, 2 = dual, 4 =

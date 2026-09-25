@@ -10,7 +10,8 @@
 # As in UCBSCfg-LD.txt the inner LagBFunction sub-Blocks (the single units)
 # are solved by their specialised Solver through the meta BlockSolverConfig
 # InnerBSCfg.txt (ThermalUnitBlock -> ThermalUnitExtDPSolver), so the
-# heuristic exploits the DP solvers rather than an LP relaxation of each unit.
+# heuristic exploits the DP solvers rather than an LP relaxation of each
+# unit.
 #
 # The PrimalProximalHeur-specific parameters are intInnerMaxIter and
 # dblInnerRelAcc (the budget and the accuracy of each call to the inner
@@ -46,7 +47,8 @@ ComputeConfig  # exact type of the ComputeConfig object
 19 # number of integer parameters
 
 # now all the integer parameters
-intMPStbl              0 # stabilization: 0 = proximal, 1 = level, 2 = doubly stabilized
+intMPStbl              0 # stabilization: 0 = proximal, 1 = level, 2 = doubly
+                         # stabilized
 intMaxIter         10 # max number of iterations of the heuristic itself
 intUseWarmStartPSol 0 # 1 = the primal solution of the warm start is the
                       # first proximal center, 0 = the first iteration is
@@ -60,17 +62,24 @@ intLogVerb         12 # log verbosity, split between the two levels of the
                       # iteration), ( value >> 2 ) that of the inner
                       # Bundle, so 12 = 0 + 4 * 3 is a silent loop
                       # around a Bundle at verbosity 3
-intWZNorm           2 # which norm to use in the norm-based stopping condition
-intBPar1           20 # discard items when they have been useless for <this> iterations
+intWZNorm           2 # which norm to use in the norm-based stopping
+                      # condition
+intBPar1           20 # discard items when they have been useless for <this>
+                      # iterations
 intBPar2          100 # max bundle size per component
 intBPar3            1 # max n. of items to fetch from Fi() at each iteration
 intBPar4            1 # min n. of items to fetch from Fi() at each iteration
-intBPar6            0 # second parameter for dynamic max n. of items per iteration
+intBPar6            0 # second parameter for dynamic max n. of items per
+                      # iteration
 intBPar7           11 # how to deal with the global pools
-intMnSSC            0 # min number of consecutive SS with the same t for a t increase
-intMnNSC            1 # min number of consecutive NS with the same t for a t decrease
-inttSPar1          12 # long-term t-strategy (0 = none, 4 = soft, 8 = hard, 12 = balancing)
-intMaxNrEvls        2 # maximum number of function evaluations at each iteration
+intMnSSC            0 # min number of consecutive SS with the same t for a t
+                      # increase
+intMnNSC            1 # min number of consecutive NS with the same t for a t
+                      # decrease
+inttSPar1          12 # long-term t-strategy (0 = none, 4 = soft, 8 = hard,
+                      # 12 = balancing)
+intMaxNrEvls        2 # maximum number of function evaluations at each
+                      # iteration
 intRstAlg           2 # parameter to handle the reset of the algorithm
 
 6 # number of double parameters
@@ -81,19 +90,25 @@ dblRelAcc          1e-4 # relative accuracy required of the solution the
                         # gap is this small, and returns kOK
 dblInnerRelAcc     1e-4 # relative accuracy the inner Solver solves the
                         # Lagrangian Dual with
-dblNZEps           1e-4 # stopping parameter: threshold to declare 0 the || residual ||
-dbltStar           1e+4 # stopping parameter: multiplied to || residual || to estimate gap
+dblNZEps           1e-4 # stopping parameter: threshold to declare 0 the ||
+                        # residual ||
+dbltStar           1e+4 # stopping parameter: multiplied to || residual || to
+                        # estimate gap
 dbltInit           1e-3 # initial value for t
-dbl_penaltyFactor  1e+3 # PPH quadratic penalty weight R (default 0 = plain LD)
+dbl_penaltyFactor  1e+3 # PPH quadratic penalty weight R (default 0 = plain
+                        # LD)
 
 4 # number of string parameters
 
 # now all the string parameters
 strWarmStartBSC      WarmStartCfg.txt # BlockSolverConfig of the warm start,
                                       # empty = no warm start
-str_LDSlv_ISName           BundleSolver # the inner Solver used by LagrangianDualSolver
-str_LagBF_BSCfg   InnerBSCfg.txt # DP-based BlockSolverConfig for the LagBFunctions
-strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's Solver
+str_LDSlv_ISName           BundleSolver # the inner Solver used by
+                                        # LagrangianDualSolver
+str_LagBF_BSCfg   InnerBSCfg.txt # DP-based BlockSolverConfig for the
+                                 # LagBFunctions
+strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's
+                             # Solver
 
 0 # number of vector-of-int parameters
 
