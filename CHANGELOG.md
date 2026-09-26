@@ -82,6 +82,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the tools no longer link with `--no-as-needed` when the libraries are
+  shared, since every module asks the linker itself to keep it (on ELF and on
+  macOS, with MSVC by the symbol that forces it in); only the archives of a
+  static build are still taken whole
+
 - everything `investmentblock_solver` gives the `InvestmentBlock` and its
   `InvestmentFunction` comes from the configuration files, the tool only
   reading and applying them: the `OBlockConfig` of the `InvestmentBlock`
