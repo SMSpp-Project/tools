@@ -20,6 +20,12 @@ writes in <out-dir>:
 - on the cfl-size axis the instances of the same size (facilities x
   customers) are aggregated as the seeds of the scaling axis, the
   abscissa of time-cfl-size.pdf being the size;
+- ratio-uc.pdf and ratio-others.pdf, the time of each method as a ratio to
+  that of the MILP on the same instance, on a logarithmic scale with a
+  dashed line at 1 (geometric mean over the seeds where there are several),
+  one panel per axis; gap.pdf, the gap of the bound of each method to the
+  value of the MILP; memory.pdf, the peak memory as a ratio to that of the
+  MILP; a point where a run did not finish has an empty marker;
 - tables.tex, one table per axis, whose last two columns are the speed-up
   of the recursive form (LDtree on the tree axis) over the two references,
   i.e., the time of the MILP and that of the monolithic dual LD over its
@@ -46,6 +52,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.ticker
 
 HERE = Path(__file__).resolve().parent
 QUIET = 8.0
@@ -190,6 +197,7 @@ def main(out):
             "\\midrule\n" + "\n".join(rows) + "\n\\bottomrule\n\\end{tabular}"
             f"\n% axis: {axis}\n")
     (out / "tables.tex").write_text("\n".join(tables))
+    figures(agg, ref, inst, out)
 
 
 def scaling(agg, ref, inst, out, axis="scaling"):
@@ -285,6 +293,160 @@ def scaling(agg, ref, inst, out, axis="scaling"):
             "\\\\\n\\midrule\n"
             + "\n".join(lines) + "\n\\bottomrule\n\\end{tabular}\n"
             f"% axis: {axis}\n")
+
+
+# the figures of the paper -------------------------------------------------
+# Each method is drawn as the ratio of its time (or memory) to that of the
+# MILP on the same instance, on a logarithmic scale with a dashed line at 1,
+# so that differences of orders of magnitude read at a glance whatever the
+# absolute times; a point where the method (or the MILP) did not finish is
+# drawn with an empty marker, its ratio being a bound and not a value.
+
+RATIO = ["MILP1", "LP", "LD", "LDLD", "LDrec", "LDtree"]
+BOUND = ["LP", "LD", "LDLD", "LDrec", "LDtree"]
+
+
+def geomean(x):
+    x = np.asarray(x, dtype=float)
+    x = x[np.isfinite(x) & (x > 0)]
+    return float(np.exp(np.log(x).mean())) if len(x) else np.nan
+
+
+def panel_data(agg, ref, names, key):
+    """for each value of the axis and method: the time and the memory as
+    ratios to those of the MILP (geometric means over the instances with
+    that value, i.e., the seeds), whether all the runs finished, and the
+    mean gap of the bound to the value of the MILP (%)"""
+    sub = agg[agg["instance"].isin(names)].copy()
+    if sub.empty:
+        return pd.DataFrame()
+    sub["x"] = sub["instance"].map(lambda n: value_of(n, key))
+    # the label of a value: the value itself, or facilities x customers
+    lab = {}
+    for n in sub["instance"].unique():
+        x = value_of(n, key)
+        lab[x] = (f"{value_of(n, 'f')}x{value_of(n, 'c')}" if key == "fc"
+                  else f"{x}")
+    milp = sub[sub["method"] == "MILP"].set_index("instance")
+    rows = []
+    for (x, m), d in sub.groupby(["x", "method"]):
+        t, r, ok, g = [], [], True, []
+        for _, e in d.iterrows():
+            if e["instance"] not in milp.index:
+                continue
+            b = milp.loc[e["instance"]]
+            t.append(e["time"] / b["time"])
+            r.append(e["rss"] / b["rss"] if b["rss"] > 0 else np.nan)
+            ok &= (e["status"] in OK) and (b["status"] in OK)
+            v = ref.get(e["instance"])
+            if v is not None and e["status"] in OK:
+                g.append(100 * (v - e["lb"]) / abs(v))
+        rows.append({"x": x, "lab": lab[x], "method": m,
+                     "time": geomean(t),
+                     "rss": geomean(r), "ok": ok,
+                     "gap": np.mean(g) if g else np.nan})
+    return pd.DataFrame(rows)
+
+
+# LDLD and LDrec give the same bound (Theorem 1): LDLD is drawn larger and
+# below, so that both stay visible where they coincide
+SIZE = {"LDLD": 7}
+
+
+def draw(ax, res, what, methods, ylabel, title, xlabel, ref_line=True):
+    for m in methods:
+        d = res[res["method"] == m].sort_values("x")
+        d = d[np.isfinite(d[what]) & (d[what] > 0)]
+        if d.empty:
+            continue
+        c, mk = STYLE[m]
+        ax.plot(d["x"], d[what], color=c, lw=1)
+        ms = SIZE.get(m, 4)
+        ax.plot(d["x"][d["ok"]], d[what][d["ok"]], mk, color=c, ms=ms,
+                label=m)
+        ax.plot(d["x"][~d["ok"]], d[what][~d["ok"]], mk, color=c, ms=ms,
+                mfc="none")
+    if ref_line:
+        ax.axhline(1, color="k", ls="--", lw=0.8)
+    ax.set_yscale("log")
+    ax.set_title(title, fontsize=9)
+    ax.set_xlabel(xlabel, fontsize=8)
+    ax.set_ylabel(ylabel, fontsize=8)
+    ax.tick_params(labelsize=7)
+    ax.grid(True, which="major", alpha=0.3)
+
+
+def multi(panels, what, methods, ylabel, fname, out, ref_line=True):
+    """one figure with a panel per (title, data, xlabel, logx)"""
+    panels = [p for p in panels if not p[1].empty]
+    if not panels:
+        return
+    n = len(panels)
+    cols = min(n, 3)
+    rows = (n + cols - 1) // cols
+    fig, axes = plt.subplots(rows, cols, figsize=(3.3 * cols, 2.7 * rows),
+                             squeeze=False)
+    for ax, (title, res, xlabel, logx) in zip(axes.flat, panels):
+        draw(ax, res, what, methods, ylabel, title, xlabel, ref_line)
+        if logx:
+            # the values of the axis as the ticks, written in full
+            ax.set_xscale("log")
+            ticks = res.drop_duplicates("x").sort_values("x")
+            ax.set_xticks(ticks["x"])
+            long = ticks["lab"].str.len().max() > 4
+            ax.set_xticklabels(ticks["lab"], fontsize=7,
+                               rotation=30 if long else 0)
+            ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
+    for ax in list(axes.flat)[n:]:
+        ax.axis("off")
+    h, lab = [], []
+    for ax in axes.flat:
+        for hh, ll in zip(*ax.get_legend_handles_labels()):
+            if ll not in lab:
+                h.append(hh)
+                lab.append(ll)
+    fig.legend(h, lab, loc="lower center", ncol=len(lab), fontsize=7,
+               frameon=False)
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
+    fig.savefig(out / fname)
+    plt.close(fig)
+
+
+def figures(agg, ref, inst, out):
+    """ratio-uc.pdf, ratio-others.pdf, gap.pdf and memory.pdf"""
+    def names(axis, pred=None):
+        n = inst[inst["axis"] == axis]["instance"]
+        return set(n if pred is None else [x for x in n if pred(x)])
+
+    uc = []
+    for t, label in ((24, "a day"), (168, "a week")):
+        uc.append((f"scaling, {label}",
+                   panel_data(agg, ref, names(
+                       "scaling", lambda x: value_of(x, "t") == t), "u"),
+                   "number of units", True))
+    uc.append(("80 units", panel_data(agg, ref, names("long"), "t"),
+               "number of periods", True))
+    uc.append(("40 units, 96 periods",
+               panel_data(agg, ref, names("scenarios"), "s"),
+               "number of scenarios", True))
+    uc.append(("80 units, 96 periods",
+               panel_data(agg, ref, names("buses"), "b"),
+               "number of buses", True))
+    others = [("three-stage trees", panel_data(agg, ref, names("tree"), "cd"),
+               "number of leaves", True),
+              ("facility location",
+               panel_data(agg, ref, names("cfl-size"), "fc"),
+               "facilities x customers", True),
+              ("facility location, 50 x 50",
+               panel_data(agg, ref, names("cfl-scen"), "s"),
+               "number of scenarios", True)]
+    ylab = "time / time of the MILP"
+    multi(uc, "time", RATIO, ylab, "ratio-uc.pdf", out)
+    multi(others, "time", RATIO, ylab, "ratio-others.pdf", out)
+    multi(uc + others, "gap", BOUND, "gap of the bound (%)", "gap.pdf", out,
+          ref_line=False)
+    multi([p for p in uc if p[0] in ("scaling, a week", "80 units")],
+          "rss", RATIO, "memory / memory of the MILP", "memory.pdf", out)
 
 
 if __name__ == "__main__":
