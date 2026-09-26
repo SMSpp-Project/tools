@@ -8,17 +8,20 @@
 #   instance,method,status,lb,ub,time,iter,rss,rub,rtime,gap,rep,l0,l1
 #
 # the first eleven fields being those of ldld_bench (rub, rtime and gap are
-# empty for a method with no primal recovery), rep the repetition, l0 and l1
-# the load of the machine at the start and at the end of the run. The log of
-# each run goes to <out-dir>/logs/<instance>.<method>.<rep>.log.
+# empty for a method with no primal recovery), rep the repetition, l0 the
+# load of the machine at the start of the run and l1 the average number of
+# cores that the other processes kept busy during it, i.e., the CPU time of
+# the machine minus that of the run, over its wall-clock time (the load
+# average would count the run itself, whose MILP takes every thread). The
+# log of each run goes to <out-dir>/logs/<instance>.<method>.<rep>.log.
 #
 # Each run is a process of its own, one at a time, and starts only when the
 # load is below $QUIET: the times of the paper are taken on an otherwise idle
-# machine, and a run whose load was above $QUIET at its end is marked by its
-# l1 and is to be repeated, not quoted. A run already in runs.csv as a measure
-# is skipped, and one that is there with a load above the threshold is run
-# again, so that launching the campaign again both resumes it and redoes what
-# the load spoiled. With
+# machine, and a run during which the other processes kept more than $QUIET
+# cores busy is marked by its l1 and is to be repeated, not quoted. A run
+# already in runs.csv as a measure is skipped, and one that is there with an
+# l1 above the threshold is run again, so that launching the campaign again
+# both resumes it and redoes what the load spoiled. With
 # REPS=2 every run is repeated, which measures the noise (the same method
 # against itself) before two methods are compared.
 #
@@ -56,6 +59,10 @@ recover=(0 0 1 1 1 0)
 bnames=(BDS BDSLD)
 
 load()  { cut -d' ' -f1 /proc/loadavg; }
+# the CPU time of the whole machine in clock ticks (user, nice, system, irq,
+# softirq and steal; idle and iowait left out)
+busy()  { awk '/^cpu /{ print $2 + $3 + $4 + $7 + $8 + $9 }' /proc/stat; }
+hz=$(getconf CLK_TCK)
 quiet() {
   awk -v x="$(load)" -v q="$QUIET" 'BEGIN{exit !(x<q)}' || return 1
   # the pattern is matched against the others' command lines, this script
@@ -108,14 +115,15 @@ while read -r name axis args; do
     if [ -n "$b" ]; then m=${bnames[$k]}; else m=${names[$k]}; fi
     for rep in $(seq 1 "$reps"); do
       # a run already there is skipped only if it is a measure, i.e., the
-      # load at its end was below the threshold; one that was not is run
-      # again, and plot_ldld.py leaves the old line out
+      # other processes kept fewer cores busy than the threshold during it;
+      # one that was not is run again, and plot_ldld.py leaves the old line out
       if [ -e "$csv" ] &&
          grep "^smspp_$inst,$m,.*,$rep,[^,]*,[^,]*\$" "$csv" |
          awk -F, -v q="$QUIET" '$NF < q { f = 1 } END { exit ! f }'
       then continue; fi
       until quiet; do sleep 120; done
       l0=$(load)
+      b0=$(busy); w0=$(date +%s.%N)
       opt=( -c "$out/config/" -k "$k" -m "$m"
             -l "$out/logs/$inst.$m.$rep.log" )
       case $inst,$m in
@@ -125,15 +133,26 @@ while read -r name axis args; do
       if [ -n "$b" ]; then opt+=( -b -S BendersSCfg.txt )
       elif [ "${recover[$k]}" = 1 ]; then
        opt+=( -R ScnBSCfg-IP.txt -j "$jobs" ); fi
-      line=$(timeout "$timeout" "$bench" "${opt[@]}" "$file" 2>> "$out/errors" |
-             tail -1)
-      l1=$(load)
+      # /usr/bin/time outside timeout, so that it counts the run and all its
+      # threads, and nothing else
+      line=$(/usr/bin/time -f "%U %S" -o "$out/.cpu" \
+               timeout "$timeout" "$bench" "${opt[@]}" "$file" \
+               2>> "$out/errors" | tail -1)
+      b1=$(busy); w1=$(date +%s.%N)
+      # without the CPU time of the run, the load average is what is left
+      if tail -1 "$out/.cpu" 2> /dev/null | grep -q '^[0-9]'; then
+        l1=$(tail -1 "$out/.cpu" |
+             awk -v b0="$b0" -v b1="$b1" -v w0="$w0" -v w1="$w1" -v hz="$hz" \
+               '{ o = ( b1 - b0 ) / hz - $1 - $2; w = w1 - w0;
+                  printf "%.2f", ( w > 0 && o > 0 ) ? o / w : 0 }')
+      else l1=$(load); fi
       [ -n "$line" ] || line="smspp_$inst,$m,timeout,,,$timeout,,"
       # the fields of the recovery are empty where there is none
       nf=$(echo "$line" | awk -F, '{print NF}')
       [ "$nf" -lt 11 ] && line="$line,,,"
       echo "$line,$rep,$l0,$l1" >> "$csv"
-      say "$inst $m rep $rep: $(echo "$line" | cut -d, -f3-6) (load $l0 -> $l1)"
+      say "$inst $m rep $rep: $(echo "$line" | cut -d, -f3-6)" \
+          "(load $l0, others $l1)"
     done
   done
   done
