@@ -3,9 +3,9 @@
 #
 # ComputeConfig of a Solver of the MCFBlock that re-optimizes, i.e., that
 # after a change of the instance starts from what it had at the end of the
-# previous solve: the :MCFSolver and MCFLemonSolverNetworkSimplex take the
-# same kReopt. The Solver that starts from scratch at each solve takes this
-# one with kReopt 0 [see MCFBSCfg.txt].
+# previous solve: the :MCFSolver and the four MCFLemonSolver take the same
+# kReopt. The Solver that starts from scratch at each solve takes this one
+# with kReopt 0 [see MCFBSCfg.txt].
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

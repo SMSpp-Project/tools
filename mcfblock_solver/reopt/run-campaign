@@ -25,7 +25,7 @@
 #
 # Environment: BENCH (the reopt_bench to run, default build/reopt_bench),
 # INST (the directory of the instances, default instances/), METHODS
-# (default "0 1 2 3 4 5 6", the indices of the Solver in
+# (default "0 1 2 3 4 5 6 7 8 9 10 11", the indices of the Solver in
 # config/MCFBSCfg.txt), KINDS (default "cost cap dfct arcs mix"), SEEDS
 # (default "1 2 3"), ROUNDS (default 100), FRAC (default 0.01), REPS
 # (default 1), QUIET (default 4), TIMEOUT (seconds of wall time of a whole
@@ -39,7 +39,7 @@ shift
 here=$(cd "$(dirname "$0")" && pwd)
 bench=${BENCH:-$here/build/reopt_bench}
 inst=${INST:-$here/instances}
-methods=${METHODS:-0 1 2 3 4 5 6}
+methods=${METHODS:-0 1 2 3 4 5 6 7 8 9 10 11}
 kinds=${KINDS:-cost cap dfct arcs mix}
 seeds=${SEEDS:-1 2 3}
 rounds=${ROUNDS:-100}
@@ -47,7 +47,7 @@ frac=${FRAC:-0.01}
 reps=${REPS:-1}
 QUIET=${QUIET:-4}
 timeout=${TIMEOUT:-3600}
-names=(SIMw SIMc RIVw RIVc NSw NSc CS)
+names=(SIMw SIMc RIVw RIVc NSw NSc CSw CSc CAPw CAPc CCw CCc)
 
 load()  { cut -d' ' -f1 /proc/loadavg; }
 # the CPU time of the whole machine in clock ticks (user, nice, system, irq,

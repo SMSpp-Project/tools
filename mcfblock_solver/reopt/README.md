@@ -15,23 +15,31 @@ configuration it ran with and the description of the machine.
 `config/MCFBSCfg.txt` attaches one `Solver` per method to the `MCFBlock`,
 and `reopt_bench -k` keeps the one to run:
 
-| k | method | what it is                                                  |
-|---|--------|-------------------------------------------------------------|
-| 0 | SIMw   | `MCFSolver<MCFSimplex>`, re-optimizing                      |
-| 1 | SIMc   | `MCFSolver<MCFSimplex>`, from scratch at each solve         |
-| 2 | RIVw   | `MCFSolver<RelaxIV>`, re-optimizing                         |
-| 3 | RIVc   | `MCFSolver<RelaxIV>`, from scratch at each solve            |
-| 4 | NSw    | the network simplex of LEMON, re-optimizing                 |
-| 5 | NSc    | the network simplex of LEMON, from scratch at each solve    |
-| 6 | CS     | the cost scaling of LEMON, which has no re-optimization     |
+| k  | method | what it is                                                 |
+|----|--------|------------------------------------------------------------|
+| 0  | SIMw   | `MCFSolver<MCFSimplex>`, re-optimizing                     |
+| 1  | SIMc   | `MCFSolver<MCFSimplex>`, from scratch at each solve        |
+| 2  | RIVw   | `MCFSolver<RelaxIV>`, re-optimizing                        |
+| 3  | RIVc   | `MCFSolver<RelaxIV>`, from scratch at each solve           |
+| 4  | NSw    | the network simplex of LEMON, re-optimizing                |
+| 5  | NSc    | the network simplex of LEMON, from scratch at each solve   |
+| 6  | CSw    | the cost scaling of LEMON, re-optimizing                   |
+| 7  | CSc    | the cost scaling of LEMON, from scratch at each solve      |
+| 8  | CAPw   | the capacity scaling of LEMON, re-optimizing               |
+| 9  | CAPc   | the capacity scaling of LEMON, from scratch at each solve  |
+| 10 | CCw    | the cycle canceling of LEMON, re-optimizing                |
+| 11 | CCc    | the cycle canceling of LEMON, from scratch at each solve   |
 
 Each re-optimizing method differs from the one next to it only by `kReopt`
 (`config/ReoptCfg.txt`), so that the pair measures what re-optimizing
 gains on the same code. The network simplex of LEMON re-optimizes from the
 basis of its previous solve, which it makes primal feasible again after a
-change of the capacities or of the deficits (see `runWarm()` in
-`MCFLemonSolver/shim/ns_runwarm.inc`), provided the deficits sum to zero;
-otherwise, and after a change of the graph, it starts from scratch.
+change of the capacities or of the deficits, provided the deficits sum to
+zero; its capacity scaling starts from the flow and the potentials of the
+previous solve after any change, and its cost scaling and cycle canceling
+from the flow of the previous solve when it is still feasible, i.e., after a
+change of the costs (see the `runWarm()` of each in `MCFLemonSolver/shim`);
+otherwise, and after a change of the graph, they start from scratch.
 
 ## The instances
 
