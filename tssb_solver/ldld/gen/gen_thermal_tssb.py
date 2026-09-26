@@ -14,10 +14,10 @@ The uncertainty is the usual pair (demand, availability of the renewables),
 the here-and-now variables are the capacities of the expandable technologies
 (solar, and a battery when asked for), and everything else, the fleet above
 all, is decided scenario by scenario. The fleet is heterogeneous on purpose:
-minimum up and down times of four to twelve periods, minimum powers between
-a third and a half of the maximum one, start-up costs proportional to the
-size, and a reserve margin tight enough (`--margin`) that the commitment is
-not decided by the demand alone.
+minimum up and down times of two to twelve periods, minimum powers between
+30% and 50% of the maximum one, start-up costs proportional to the size, and
+a thermal capacity of `--margin` (1.25 by default) times the peak demand,
+which only sizes the fleet: there are no reserve constraints.
 
 It writes `<name>_flat.nc`, the PyPSA network carrying the scenario axis,
 which `emit_thermal_tssb.py` turns into a TwoStageStochasticBlock; both

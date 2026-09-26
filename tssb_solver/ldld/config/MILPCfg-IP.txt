@@ -2,8 +2,8 @@
 # - - - - - - - - - - - - - - - MILPCfg-IP.txt - - - - - - - - - - - - - - - 
 #
 # The ComputeConfig of the :MILPSolver on the deterministic equivalent: the
-# integer problem, with the Perspective Cuts of the thermal units separated,
-# to the relative gap 1e-6 and one hour at most
+# integer problem, in the 3bin formulation of the thermal units and with no
+# Perspective Cuts, to the relative gap 1e-6 and one hour at most
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

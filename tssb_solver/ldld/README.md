@@ -101,11 +101,14 @@ fixed, so that the files are rebuilt identical from the list.
 
 `run-campaign` runs one method on one instance per process, one at a time,
 and starts a run only when the load of the machine is below `QUIET`; it
-writes one line per run in `runs.csv`, with the load at the start and at the
-end, and a run is skipped if it is already there, so that an interrupted
+writes one line per run in `runs.csv`, with the load at the start and the
+average number of cores the other processes kept busy during the run (the
+CPU time of the machine minus that of the run, over its wall-clock time),
+and a run is skipped if it is already there, so that an interrupted
 campaign is resumed by launching it again. The times of the paper are taken
-on an otherwise idle machine: a run whose load at the end is above `QUIET` is
-not a measure, and `plot_ldld.py` leaves it out. Before two methods are
+on an otherwise idle machine: a run during which the other processes kept
+more than `QUIET` cores busy is not a measure, it is run again when the
+campaign is launched again, and `plot_ldld.py` leaves it out. Before two methods are
 compared, `REPS=2` measures the noise, i.e., each method against itself.
 
 A single run is

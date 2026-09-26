@@ -2,8 +2,9 @@
 # - - - - - - - - - - - - - - - - TUBCfg.txt - - - - - - - - - - - - - - - - 
 #
 # The BlockConfig of a thermal unit: the 3bin formulation, which is what the
-# :MILPSolver of the deterministic equivalent solves, and the tolerances of
-# the separation of its Perspective Cuts
+# :MILPSolver of the deterministic equivalent solves, with no Perspective
+# Cuts (the formulation is 0 and not 0 + 8), and the tolerances that their
+# separation would use
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
