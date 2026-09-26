@@ -161,7 +161,7 @@ up relative to the `-c` prefix. For `sddp_solver`, `tssb_solver` and
 
 | tool                     | default `-B`                          | default `-S`   |
 |--------------------------|---------------------------------------|----------------|
-| `sddp_solver`            | `SDDPBCfg.txt` (or `SDDPBCfg-LD.txt`) | `SDDPSCfg.txt` |
+| `sddp_solver`            | `SDDPBCfg.txt`                        | `SDDPSCfg.txt` |
 | `tssb_solver`            | `TSSBCfg.txt`                         | `TSSBSCfg.txt` |
 | `mssb_solver`            | `InnerBCfg.txt`                       | `MSSBSCfg.txt` |
 | `investmentblock_solver` | `InnerBCfg.txt`                       | `BSPar.txt`    |
@@ -169,10 +169,11 @@ up relative to the `-c` prefix. For `sddp_solver`, `tssb_solver` and
 | `block_solver`           | `BCfg.txt`                            | `BSCfg.txt`    |
 | `mcfblock_solver` and the other four | `BCfg.txt`                | `BSCfg.txt`    |
 
-For `sddp_solver` the default `-B` is applied through the inner-Block "meta"
-BlockConfig (`SDDPBCfg.txt`, or `SDDPBCfg-LD.txt` when the SDDPSolver drives a
-LagrangianDualSolver), which linearises the `PolyhedralFunctionBlock` and
-shapes the network/units; passing a generic `BCfg.txt` instead is wrong and
+For `sddp_solver` the default `-B` is the "meta" BlockConfig `SDDPBCfg.txt`,
+dispatched to the Blocks of the inner Block of each stage, which linearises
+the `PolyhedralFunctionBlock` and shapes the network/units; the stages are
+solved via `LagrangianDualSolver` with `-B SDDPBCfg-LD.txt -S SDDPSCfg-LD.txt`
+(`-S SDDPSCfg-greedy-LD.txt` in simulation). Passing a generic `BCfg.txt` instead is wrong and
 makes the MILPSolver throw "Unknown type of Objective Function". The fallback
 applies only when the file is actually reachable, so a missing default is
 silently ignored, and explicit `-B`/`-S` always take precedence; an empty
@@ -336,10 +337,11 @@ scenarios in parallel. In this case, the number of scenarios that are solved
 in parallel is n (assuming n is not larger than the number of scenarios).
 
 The `-B` and `-S` options are only considered if the given netCDF file is a
-BlockFile. The `-B` option specifies a BlockConfig file to be applied to every
-SDDPBlock; while the `-S` option specifies a BlockSolverConfig file for every
-SDDPBlock. If each of these options is not provided when the given netCDF file
-is a BlockFile, then default configurations are considered.
+BlockFile. The `-B` option specifies either a BlockConfig, applied to every
+SDDPBlock, or a "meta" BlockConfig, dispatched by classname to the Blocks of
+the inner Block of each stage; the `-S` option specifies
+the BlockSolverConfig of every SDDPBlock. When they are not given, `SDDPBCfg.txt`
+and `SDDPSCfg.txt` are used.
 
 Initial cuts can be provided by using the `-l` option. This option must be
 followed by the path to the file containing the initial cuts. This file must

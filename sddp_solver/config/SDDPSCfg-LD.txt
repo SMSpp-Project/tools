@@ -1,7 +1,9 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - SDDPSCfg-LD.txt - - - - - - - - - - - - - - -
 #
-# A txt description of a BlockSolverConfig for a SDDPSolver
+# The BlockSolverConfig of the SDDPBlock whose inner Block of each stage is
+# solved via LagrangianDualSolver [see BSPar-LD.txt], to be used with
+# -B SDDPBCfg-LD.txt.
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

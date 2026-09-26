@@ -51,10 +51,14 @@
  * scenarios).
  *
  * The -B and -S options are only considered if the given netCDF file is a
- * BlockFile. The -B option specifies a BlockConfig file to be applied to
- * every SDDPBlock; while the -S option specifies a BlockSolverConfig file for
- * every SDDPBlock. If each of these options is not provided when the given
- * netCDF file is a BlockFile, then default configurations are considered.
+ * BlockFile. The -B option specifies either a BlockConfig, applied to every
+ * SDDPBlock, or a "meta" BlockConfig (a map from Block classname() to the
+ * BlockConfig to be applied to every Block of that class, with "*" as the
+ * default), dispatched to every Block of the inner Block of each stage; the
+ * default is SDDPBCfg.txt. The -S option specifies the BlockSolverConfig of
+ * every SDDPBlock, SDDPSCfg.txt by default. The inner Blocks are solved by a
+ * LagrangianDualSolver with -B SDDPBCfg-LD.txt -S SDDPSCfg-LD.txt, and
+ * -S SDDPSCfg-greedy-LD.txt in simulation mode.
  *
  * Initial cuts can be provided by using the -l option. This option must be
  * followed by the path to the netCDF file containing the initial cuts, in
@@ -108,12 +112,8 @@
 #include <BatteryUnitBlock.h>
 #include <BendersBlock.h>
 #include <BlockSolverConfig.h>
-#include <IntermittentUnitBlock.h>
-#include <SlackUnitBlock.h>
 #include <ThermalUnitBlock.h>
-#include <HydroSystemUnitBlock.h>
 #include <PolyhedralFunctionBlock.h>
-#include <RBlockConfig.h>
 #include <SDDPBlock.h>
 #include <StochasticBlock.h>
 #include <SDDPGreedySolver.h>
@@ -149,19 +149,6 @@ long initial_solution_stage = -1;
 bool simulation_mode = false;
 bool eliminate_redundant_cuts = false;
 
-const bool force_hard_components = false;
-
-// If hydro_is_easy_component is true (see the -z option), the
-// HydroSystemUnitBlock is treated as an easy component by the
-// [Parallel]BundleSolver; its primal solution (which is needed, as the
-// volume of the reservoirs links two consecutive stages) is then recovered
-// from the master problem solution via the Configuration in
-// get_var_solution_bundle.txt
-bool hydro_is_easy_component = false;
-
-const std::string get_var_solution_bundle_filename =
-                                    "config/get_var_solution_bundle.txt";
-
 // If set_polyhedral_function_bound is true, the PolyhedralFunction of each
 // stage (the Bellman, cost-to-go function) gets the finite global lower
 // bound below: since the stage costs are non-negative, 0 is a valid bound,
@@ -170,22 +157,9 @@ const std::string get_var_solution_bundle_filename =
 constexpr bool set_polyhedral_function_bound = true;
 constexpr double polyhedral_function_bound = 0;
 
-// Name of the files containing the default (meta) BlockConfig for the inner
-// Block of each stage and the default BlockSolverConfig for the inner Block
-// of each BendersBFunction; see configure_Blocks() and build_BlockConfig().
-// As every configuration file, they are resolved against the directory the
-// tool is run from, as in the other tools
-// note: these are resolved against the -c prefix, which defaults to
-// "config/" (see main()); the file names referenced INSIDE configuration
-// files are instead resolved by the loading Solver against the directory
-// the tool is run from, hence they carry an explicit "config/"
-const std::string default_block_config_filename = "SDDPBCfg.txt";
-const std::string default_block_config_filename_LD = "SDDPBCfg-LD.txt";
-const std::string benders_solver_config_filename = "BendersBSCfg.txt";
-
 /*--------------------------------------------------------------------------*/
 
-const std::string my_short_opts = "d:e:l:n:i:m:rst:z";
+const std::string my_short_opts = "d:e:l:n:i:m:st:";
 
 const std::vector< option > my_long_opts = {
   { "output-dir" ,               required_argument , nullptr , 'd' } ,
@@ -194,10 +168,8 @@ const std::vector< option > my_long_opts = {
   { "num-blocks" ,               required_argument , nullptr , 'n' } ,
   { "scenario" ,                 required_argument , nullptr , 'i' } ,
   { "num-simulations" ,          required_argument , nullptr , 'm' } ,
-  { "relax" ,                    no_argument ,       nullptr , 'r' } ,
   { "simulation" ,               no_argument ,       nullptr , 's' } ,
-  { "stage" ,                    required_argument , nullptr , 't' } ,
-  { "hydro-easy" ,               no_argument ,       nullptr , 'z' }
+  { "stage" ,                    required_argument , nullptr , 't' }
   };
 
 const std::string my_help =
@@ -209,8 +181,7 @@ const std::string my_help =
  "  -i, --scenario <index>          the index of the scenario\n"
  "  -m, --num-simulations <number>  number of simulations to be performed\n"
  "  -s, --simulation                simulation mode\n"
- "  -t, --stage <stage>             stage from which initial state is taken\n"
- "  -z, --hydro-easy                treat the hydro system as an easy component";
+ "  -t, --stage <stage>             stage from which initial state is taken";
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -245,16 +216,7 @@ static bool process_specific_arg( int opt )
              exit( 1 );
              }
             return( true );
-  case 'r':
-   std::cout << "The -r option no longer exists. In order relax the "
-             << "integrality constraints,\nplease properly configure the "
-             << "solver. For instance, some solvers have the\nparameter "
-             << "'intRelaxIntVars', which can be set to 1 in the solver\n"
-             << "configuration file associated with the Block whose "
-             << "constraints must be\nrelaxed." << std::endl;
-   exit( 1 );
   case 's': simulation_mode = true; return( true );
-  case 'z': hydro_is_easy_component = true; return( true );
   case 't': initial_solution_stage = get_long_option(); return( true );
   case '?':
   default:  return( false );
@@ -734,9 +696,19 @@ void solve( SDDPBlock * sddp_block )
 
 /*--------------------------------------------------------------------------*/
 
-void configure_Blocks( SDDPBlock * sddp_block ,
-                       bool is_using_lagrangian_dual_solver )
+void configure_Blocks( SDDPBlock * sddp_block , Configuration * block_config )
 {
+ if( ! block_config )
+  return;
+
+ // an ordinary BlockConfig is applied to the SDDPBlock
+ if( ! dynamic_cast< SimpleConfiguration< std::map< std::string ,
+                                                    Configuration * > > * >(
+                                                             block_config ) ) {
+  config_Block( sddp_block , block_config , nullptr );
+  return;
+  }
+
  // possibly give a finite global bound to the PolyhedralFunction of every
  // stage; see the comments to set_polyhedral_function_bound
  if( set_polyhedral_function_bound )
@@ -758,32 +730,12 @@ void configure_Blocks( SDDPBlock * sddp_block ,
      }
     }
 
- /* The default configuration of the inner Block of each stage is entirely
-  * described by a "meta" BlockConfig file (a map from Block classname() to
-  * the BlockConfig to be applied to every Block of that class, with "*" as
-  * the default), dispatched by the common config_Block() machinery; see
-  * SDDPBCfg.txt and SDDPBCfg-LD.txt. */
-
- auto block_config = get_config( is_using_lagrangian_dual_solver ?
-                                 default_block_config_filename_LD :
-                                 default_block_config_filename );
-
- if( ! block_config ) {
-  std::cout << "Warning: default BlockConfig file "
-            << ( is_using_lagrangian_dual_solver ?
-                 default_block_config_filename_LD :
-                 default_block_config_filename )
-            << " not found; the inner Blocks are not configured"
-            << std::endl;
-  return;
-  }
-
+ // the "meta" BlockConfig is dispatched to the Blocks of the inner Block
+ // of each stage, which sits behind the BendersBFunction
  for( Index stage = 0 ; stage < sddp_block->get_time_horizon() ; ++stage )
   for( Index j = 0 ; j < sddp_block->get_num_sub_blocks_per_stage() ; ++j )
    config_Block( get_uc_block( sddp_block , stage , j ) , block_config ,
                  nullptr );
-
- delete block_config;
  }
 
 /*--------------------------------------------------------------------------*/
@@ -869,519 +821,28 @@ void process_prob_file( const netCDF::NcFile & file )
 
 /*--------------------------------------------------------------------------*/
 
-BlockSolverConfig * build_BlockSolverConfig( void )
-{
- auto block_solver_config = new BlockSolverConfig;
- if( simulation_mode ) {
-  auto config = new ComputeConfig;
-  config->set_par( "intLogVerb" , 1 );
-  block_solver_config->add_ComputeConfig( "SDDPGreedySolver" , config );
-  }
- else {
-  auto config = new ComputeConfig;
-  config->set_par( "intLogVerb" , 1 );
-  block_solver_config->add_ComputeConfig( "SDDPSolver" , config );
-  }
-
- return( block_solver_config );
- }
-
-/*--------------------------------------------------------------------------*/
-
-BlockConfig * build_BlockConfig( const SDDPBlock * sddp_block )
-{
- /* The per-class configuration of the inner Block of each stage (including
-  * all PolyhedralFunctionBlock) is dealt with by configure_Blocks(); here
-  * we only build the structural part, i.e., the ComputeConfig of each
-  * BendersBFunction, whose inner Block gets the default BlockSolverConfig
-  * read from BendersBSCfg.txt. */
-
- auto benders_solver_config =
-  get_blocksolverconfig( benders_solver_config_filename );
-
- if( ! benders_solver_config )
-  std::cout << "Warning: default BlockSolverConfig file "
-            << benders_solver_config_filename << " not found; the inner "
-            << "Block of each BendersBFunction gets no Solver" << std::endl;
-
- auto sddp_config = new RBlockConfig;
- auto num_stochastic_blocks = sddp_block->get_number_nested_Blocks();
-
- for( Block::Index index = 0 ; index < num_stochastic_blocks ; ++index ) {
-  auto benders_function_config = new ComputeConfig;
-  benders_function_config->f_extra_Configuration =
-   new SimpleConfiguration< std::map< std::string , Configuration * > >(
-              { { "BlockConfig" , nullptr } ,
-              { "BlockSolverConfig" , benders_solver_config ?
-                benders_solver_config->clone() : nullptr } } );
-
-  auto stochastic_block_config = new RBlockConfig;
-  sddp_config->add_sub_BlockConfig( stochastic_block_config , index );
-
-  auto benders_block_config = new OBlockConfig;
-  stochastic_block_config->add_sub_BlockConfig( benders_block_config , 0 );
-
-  benders_block_config->set_Config_Objective( benders_function_config );
-  }
-
- delete benders_solver_config;
-
- return( sddp_config );
- }
-
-/*--------------------------------------------------------------------------*/
-
-bool using_lagrangian_dual_solver( BlockSolverConfig * sddp_solver_config )
-{
- if( ! sddp_solver_config )
-  return( false );
-
- BlockSolverConfig * inner_solver_config = nullptr;
- ComputeConfig * compute_config = nullptr;
-
- for( Index i = 0 ; i < sddp_solver_config->num_ComputeConfig() ; ++i ) {
-
-  if( sddp_solver_config->get_SolverName( i ) != "SDDPSolver" &&
-      sddp_solver_config->get_SolverName( i ) != "ParallelSDDPSolver" &&
-      sddp_solver_config->get_SolverName( i ) != "SDDPGreedySolver" )
-   continue;
-
-  compute_config = sddp_solver_config->get_SolverConfig( i );
-
-  // Check if strInnerBSC is present
-  auto strInnerBSC = get_str_par( compute_config , "strInnerBSC" );
-
-  if( strInnerBSC.empty() )
-   continue;
-
-  // If it is, check if it is a config for a LagrangianDualSolver
-
-  // resolve strInnerBSC against the executable-wide Configuration prefix (the
-  // -c prefix, see set_filename_prefix() in process_args), exactly as the
-  // loading Solver does when it re-opens this same file via
-  // Configuration::deserialize()
-  std::ifstream inner_solver_config_file(
-   resolve_with_prefix( Configuration::get_filename_prefix() , strInnerBSC ) ,
-   std::ifstream::in );
-  if( ! inner_solver_config_file.is_open() )
-   continue;
-
-  std::string inner_config_name;
-  inner_solver_config_file >> eatcomments >> inner_config_name;
-  auto inner_config = Configuration::new_Configuration( inner_config_name );
-  inner_solver_config = dynamic_cast< BlockSolverConfig * >( inner_config );
-
-  if( ! inner_solver_config ) {
-   inner_solver_config_file.close();
-   delete( inner_config );
-   continue;
-   }
-
-  try {
-   inner_solver_config_file >> *inner_solver_config;
-   }
-  catch( ... ) {
-   inner_solver_config_file.close();
-   delete( inner_config );
-   continue;
-   }
-
-  inner_solver_config_file.close();
-
-  for( Index j = 0 ; j < inner_solver_config->num_ComputeConfig() ; ++j ) {
-   if( inner_solver_config->get_SolverName( j ) == "LagrangianDualSolver" ) {
-    delete( inner_config );
-    return( true );
-    }
-   }
-  delete( inner_config );
-  }
-
- return( false );
- }
-
-/*--------------------------------------------------------------------------*/
-
-void config_Lagrangian_dual( BlockSolverConfig * sddp_solver_config ,
-                             SDDPBlock * sddp_block )
-{
- if( sddp_block->get_number_nested_Blocks() == 0 )
-  // The SDDPBlock has no sub-Block. There is nothing to be configured.
-  return;
-
- BlockSolverConfig * inner_solver_config = nullptr;
- ComputeConfig * lagrangian_dual_compute_config = nullptr;
- ComputeConfig * compute_config = nullptr;
-
- // It indicates whether some Solver is a [Parallel]BundleSolver
- bool bundle_solver = false;
- bool do_easy_components = true;
- std::vector< int > vintNoEasy;
-
- // Index of the HydroSystemUnitBlock
- int hydro_system_index = -1;
-
- for( Index i = 0 ; i < sddp_solver_config->num_ComputeConfig() ; ++i ) {
-  if( sddp_solver_config->get_SolverName( i ) != "SDDPSolver" &&
-      sddp_solver_config->get_SolverName( i ) != "ParallelSDDPSolver" &&
-      sddp_solver_config->get_SolverName( i ) != "SDDPGreedySolver" )
-   continue;
-
-  compute_config = sddp_solver_config->get_SolverConfig( i );
-
-  // Check if strInnerBSC is present
-  auto strInnerBSC = get_str_par( compute_config , "strInnerBSC" );
-  if( strInnerBSC.empty() )
-   return;
-
-  // If it is, check if it is a config for a LagrangianDualSolver
-  // resolve strInnerBSC against the Configuration prefix, see the other overload
-  std::ifstream inner_solver_config_file(
-   resolve_with_prefix( Configuration::get_filename_prefix() , strInnerBSC ) ,
-   std::ifstream::in );
-
-  if( ! inner_solver_config_file.is_open() )
-   return;
-
-  std::string inner_config_name;
-  inner_solver_config_file >> eatcomments >> inner_config_name;
-  auto inner_config = Configuration::new_Configuration( inner_config_name );
-  inner_solver_config = dynamic_cast< BlockSolverConfig * >( inner_config );
-
-  if( ! inner_solver_config ) {
-   inner_solver_config_file.close();
-   delete( inner_config );
-   return;
-   }
-
-  try {
-   inner_solver_config_file >> *inner_solver_config;
-   }
-  catch( ... ) {
-   inner_solver_config_file.close();
-   delete( inner_config );
-   return;
-   }
-
-  inner_solver_config_file.close();
-
-  for( Index j = 0 ; j < inner_solver_config->num_ComputeConfig() ; ++j ) {
-
-   if( inner_solver_config->get_SolverName( j ) != "LagrangianDualSolver" )
-    // It is not a ComputeConfig for a LagrangianDualSolver.
-    // Check the next one.
-    continue;
-
-   lagrangian_dual_compute_config = inner_solver_config->get_SolverConfig( j );
-
-   if( ! lagrangian_dual_compute_config )
-    continue;
-
-   // Find the inner Solver.
-   auto sit = std::find_if( lagrangian_dual_compute_config->str_pars.begin() ,
-                            lagrangian_dual_compute_config->str_pars.end() ,
-                            []( auto & pair ) {
-                             return( pair.first == "str_LDSlv_ISName" ); } );
-   if( sit == lagrangian_dual_compute_config->str_pars.end() )
-    // If it's not there, do nothing.
-    continue;
-
-   // Check if it is a [Parallel]BundleSolver.
-   if( ( sit->second.find( "BundleSolver" ) == std::string::npos ) &&
-       ( sit->second.find( "ParallelBundleSolver" ) == std::string::npos ) )
-    continue;  // If it is not, do nothing.
-
-   bundle_solver = true;
-
-   // Check if the BundleSolver uses easy components.
-   // Find if the ComputeConfig contains "intDoEasy".
-   auto it = std::find_if( lagrangian_dual_compute_config->int_pars.begin() ,
-                           lagrangian_dual_compute_config->int_pars.end() ,
-                           []( auto & pair ) {
-                            return( pair.first == "intDoEasy" ); } );
-   if( it != lagrangian_dual_compute_config->int_pars.end() ) // if so
-    do_easy_components = ( it->second & 1 ) > 0;  // read it
-   else                               // otherwise
-    do_easy_components = true;        // assume it is true (default)
-
-   // We assume that there is at most one [Parallel]BundleSolver
-   break;
-  } // for each ComputeConfig for the inner Solver
-
-  if( bundle_solver )
-   break; // a BundleSolver has been found
-
- } // for each ComputeConfig for the Solver of SDDPBlock
-
- if( ! bundle_solver )
-  // Since there is no BundleSolver, there is no need to configure any Block
-  return;
-
- // The Configuration to be passed to get_var_solution() of the inner
- // Solver. We assume that only the HydroSystemBlock contains the necessary
- // part of the Solution (and that there is only one HydroSystemBlock) and
- // that the index of the HydroSystemBlock is the same at every stage.
- Configuration * get_var_solution_config = nullptr;
-
- // The Configuration to be passed to get_dual_solution() of the inner Solver.
- Configuration * get_dual_solution_config = nullptr;
-
- // We assume that all sub-Blocks of SDDPBlock have the same structure.
-
- const auto sub_block = sddp_block->get_nested_Block( 0 );
-
- auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
- auto benders_block = static_cast< BendersBlock * >
-  ( stochastic_block-> get_nested_Blocks().front() );
- auto objective = static_cast< FRealObjective * >
-  ( benders_block->get_objective() );
- auto benders_function = static_cast< BendersBFunction * >
-  ( objective->get_function() );
- auto inner_block = benders_function->get_inner_block();
-
- /* The BlockSolverConfig for the inner Block of each LagBFunction is given
-  * by the (possibly "meta", i.e., dispatched by inner Block classname())
-  * str_LagBF_BSCfg of the LagrangianDualSolver ComputeConfig; see
-  * InnerBSCfg.txt and InnerBSCfg-sim.txt. Here we only decide which
-  * components are hard (vintNoEasy) and whose primal solution is required.
-  *
-  * The vector "required_primal_solution" will store the indices of Blocks
-  * whose primal solutions are required (during the solution process). In
-  * SDDP, only the primal solution of the HydroSystemUnitBlock is necessary
-  * (as only the final volumes of the reservoirs are required during the
-  * solution process). In simulation mode, the primal solutions that are
-  * required are those of the Blocks that link two consecutive stages, which
-  * are HydroSystemUnitBlock, BatteryUnitBlock, and ThermalUnitBlock.
-  *
-  * Notice that, in simulation mode, not all Blocks have their primal
-  * solutions retrieved, which impacts the part of the solution that is output
-  * (see SDDPBlockSolution). If the solutions of other Blocks are required
-  * to be output when using LagrangianDualSolver+BundleSolver, then the
-  * indices of these Blocks must be added to the vector
-  * "required_primal_solution".
-  *
-  * This is currently not done due to a limitation of BundleSolver.
-  * BundleSolver does not currently provide primal solutions for easy
-  * components. Therefore, in order to have the primal solution of Blocks
-  * other than HydroSystemUnitBlock, BatteryUnitBlock, and ThermalUnitBlock,
-  * these Blocks must be treated as hard components (and they are currently
-  * treated as easy components). Once BundleSolver is capable of providing
-  * primal solutions of easy components, these Blocks can remain as easy
-  * components and their indices can simply be added to the vector
-  * "required_primal_solution". */
-
- std::vector< int > required_primal_solution;
-
- int inner_sub_block_index = 0;
- for( auto inner_sub_block : inner_block->get_nested_Blocks() ) {
-
-  if( simulation_mode &&
-      dynamic_cast< BatteryUnitBlock * >( inner_sub_block ) ) {
-
-   // The primal solution of the BatteryUnitBlock is required as the storage
-   // levels link two consecutive stages. Since BundleSolver currently does
-   // not provide primal solutions for easy components, the BatteryUnitBlock
-   // must be treated as a hard component. Once this feature is implemented by
-   // BundleSolver, the BatteryUnitBlock can become an easy component.
-   required_primal_solution.push_back( inner_sub_block_index );
-   vintNoEasy.push_back( inner_sub_block_index );
-  }
-  else if( dynamic_cast< ThermalUnitBlock * >( inner_sub_block ) ) {
-
-   if( simulation_mode )
-    required_primal_solution.push_back( inner_sub_block_index );
-
-   // ThermalUnitBlock is a non-easy component since there is a specialized
-   // solver for it.
-   vintNoEasy.push_back( inner_sub_block_index );
-  }
-  else if( dynamic_cast< HydroSystemUnitBlock * >( inner_sub_block ) ) {
-   required_primal_solution.push_back( inner_sub_block_index );
-   hydro_system_index = inner_sub_block_index;
-
-   /* The HydroSystemUnitBlock is by default treated as a hard component:
-    * its primal solution (the volume of the reservoirs) is required both in
-    * SDDP and in simulation mode, and BundleSolver does not provide primal
-    * solutions of easy components out of the inner Solver. With the -z
-    * option it is instead treated as an easy component, and its primal
-    * solution is recovered from the master problem solution by passing the
-    * Configuration in get_var_solution_bundle.txt to get_var_solution() of
-    * the [Parallel]BundleSolver. */
-   if( hydro_is_easy_component ) {
-    lagrangian_dual_compute_config->vstr_pars.push_back(
-     std::make_pair( "vstr_LDSl_Cfg" , std::vector< std::string >{
-                     get_var_solution_bundle_filename } ) );
-    lagrangian_dual_compute_config->int_pars.push_back(
-     std::make_pair( "int_InnerS_WVarSCfg" , 0 ) );
-    }
-   else
-    vintNoEasy.push_back( inner_sub_block_index );
-  }
-  else if( ( simulation_mode || force_hard_components ) &&
-           dynamic_cast< IntermittentUnitBlock * >( inner_sub_block ) ) {
-
-   if( simulation_mode )
-    required_primal_solution.push_back( inner_sub_block_index );
-
-   vintNoEasy.push_back( inner_sub_block_index );
-  }
-  else if( ( simulation_mode || force_hard_components ) &&
-           dynamic_cast< NetworkBlock * >( inner_sub_block ) ) {
-   // The dual solution of the NetworkBlock is part of the required output of
-   // the simulation. Since BundleSolver currently does not provide solutions
-   // for easy components, the NetworkBlock must be treated as a hard
-   // component. Once this feature is implemented by BundleSolver, the
-   // NetworkBlock can become an easy component.
-   vintNoEasy.push_back( inner_sub_block_index );
-
-   if( simulation_mode )
-    required_primal_solution.push_back( inner_sub_block_index );
-  }
-  else if( ! do_easy_components ) {
-   if( simulation_mode )
-    required_primal_solution.push_back( inner_sub_block_index );
-
-   vintNoEasy.push_back( inner_sub_block_index );
-  }
-
-  ++inner_sub_block_index;
- }
-
- if( ! vintNoEasy.empty() ) {
-  // Remove any vintNoEasy parameter that is possibly there
-  lagrangian_dual_compute_config->vint_pars.erase(
-     std::remove_if( lagrangian_dual_compute_config->vint_pars.begin() ,
-                     lagrangian_dual_compute_config->vint_pars.end() ,
-                     []( const auto & pair ) {
-                      return( pair.first == "vintNoEasy" ); } ) ,
-     lagrangian_dual_compute_config->vint_pars.end() );
-
-  // Add the vintNoEasy parameter that was constructed here
-  lagrangian_dual_compute_config->vint_pars.push_back(
-               std::make_pair( "vintNoEasy" , std::move( vintNoEasy ) ) );
-  }
-
- erase_str_par( compute_config , "strInnerBSC" );
-
- /* The extra Configuration of the SDDPSolver and the SDDPGreedySolver is a
-  * vector with pointers to the following elements (in that order):
-  *
-  * - a BlockConfig (which is currently nullptr) for the inner Block;
-  *
-  * - a BlockSolverConfig for the inner Block;
-  *
-  * - the Configuration to be passed to get_var_solution() when retrieving
-  *   the Solutions to the inner Blocks of the BendersBFunctions.
-  *
-  * The extra Configuration of the SDDPGreedySolver has an additional (fourth)
-  * element, which is
-  *
-  * - the Configuration to be passed to get_dual_solution() when retrieving
-  *   the dual Solutions to the inner Blocks of the BendersBFunctions. */
-
- Configuration * extra_config = nullptr;
-
- /* Here we create a Configuration for
-  * LagrangianDualSolver::get_var_solution() that requires the primal
-  * solutions only of certain Blocks. In SDDP, only the primal solution of the
-  * HydroSystemUnitBlock is necessary (as only the final volumes of the
-  * reservoirs are required during the solution process). In simulation mode,
-  * the solutions that are required are those of the Blocks that link two
-  * consecutive stages, which are HydroSystemUnitBlock, BatteryUnitBlock, and
-  * ThermalUnitBlock. */
-
- get_var_solution_config = new SimpleConfiguration< std::vector< int > >(
-                                                  required_primal_solution );
-
- if( simulation_mode ) {
-  /* In simulation mode, the only part of the dual Solution that is required
-   * is that associated with the linking constraints (the set of Constraint
-   * defined in the UCBlock). Therefore, we create a Configuration for the
-   * get_dual_solution() method that ignores the dual solutions of the
-   * sub-Blocks of the UCBlock and requires the dual solutions of the linking
-   * constraints. */
-
-  get_dual_solution_config =
-   new SimpleConfiguration< std::vector< std::pair< int , int > > >(
-                               { std::make_pair< int , int >( -1 , -1 ) } );
-
-  // Create the extra Configuration for SDDPGreedySolver.
-
-  extra_config = new SimpleConfiguration< std::vector< Configuration * > >(
-                 { nullptr , inner_solver_config , get_var_solution_config ,
-                   get_dual_solution_config } );
-  }
- else // Create the extra Configuration for SDDPSolver.
-  extra_config = new SimpleConfiguration< std::vector< Configuration * > >(
-               { nullptr , inner_solver_config , get_var_solution_config } );
-
- compute_config->f_extra_Configuration = extra_config;
-
- if( ( ! simulation_mode ) && ( hydro_system_index >= 0 ) ) {
-  // Configure all BendersBFunction to retrieve the right portion of the dual
-  // variables.
-
-  // In SDDP, only the dual variables of the component defined by the
-  // HydroSystemUnitBlock are needed, as all constraints handled by the
-  // BendersBFunction belong to it.
-  auto get_dual_config =
-   new SimpleConfiguration< std::vector< std::pair< int ,
-                                                    Configuration * > > >(
-                       { std::make_pair( hydro_system_index , nullptr ) } );
-
-  auto benders_function_config = new ComputeConfig;
-
-  // Differential mode to keep the previous configuration.
-  benders_function_config->set_diff( true );
-
-  benders_function_config->f_extra_Configuration =
-   new SimpleConfiguration< std::map< std::string , Configuration * > >
-   ( { { "get_dual" , get_dual_config  } ,
-       { "get_dual_partial" , get_dual_config->clone() } } );
-
-  for( auto sub_block : sddp_block->get_nested_Blocks() ) {
-   auto stochastic_block = static_cast< StochasticBlock * >( sub_block );
-   auto benders_block = static_cast< BendersBlock * >(
-                           stochastic_block-> get_nested_Blocks().front() );
-   auto objective = static_cast< FRealObjective * >(
-                                           benders_block->get_objective() );
-   auto benders_function = static_cast< BendersBFunction * >(
-                                                objective->get_function() );
-   benders_function->set_ComputeConfig( benders_function_config );
-   }
-
-  delete( benders_function_config );
-  }
- }
-
-/*--------------------------------------------------------------------------*/
-
 void process_block_file( const netCDF::NcFile & file )
 {
  std::multimap< std::string , netCDF::NcGroup > blocks = file.getGroups();
 
- // BlockConfig
- auto given_block_config = get_blockconfig( bconf_file );
+ // [meta]BlockConfig; an ordinary one is cleared at the end
+ auto block_config = get_config( bconf_file );
 
- BlockConfig * block_config = nullptr;
- if( given_block_config ) {
-  block_config = given_block_config->clone();
-  block_config->clear();
+ BlockConfig * cleared_block_config = nullptr;
+ if( auto bc = dynamic_cast< BlockConfig * >( block_config ) ) {
+  cleared_block_config = bc->clone();
+  cleared_block_config->clear();
   }
 
  // BlockSolverConfig
- bool block_solver_config_provided = true;
  auto solver_config = get_blocksolverconfig( sconf_file );
  if( ! solver_config ) {
-  block_solver_config_provided = false;
-  solver_config = build_BlockSolverConfig();
+  std::cerr << "no BlockSolverConfig for the SDDPBlock (-S)" << std::endl;
+  exit( 1 );
   }
 
  auto cleared_solver_config = solver_config->clone();
  cleared_solver_config->clear();
-
- const auto is_using_lagrangian_dual_solver =
-  using_lagrangian_dual_solver( solver_config );
 
  // For each Block descriptor
  for( auto block_description : blocks ) {
@@ -1392,22 +853,9 @@ void process_block_file( const netCDF::NcFile & file )
   sddp_block->deserialize( block_description.second );
 
   // Configure the SDDPBlock
-  if( given_block_config )
-   given_block_config->apply( sddp_block );
-  else {
-   configure_Blocks( sddp_block , is_using_lagrangian_dual_solver );
-
-   if( ! block_solver_config_provided ) {
-    block_config = build_BlockConfig( sddp_block );
-    block_config->apply( sddp_block );
-    block_config->clear();
-    }
-   }
+  configure_Blocks( sddp_block , block_config );
 
   // Configure the Solver
-  if( is_using_lagrangian_dual_solver )
-   config_Lagrangian_dual( solver_config , sddp_block );
-
   solver_config->apply( sddp_block );
 
   // Set the output stream for the log of the inner Solvers
@@ -1432,12 +880,8 @@ void process_block_file( const netCDF::NcFile & file )
 
   // Destroy the SDDPBlock and the Configurations
 
-  if( block_config )
-   block_config->apply( sddp_block );
-  if( ! given_block_config ) {
-   delete( block_config );
-   block_config = nullptr;
-  }
+  if( cleared_block_config )
+   cleared_block_config->apply( sddp_block );
 
   cleared_solver_config->apply( sddp_block );
 
@@ -1445,7 +889,7 @@ void process_block_file( const netCDF::NcFile & file )
   }
 
  delete( block_config );
- delete( given_block_config );
+ delete( cleared_block_config );
  delete( solver_config );
  delete( cleared_solver_config );
  }
@@ -1476,28 +920,24 @@ void multiple_simulations( const netCDF::NcFile & file )
 {
  auto blocks = file.getGroups();
 
- // BlockConfig
- auto given_block_config = get_blockconfig( bconf_file );
+ // [meta]BlockConfig; an ordinary one is cleared at the end
+ auto block_config = get_config( bconf_file );
 
- BlockConfig * block_config = nullptr;
- if( given_block_config ) {
-  block_config = given_block_config->clone();
-  block_config->clear();
+ BlockConfig * cleared_block_config = nullptr;
+ if( auto bc = dynamic_cast< BlockConfig * >( block_config ) ) {
+  cleared_block_config = bc->clone();
+  cleared_block_config->clear();
   }
 
  // BlockSolverConfig
- bool block_solver_config_provided = true;
  auto solver_config = get_blocksolverconfig( sconf_file );
  if( ! solver_config ) {
-  block_solver_config_provided = false;
-  solver_config = build_BlockSolverConfig();
+  std::cerr << "no BlockSolverConfig for the SDDPBlock (-S)" << std::endl;
+  exit( 1 );
   }
 
  auto cleared_solver_config = solver_config->clone();
  cleared_solver_config->clear();
-
- const auto is_using_lagrangian_dual_solver =
-  using_lagrangian_dual_solver( solver_config );
 
  // For each Block descriptor
  for( auto block_description : blocks ) {
@@ -1544,22 +984,9 @@ void multiple_simulations( const netCDF::NcFile & file )
     ( initial_solution_stage < sddp_block->get_time_horizon() );
 
    // Configure the SDDPBlock
-   if( given_block_config )
-    given_block_config->apply( sddp_block );
-   else {
-    configure_Blocks( sddp_block , is_using_lagrangian_dual_solver );
-
-    if( ! block_solver_config_provided ) {
-     block_config = build_BlockConfig( sddp_block );
-     block_config->apply( sddp_block );
-     block_config->clear();
-     }
-    }
+   configure_Blocks( sddp_block , block_config );
 
    // Configure the Solver
-   if( is_using_lagrangian_dual_solver )
-    config_Lagrangian_dual( solver_config , sddp_block );
-
    solver_config->apply( sddp_block );
 
    // Set the output stream for the log of the inner Solvers
@@ -1645,12 +1072,8 @@ void multiple_simulations( const netCDF::NcFile & file )
     }
 
    // Destroy the SDDPBlock and the Configurations
-   if( block_config )
-    block_config->apply( sddp_block );
-   if( ! given_block_config ) {
-    delete( block_config );
-    block_config = nullptr;
-    }
+   if( cleared_block_config )
+    cleared_block_config->apply( sddp_block );
 
    cleared_solver_config->apply( sddp_block );
    delete( sddp_block );
@@ -1658,7 +1081,7 @@ void multiple_simulations( const netCDF::NcFile & file )
   }
 
  delete( block_config );
- delete( given_block_config );
+ delete( cleared_block_config );
  delete( solver_config );
  delete( cleared_solver_config );
  }
@@ -1716,16 +1139,12 @@ int main( int argc , char ** argv )
                    my_long_opts.begin() , my_long_opts.end() );
  help.append( my_help );
 
- // default -B / -S so a plain run needs neither. The default -S is the
- // SDDPSolver BlockSolverConfig SDDPSCfg.txt. The default -B is left empty
- // on purpose: with no BlockConfig given, process_block_file() falls back to
- // configure_Blocks(), which applies the "meta" BlockConfig SDDPBCfg.txt (or
- // SDDPBCfg-LD.txt when the SDDPSolver uses a LagrangianDualSolver), the only
- // config that linearises the PolyhedralFunctionBlock and shapes the
- // network/units. A generic BCfg.txt would instead be applied verbatim and
- // leave the PolyhedralFunctionBlock objective non-linear (MILPSolver then
- // throws "Unknown type of Objective Function")
- default_bconf_name = "";
+ // default -B / -S so a plain run needs neither: the "meta" BlockConfig
+ // SDDPBCfg.txt, which linearises the PolyhedralFunctionBlock and shapes the
+ // network/units (a generic BCfg.txt would leave the PolyhedralFunctionBlock
+ // objective non-linear, and MILPSolver throws "Unknown type of Objective
+ // Function"), and the SDDPSolver BlockSolverConfig SDDPSCfg.txt
+ default_bconf_name = "SDDPBCfg.txt";
  default_sconf_name = "SDDPSCfg.txt";
 
  // process command-line arguments- - - - - - - - - - - - - - - - - - - - - -

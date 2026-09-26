@@ -5,10 +5,8 @@
 # SDDPBlock when it is solved via LagrangianDualSolver: like SDDPBCfg.txt,
 # except that the ThermalUnitBlock gets the reserve variables in the
 # Objective (the reserve demand constraints are dualized) and the
-# IntermittentUnitBlock gets the zero-max-power replacement.
-#
-# All filenames are resolved against the directory the tool is run from
-# (the root of the tools/sddp_solver directory), as in the other tools.
+# IntermittentUnitBlock gets the zero-max-power replacement; also used in
+# the simulation (-s -S SDDPSCfg-greedy-LD.txt).
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

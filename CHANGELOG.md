@@ -86,6 +86,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   macOS, with MSVC by the symbol that forces it in); only the archives of a
   static build are still taken whole
 
+- `sddp_solver` builds no configuration in code: `-B` is a "meta"
+  BlockConfig dispatched to the Blocks of the inner Block of each stage
+  (`SDDPBCfg.txt` by default, an ordinary BlockConfig is still applied to
+  the `SDDPBlock`), and the stages are solved via `LagrangianDualSolver`
+  with `-B SDDPBCfg-LD.txt -S SDDPSCfg-LD.txt`, or `-s -B SDDPBCfg-LD.txt
+  -S SDDPSCfg-greedy-LD.txt`: the components that are hard and those whose
+  primal and dual solution are needed are listed by class in
+  `BSPar-LD.txt` and `BSPar-greedy-LD.txt` (`vstr_LDSl_NoEasy`,
+  `vstr_LDSl_VarSol`, `vstr_LDSl_DualSol`), so that they hold for any
+  instance; with no `-S` the tool stops rather than building a default
+  one
+
 - everything `investmentblock_solver` gives the `InvestmentBlock` and its
   `InvestmentFunction` comes from the configuration files, the tool only
   reading and applying them: the `OBlockConfig` of the `InvestmentBlock`
@@ -138,6 +150,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sub-Blocks per stage of `-n` was never set, `-r` only relaxed the default
   formulation built in code, which is gone, and `-s` was read and never used;
   `-n` is again the standard option
+
+- the options `-r` and `-z` of `sddp_solver`: `-r` only said that it no
+  longer existed, and the hydro system as an easy component of `-z` is a
+  `LagrangianDualSolver` configuration (`vstr_LDSl_NoEasy` without
+  `HydroSystemUnitBlock`, `vstr_LDSl_Cfg` and `int_InnerS_WVarSCfg`), as are
+  `config/get_var_solution_bundle.txt` and `config/BendersBSCfg.txt`, which
+  only the code building the configuration read
 
 ### Fixed
 
