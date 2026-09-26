@@ -19,8 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   solved with `-S BSPar.txt -B SDDPBCfg-LD.txt`; with `config/SDDPBSCfg.txt`
   in `IFCfg-SDDP.txt` the stages are solved via `LagrangianDualSolver`, and
   the components that must be hard and whose primal solution the
-  `SDDPSolver` needs are written in `BSPar-LD.txt` and in the extra
-  Configuration of `SDDPCfg.txt`
+  `SDDPSolver` needs are named by class in `BSPar-LD.txt`
 
 - `svm_solver` estimates the leave-p-out error on a sample of the subsets
   (-P), repeats an estimate with one seed per repetition (-r), writes the

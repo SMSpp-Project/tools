@@ -9,8 +9,7 @@
 # draws another at every pass, and the curves cross. The backward pass solves
 # the stages via LagrangianDualSolver, the forward one on the continuous
 # relaxation [see BSPar-LD.txt]. The extra Configuration gives the SDDPSolver
-# the BlockSolverConfig of the stages and the components whose primal
-# solution it needs, those of examples/instance-3.
+# the BlockSolverConfig of the stages.
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -46,16 +45,12 @@ dblAccuracy 0.002 # attainable: the gap is ~0.018% at the second iteration
 0 # number of vector-of-string parameters
 
 # pointer to the "extra" Configuration: no BlockConfig for the UCBlock of
-# each stage, its BlockSolverConfig, and the Configuration passed to
-# get_var_solution() of its Solver, i.e., the components whose primal
-# solution is needed, which are the hard ones [see BSPar-LD.txt]
+# each stage and its BlockSolverConfig; the components whose primal solution
+# is needed are named in vstr_LDSl_VarSol [see BSPar-LD.txt]
 SimpleConfiguration<std::vector<Configuration*>>
-3             # the number of elements in the vector
+2             # the number of elements in the vector
 *             # no BlockConfig
 *BSPar-LD.txt # the BlockSolverConfig of the UCBlock of each stage
-SimpleConfiguration<std::vector<int>>
-28             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
-              21 22 23 24 25 35 36
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - END SDDPCfg.txt - - - - - - - - - - - - - - -

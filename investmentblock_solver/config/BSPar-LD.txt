@@ -90,7 +90,6 @@ intMaxNrEvls 2    # maximum number of function evaluations at each iteration
 
 # OSiMPSolver's parameters :- - - - - - - - - - - - - - - - - - - - - - - - -
 intRstAlg   2     # parameter to handle the reset of the algorithm
-#int_InnerS_WVarSCfg 0 # set by sddp_solver with the -z (hydro-easy) option
 
 15 # number of double parameters
 
@@ -126,25 +125,26 @@ str_LagBF_BSCfg   InnerBSCfg.txt        # meta BlockSolverConfig of the
 strMPBSolverCfg   MPBCfg.txt            # BlockSolverConfig of the Solver of
                                         # the MasterProblemBlock
 
-1 # number of vector-of-int parameters
+0 # number of vector-of-int parameters
 
 # now all the vector-of-int parameters
-# the components of the UCBlock of a stage of examples/instance-3 that are
-# hard: the HydroSystemUnitBlock (0), the ThermalUnitBlock (1 to 25) and the
-# BatteryUnitBlock (35 and 36), whose state passes from a stage to the next,
-# so that the primal solution the SDDPSolver reads is there [see SDDPCfg.txt]
-vintNoEasy 28  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20
-              21 22 23 24 25 35 36
+# [none]
 
 0 # number of vector-of-double parameters
 
 # now all the vector-of-double parameters
 # [none]
 
-0 # number of vector-of-string parameters
+2 # number of vector-of-string parameters
 
 # now all the vector-of-string parameters
-# [none]
+# the components of the UCBlock of a stage that are hard: the
+# HydroSystemUnitBlock, the ThermalUnitBlock and the BatteryUnitBlock, whose
+# state passes from a stage to the next, and they are also those whose
+# primal solution the SDDPSolver needs, which is not provided for the easy
+# components
+vstr_LDSl_NoEasy 3 HydroSystemUnitBlock ThermalUnitBlock BatteryUnitBlock
+vstr_LDSl_VarSol 3 HydroSystemUnitBlock ThermalUnitBlock BatteryUnitBlock
 
 # pointer to the "extra" Configuration
 * # [none]
