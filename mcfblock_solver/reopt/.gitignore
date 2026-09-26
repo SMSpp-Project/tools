@@ -1,0 +1,8 @@
+# the generators, downloaded and built by gen/fetch-generators
+gen/src/
+gen/bin/
+# what make-instances writes, and the builds
+instances/
+build/
+reopt_bench
+*.o

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+#
+# make-instances [ out-dir ]
+#
+# Writes the instances of instances.txt in <out-dir> (default instances/),
+# in DIMACS format, with the generators of gen/bin [see gen/fetch-generators]
+# and the parameters of Kovacs (2015): n = 2^<log2n> nodes; arc capacities
+# uniform in [ 1 , 1000 ] and costs in [ 1 , 10000 ]; for NETGEN and GRIDGEN
+# sqrt(n) supply and sqrt(n) demand nodes and a total supply of 1000 sqrt(n),
+# the grid of GRIDGEN being sqrt(n) wide; for GOTO the one supply and the one
+# demand node the generator makes, with the supply it computes; for GRIDGRAPH
+# a grid of W rows and L columns plus a source and a sink, with L = 16
+# (gridwide), W = 16 (gridlong) or W = L (gridsquare). An instance already
+# there is not written again.
+
+set -eu
+here=$(cd "$(dirname "$0")" && pwd)
+out=${1:-$here/instances}
+bin=$here/gen/bin
+[ -x "$bin/netgen" ] || { echo "make-instances: run gen/fetch-generators first" >&2; exit 1; }
+mkdir -p "$out"
+
+grep -v '^#' "$here/instances.txt" | while read -r fam l s; do
+  [ -n "$fam" ] || continue
+  f=$out/$fam-$l-$s.dmx
+  [ -s "$f" ] && continue
+  n=$(( 1 << l ))
+  r=$(awk -v n=$n 'BEGIN{ printf "%d", sqrt(n) + 0.5 }')
+  case $fam in
+    netgen8|netgensr|gridgen8|gridgensr)
+      case $fam in *8) m=$(( 8 * n )); d=8;; *) m=$(( n * r )); d=$r;; esac
+      if [[ $fam == netgen* ]]; then
+        printf '%d\n1 %d %d %d %d 1 10000 %d 0 0 0 100 1 1000\n' \
+               $(( 13502460 + s )) $n $r $r $m $(( 1000 * r )) | "$bin/netgen"
+      else
+        printf '1\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n1\n1\n10000\n1\n1\n1000\n' \
+               $s $n $r $r $r $d $(( 1000 * r )) | "$bin/gridgen"
+      fi ;;
+    goto8|gotosr)
+      case $fam in *8) m=$(( 8 * n ));; *) m=$(( n * r ));; esac
+      printf '%d %d 1000 10000 %d\n' $n $m $s | "$bin/goto" ;;
+    gridwide)   printf '%d 16 1000 10000 %d\n' $(( n / 16 )) $s | "$bin/gridgraph" ;;
+    gridlong)   printf '16 %d 1000 10000 %d\n' $(( n / 16 )) $s | "$bin/gridgraph" ;;
+    gridsquare) printf '%d %d 1000 10000 %d\n' $r $r $s | "$bin/gridgraph" ;;
+    *) echo "make-instances: unknown family $fam" >&2; exit 1 ;;
+  esac > "$f.tmp"
+  mv "$f.tmp" "$f"
+done

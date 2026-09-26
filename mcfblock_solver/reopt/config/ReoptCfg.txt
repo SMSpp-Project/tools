@@ -1,0 +1,53 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - ReoptCfg.txt - - - - - - - - - - - - - - -
+#
+# ComputeConfig of a Solver of the MCFBlock that re-optimizes, i.e., that
+# after a change of the instance starts from what it had at the end of the
+# previous solve: the :MCFSolver and MCFLemonSolverNetworkSimplex take the
+# same kReopt. The Solver that starts from scratch at each solve takes this
+# one with kReopt 0 [see MCFBSCfg.txt].
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ComputeConfig # exact type of the ComputeConfig object
+
+1  # f_diff == 0 ==> all non-provided parameters are set to the default value
+   # f_diff == 1 ==> all non-provided parameters are not changed
+
+1  # number of integer parameters
+
+# now all the integer parameters
+kReopt         1    # whether to re-optimize from the previous solve
+
+0  # number of double parameters
+
+# now all the double parameters
+# [none]
+
+0  # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0  # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0  # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0  # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END ReoptCfg.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

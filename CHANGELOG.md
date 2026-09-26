@@ -36,6 +36,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   an SVM: the configuration of the Solvers compared, the download of the data
   sets, the campaign guarded by the load of the machine and the tables
 
+- `mcfblock_solver/reopt`, the computational study on the re-optimization of
+  the Min-Cost Flow problem: a driver of its own (`reopt_bench`, which runs
+  one `Solver` of a `BlockSolverConfig` per process on a sequence of changes
+  of the costs, of the capacities, of the deficits or of the closed arcs,
+  the same for every method, and prints the value and the time of each
+  solve), the configuration of the seven methods, each re-optimizing one
+  next to the same from scratch, the download and build of the four DIMACS
+  generators, the generation of the instances of the families of Kovacs
+  (2015) and the campaign guarded by the load of the machine; it depends on
+  nothing else in the tools and is built on its own, with CMake against an
+  installation or with its makefile
+
 - `tssb_solver/ldld`, the computational study on the nested and the
   recursive Lagrangian dual of a `TwoStageStochasticBlock`: a driver of its
   own (`ldld_bench`, which runs one `Solver` of a `BlockSolverConfig` per

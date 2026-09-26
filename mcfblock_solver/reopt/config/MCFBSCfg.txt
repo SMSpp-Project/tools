@@ -1,0 +1,188 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - MCFBSCfg.txt - - - - - - - - - - - - - - -
+#
+# BlockSolverConfig of the MCFBlock of the study: one Solver per method,
+# reopt_bench -k keeping the one to run, i.e.,
+#
+#   k  method  what
+#   0  SIMw    MCFSimplex, re-optimizing
+#   1  SIMc    MCFSimplex, from scratch
+#   2  RIVw    RelaxIV, re-optimizing
+#   3  RIVc    RelaxIV, from scratch
+#   4  NSw     LEMON network simplex, re-optimizing
+#   5  NSc     LEMON network simplex, from scratch
+#   6  CS      LEMON cost scaling, which has no re-optimization
+#
+# each re-optimizing Solver next to the same one starting from scratch at
+# each solve, which is the reference its re-optimization is measured against
+# [see ReoptCfg.txt]. The indices hold if the build has every Solver, since
+# one it does not have is left out [see Solver::has_Solver()].
+# NOTE: an overriding ComputeConfig that is not the last in the list must end
+# with the '*' extra-Configuration pointer, or the parser runs into the next.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+7  # number of (the names of) Solver in this BlockSolverConfig
+
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+MCFSolver<MCFSimplex>                                        # 1st Solver
+MCFSolver<MCFSimplex>                                        # 2nd Solver
+MCFSolver<RelaxIV>                                           # 3rd Solver
+MCFSolver<RelaxIV>                                           # 4th Solver
+MCFLemonSolverNetworkSimplex<MCFListDigraph,double,double>   # 5th Solver
+MCFLemonSolverNetworkSimplex<MCFListDigraph,double,double>   # 6th Solver
+MCFLemonSolverCostScaling<MCFListDigraph,double,double>      # 7th Solver
+
+7  # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# MCFSimplex, re-optimizing
+
+*ReoptCfg.txt
+
+# 2nd ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# MCFSimplex, from scratch
+
+*ReoptCfg.txt +
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+1  # number of integer parameters
+
+# now all the integer parameters
+kReopt         0    # from scratch at each solve
+
+0  # number of double parameters
+
+# now all the double parameters
+# [none]
+
+0  # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0  # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0  # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0  # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# 3rd ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# RelaxIV, re-optimizing
+
+*ReoptCfg.txt
+
+# 4th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# RelaxIV, from scratch
+
+*ReoptCfg.txt +
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+1  # number of integer parameters
+
+# now all the integer parameters
+kReopt         0    # from scratch at each solve
+
+0  # number of double parameters
+
+# now all the double parameters
+# [none]
+
+0  # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0  # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0  # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0  # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# 5th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# LEMON network simplex, re-optimizing
+
+*ReoptCfg.txt
+
+# 6th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# LEMON network simplex, from scratch
+
+*ReoptCfg.txt +
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+1  # number of integer parameters
+
+# now all the integer parameters
+kReopt         0    # from scratch at each solve
+
+0  # number of double parameters
+
+# now all the double parameters
+# [none]
+
+0  # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0  # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0  # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0  # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# 7th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# LEMON cost scaling, which has no re-optimization
+
+* # [none]
+
+# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END MCFBSCfg.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

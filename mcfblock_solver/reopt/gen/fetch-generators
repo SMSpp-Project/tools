@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+#
+# fetch-generators
+#
+# Downloads the four generators of the study from the archive of the first
+# DIMACS Implementation Challenge and builds them in gen/bin: NETGEN (the
+# version with the fixes for large networks, netgen-bcjl), GRIDGEN, GOTO
+# (grid-on-torus) and GRIDGRAPH. Their sources are not in the repository,
+# NETGEN coming with restrictions on its redistribution; they go to gen/src,
+# which, as gen/bin, is not tracked.
+#
+# The sources are C of the early nineties and Fortran 77, which a current
+# compiler takes with two changes made here and nowhere else: the random()
+# of NETGEN is renamed, since it clashes with the one of the C library, and
+# the call to etime() of GRIDGRAPH, which only times the generator and whose
+# argument a current gfortran rejects, is replaced by zero.
+
+set -eu
+here=$(cd "$(dirname "$0")" && pwd)
+src=$here/src
+bin=$here/bin
+url=http://archive.dimacs.rutgers.edu/pub/netflow/generators/network
+mkdir -p "$src" "$bin"
+
+get() {  # get <dir> <file> ...
+  local d=$1; shift
+  mkdir -p "$src/$d"
+  for f in "$@"; do
+    curl -sfL -m 120 -o "$src/$d/$f" "$url/$d/$f"
+  done
+}
+
+get netgen/netgen-bcjl netgen.c netgen.h index.c random.c README
+get gridgen gridgen.c
+get grid-on-torus goto.c
+get gridgraph ggraph1.f
+
+ng=$src/netgen/netgen-bcjl
+for f in netgen.c netgen.h index.c random.c; do
+  sed -E -i 's/\brandom\(/ng_random(/g' "$ng/$f"
+done
+cc -O2 -std=gnu89 -w -DDIMACS -o "$bin/netgen" \
+   "$ng/netgen.c" "$ng/index.c" "$ng/random.c"
+cc -O2 -std=gnu89 -w -o "$bin/gridgen" "$src/gridgen/gridgen.c" -lm
+cc -O2 -std=gnu89 -w -o "$bin/goto" "$src/grid-on-torus/goto.c" -lm
+sed 's/etime(it)/0.0/' "$src/gridgraph/ggraph1.f" > "$src/gridgraph/ggraph.f"
+gfortran -O2 -std=legacy -w -o "$bin/gridgraph" "$src/gridgraph/ggraph.f"
+
+echo "fetch-generators: netgen gridgen goto gridgraph in $bin"
