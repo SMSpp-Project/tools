@@ -2,12 +2,18 @@
 # to and the arguments of the generator. All of them are PyPSA networks
 # written by the generators in gen/ and converted by pypsa2smspp.
 #
-#   scaling    units in {10, 20, 50, 100} x horizon in {24, 168, 720}
-#              (a day, a week and a month at hourly resolution), 5
-#              scenarios, 5 seeds each: how the methods scale, the seeds
-#              giving the spread at each size
+#   scaling    units in {10, 20, 50, 100} x horizon in {24, 168} (a day
+#              and a week at hourly resolution), 5 scenarios, 5 seeds
+#              each: how the methods scale, the seeds giving the spread
+#              at each size
+#   month      the smallest and the largest fleet of the scaling axis
+#              over a month (720 periods), one seed each: an example of
+#              the horizon where no method closes within the time limit
 #   scenarios  s in {3, 5, 10, 20, 50}, 40 units, 96 periods
 #   buses      b in {1, 2, 4, 8, 15}, 80 units, 96 periods, 3 scenarios
+#   long       80 units over 48 to 336 periods (two days to two weeks),
+#              3 or 5 scenarios: the longer horizons of the thermal
+#              family at a fixed, larger fleet
 #   tree       c x d leaves of a three-stage tree, c climates over d
 #              demands each, 40 units, 96 periods
 #   cfl-size   stochastic capacitated facility location: the ORLib
@@ -51,11 +57,7 @@ tuc_u10_t168_s5_b1_k2 scaling --units 10 --snapshots 168 --scenarios 5 --seed 2
 tuc_u10_t168_s5_b1_k3 scaling --units 10 --snapshots 168 --scenarios 5 --seed 3
 tuc_u10_t168_s5_b1_k4 scaling --units 10 --snapshots 168 --scenarios 5 --seed 4
 tuc_u10_t168_s5_b1_k5 scaling --units 10 --snapshots 168 --scenarios 5 --seed 5
-tuc_u10_t720_s5_b1_k1 scaling --units 10 --snapshots 720 --scenarios 5 --seed 1
-tuc_u10_t720_s5_b1_k2 scaling --units 10 --snapshots 720 --scenarios 5 --seed 2
-tuc_u10_t720_s5_b1_k3 scaling --units 10 --snapshots 720 --scenarios 5 --seed 3
-tuc_u10_t720_s5_b1_k4 scaling --units 10 --snapshots 720 --scenarios 5 --seed 4
-tuc_u10_t720_s5_b1_k5 scaling --units 10 --snapshots 720 --scenarios 5 --seed 5
+tuc_u10_t720_s5_b1_k1 month --units 10 --snapshots 720 --scenarios 5 --seed 1
 tuc_u20_t24_s5_b1_k1 scaling --units 20 --snapshots 24 --scenarios 5 --seed 1
 tuc_u20_t24_s5_b1_k2 scaling --units 20 --snapshots 24 --scenarios 5 --seed 2
 tuc_u20_t24_s5_b1_k3 scaling --units 20 --snapshots 24 --scenarios 5 --seed 3
@@ -66,11 +68,6 @@ tuc_u20_t168_s5_b1_k2 scaling --units 20 --snapshots 168 --scenarios 5 --seed 2
 tuc_u20_t168_s5_b1_k3 scaling --units 20 --snapshots 168 --scenarios 5 --seed 3
 tuc_u20_t168_s5_b1_k4 scaling --units 20 --snapshots 168 --scenarios 5 --seed 4
 tuc_u20_t168_s5_b1_k5 scaling --units 20 --snapshots 168 --scenarios 5 --seed 5
-tuc_u20_t720_s5_b1_k1 scaling --units 20 --snapshots 720 --scenarios 5 --seed 1
-tuc_u20_t720_s5_b1_k2 scaling --units 20 --snapshots 720 --scenarios 5 --seed 2
-tuc_u20_t720_s5_b1_k3 scaling --units 20 --snapshots 720 --scenarios 5 --seed 3
-tuc_u20_t720_s5_b1_k4 scaling --units 20 --snapshots 720 --scenarios 5 --seed 4
-tuc_u20_t720_s5_b1_k5 scaling --units 20 --snapshots 720 --scenarios 5 --seed 5
 tuc_u50_t24_s5_b1_k1 scaling --units 50 --snapshots 24 --scenarios 5 --seed 1
 tuc_u50_t24_s5_b1_k2 scaling --units 50 --snapshots 24 --scenarios 5 --seed 2
 tuc_u50_t24_s5_b1_k3 scaling --units 50 --snapshots 24 --scenarios 5 --seed 3
@@ -81,11 +78,6 @@ tuc_u50_t168_s5_b1_k2 scaling --units 50 --snapshots 168 --scenarios 5 --seed 2
 tuc_u50_t168_s5_b1_k3 scaling --units 50 --snapshots 168 --scenarios 5 --seed 3
 tuc_u50_t168_s5_b1_k4 scaling --units 50 --snapshots 168 --scenarios 5 --seed 4
 tuc_u50_t168_s5_b1_k5 scaling --units 50 --snapshots 168 --scenarios 5 --seed 5
-tuc_u50_t720_s5_b1_k1 scaling --units 50 --snapshots 720 --scenarios 5 --seed 1
-tuc_u50_t720_s5_b1_k2 scaling --units 50 --snapshots 720 --scenarios 5 --seed 2
-tuc_u50_t720_s5_b1_k3 scaling --units 50 --snapshots 720 --scenarios 5 --seed 3
-tuc_u50_t720_s5_b1_k4 scaling --units 50 --snapshots 720 --scenarios 5 --seed 4
-tuc_u50_t720_s5_b1_k5 scaling --units 50 --snapshots 720 --scenarios 5 --seed 5
 tuc_u100_t24_s5_b1_k1 scaling --units 100 --snapshots 24 --scenarios 5 --seed 1
 tuc_u100_t24_s5_b1_k2 scaling --units 100 --snapshots 24 --scenarios 5 --seed 2
 tuc_u100_t24_s5_b1_k3 scaling --units 100 --snapshots 24 --scenarios 5 --seed 3
@@ -96,11 +88,7 @@ tuc_u100_t168_s5_b1_k2 scaling --units 100 --snapshots 168 --scenarios 5 --seed 
 tuc_u100_t168_s5_b1_k3 scaling --units 100 --snapshots 168 --scenarios 5 --seed 3
 tuc_u100_t168_s5_b1_k4 scaling --units 100 --snapshots 168 --scenarios 5 --seed 4
 tuc_u100_t168_s5_b1_k5 scaling --units 100 --snapshots 168 --scenarios 5 --seed 5
-tuc_u100_t720_s5_b1_k1 scaling --units 100 --snapshots 720 --scenarios 5 --seed 1
-tuc_u100_t720_s5_b1_k2 scaling --units 100 --snapshots 720 --scenarios 5 --seed 2
-tuc_u100_t720_s5_b1_k3 scaling --units 100 --snapshots 720 --scenarios 5 --seed 3
-tuc_u100_t720_s5_b1_k4 scaling --units 100 --snapshots 720 --scenarios 5 --seed 4
-tuc_u100_t720_s5_b1_k5 scaling --units 100 --snapshots 720 --scenarios 5 --seed 5
+tuc_u100_t720_s5_b1_k1 month --units 100 --snapshots 720 --scenarios 5 --seed 1
 tuc_u40_t96_s3_b1 scenarios --units 40 --snapshots 96 --scenarios 3
 tuc_u40_t96_s5_b1 scenarios --units 40 --snapshots 96 --scenarios 5
 tuc_u40_t96_s10_b1 scenarios --units 40 --snapshots 96 --scenarios 10
@@ -111,6 +99,10 @@ tuc_u80_t96_s3_b2 buses --units 80 --snapshots 96 --scenarios 3 --buses 2
 tuc_u80_t96_s3_b4 buses --units 80 --snapshots 96 --scenarios 3 --buses 4
 tuc_u80_t96_s3_b8 buses --units 80 --snapshots 96 --scenarios 3 --buses 8
 tuc_u80_t96_s3_b15 buses --units 80 --snapshots 96 --scenarios 3 --buses 15
+tuc_u80_t48_s3_b1 long --units 80 --snapshots 48 --scenarios 3
+tuc_u80_t96_s5_b1 long --units 80 --snapshots 96 --scenarios 5
+tuc_u80_t168_s3_b1 long --units 80 --snapshots 168 --scenarios 3
+tuc_u80_t336_s3_b1 long --units 80 --snapshots 336 --scenarios 3
 ttr_u40_t96_c2_d2_b1 tree --units 40 --snapshots 96 --climates 2 --demands 2
 ttr_u40_t96_c3_d3_b1 tree --units 40 --snapshots 96 --climates 3 --demands 3
 ttr_u40_t96_c4_d4_b1 tree --units 40 --snapshots 96 --climates 4 --demands 4

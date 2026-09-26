@@ -49,13 +49,15 @@ import matplotlib.pyplot as plt
 
 HERE = Path(__file__).resolve().parent
 QUIET = 8.0
-OK = {"10", "11"}  # kOK and kLowPrecision
+OK = {"10", "20"}  # kOK and kLowPrecision (11 is kStopTime, not a solve)
 METHODS = ["MILP", "MILP1", "LP", "LD", "LDLD", "LDrec", "LDtree"]
 STYLE = {"MILP": ("k", "s"), "MILP1": ("0.5", "s"), "LP": ("0.7", "v"),
          "LD": ("tab:blue", "o"), "LDLD": ("tab:green", "^"),
          "LDrec": ("tab:red", "D"), "LDtree": ("tab:purple", "P")}
 AXIS = {"scenarios": ("s", "number of scenarios"),
         "buses": ("b", "number of buses"),
+        "long": ("t", "number of periods"),
+        "month": ("u", "number of units"),
         "tree": ("cd", "number of leaves"),
         "cfl-scen": ("s", "number of scenarios")}
 COLS = ["instance", "method", "status", "lb", "ub", "time", "iter", "rss",
