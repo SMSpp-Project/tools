@@ -9,13 +9,14 @@
 #   t1.tex      the time of the first solve of each algorithm (from
 #               scratch), in seconds, the mean over the seeds, the kinds of
 #               change and the repetitions;
-#   <kind>.tex  for each kind of change (cost, cap, dfct, arcs, mix) and each
-#               algorithm, the re-optimization index RI of the re-optimizing
-#               method, i.e., the average time of a re-solve over that of its
-#               first solve, and the gain G, i.e., the time of the re-solves
-#               from scratch over that of the re-solves re-optimizing, each
-#               computed on the times of a run averaged over its repetitions
-#               and then summarized over the seeds by the geometric mean;
+#   <kind>.tex  for each kind of change (cost, cap, dfct, arcs, mix, lag) and
+#               each algorithm, the re-optimization index RI of the
+#               re-optimizing method, i.e., the average time of a re-solve
+#               over that of its first solve, and the gain G, i.e., the time
+#               of the re-solves from scratch over that of the re-solves
+#               re-optimizing, each computed on the times of a run averaged
+#               over its repetitions and then summarized over the seeds by
+#               the geometric mean;
 #   infeas.tex  for each kind of change, the percentage of the re-solves that
 #               found the instance infeasible (the same for every method, the
 #               optimal values being checked to agree);
@@ -47,7 +48,7 @@ import sys
 ALGOS = [("SIM", "MCFSimplex"), ("RIV", "RelaxIV"), ("CPX", "CPLEX"),
          ("NS", "NS"), ("NSS", "NS-Smart"), ("CS", "CostSc"),
          ("CAP", "CapSc"), ("CC", "CycCan")]
-KINDS = ["cost", "cap", "dfct", "arcs", "mix"]
+KINDS = ["cost", "cap", "dfct", "arcs", "mix", "lag"]
 FAMS = {"netgen8": "NETGEN-8", "netgensr": "NETGEN-SR",
         "gridgen8": "GRIDGEN-8", "gridgensr": "GRIDGEN-SR",
         "goto8": "GOTO-8", "gotosr": "GOTO-SR", "gridwide": "GRID-WIDE",

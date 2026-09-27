@@ -48,7 +48,8 @@ mt = importlib.util.module_from_spec(_spec)
 _loader.exec_module(mt)
 
 KIND_TITLE = {"cost": "costs", "cap": "capacities", "dfct": "deficits",
-              "arcs": "arcs closed and opened", "mix": "mixed changes"}
+              "arcs": "arcs closed and opened", "mix": "mixed changes",
+              "lag": "Lagrangian-like costs"}
 DENSE = {"netgensr", "gridgensr", "gotosr"}
 COLORS = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 

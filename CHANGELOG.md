@@ -40,7 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the Min-Cost Flow problem: a driver of its own (`reopt_bench`, which runs
   one `Solver` of a `BlockSolverConfig` per process on a sequence of changes
   of the costs, of the capacities, of the deficits or of the closed arcs,
-  the same for every method, and prints the value and the time of each
+  or of all the costs a little at each round, as those of a Lagrangian
+  subproblem along a subgradient method, the same for every method, and prints the value and the time of each
   solve), the configuration of the sixteen methods (the four algorithms of
   LEMON, its network simplex also on SmartDigraph, MCFSimplex, RelaxIV and
   the network simplex of CPLEX), each re-optimizing one next to the same

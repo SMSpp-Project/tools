@@ -35,7 +35,7 @@
 # Environment: BENCH (the reopt_bench to run, default build/reopt_bench),
 # INST (the directory of the instances, default instances/), METHODS
 # (default "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15", the indices of the
-# Solver in config/MCFBSCfg.txt), KINDS (default "cost cap dfct arcs mix"),
+# Solver in config/MCFBSCfg.txt), KINDS (default "cost cap dfct arcs mix lag"),
 # SEEDS (default "1 2 3"), ROUNDS (default 100), FRAC (default 0.01), REPS
 # (default 2), PAR (default 1), QUIET (default 4), TIMEOUT (seconds of wall
 # time of a whole run, default 1800), BUSY (an extended regular expression
@@ -49,7 +49,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 export bench=${BENCH:-$here/build/reopt_bench}
 export inst=${INST:-$here/instances}
 methods=${METHODS:-0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15}
-kinds=${KINDS:-cost cap dfct arcs mix}
+kinds=${KINDS:-cost cap dfct arcs mix lag}
 seeds=${SEEDS:-1 2 3}
 export rounds=${ROUNDS:-100}
 export frac=${FRAC:-0.01}
@@ -58,7 +58,8 @@ par=${PAR:-1}
 export QUIET=${QUIET:-4}
 export timeout=${TIMEOUT:-1800}
 export BUSY=${BUSY:-}
-export names="SIMw SIMc RIVw RIVc NSw NSc CSw CSc CAPw CAPc CCw CCc NSSw NSSc CPXw CPXc"
+export names="SIMw SIMc RIVw RIVc NSw NSc CSw CSc CAPw CAPc CCw CCc NSSw NSSc
+               CPXw CPXc"
 
 [ -x "$bench" ] || { echo "run-campaign: no reopt_bench at $bench" >&2; exit 1; }
 mkdir -p "$out"
@@ -110,7 +111,8 @@ one() {  # one <name> <kind> <seed> <k> <rep>
   if grep -E "^$fam-[0-9]+-[0-9]+,$m,$kind,[0-9]+,0,timeout," "$csv" |
      awk -F, -v l="$l" '{ split($1, a, "-"); if (a[2] + 0 < l + 0) f = 1 }
                         END { exit ! f }'; then
-    flock "$csv" -c "echo '$name,$m,$kind,$seed,0,timeout,,skipped,$rep,0,0' >> '$csv'"
+    flock "$csv" -c \
+      "echo '$name,$m,$kind,$seed,0,timeout,,skipped,$rep,0,0' >> '$csv'"
     return 0
   fi
   # a slot, i.e., a core of its own

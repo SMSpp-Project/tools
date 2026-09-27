@@ -40,7 +40,15 @@
  *   open arcs are closed, which is what a decomposition that fixes arcs at
  *   each iteration does;
  *
- * - mix: one of the four above, chosen at random at each round.
+ * - mix: one of the four above, chosen at random at each round;
+ *
+ * - lag: the costs of all the arcs change a little at each round, as those
+ *   of the subproblem of a Lagrangian relaxation do along a subgradient
+ *   method: the cost of an arc is its original one plus a multiplier, which
+ *   starts from zero and at round r moves by f C / sqrt( r ) times a
+ *   standard normal step, kept nonnegative, C being the largest cost; the
+ *   costs are fractional, and f is the step rather than a fraction of the
+ *   arcs.
  *
  * Usage:
  *
@@ -92,7 +100,8 @@ static const char * const usage =
  "  -S FILE  BlockSolverConfig of the MCFBlock [MCFBSCfg.txt]\n"
  "  -k N     index of the Solver of the BlockSolverConfig to run [0]\n"
  "  -m NAME  name of the method in the output [the Solver's index]\n"
- "  -w KIND  what the rounds change: cost, cap, dfct, arcs or mix [cost]\n"
+ "  -w KIND  what the rounds change: cost, cap, dfct, arcs, mix or lag\n"
+ "           [cost]\n"
  "  -n N     number of rounds after the first solve [100]\n"
  "  -f F     fraction of the arcs changed at each round [0.01]\n"
  "  -e N     seed of the changes [1]\n";
@@ -148,7 +157,7 @@ int main( int argc , char ** argv )
   }
 
  static const std::vector< std::string > kinds =
-  { "cost" , "cap" , "dfct" , "arcs" , "mix" };
+  { "cost" , "cap" , "dfct" , "arcs" , "mix" , "lag" };
  if( std::find( kinds.begin() , kinds.end() , kind ) == kinds.end() ) {
   std::cerr << "reopt_bench: unknown kind " << kind << std::endl << usage;
   return( 1 );
@@ -232,6 +241,8 @@ int main( int argc , char ** argv )
 
  std::mt19937 rg( seed );
  std::uniform_real_distribution< double > U01( 0 , 1 );
+ std::normal_distribution< double > N01( 0 , 1 );
+ std::vector< double > lambda( m , 0 );  // the multipliers of "lag"
  Subset closed;
 
  // one solve, one line- - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -256,6 +267,16 @@ int main( int argc , char ** argv )
   if( kind == "mix" )
    what = kinds[ std::uniform_int_distribution< int >( 0 , 3 )( rg ) ];
 
+  if( what == "lag" ) {
+   const double step = frac * cmax / std::sqrt( double( r ) );
+   MCFBlock::Vec_CNumber nc( m );
+   for( Index j = 0 ; j < m ; ++j ) {
+    lambda[ j ] = std::max( 0.0 , lambda[ j ] + step * N01( rg ) );
+    nc[ j ] = ( C0.empty() ? 0 : C0[ j ] ) + lambda[ j ];
+    }
+   MCFB->chg_costs( nc.cbegin() , MCFBlock::Range( 0 , m ) , true );
+   }
+  else
   if( what == "cost" ) {
    auto nms = pick( rg , m , nchg );
    MCFBlock::Vec_CNumber nc( nms.size() );

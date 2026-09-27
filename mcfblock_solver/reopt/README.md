@@ -70,7 +70,12 @@ instance does not drift away from the one of the generator: the costs
 (`cost`), the capacities (`cap`), the deficits of pairs of a supply and a
 demand node (`dfct`), the arcs closed at the previous round opened again
 and as many others closed (`arcs`), or one of the four at random at each
-round (`mix`). The changes depend only on the instance, the kind and the
+round (`mix`). Finally, `lag` changes the costs of all the arcs a little at
+each round, as those of the subproblem of a Lagrangian relaxation do along
+a subgradient method: each cost is its original one plus a multiplier that
+moves by `-f` times the largest cost over the square root of the round,
+times a standard normal step, kept nonnegative, so that the costs are
+fractional. The changes depend only on the instance, the kind and the
 seed, hence every method solves the same sequence of instances and their
 optimal values can be compared round by round.
 
