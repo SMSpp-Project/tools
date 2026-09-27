@@ -9,12 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `smspp_tssb_solver -k -R <BlockSolverConfig>` recovers a feasible solution
-  after the Solver of the Benders form as well, e.g., BDS whose subproblems
-  are solved by a Lagrangian dual, which gives only a bound when the recourse
-  is integer: the design of the master, which the subproblems hold, is fixed
-  and each leaf is solved alone, as after a Solver of the extensive form
-
 - `investmentblock_solver` solves an `InvestmentBlock` whose inner Block is an
   `SDDPBlock`, from a Block file as from a problem file: the UCBlock of each
   stage, which sits behind a `BendersBFunction` that no BlockConfig crosses,
@@ -83,18 +77,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `tssb_solver` also solves a MultiStageStochasticBlock when the module is
   built, `-k` giving the Benders form over the leaves of its scenario tree
-
-- `-R, --recover <file>` in `tssb_solver`: a feasible solution is recovered
-  after a Solver that only gives a bound, e.g., a LagrangianDualSolver: the
-  here-and-now Variable of every leaf are fixed to their mean over the
-  leaves, rounded where they are integer, each leaf is solved alone with the
-  BlockSolverConfig in `<file>`, and the value of the solution is printed
-  with its gap to the bound; when the Solver ends without a primal solution
-  (e.g., it failed) there is no mean to take, and the recovery says so
-  instead of starting
-
-- `-j, --threads <n>` in `tssb_solver`: the leaves of `-R`, independent once
-  the design is fixed, are solved by `<n>` threads
 
 - `-k, --benders` in `tssb_solver`: the Benders form of the problem is
   assembled around it [see TwoStageStochasticBlock::get_Benders_form()] and
@@ -167,6 +149,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   model solved in two ways
 
 ### Removed
+
+- the options `-R` and `-j` of `smspp_tssb_solver`: a feasible solution out
+  of a Solver that gives a bound comes from the configuration, as everything
+  else a Solver does, i.e., from a PrimalProximalHeur (`strRecoveryBSC`) on
+  the extensive form and from a BendersDecompositionSolver
+  (`strRecoveryBSC`) on the Benders form, which report it as their upper
+  bound
 
 - the options `-l`, `-n`, `-r` and `-s` of `investmentblock_solver`, which had
   no effect: the cuts that `-l` named were never loaded, the number of
