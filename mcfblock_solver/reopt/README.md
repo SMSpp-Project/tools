@@ -15,31 +15,39 @@ configuration it ran with and the description of the machine.
 `config/MCFBSCfg.txt` attaches one `Solver` per method to the `MCFBlock`,
 and `reopt_bench -k` keeps the one to run:
 
-| k  | method | what it is                                                 |
-|----|--------|------------------------------------------------------------|
-| 0  | SIMw   | `MCFSolver<MCFSimplex>`, re-optimizing                     |
-| 1  | SIMc   | `MCFSolver<MCFSimplex>`, from scratch at each solve        |
-| 2  | RIVw   | `MCFSolver<RelaxIV>`, re-optimizing                        |
-| 3  | RIVc   | `MCFSolver<RelaxIV>`, from scratch at each solve           |
-| 4  | NSw    | the network simplex of LEMON, re-optimizing                |
-| 5  | NSc    | the network simplex of LEMON, from scratch at each solve   |
-| 6  | CSw    | the cost scaling of LEMON, re-optimizing                   |
-| 7  | CSc    | the cost scaling of LEMON, from scratch at each solve      |
-| 8  | CAPw   | the capacity scaling of LEMON, re-optimizing               |
-| 9  | CAPc   | the capacity scaling of LEMON, from scratch at each solve  |
-| 10 | CCw    | the cycle canceling of LEMON, re-optimizing                |
-| 11 | CCc    | the cycle canceling of LEMON, from scratch at each solve   |
+| k  | method | what it is                                                         |
+|----|--------|--------------------------------------------------------------------|
+| 0  | SIMw   | `MCFSolver<MCFSimplex>`, re-optimizing                             |
+| 1  | SIMc   | `MCFSolver<MCFSimplex>`, from scratch at each solve                |
+| 2  | RIVw   | `MCFSolver<RelaxIV>`, re-optimizing                                |
+| 3  | RIVc   | `MCFSolver<RelaxIV>`, from scratch at each solve                   |
+| 4  | NSw    | the network simplex of LEMON, re-optimizing                        |
+| 5  | NSc    | the network simplex of LEMON, from scratch at each solve           |
+| 6  | CSw    | the cost scaling of LEMON, re-optimizing                           |
+| 7  | CSc    | the cost scaling of LEMON, from scratch at each solve              |
+| 8  | CAPw   | the capacity scaling of LEMON, re-optimizing                       |
+| 9  | CAPc   | the capacity scaling of LEMON, from scratch at each solve          |
+| 10 | CCw    | the cycle canceling of LEMON, re-optimizing                        |
+| 11 | CCc    | the cycle canceling of LEMON, from scratch at each solve           |
+| 12 | NSSw   | the network simplex of LEMON on `SmartDigraph`, re-optimizing      |
+| 13 | NSSc   | the network simplex of LEMON on `SmartDigraph`, from scratch       |
+| 14 | CPXw   | `MCFSolver<MCFCplex>`, the network simplex of CPLEX, re-optimizing |
+| 15 | CPXc   | `MCFSolver<MCFCplex>`, the network simplex of CPLEX, from scratch  |
 
 Each re-optimizing method differs from the one next to it only by `kReopt`
-(`config/ReoptCfg.txt`), so that the pair measures what re-optimizing
-gains on the same code. The network simplex of LEMON re-optimizes from the
-basis of its previous solve, which it makes primal feasible again after a
-change of the capacities or of the deficits, provided the deficits sum to
-zero; its capacity scaling starts from the flow and the potentials of the
-previous solve after any change, and its cost scaling and cycle canceling
-from the flow of the previous solve when it is still feasible, i.e., after a
-change of the costs (see the `runWarm()` of each in `MCFLemonSolver/shim`);
-otherwise, and after a change of the graph, they start from scratch.
+(`config/ReoptCfg.txt`, and `config/ScratchCfg.txt` that sets it to 0), so
+that the pair measures what re-optimizing gains on the same code. The
+methods on `SmartDigraph`, the static graph of LEMON, measure what the
+graph that can change costs, and those of CPLEX, which are left out by a
+build without it, are the reference of a commercial code. The network
+simplex of LEMON re-optimizes from the basis of its previous solve, which
+it makes primal feasible again after a change of the capacities or of the
+deficits, provided the deficits sum to zero; its capacity scaling starts
+from the flow and the potentials of the previous solve after any change,
+and its cost scaling and cycle canceling from the flow of the previous
+solve when it is still feasible, i.e., after a change of the costs (see the
+`runWarm()` of each in `MCFLemonSolver/shim`); otherwise, and after a
+change of the graph, they start from scratch.
 
 ## The instances
 
@@ -73,9 +81,11 @@ alone, i.e., of taking in the changes and re-optimizing (the reading of
 the instance, the construction of the `Solver` and the changes made to the
 `MCFBlock` are excluded). From these, following Frangioni and Manca
 (2006), one has for each method the time of the first solve `T1`, the
-total time of the rounds `Ttot`, and the ratio between the latter and the
-same total of the method from scratch, which is how much re-optimizing
-gains on that sequence.
+total time of the rounds `Ttot`, the re-optimization index `RI`, i.e.,
+the average time of a re-solve over that of the first solve, and the gain
+`G`, i.e., the time of the re-solves from scratch over that of the
+re-solves re-optimizing, which is how much re-optimizing gains on that
+sequence; over the seeds they are summarized by the geometric mean.
 
 ## Building
 
@@ -95,8 +105,16 @@ umbrella project, `make` builds `reopt_bench` here.
 
     gen/fetch-generators                   # gen/bin
     ./make-instances                       # instances/ from instances.txt
-    ./run-campaign results/<name>          # every method on every instance
+    PAR=32 ./run-campaign results/<name>   # every method on every instance
+    ./make-tables results/<name>           # results/<name>/tables/*.tex
+    ./make-plots results/<name>            # results/<name>/plots/*.png
 
-`run-campaign` runs one method at a time, each in a process of its own,
-and only while the load of the machine is below a threshold; the variables
-it reads are described at its top.
+`run-campaign` runs each method on each instance, kind of change, seed and
+repetition in a process of its own, PAR of them at a time, each pinned to a
+physical core of its own, and only while the load of the other processes of
+the machine is below a threshold; a method that runs out of time on an
+instance is not run on the larger ones of the same family and kind. The
+variables it reads are described at its top. With `FRAC` it runs the same
+campaign with another fraction of changed data, and `make-tables --sens`
+and `make-plots --sens` put several such campaigns in one table and one
+figure. `make-tables` needs Python alone, `make-plots` also matplotlib.

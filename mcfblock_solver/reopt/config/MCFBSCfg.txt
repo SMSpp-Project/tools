@@ -17,13 +17,18 @@
 #    9  CAPc    LEMON capacity scaling, from scratch
 #   10  CCw     LEMON cycle canceling, re-optimizing
 #   11  CCc     LEMON cycle canceling, from scratch
+#   12  NSSw    LEMON network simplex on SmartDigraph, re-optimizing
+#   13  NSSc    LEMON network simplex on SmartDigraph, from scratch
+#   14  CPXw    CPLEX network simplex, re-optimizing
+#   15  CPXc    CPLEX network simplex, from scratch
 #
 # each re-optimizing Solver next to the same one starting from scratch at
 # each solve, which is the reference its re-optimization is measured against
-# [see ReoptCfg.txt]. The indices hold if the build has every Solver, since
-# one it does not have is left out [see Solver::has_Solver()].
-# NOTE: an overriding ComputeConfig that is not the last in the list must end
-# with the '*' extra-Configuration pointer, or the parser runs into the next.
+# [see ReoptCfg.txt and ScratchCfg.txt]. SmartDigraph, the static graph of
+# LEMON, cannot delete arcs, which the changes of the study never do. The
+# indices hold if the build has every Solver, since one it does not have
+# (e.g., MCFSolver<MCFCplex> without CPLEX) is left out [see
+# Solver::has_Solver()].
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -32,7 +37,7 @@ BlockSolverConfig     # exact type of the Configuration object
 
 1  # the BlockSolverConfig is a "differential" one
 
-12 # number of (the names of) Solver in this BlockSolverConfig
+16 # number of (the names of) Solver in this BlockSolverConfig
 
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
 MCFSolver<MCFSimplex>                                        # 1st Solver
@@ -43,283 +48,34 @@ MCFLemonSolverNetworkSimplex<MCFListDigraph,double,double>   # 5th Solver
 MCFLemonSolverNetworkSimplex<MCFListDigraph,double,double>   # 6th Solver
 MCFLemonSolverCostScaling<MCFListDigraph,double,double>      # 7th Solver
 MCFLemonSolverCostScaling<MCFListDigraph,double,double>      # 8th Solver
-MCFLemonSolverCapacityScaling<MCFListDigraph,double,double>   # 9th Solver
-MCFLemonSolverCapacityScaling<MCFListDigraph,double,double>   # 10th Solver
+MCFLemonSolverCapacityScaling<MCFListDigraph,double,double>  # 9th Solver
+MCFLemonSolverCapacityScaling<MCFListDigraph,double,double>  # 10th Solver
 MCFLemonSolverCycleCanceling<MCFListDigraph,double,double>   # 11th Solver
 MCFLemonSolverCycleCanceling<MCFListDigraph,double,double>   # 12th Solver
-
-12 # number of ComputeConfig in this BlockSolverConfig
-
-# now all the ComputeConfig
-# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# MCFSimplex, re-optimizing
-
-*ReoptCfg.txt
-
-# 2nd ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# MCFSimplex, from scratch
-
-*ReoptCfg.txt +
-
-1  # f_diff == 1 ==> only the entries listed below are changed
-
-1  # number of integer parameters
-
-# now all the integer parameters
-kReopt         0    # from scratch at each solve
-
-0  # number of double parameters
-
-# now all the double parameters
-# [none]
-
-0  # number of string parameters
-
-# now all the string parameters
-# [none]
-
-0  # number of vector-of-int parameters
-
-# now all the vector-of-int parameters
-# [none]
-
-0  # number of vector-of-double parameters
-
-# now all the vector-of-double parameters
-# [none]
-
-0  # number of vector-of-string parameters
-
-# now all the vector-of-string parameters
-# [none]
-
-# pointer to the "extra" Configuration
-* # [none]
-
-# 3rd ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# RelaxIV, re-optimizing
-
-*ReoptCfg.txt
-
-# 4th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# RelaxIV, from scratch
-
-*ReoptCfg.txt +
-
-1  # f_diff == 1 ==> only the entries listed below are changed
-
-1  # number of integer parameters
-
-# now all the integer parameters
-kReopt         0    # from scratch at each solve
-
-0  # number of double parameters
-
-# now all the double parameters
-# [none]
-
-0  # number of string parameters
-
-# now all the string parameters
-# [none]
-
-0  # number of vector-of-int parameters
-
-# now all the vector-of-int parameters
-# [none]
-
-0  # number of vector-of-double parameters
-
-# now all the vector-of-double parameters
-# [none]
-
-0  # number of vector-of-string parameters
-
-# now all the vector-of-string parameters
-# [none]
-
-# pointer to the "extra" Configuration
-* # [none]
-
-# 5th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# LEMON network simplex, re-optimizing
-
-*ReoptCfg.txt
-
-# 6th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# LEMON network simplex, from scratch
-
-*ReoptCfg.txt +
-
-1  # f_diff == 1 ==> only the entries listed below are changed
-
-1  # number of integer parameters
-
-# now all the integer parameters
-kReopt         0    # from scratch at each solve
-
-0  # number of double parameters
-
-# now all the double parameters
-# [none]
-
-0  # number of string parameters
-
-# now all the string parameters
-# [none]
-
-0  # number of vector-of-int parameters
-
-# now all the vector-of-int parameters
-# [none]
-
-0  # number of vector-of-double parameters
-
-# now all the vector-of-double parameters
-# [none]
-
-0  # number of vector-of-string parameters
-
-# now all the vector-of-string parameters
-# [none]
-
-# pointer to the "extra" Configuration
-* # [none]
-
-# 7th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# LEMON cost scaling, re-optimizing
-
-*ReoptCfg.txt
-
-# 8th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# LEMON cost scaling, from scratch
-
-*ReoptCfg.txt +
-
-1  # f_diff == 1 ==> only the entries listed below are changed
-
-1  # number of integer parameters
-
-# now all the integer parameters
-kReopt         0    # from scratch at each solve
-
-0  # number of double parameters
-
-# now all the double parameters
-# [none]
-
-0  # number of string parameters
-
-# now all the string parameters
-# [none]
-
-0  # number of vector-of-int parameters
-
-# now all the vector-of-int parameters
-# [none]
-
-0  # number of vector-of-double parameters
-
-# now all the vector-of-double parameters
-# [none]
-
-0  # number of vector-of-string parameters
-
-# now all the vector-of-string parameters
-# [none]
-
-# pointer to the "extra" Configuration
-* # [none]
-
-# 9th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# LEMON capacity scaling, re-optimizing
-
-*ReoptCfg.txt
-
-# 10th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# LEMON capacity scaling, from scratch
-
-*ReoptCfg.txt +
-
-1  # f_diff == 1 ==> only the entries listed below are changed
-
-1  # number of integer parameters
-
-# now all the integer parameters
-kReopt         0    # from scratch at each solve
-
-0  # number of double parameters
-
-# now all the double parameters
-# [none]
-
-0  # number of string parameters
-
-# now all the string parameters
-# [none]
-
-0  # number of vector-of-int parameters
-
-# now all the vector-of-int parameters
-# [none]
-
-0  # number of vector-of-double parameters
-
-# now all the vector-of-double parameters
-# [none]
-
-0  # number of vector-of-string parameters
-
-# now all the vector-of-string parameters
-# [none]
-
-# pointer to the "extra" Configuration
-* # [none]
-
-# 11th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# LEMON cycle canceling, re-optimizing
-
-*ReoptCfg.txt
-
-# 12th ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-# LEMON cycle canceling, from scratch
-
-*ReoptCfg.txt +
-
-1  # f_diff == 1 ==> only the entries listed below are changed
-
-1  # number of integer parameters
-
-# now all the integer parameters
-kReopt         0    # from scratch at each solve
-
-0  # number of double parameters
-
-# now all the double parameters
-# [none]
-
-0  # number of string parameters
-
-# now all the string parameters
-# [none]
-
-0  # number of vector-of-int parameters
-
-# now all the vector-of-int parameters
-# [none]
-
-0  # number of vector-of-double parameters
-
-# now all the vector-of-double parameters
-# [none]
-
-0  # number of vector-of-string parameters
-
-# now all the vector-of-string parameters
-# [none]
-
-# pointer to the "extra" Configuration
-* # [none]
+MCFLemonSolverNetworkSimplex<SmartDigraph,double,double>     # 13th Solver
+MCFLemonSolverNetworkSimplex<SmartDigraph,double,double>     # 14th Solver
+MCFSolver<MCFCplex>                                          # 15th Solver
+MCFSolver<MCFCplex>                                          # 16th Solver
+
+16 # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - -
+*ReoptCfg.txt                                                # 1st: SIMw
+*ScratchCfg.txt                                              # 2nd: SIMc
+*ReoptCfg.txt                                                # 3rd: RIVw
+*ScratchCfg.txt                                              # 4th: RIVc
+*ReoptCfg.txt                                                # 5th: NSw
+*ScratchCfg.txt                                              # 6th: NSc
+*ReoptCfg.txt                                                # 7th: CSw
+*ScratchCfg.txt                                              # 8th: CSc
+*ReoptCfg.txt                                                # 9th: CAPw
+*ScratchCfg.txt                                              # 10th: CAPc
+*ReoptCfg.txt                                                # 11th: CCw
+*ScratchCfg.txt                                              # 12th: CCc
+*ReoptCfg.txt                                                # 13th: NSSw
+*ScratchCfg.txt                                              # 14th: NSSc
+*ReoptCfg.txt                                                # 15th: CPXw
+*ScratchCfg.txt                                              # 16th: CPXc
 
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 

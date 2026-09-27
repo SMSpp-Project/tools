@@ -1,0 +1,217 @@
+#!/usr/bin/env python3
+#
+# make-plots < out-dir > [ quiet ]
+# make-plots --sens < out-file > < out-dir > ... [ --quiet < quiet > ]
+#
+# Draws the figures of the study from the runs.csv that run-campaign writes
+# in <out-dir>, in <out-dir>/plots, reading the runs as make-tables does
+# (the same filter on the load, the same check of the optimal values):
+#
+#   gain.png     the gain G of each algorithm (the time of the re-solves
+#                from scratch over that of the re-solves re-optimizing)
+#                against the size of the instance, one panel per kind of
+#                change, the geometric mean over the families of each
+#                density and over the seeds; the line G = 1 is where
+#                re-optimizing starts to pay;
+#   resolve.png  the average time of a re-solve of each re-optimizing method
+#                against the size, one panel per kind of change, i.e., which
+#                algorithm re-optimizes fastest, on a log-log scale;
+#   first.png    the time of the first solve of each algorithm, from
+#                scratch, against the size, on a log-log scale.
+#
+# The families with m = 8n arcs and those with m = n sqrt(n) are drawn as
+# solid and dashed lines. With --sens, <out-file> gets the gain G against
+# the fraction of the data changed at each round, from campaigns run with
+# different FRAC, one panel per kind of change.
+#
+# The scales are logarithmic because the quantities are ratios and times
+# that span orders of magnitude: a linear scale would flatten everything but
+# the largest values.
+
+import collections
+import importlib.machinery
+import importlib.util
+import math
+import os
+import sys
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+sys.dont_write_bytecode = True  # no __pycache__ next to the scripts
+here = os.path.dirname(os.path.abspath(__file__))
+_loader = importlib.machinery.SourceFileLoader(
+    "make_tables", os.path.join(here, "make-tables"))
+_spec = importlib.util.spec_from_loader("make_tables", _loader)
+mt = importlib.util.module_from_spec(_spec)
+_loader.exec_module(mt)
+
+KIND_TITLE = {"cost": "costs", "cap": "capacities", "dfct": "deficits",
+              "arcs": "arcs closed and opened", "mix": "mixed changes"}
+DENSE = {"netgensr", "gridgensr", "gotosr"}
+COLORS = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+
+
+def density(inst):
+    return "sr" if inst.rsplit("-", 2)[0] in DENSE else "8"
+
+
+def size(inst):
+    return int(inst.rsplit("-", 2)[1])
+
+
+def panels(title):
+    fig, axes = plt.subplots(1, len(mt.KINDS), figsize=(3.4 * len(mt.KINDS),
+                                                        3.6), sharey=True)
+    fig.suptitle(title)
+    return fig, axes
+
+
+def legend(fig, axes):
+    h, l = axes[0].get_legend_handles_labels()
+    fig.legend(h, l, loc="lower center", ncol=len(mt.ALGOS),
+               frameon=False, fontsize=9)
+    fig.tight_layout(rect=(0, 0.08, 1, 0.95))
+
+
+def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "--sens":
+        return sens(sys.argv[2:])
+    if len(sys.argv) < 2:
+        sys.exit("usage: make-plots <out-dir> [quiet]")
+    out = sys.argv[1]
+    quiet = float(sys.argv[2]) if len(sys.argv) > 2 else 4.0
+    byrun, _, _ = mt.load(out, quiet)
+    mt.check(byrun)
+    meas, _ = mt.measures(byrun)
+    os.makedirs(os.path.join(out, "plots"), exist_ok=True)
+
+    # (density, kind) -> size -> set of (inst, kind, seed)
+    keys = collections.defaultdict(lambda: collections.defaultdict(set))
+    for inst, m, kind, seed in meas:
+        keys[(density(inst), kind)][size(inst)].add((inst, kind, seed))
+
+    # gain.png
+    fig, axes = panels("Gain of re-optimizing (G > 1: it pays)")
+    for ax, kind in zip(axes, mt.KINDS):
+        for c, (a, lab) in enumerate(mt.ALGOS):
+            for dens, style in (("8", "-"), ("sr", "--")):
+                xs, ys = [], []
+                for n in sorted(keys[(dens, kind)]):
+                    g = mt.gmean(mt.ri_g(meas, keys[(dens, kind)][n], a)[1])
+                    if g:
+                        xs.append(n)
+                        ys.append(g)
+                if xs:
+                    ax.plot(xs, ys, style, marker="o", ms=3,
+                            color=COLORS[c % len(COLORS)],
+                            label=lab if dens == "8" else None)
+        ax.axhline(1, color="black", lw=0.8)
+        ax.set_yscale("log")
+        ax.set_title(KIND_TITLE[kind], fontsize=10)
+        ax.set_xlabel("$\\log_2 n$")
+        ax.grid(alpha=0.3)
+    axes[0].set_ylabel("$G$ (log scale)")
+    legend(fig, axes)
+    fig.savefig(os.path.join(out, "plots", "gain.png"), dpi=150)
+    plt.close(fig)
+
+    # resolve.png
+    fig, axes = panels("Average time of a re-solve, re-optimizing")
+    for ax, kind in zip(axes, mt.KINDS):
+        for c, (a, lab) in enumerate(mt.ALGOS):
+            for dens, style in (("8", "-"), ("sr", "--")):
+                xs, ys = [], []
+                for n in sorted(keys[(dens, kind)]):
+                    t = mt.gmean([(v[1] - v[0]) / (v[2] - 1)
+                                  for k in keys[(dens, kind)][n]
+                                  for v in [meas.get((k[0], a + "w",
+                                                      k[1], k[2]))]
+                                  if v and v[2] > 1])
+                    if t:
+                        xs.append(2 ** n)
+                        ys.append(t)
+                if xs:
+                    ax.plot(xs, ys, style, marker="o", ms=3,
+                            color=COLORS[c % len(COLORS)],
+                            label=lab if dens == "8" else None)
+        ax.set_xscale("log", base=2)
+        ax.set_yscale("log")
+        ax.set_title(KIND_TITLE[kind], fontsize=10)
+        ax.set_xlabel("$n$")
+        ax.grid(alpha=0.3)
+    axes[0].set_ylabel("seconds (log scale)")
+    legend(fig, axes)
+    fig.savefig(os.path.join(out, "plots", "resolve.png"), dpi=150)
+    plt.close(fig)
+
+    # first.png
+    fig, ax = plt.subplots(figsize=(6.4, 4.4))
+    for c, (a, lab) in enumerate(mt.ALGOS):
+        for dens, style in (("8", "-"), ("sr", "--")):
+            by_n = collections.defaultdict(list)
+            for (inst, m, kind, seed), v in meas.items():
+                if m == a + "c" and density(inst) == dens:
+                    by_n[size(inst)].append(v[0])
+            xs = sorted(by_n)
+            if xs:
+                ax.plot([2 ** n for n in xs],
+                        [mt.gmean(by_n[n]) for n in xs], style, marker="o",
+                        ms=3, color=COLORS[c % len(COLORS)],
+                        label=lab if dens == "8" else None)
+    ax.set_xscale("log", base=2)
+    ax.set_yscale("log")
+    ax.set_xlabel("$n$")
+    ax.set_ylabel("seconds (log scale)")
+    ax.set_title("First solve, from scratch")
+    ax.grid(alpha=0.3)
+    ax.legend(fontsize=8, ncol=2)
+    fig.tight_layout()
+    fig.savefig(os.path.join(out, "plots", "first.png"), dpi=150)
+    plt.close(fig)
+    print("make-plots: figures in %s" % os.path.join(out, "plots"))
+
+
+def sens(argv):
+    quiet = 4.0
+    if "--quiet" in argv:
+        i = argv.index("--quiet")
+        quiet = float(argv[i + 1])
+        del argv[i:i + 2]
+    outfile, dirs = argv[0], argv[1:]
+    # kind -> algorithm -> [(fraction, G)]
+    pts = collections.defaultdict(lambda: collections.defaultdict(list))
+    for d in dirs:
+        byrun, _, frac = mt.load(d, quiet)
+        mt.check(byrun)
+        meas, _ = mt.measures(byrun)
+        for kind in mt.KINDS:
+            keys = set((k[0], k[2], k[3]) for k in meas if k[2] == kind)
+            for a, lab in mt.ALGOS:
+                g = mt.gmean(mt.ri_g(meas, keys, a)[1])
+                if g and frac:
+                    pts[kind][lab].append((float(frac), g))
+    fig, axes = panels("Gain of re-optimizing against the fraction changed")
+    for ax, kind in zip(axes, mt.KINDS):
+        for c, (a, lab) in enumerate(mt.ALGOS):
+            p = sorted(pts[kind][lab])
+            if p:
+                ax.plot([100 * x for x, _ in p], [y for _, y in p], "-",
+                        marker="o", ms=3, color=COLORS[c % len(COLORS)],
+                        label=lab)
+        ax.axhline(1, color="black", lw=0.8)
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_title(KIND_TITLE[kind], fontsize=10)
+        ax.set_xlabel("% of the data changed")
+        ax.grid(alpha=0.3)
+    axes[0].set_ylabel("$G$ (log scale)")
+    legend(fig, axes)
+    fig.savefig(outfile, dpi=150)
+    plt.close(fig)
+    print("make-plots: sensitivity figure in %s" % outfile)
+
+
+if __name__ == "__main__":
+    main()

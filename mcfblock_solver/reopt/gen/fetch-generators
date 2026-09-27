@@ -13,7 +13,15 @@
 # compiler takes with two changes made here and nowhere else: the random()
 # of NETGEN is renamed, since it clashes with the one of the C library, and
 # the call to etime() of GRIDGRAPH, which only times the generator and whose
-# argument a current gfortran rejects, is replaced by zero.
+# argument a current gfortran rejects, is replaced by zero. Two more raise
+# the largest sizes that the largest instances of the study need (2^18
+# nodes with 8 arcs each, 2^14 nodes with 128 arcs each, grids of 16384 by
+# 16 and of 512 by 512): those of NETGEN, 17000 nodes and 150000 arcs in
+# its netgen.h, to 2^20 and 2^22, and those of GRIDGRAPH, 1000 for the side
+# of the grid and 65536 nodes and 524272 arcs (the sizes of its arrays,
+# written as numbers in each of its routines, beyond which it writes past
+# them), to 2^16, 2^20 and 2^22, which pushes some of its lines past the
+# 72 columns of fixed-form Fortran (hence -ffixed-line-length-none).
 
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
@@ -39,11 +47,16 @@ ng=$src/netgen/netgen-bcjl
 for f in netgen.c netgen.h index.c random.c; do
   sed -E -i 's/\brandom\(/ng_random(/g' "$ng/$f"
 done
+sed -E -i -e 's/^#define MAXNODES 17000/#define MAXNODES 1048576/' \
+          -e 's/^#define MAXARCS 150000/#define MAXARCS 4194304/' "$ng/netgen.h"
 cc -O2 -std=gnu89 -w -DDIMACS -o "$bin/netgen" \
    "$ng/netgen.c" "$ng/index.c" "$ng/random.c"
 cc -O2 -std=gnu89 -w -o "$bin/gridgen" "$src/gridgen/gridgen.c" -lm
 cc -O2 -std=gnu89 -w -o "$bin/goto" "$src/grid-on-torus/goto.c" -lm
-sed 's/etime(it)/0.0/' "$src/gridgraph/ggraph1.f" > "$src/gridgraph/ggraph.f"
-gfortran -O2 -std=legacy -w -o "$bin/gridgraph" "$src/gridgraph/ggraph.f"
+sed -e 's/etime(it)/0.0/' \
+    -e 's/parameter (maxh=1000,maxw=1000)/parameter (maxh=65536,maxw=65536)/' \
+    -e 's/524273/4194305/g' -e 's/65538/1048578/g' \
+    "$src/gridgraph/ggraph1.f" > "$src/gridgraph/ggraph.f"
+gfortran -O2 -std=legacy -ffixed-line-length-none -w -o "$bin/gridgraph" "$src/gridgraph/ggraph.f"
 
 echo "fetch-generators: netgen gridgen goto gridgraph in $bin"

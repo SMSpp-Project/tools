@@ -1,0 +1,317 @@
+#!/usr/bin/env python3
+#
+# make-tables < out-dir > [ quiet ]
+# make-tables --sens < out-file > < out-dir > ... [ --quiet < quiet > ]
+#
+# Turns the runs.csv that run-campaign writes in <out-dir> into the LaTeX
+# tables of the study, written in <out-dir>/tables:
+#
+#   t1.tex      the time of the first solve of each algorithm (from
+#               scratch), in seconds, the mean over the seeds, the kinds of
+#               change and the repetitions;
+#   <kind>.tex  for each kind of change (cost, cap, dfct, arcs, mix) and each
+#               algorithm, the re-optimization index RI of the re-optimizing
+#               method, i.e., the average time of a re-solve over that of its
+#               first solve, and the gain G, i.e., the time of the re-solves
+#               from scratch over that of the re-solves re-optimizing, each
+#               computed on the times of a run averaged over its repetitions
+#               and then summarized over the seeds by the geometric mean;
+#   infeas.tex  for each kind of change, the percentage of the re-solves that
+#               found the instance infeasible (the same for every method, the
+#               optimal values being checked to agree);
+#   noise.tex   the difference between the repetitions of the same run (the
+#               same method against itself), per method: its median and its
+#               90th percentile, in percent of their mean.
+#
+# With --sens, the campaigns in the <out-dir> are the same one run with
+# different fractions of changed data (FRAC of run-campaign, which it records
+# in params.txt), and <out-file> gets one table: a row per fraction and kind
+# of change, and for each algorithm the geometric mean of G over all the
+# instances and seeds of the campaign.
+#
+# A row is a family and a size (n = 2^l nodes), in the order of
+# instances.txt. Only the runs during which the other processes kept fewer
+# than <quiet> cores busy (default 4, the QUIET of run-campaign) are used; a
+# cell with no such run, or whose runs timed out, is "--". The optimal
+# values of the methods are compared round by round, and every disagreement
+# (beyond a relative 1e-9) is reported on the standard error: a table is
+# only as good as that check.
+
+import collections
+import csv
+import math
+import os
+import statistics
+import sys
+
+ALGOS = [("SIM", "MCFSimplex"), ("RIV", "RelaxIV"), ("CPX", "CPLEX"),
+         ("NS", "NS"), ("NSS", "NS-Smart"), ("CS", "CostSc"),
+         ("CAP", "CapSc"), ("CC", "CycCan")]
+KINDS = ["cost", "cap", "dfct", "arcs", "mix"]
+FAMS = {"netgen8": "NETGEN-8", "netgensr": "NETGEN-SR",
+        "gridgen8": "GRIDGEN-8", "gridgensr": "GRIDGEN-SR",
+        "goto8": "GOTO-8", "gotosr": "GOTO-SR", "gridwide": "GRID-WIDE",
+        "gridlong": "GRID-LONG", "gridsquare": "GRID-SQUARE"}
+
+
+def fmt(x, d=2):
+    if x is None:
+        return "--"
+    if x == 0:
+        return "0"
+    if abs(x) >= 100:
+        return "%.0f" % x
+    return ("%." + str(d) + "f") % x if abs(x) >= 10 ** -d else "%.1e" % x
+
+
+def fmtt(x):
+    return "--" if x is None else "%.3g" % x
+
+
+def gmean(xs):
+    xs = [x for x in xs if x is not None and x > 0]
+    return math.exp(statistics.mean(math.log(x) for x in xs)) if xs else None
+
+
+def mean(xs):
+    xs = [x for x in xs if x is not None]
+    return statistics.mean(xs) if xs else None
+
+
+def load(out, quiet):
+    """The runs of <out>/runs.csv: {(inst, method, seed, rep, kind): {round:
+    (status, value, t)}}, the runs that timed out, and the fraction of the
+    campaign. A run is the lines from its round 0 on, and its kind is the
+    one of that line: in a "mix" run the later lines carry the kind each
+    round drew. A later run with the same key (a run redone) replaces it."""
+    byrun = {}
+    timedout = set()
+    cur = {}
+    with open(os.path.join(out, "runs.csv")) as f:
+        for r in csv.reader(f):
+            if len(r) < 11:
+                continue
+            inst, m, what, seed, rnd, st, val, t, rep, l0, l1 = r[:11]
+            if st in ("timeout", "error"):
+                timedout.add((inst, m, seed, rep, what))
+                continue
+            key = (inst, m, seed, rep)
+            if int(rnd) == 0:
+                cur[key] = key + (what,)
+                byrun[cur[key]] = {}
+                if float(l1) >= quiet:
+                    del byrun[cur[key]]
+            if key in cur and cur[key] in byrun:
+                byrun[cur[key]][int(rnd)] = (st, val, float(t))
+    for k in timedout:
+        byrun.pop(k, None)
+    frac = None
+    p = os.path.join(out, "params.txt")
+    if os.path.exists(p):
+        w = open(p).read().split()
+        frac = dict(zip(w[0::2], w[1::2])).get("frac")
+    return byrun, timedout, frac
+
+
+def check(byrun):
+    """Reports on the standard error every round in which two methods
+    disagree on the optimal value (or on the instance being feasible)."""
+    ref = {}
+    bad = 0
+    for (inst, m, seed, rep, kind), rd in byrun.items():
+        for rnd, (st, val, t) in rd.items():
+            k = (inst, kind, seed, rnd)
+            if k not in ref:
+                ref[k] = (val, m)
+                continue
+            v0, m0 = ref[k]
+            if (val == "") != (v0 == "") or (
+                    val and abs(float(val) - float(v0)) >
+                    1e-9 * max(1.0, abs(float(v0)))):
+                bad += 1
+                print("disagree: %s %s seed %s round %d: %s %s, %s %s"
+                      % (inst, kind, seed, rnd, m0, v0, m, val),
+                      file=sys.stderr)
+    if bad:
+        print("make-tables: %d disagreements" % bad, file=sys.stderr)
+    return ref
+
+
+def measures(byrun):
+    """{(inst, method, kind, seed): (T1, Ttot, solves)}, the times averaged
+    over the repetitions of the run, and {same: [Ttot of each repetition]}."""
+    reps = collections.defaultdict(list)
+    for (inst, m, seed, rep, kind), rd in byrun.items():
+        ts = [rd[i][2] for i in sorted(rd)]
+        reps[(inst, m, kind, seed)].append((ts[0], sum(ts), len(ts)))
+    meas = {}
+    for k, v in reps.items():
+        meas[k] = (mean([x[0] for x in v]), mean([x[1] for x in v]),
+                   min(x[2] for x in v))
+    return meas, {k: [x[1] for x in v] for k, v in reps.items()}
+
+
+def ri_g(meas, keys, a):
+    """RI of the re-optimizing method and G of the pair, per key (instance,
+    kind, seed), for the algorithm a."""
+    ri, g = [], []
+    for inst, kind, seed in keys:
+        w = meas.get((inst, a + "w", kind, seed))
+        s = meas.get((inst, a + "c", kind, seed))
+        if w and w[2] > 1 and w[0] > 0:
+            ri.append((w[1] - w[0]) / (w[0] * (w[2] - 1)))
+        if w and s and w[1] > w[0] and s[1] > s[0]:
+            g.append((s[1] - s[0]) / (w[1] - w[0]))
+    return ri, g
+
+
+def sens(argv):
+    quiet = 4.0
+    if "--quiet" in argv:
+        i = argv.index("--quiet")
+        quiet = float(argv[i + 1])
+        del argv[i:i + 2]
+    outfile, dirs = argv[0], argv[1:]
+    rows = []
+    for d in dirs:
+        byrun, timedout, frac = load(d, quiet)
+        check(byrun)
+        meas, _ = measures(byrun)
+        for kind in KINDS:
+            keys = set((k[0], k[2], k[3]) for k in meas if k[2] == kind)
+            if not keys:
+                continue
+            cells = [fmt(gmean(ri_g(meas, keys, a)[1])) for a, _ in ALGOS]
+            rows.append((float(frac or 0), kind, cells))
+    rows.sort(key=lambda r: (r[0], KINDS.index(r[1])))
+    with open(outfile, "w") as f:
+        f.write("% written by make-tables\n")
+        f.write("\\begin{tabular}{rl" + "r" * len(ALGOS) + "}\n\\toprule\n"
+                "fraction & change & " + " & ".join(a[1] for a in ALGOS) +
+                " \\\\\n\\midrule\n")
+        last = None
+        for fr, kind, cells in rows:
+            if last is not None and fr != last:
+                f.write("\\midrule\n")
+            f.write("%s & %s & %s \\\\\n" % (
+                ("%g\\%%" % (100 * fr)) if fr != last else "", kind,
+                " & ".join(cells)))
+            last = fr
+        f.write("\\bottomrule\n\\end{tabular}\n")
+    print("make-tables: sensitivity table in %s" % outfile)
+
+
+def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "--sens":
+        if len(sys.argv) < 4:
+            sys.exit("usage: make-tables --sens <out-file> <out-dir> ...")
+        return sens(sys.argv[2:])
+    if len(sys.argv) < 2:
+        sys.exit("usage: make-tables <out-dir> [quiet]")
+    out = sys.argv[1]
+    quiet = float(sys.argv[2]) if len(sys.argv) > 2 else 4.0
+    here = os.path.dirname(os.path.abspath(__file__))
+
+    rows = []  # (family, l) in the order of instances.txt
+    with open(os.path.join(here, "instances.txt")) as f:
+        for line in f:
+            p = line.split()
+            if not p or p[0].startswith("#"):
+                continue
+            if (p[0], p[1]) not in rows:
+                rows.append((p[0], p[1]))
+
+    byrun, timedout, frac = load(out, quiet)
+    ref = check(byrun)
+    meas, reps = measures(byrun)
+
+    def keys_of(fam, l, kind=None):
+        pre = "%s-%s-" % (fam, l)
+        return set((k[0], k[2], k[3]) for k in meas if k[0].startswith(pre)
+                   and (kind is None or k[2] == kind))
+
+    os.makedirs(os.path.join(out, "tables"), exist_ok=True)
+
+    def table(name, head, cells):
+        with open(os.path.join(out, "tables", name), "w") as f:
+            f.write("% written by make-tables\n")
+            f.write(head)
+            last = None
+            for fam, l in rows:
+                if last is not None and fam != last:
+                    f.write("\\midrule\n")
+                lab = FAMS.get(fam, fam) if fam != last else ""
+                f.write("%s & %s & %s \\\\\n" % (lab, l,
+                                                 " & ".join(cells(fam, l))))
+                last = fam
+            f.write("\\bottomrule\n\\end{tabular}\n")
+
+    # t1.tex: the first solve, from scratch
+    head = ("\\begin{tabular}{lr" + "r" * len(ALGOS) + "}\n\\toprule\n"
+            "family & $\\log_2 n$ & " +
+            " & ".join(a[1] for a in ALGOS) + " \\\\\n\\midrule\n")
+    table("t1.tex", head, lambda fam, l: [
+        fmtt(mean([meas[(i, a + "c", k, s)][0]
+                   for i, k, s in keys_of(fam, l)
+                   if (i, a + "c", k, s) in meas]))
+        for a, _ in ALGOS])
+
+    # <kind>.tex: RI of the re-optimizing method, gain over from scratch
+    for kind in KINDS:
+        head = ("\\begin{tabular}{lr" + "rr" * len(ALGOS) +
+                "}\n\\toprule\n & & " +
+                " & ".join("\\multicolumn{2}{c}{%s}" % a[1] for a in ALGOS) +
+                " \\\\\n" + "".join("\\cmidrule(lr){%d-%d}"
+                                    % (3 + 2 * i, 4 + 2 * i)
+                                    for i in range(len(ALGOS))) +
+                "\nfamily & $\\log_2 n$ & " +
+                " & ".join(["$RI$ & $G$"] * len(ALGOS)) + " \\\\\n\\midrule\n")
+
+        def cells(fam, l, kind=kind):
+            c = []
+            for a, _ in ALGOS:
+                ri, g = ri_g(meas, keys_of(fam, l, kind), a)
+                c += [fmt(gmean(ri)), fmt(gmean(g))]
+            return c
+        table(kind + ".tex", head, cells)
+
+    # infeas.tex: the re-solves that found the instance infeasible
+    head = ("\\begin{tabular}{lr" + "r" * len(KINDS) + "}\n\\toprule\n"
+            "family & $\\log_2 n$ & " + " & ".join(KINDS) +
+            " \\\\\n\\midrule\n")
+
+    def infeas(fam, l):
+        pre = "%s-%s-" % (fam, l)
+        c = []
+        for kind in KINDS:
+            v = [val for (i, k, s, r), (val, m) in ref.items()
+                 if i.startswith(pre) and k == kind and r > 0]
+            c.append("--" if not v else
+                     "%.0f" % (100.0 * sum(1 for x in v if x == "") / len(v)))
+        return c
+    table("infeas.tex", head, infeas)
+
+    # noise.tex: the same run repeated
+    with open(os.path.join(out, "tables", "noise.tex"), "w") as f:
+        f.write("% written by make-tables\n")
+        f.write("\\begin{tabular}{lrr}\n\\toprule\nmethod & median & "
+                "90th perc. \\\\\n\\midrule\n")
+        for a, lab in ALGOS:
+            for suf, what in (("w", "re-opt."), ("c", "scratch")):
+                d = sorted(100 * (max(v) - min(v)) / mean(v)
+                           for k, v in reps.items()
+                           if k[1] == a + suf and len(v) > 1 and mean(v) > 0)
+                if d:
+                    p90 = d[min(len(d) - 1, math.ceil(0.9 * len(d)) - 1)]
+                    f.write("%s %s & %.1f\\%% & %.1f\\%% \\\\\n"
+                            % (lab, what, statistics.median(d), p90))
+                else:
+                    f.write("%s %s & -- & -- \\\\\n" % (lab, what))
+        f.write("\\bottomrule\n\\end{tabular}\n")
+
+    print("make-tables: %d runs (%d timed out), tables in %s"
+          % (len(byrun), len(timedout), os.path.join(out, "tables")))
+
+
+if __name__ == "__main__":
+    main()

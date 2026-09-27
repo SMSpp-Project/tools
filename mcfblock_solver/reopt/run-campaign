@@ -9,113 +9,179 @@
 #   ,rep,l0,l1
 #
 # rep being the repetition, l0 the load of the machine at the start of the
-# run and l1 the average number of cores that the other processes kept busy
-# during it, i.e., the CPU time of the machine minus that of the run, over
-# its wall-clock time. The errors of the runs go to <out-dir>/errors.
+# run, net of the runs of this campaign, and l1 the average number of cores
+# that the other processes kept busy during it, i.e., the CPU time of the
+# machine minus that of the runs of this campaign, over its wall-clock time.
+# The errors of the runs go to <out-dir>/errors.
 #
-# Each run is a process of its own, one at a time, and starts only when the
-# load is below $QUIET: the times of the paper are taken on an otherwise idle
-# machine, and a run during which the other processes kept more than $QUIET
-# cores busy is marked by its l1 and is to be repeated, not quoted. A run
-# already in runs.csv as a measure is skipped, and one that is there with an
-# l1 above the threshold is run again, so that launching the campaign again
-# both resumes it and redoes what the load spoiled. With REPS=2 every run is
-# repeated, which measures the noise (the same method against itself) before
-# two methods are compared.
+# Each run is a process of its own, and PAR of them run at a time (1 by
+# default), each pinned to a core of its own, the cores being spread over
+# the machine; a run starts only when the load that is not of this campaign
+# is below $QUIET, i.e., the times of the paper are taken on an otherwise
+# idle machine, and a run during which the other processes kept more than
+# $QUIET cores busy is marked by its l1 and is to be repeated, not quoted.
+# The runs go from the smallest instances to the largest, shuffled within a
+# size (with a fixed seed), so that the methods share the conditions of the
+# machine; a method that has run out of time on a family and a kind of
+# change is not run on the larger instances of that family and kind, which
+# are recorded as out of time as well. A run already in runs.csv as a
+# measure is skipped, and one that is there with an l1 above the threshold
+# is run again, so that launching the campaign again both resumes it and
+# redoes what the load spoiled. Every run is repeated REPS times (2 by
+# default), which measures the noise (the same method against itself, which
+# with PAR > 1 includes what the runs cost each other) before two methods
+# are compared.
 #
 # Environment: BENCH (the reopt_bench to run, default build/reopt_bench),
 # INST (the directory of the instances, default instances/), METHODS
-# (default "0 1 2 3 4 5 6 7 8 9 10 11", the indices of the Solver in
-# config/MCFBSCfg.txt), KINDS (default "cost cap dfct arcs mix"), SEEDS
-# (default "1 2 3"), ROUNDS (default 100), FRAC (default 0.01), REPS
-# (default 1), QUIET (default 4), TIMEOUT (seconds of wall time of a whole
-# run, default 3600), BUSY (an extended regular expression on the command
-# lines of the processes of the machine: while one of them runs, no run is
-# started; default none).
+# (default "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15", the indices of the
+# Solver in config/MCFBSCfg.txt), KINDS (default "cost cap dfct arcs mix"),
+# SEEDS (default "1 2 3"), ROUNDS (default 100), FRAC (default 0.01), REPS
+# (default 2), PAR (default 1), QUIET (default 4), TIMEOUT (seconds of wall
+# time of a whole run, default 1800), BUSY (an extended regular expression
+# on the command lines of the processes of the machine: while one of them
+# runs, no run is started; default none).
 
 set -u
 out=${1:?usage: run-campaign <out-dir> [instance ...]}
 shift
 here=$(cd "$(dirname "$0")" && pwd)
-bench=${BENCH:-$here/build/reopt_bench}
-inst=${INST:-$here/instances}
-methods=${METHODS:-0 1 2 3 4 5 6 7 8 9 10 11}
+export bench=${BENCH:-$here/build/reopt_bench}
+export inst=${INST:-$here/instances}
+methods=${METHODS:-0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15}
 kinds=${KINDS:-cost cap dfct arcs mix}
 seeds=${SEEDS:-1 2 3}
-rounds=${ROUNDS:-100}
-frac=${FRAC:-0.01}
-reps=${REPS:-1}
-QUIET=${QUIET:-4}
-timeout=${TIMEOUT:-3600}
-names=(SIMw SIMc RIVw RIVc NSw NSc CSw CSc CAPw CAPc CCw CCc)
-
-load()  { cut -d' ' -f1 /proc/loadavg; }
-# the CPU time of the whole machine in clock ticks (user, nice, system, irq,
-# softirq and steal; idle and iowait left out)
-busy()  { awk '/^cpu /{ print $2 + $3 + $4 + $7 + $8 + $9 }' /proc/stat; }
-hz=$(getconf CLK_TCK)
-quiet() {
-  awk -v x="$(load)" -v q="$QUIET" 'BEGIN{exit !(x<q)}' || return 1
-  # the pattern is matched against the others' command lines, this script
-  # and the grep of this very test excluded, which carry it in theirs
-  [ -z "${BUSY:-}" ] ||
-    ! ps -eo args= | grep -v -e "run-campaign" -e "grep" |
-      grep -Eq -- "$BUSY"
-}
-say()   { echo "[$(date +%m-%d_%H:%M)] $*"; }
+export rounds=${ROUNDS:-100}
+export frac=${FRAC:-0.01}
+reps=${REPS:-2}
+par=${PAR:-1}
+export QUIET=${QUIET:-4}
+export timeout=${TIMEOUT:-1800}
+export BUSY=${BUSY:-}
+export names="SIMw SIMc RIVw RIVc NSw NSc CSw CSc CAPw CAPc CCw CCc NSSw NSSc CPXw CPXc"
 
 [ -x "$bench" ] || { echo "run-campaign: no reopt_bench at $bench" >&2; exit 1; }
 mkdir -p "$out"
-csv=$out/runs.csv
+export out=$(cd "$out" && pwd)
+export csv=$out/runs.csv
+touch "$csv"
 
 # the configuration the campaign runs with is copied next to its results,
 # so that a result can always be traced to the files that produced it
 [ -d "$out/config" ] || cp -r "$here/config" "$out/config"
 [ -e "$out/machine.txt" ] || {
-  uname -a; lscpu | grep -E 'Model name|^CPU\(s\)|Thread|Socket'
-  free -g | head -2; date; } > "$out/machine.txt"
+  uname -a; lscpu | grep -E 'Model name|^CPU\(s\)|Thread|Socket|NUMA node\(s\)'
+  free -g | head -2; date; echo "runs at a time: $par"; } > "$out/machine.txt"
+# the parameters of the campaign, which make-tables reads (a campaign
+# resumed with other ones would mix two experiments in one runs.csv)
+params="rounds $rounds frac $frac"
+if [ -e "$out/params.txt" ]; then
+  [ "$(cat "$out/params.txt")" = "$params" ] || {
+    echo "run-campaign: $out holds a campaign with $(cat "$out/params.txt")" >&2
+    exit 1; }
+else
+  echo "$params" > "$out/params.txt"
+fi
 
+# the cores of the slots, spread over the physical cores of the machine,
+# which Linux numbers first (the second thread of a core being the CPU
+# numbered one physical count later), so that no two runs share a core
+ncpu=$(nproc)
+tpc=$(lscpu | awk -F: '/Thread\(s\) per core/ { print $2 + 0 }')
+phys=$(( ncpu / ${tpc:-1} ))
+step=$(( phys / par )); [ "$step" -ge 1 ] || step=1
+cores=""
+for i in $(seq 0 $(( par - 1 ))); do cores="$cores $(( i * step ))"; done
+export cores
+rm -rf "$out/.slots"; mkdir -p "$out/.slots"
+
+one() {  # one <name> <kind> <seed> <k> <rep>
+  local name=$1 kind=$2 seed=$3 k=$4 rep=$5
+  local fam=${name%-*-*} rest=${name#*-} l m file slot core
+  l=${rest%-*}
+  m=$(echo $names | cut -d' ' -f$(( k + 1 )))
+  file=$inst/$name.dmx
+  say() { echo "[$(date +%m-%d_%H:%M)] $*"; }
+  # a run already there is skipped only if it is a measure, i.e., the other
+  # processes kept fewer cores busy than the threshold during it
+  grep "^$name,$m,$kind,$seed,0,.*,$rep,[^,]*,[^,]*\$" "$csv" |
+    awk -F, -v q="$QUIET" '$NF < q { f = 1 } END { exit ! f }' && return 0
+  # out of time on a smaller instance of the family and the kind
+  if grep -E "^$fam-[0-9]+-[0-9]+,$m,$kind,[0-9]+,0,timeout," "$csv" |
+     awk -F, -v l="$l" '{ split($1, a, "-"); if (a[2] + 0 < l + 0) f = 1 }
+                        END { exit ! f }'; then
+    flock "$csv" -c "echo '$name,$m,$kind,$seed,0,timeout,,skipped,$rep,0,0' >> '$csv'"
+    return 0
+  fi
+  # a slot, i.e., a core of its own
+  while :; do
+    for slot in $(seq 0 $(( $(echo $cores | wc -w) - 1 ))); do
+      mkdir "$out/.slots/$slot" 2> /dev/null && break 2
+    done
+    sleep 5
+  done
+  core=$(echo $cores | cut -d' ' -f$(( slot + 1 )))
+  # the load that is not of this campaign has to be low
+  # the runs of the study (of this campaign and of any other one), by the
+  # exact name of the process, which the wrapper that times it out lacks
+  mine() { pgrep -c -x reopt_bench || true; }
+  ext() { awk -v x="$(cut -d' ' -f1 /proc/loadavg)" -v n="$(mine)" \
+              'BEGIN{ e = x - n; printf "%.2f", (e > 0 ? e : 0) }'; }
+  until awk -v x="$(ext)" -v q="$QUIET" 'BEGIN{exit !(x<q)}' &&
+        { [ -z "$BUSY" ] || ! ps -eo args= |
+            grep -v -e "run-campaign" -e "grep" | grep -Eq -- "$BUSY"; }; do
+    sleep 120
+  done
+  local l0 b0 w0 n0 b1 w1 n1 lines l1 rc
+  l0=$(ext)
+  b0=$(awk '/^cpu /{ print $2 + $3 + $4 + $7 + $8 + $9 }' /proc/stat)
+  w0=$(date +%s.%N); n0=$(mine)
+  lines=$(taskset -c "$core" timeout "$timeout" "$bench" -c "$out/config/" \
+            -k "$k" -m "$m" -w "$kind" -n "$rounds" -f "$frac" -e "$seed" \
+            "$file" 2>> "$out/errors")
+  rc=$?
+  b1=$(awk '/^cpu /{ print $2 + $3 + $4 + $7 + $8 + $9 }' /proc/stat)
+  w1=$(date +%s.%N); n1=$(mine)
+  rmdir "$out/.slots/$slot"
+  # the cores kept busy by the others: the machine, minus the runs of this
+  # campaign (about the mean of their number at the start and at the end,
+  # each keeping one core busy)
+  l1=$(awk -v b0="$b0" -v b1="$b1" -v w0="$w0" -v w1="$w1" \
+           -v hz="$(getconf CLK_TCK)" -v n="$(( (n0 + n1 + 1) / 2 ))" \
+         'BEGIN { w = w1 - w0; o = w > 0 ? (b1 - b0) / hz / w - n : 0;
+                  printf "%.2f", (o > 0 ? o : 0) }')
+  # a run that has not ended by itself is recorded as such, whatever it has
+  # printed before: out of time, or an error with its exit status
+  if [ "$rc" -eq 124 ]; then
+    lines="$name,$m,$kind,$seed,0,timeout,,$timeout"
+  elif [ "$rc" -ne 0 ] || [ -z "$lines" ]; then
+    lines="$name,$m,$kind,$seed,0,error,,$rc"
+  fi
+  flock "$csv" -c "echo '$lines' | sed 's/\$/,$rep,$l0,$l1/' >> '$csv'"
+  say "$name $m $kind seed $seed rep $rep: $(echo "$lines" | wc -l) solves" \
+      "(core $core, others $l1)"
+}
+export -f one
+
+# the runs, from the smallest instances to the largest, shuffled within a
+# size with a fixed seed
 grep -v '^#' "$here/instances.txt" | grep -v '^ *$' |
 while read -r fam l s; do
   name=$fam-$l-$s
   if [ $# -gt 0 ] && ! printf '%s\n' "$@" | grep -qx "$name"; then
     continue
   fi
-  file=$inst/$name.dmx
-  [ -e "$file" ] || { say "$name: no instance, run make-instances"; continue; }
-  for kind in $kinds; do
-  for seed in $seeds; do
-  for k in $methods; do
-    m=${names[$k]}
+  [ -e "$inst/$name.dmx" ] ||
+    { echo "run-campaign: no $name, run make-instances" >&2; continue; }
+  for kind in $kinds; do for seed in $seeds; do for k in $methods; do
     for rep in $(seq 1 "$reps"); do
-      # a run already there is skipped only if it is a measure, i.e., the
-      # other processes kept fewer cores busy than the threshold during it
-      if [ -e "$csv" ] &&
-         grep "^$name,$m,$kind,$seed,0,.*,$rep,[^,]*,[^,]*\$" "$csv" |
-         awk -F, -v q="$QUIET" '$NF < q { f = 1 } END { exit ! f }'
-      then continue; fi
-      until quiet; do sleep 120; done
-      l0=$(load)
-      b0=$(busy); w0=$(date +%s.%N)
-      # /usr/bin/time outside timeout, so that it counts the run and
-      # nothing else
-      lines=$(/usr/bin/time -f "%U %S" -o "$out/.cpu" \
-                timeout "$timeout" "$bench" -c "$out/config/" -k "$k" \
-                  -m "$m" -w "$kind" -n "$rounds" -f "$frac" -e "$seed" \
-                  "$file" 2>> "$out/errors")
-      b1=$(busy); w1=$(date +%s.%N)
-      if tail -1 "$out/.cpu" 2> /dev/null | grep -q '^[0-9]'; then
-        l1=$(tail -1 "$out/.cpu" |
-             awk -v b0="$b0" -v b1="$b1" -v w0="$w0" -v w1="$w1" -v hz="$hz" \
-               '{ o = ( b1 - b0 ) / hz - $1 - $2; w = w1 - w0;
-                  printf "%.2f", ( w > 0 && o > 0 ) ? o / w : 0 }')
-      else l1=$(load); fi
-      [ -n "$lines" ] || lines="$name,$m,$kind,$seed,0,timeout,,$timeout"
-      echo "$lines" | sed "s/\$/,$rep,$l0,$l1/" >> "$csv"
-      say "$name $m $kind seed $seed rep $rep:" \
-          "$(echo "$lines" | wc -l) solves (load $l0, others $l1)"
+      echo "$l $name $kind $seed $k $rep"
     done
-  done
-  done
-  done
-done
+  done; done; done
+done > "$out/.jobs"
+sort -n -k1,1 -s "$out/.jobs" | awk '{ print $1 }' | uniq |
+while read -r l; do
+  awk -v l="$l" '$1 == l { print $2, $3, $4, $5, $6 }' "$out/.jobs" |
+    shuf --random-source=<(yes)
+done | xargs -P "$par" -L 1 bash -c 'one "$@"' _
+rm -rf "$out/.slots" "$out/.jobs"
