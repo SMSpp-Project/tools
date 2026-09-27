@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `smspp_tssb_solver -k -R <BlockSolverConfig>` recovers a feasible solution
+  after the Solver of the Benders form as well, e.g., BDS whose subproblems
+  are solved by a Lagrangian dual, which gives only a bound when the recourse
+  is integer: the design of the master, which the subproblems hold, is fixed
+  and each leaf is solved alone, as after a Solver of the extensive form
+
 - `investmentblock_solver` solves an `InvestmentBlock` whose inner Block is an
   `SDDPBlock`, from a Block file as from a problem file: the UCBlock of each
   stage, which sits behind a `BendersBFunction` that no BlockConfig crosses,

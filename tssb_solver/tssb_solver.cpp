@@ -56,8 +56,11 @@
  * is the value of a feasible solution, printed with the gap to the bound.
  * The primal solution the Solver gives, if any, is written first, so that
  * the mean is taken on it. The leaves, independent once the design is
- * fixed, are solved by the number of threads given to -j. It is only
- * available for a BlockFile.
+ * fixed, are solved by the number of threads given to -j. With -k it
+ * follows the Solver of the Benders form, e.g., a BendersDecompositionSolver
+ * whose subproblems are solved by a Lagrangian dual: the design is then that
+ * of the master, which the subproblems hold. It is only available for a
+ * BlockFile.
  *
  * \author Antonio Frangioni \n
  *         Dipartimento di Informatica \n
@@ -188,6 +191,10 @@ void process_prob_file( const netCDF::NcFile & file )
  * representation is then generated, since the form is read off it; the
  * BlockSolverConfig is applied to the root of the form. */
 
+static void recover_primal( TwoStageStochasticBlock * tssb , double lb );
+
+/*--------------------------------------------------------------------------*/
+
 static void solve_Benders_form( const std::string & name ,
                                 const netCDF::NcGroup & group )
 {
@@ -223,10 +230,33 @@ static void solve_Benders_form( const std::string & name ,
  // Solve
  solve_all( form );
 
+ // the bound, and the primal solution the Solver gives, if any: that of the
+ // subproblems holds the here-and-now Variable of every leaf at the design
+ // of the master, which is what the recovery takes the mean of
+ double lb = - Inf< double >();
+ bool has_sol = false;
+ if( ! recover_sconf.empty() )
+  for( auto solver : form->get_registered_solvers() ) {
+   lb = std::max( lb , solver->get_lb() );
+   if( solver->has_var_solution() ) {
+    solver->get_var_solution();
+    has_sol = true;
+    }
+   }
+
  // cleanup
  cleanup_bsc( form , s_config );
  delete s_config;
  tssb->give_back_Benders_form( form );
+
+ if( ! recover_sconf.empty() ) {
+  if( has_sol )
+   recover_primal( tssb , lb );
+  else
+   std::cout << "Recovered primal = none (no primal solution to start from)"
+             << std::endl;
+  }
+
  delete block;
  }
 
