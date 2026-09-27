@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
-# make-tables < out-dir > [ quiet ]
-# make-tables --sens < out-file > < out-dir > ... [ --quiet < quiet > ]
+# make-tables [ --force ] < out-dir > [ quiet ]
+# make-tables [ --force ] --sens < out-file > < out-dir > ... [ --quiet < q > ]
 #
 # Turns the runs.csv that run-campaign writes in <out-dir> into the LaTeX
 # tables of the study, written in <out-dir>/tables:
@@ -35,8 +35,9 @@
 # than <quiet> cores busy (default 4, the QUIET of run-campaign) are used; a
 # cell with no such run, or whose runs timed out, is "--". The optimal
 # values of the methods are compared round by round, and every disagreement
-# (beyond a relative 1e-9) is reported on the standard error: a table is
-# only as good as that check.
+# (beyond a relative 1e-9) is reported on the standard error, in which case
+# no table is written (a table is only as good as that check) unless
+# --force is given.
 
 import collections
 import csv
@@ -135,6 +136,8 @@ def check(byrun):
                       file=sys.stderr)
     if bad:
         print("make-tables: %d disagreements" % bad, file=sys.stderr)
+        if not FORCE:
+            sys.exit("make-tables: no table written, the methods disagree")
     return ref
 
 
@@ -202,7 +205,14 @@ def sens(argv):
     print("make-tables: sensitivity table in %s" % outfile)
 
 
+FORCE = False
+
+
 def main():
+    global FORCE
+    if "--force" in sys.argv:
+        FORCE = True
+        sys.argv.remove("--force")
     if len(sys.argv) > 1 and sys.argv[1] == "--sens":
         if len(sys.argv) < 4:
             sys.exit("usage: make-tables --sens <out-file> <out-dir> ...")
