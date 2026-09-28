@@ -8,7 +8,7 @@
  * file. This tool can be executed as follows:
  *
  *   ./tssb_solver [-s] [-e] [-m NUMBER] [-B FILE] [-S FILE] [-p PATH]
- *                 [-c PATH] [-k] < nc4-file >
+ *                 [-c PATH] [-k] [--mpi-procs N] < nc4-file >
  *
  * The only mandatory argument is the netCDF file containing the description
  * of the TwoStageStochasticBlock. This can be either a BlockFile or
@@ -33,6 +33,21 @@
  * BlockSolverConfig file for every TwoStageStochasticBlock. If each of these
  * options is not provided when the given netCDF file is a BlockFile, then
  * default configurations are considered.
+ *
+ * With --mpi-procs N, the tool relaunches itself via mpirun -np N before
+ * opening the input file. The worker processes run the normal application
+ * path, including Solver-controlled MPI initialization. Without the option,
+ * startup is unchanged. Open MPI / PMI / PMIx rank environment variables
+ * suppress relaunch under an external launcher; --mpi-worker explicitly
+ * suppresses it for launchers not covered by detection. An existing MPI job
+ * keeps its process count even when --mpi-procs is supplied.
+ *
+ * Automatic launch requires POSIX execvp and mpirun on PATH, compatible with
+ * the MPI library used by the Solver. The executable and input/configuration
+ * files must be accessible to all workers. This option only arranges launch:
+ * the chosen Solver must support MPI. Solution output (-O) is written only
+ * by rank 0, after all ranks participate in solution retrieval. Other output
+ * files (-a, -n) are not coordinated between ranks by this tool.
  *
  * The -k option solves the Benders form of each TwoStageStochasticBlock
  * rather than the TwoStageStochasticBlock itself [see
@@ -70,12 +85,26 @@
 
 #include <iomanip>
 #include <iostream>
+#include <cerrno>
+#include <climits>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <vector>
+
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 #include <AbstractBlock.h>
 
 #include <TwoStageStochasticBlock.h>
 
 #include "common_utils.h"
+
+#ifdef TSSB_USE_MPI
+#include <mpi.h>
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- USING -----------------------------------*/
@@ -88,16 +117,25 @@ using namespace SMSpp_di_unipi_it;
 /*--------------------------------------------------------------------------*/
 
 bool benders_form = false;  ///< solve the Benders form (-k)
+int mpi_processes = 0;      ///< automatic MPI launch is opt-in
+bool mpi_worker = false;    ///< skip relaunch in processes started by mpirun
+
+enum { opt_mpi_procs = 1000 , opt_mpi_worker };
 
 const std::string my_short_opts = "k";
 
 const std::vector< option > my_long_opts = {
-  { "benders" , no_argument , nullptr , 'k' }
+  { "benders" , no_argument , nullptr , 'k' },
+  { "mpi-procs" , required_argument , nullptr , opt_mpi_procs },
+  { "mpi-worker" , no_argument , nullptr , opt_mpi_worker }
   };
 
 const std::string my_help =
  "  -k, --benders                   solve the Benders form of the problem,\n"
- "                                  the Solver being attached to its root";
+ "                                  the Solver being attached to its root\n"
+ "      --mpi-procs N               launch under mpirun with N processes\n"
+ "                                  unless already launched under MPI\n"
+ "      --mpi-worker                skip relaunch (for MPI workers)";
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -107,8 +145,93 @@ static bool process_specific_arg( int opt )
 {
  switch( opt ) {  // non-standard options
   case 'k': benders_form = true; return( true );
+  case opt_mpi_worker: mpi_worker = true; return( true );
+  case opt_mpi_procs: {
+   // Reject signs, whitespace, zero and overflow rather than passing them
+   // through to mpirun. getopt_long supplies optarg for this option.
+   const std::string value( optarg );
+   char * end = nullptr;
+   errno = 0;
+   const auto count = std::strtol( optarg , &end , 10 );
+   if( value.empty() ||
+       value.find_first_not_of( "0123456789" ) != std::string::npos ||
+       errno == ERANGE || *end || count <= 0 || count > INT_MAX ) {
+    std::cerr << "--mpi-procs requires a positive integer <= " << INT_MAX
+              << std::endl;
+    std::exit( EXIT_FAILURE );
+    }
+   mpi_processes = static_cast< int >( count );
+   return( true );
+   }
   default: return( false );
   }
+ }
+
+/*--------------------------------------------------------------------------*/
+
+// MPI_Initialized() does not detect a launcher: it is false until MPI_Init().
+// Check rank markers used by Open MPI and PMI/PMIx launchers. A scheduler
+// allocation alone (e.g. SLURM_JOB_ID) is not evidence of an MPI worker.
+static bool detected_mpi_launch()
+{
+ for( const auto name : { "OMPI_COMM_WORLD_RANK", "PMI_RANK", "PMIX_RANK" } )
+  if( const auto value = std::getenv( name ); value && *value )
+   return( true );
+ return( false );
+ }
+
+// Evaluated after solution retrieval: PIPS has initialized MPI by then.
+static bool is_solution_writer()
+{
+#ifdef TSSB_USE_MPI
+ int initialized = 0;
+ MPI_Initialized( & initialized );
+ if( initialized ) {
+  int rank = 0;
+  if( MPI_Comm_rank( MPI_COMM_WORLD , & rank ) != MPI_SUCCESS )
+   throw( std::runtime_error( "Cannot determine the solution output rank" ) );
+  return( rank == 0 );
+  }
+#endif
+ // Also support launched processes using a non-MPI Solver, and builds
+ // without MPI linkage, using the same launchers recognized at startup.
+ for( const auto name : { "OMPI_COMM_WORLD_RANK", "PMI_RANK", "PMIX_RANK" } )
+  if( const auto value = std::getenv( name ); value && *value ) {
+   char * end = nullptr;
+   errno = 0;
+   const auto rank = std::strtol( value , & end , 10 );
+   if( errno || *end || rank < 0 )
+    throw( std::runtime_error( "Invalid MPI rank environment variable" ) );
+   return( rank == 0 );
+   }
+ return( true );  // ordinary serial execution
+ }
+
+static int relaunch_under_mpi( const std::vector< std::string > & original )
+{
+#ifdef _WIN32
+ (void) original;
+ std::cerr << "Automatic MPI launch requires POSIX execvp; launch with "
+              "mpiexec and --mpi-worker on Windows." << std::endl;
+ return( EXIT_FAILURE );
+#else
+ // Pass argv[0] unchanged, just as in: mpirun -np N ./tssb_solver.
+ // mpirun handles executable lookup; no shell is involved.
+ std::vector< std::string > arguments = {
+  "mpirun", "-np", std::to_string( mpi_processes ), original.front(),
+  "--mpi-worker"
+  };
+ // Retain all original options, including --mpi-procs: --mpi-worker takes
+ // precedence. Insert our marker before any original '--' end-of-options.
+ arguments.insert( arguments.end() , original.begin() + 1 , original.end() );
+ std::vector< char * > command;
+ for( auto & argument : arguments ) command.push_back( argument.data() );
+ command.push_back( nullptr );
+ execvp( command.front() , command.data() );
+ const auto error = errno;
+ std::cerr << "Cannot launch mpirun: " << std::strerror( error ) << std::endl;
+ return( EXIT_FAILURE );
+#endif
  }
 
 /*--------------------------------------------------------------------------*/
@@ -139,7 +262,7 @@ void process_prob_file( const netCDF::NcFile & file )
   set_solver_logs( block );
 
   // Solve
-  solve_all( block );
+  solve_all( block , is_solution_writer );
 
   // cleanup
   cleanup_bsc( block , s_config );
@@ -188,7 +311,7 @@ static void solve_Benders_form( const std::string & name ,
  set_solver_logs( form );
 
  // Solve
- solve_all( form );
+ solve_all( form , is_solution_writer );
 
  // cleanup
  cleanup_bsc( form , s_config );
@@ -222,7 +345,7 @@ void process_block_file( const netCDF::NcFile & file )
   set_solver_logs( block );
 
   // Solve
-  solve_all( block );
+  solve_all( block , is_solution_writer );
 
   // cleanup
   cleanup_bsc( block , s_config );
@@ -236,6 +359,9 @@ void process_block_file( const netCDF::NcFile & file )
 
 int main( int argc , char ** argv )
 {
+ // getopt_long may permute argv; preserve its original order for relaunch.
+ const std::vector< std::string > original_arguments( argv , argv + argc );
+
  // override the default terminate handler to print the exception message
  std::set_terminate( smspp_terminate );
 
@@ -254,6 +380,8 @@ int main( int argc , char ** argv )
  docopt_examples =
   "  tssb_solver instance.nc4\n"
   "      solve the deterministic equivalent with a :MILPSolver\n"
+  "  tssb_solver --mpi-procs 3 -S PIPSConfig.txt instance.nc4\n"
+  "      launch three MPI processes using your PIPS solver configuration\n"
   "  tssb_solver -S TSSBSCfg-LD.txt instance.nc4\n"
   "      solve the Lagrangian dual of the scenario decomposition, whose\n"
   "      master problem needs CPLEX or Gurobi\n"
@@ -280,6 +408,11 @@ int main( int argc , char ** argv )
  help.append( my_help );
 
  process_args( argc , argv , process_specific_arg );
+
+ // This must precede loading Blocks or constructing Solvers, which may
+ // initialize MPI. Every worker continues through the normal solve path.
+ if( mpi_processes && ! mpi_worker && ! detected_mpi_launch() )
+  return( relaunch_under_mpi( original_arguments ) );
 
  // open the file - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
