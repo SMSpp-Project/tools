@@ -92,6 +92,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the hard components of the Lagrangian Dual in `BSPar-LD.txt` and
+  `BSPar-greedy-LD.txt` of `sddp_solver`, and in `BSPar-LD.txt` of
+  `investmentblock_solver`, are named with `vstrNoEasy` of the inner
+  `BundleSolver`, which replaces `vstr_LDSl_NoEasy` of
+  `LagrangianDualSolver`: which components are easy is a concept of
+  `BundleSolver`, and the classes listed are the same
+
+- the components whose primal solution the `SDDPSolver` and the
+  `SDDPGreedySolver` need are named by class in the Configuration of
+  `get_var_solution()` of their extra Configuration (`SDDPSCfg-LD.txt`,
+  `SDDPSCfg-greedy-LD.txt` of `sddp_solver`, `SDDPCfg.txt` of
+  `investmentblock_solver`), a `SimpleConfiguration< std::map< std::string ,
+  Configuration * > >` that `LagrangianDualSolver` reads, rather than with
+  `vstr_LDSl_VarSol` in the BlockSolverConfig of the stages, which
+  `LagrangianDualSolver` no longer has; the duals of the stages of
+  `SDDPSCfg-LD.txt`, which were named with `vstr_LDSl_DualSol`, are those of
+  the `HydroSystemUnitBlock` and of the relaxed constraints in the
+  Configuration of `get_dual_solution()` of the `SDDPSolver`, which the
+  `BendersBFunction` of each stage passes on
+
 - the tools no longer link with `--no-as-needed` when the libraries are
   shared, since every module asks the linker itself to keep it (on ELF and on
   macOS, with MSVC by the symbol that forces it in); only the archives of a
@@ -104,10 +124,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with `-B SDDPBCfg-LD.txt -S SDDPSCfg-LD.txt`, or `-s -B SDDPBCfg-LD.txt
   -S SDDPSCfg-greedy-LD.txt`: the components that are hard and those whose
   primal and dual solution are needed are listed by class in
-  `BSPar-LD.txt` and `BSPar-greedy-LD.txt` (`vstr_LDSl_NoEasy`,
-  `vstr_LDSl_VarSol`, `vstr_LDSl_DualSol`), so that they hold for any
-  instance; with no `-S` the tool stops rather than building a default
-  one
+  `BSPar-LD.txt` and `BSPar-greedy-LD.txt` (`vstrNoEasy` of the inner
+  `BundleSolver`) and in the Configurations of `get_var_solution()` and
+  `get_dual_solution()` of `SDDPSCfg-LD.txt` and `SDDPSCfg-greedy-LD.txt`,
+  so that they hold for any instance; with no `-S` the tool stops rather
+  than building a default one
 
 - everything `investmentblock_solver` gives the `InvestmentBlock` and its
   `InvestmentFunction` comes from the configuration files, the tool only
@@ -171,7 +192,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - the options `-r` and `-z` of `sddp_solver`: `-r` only said that it no
   longer existed, and the hydro system as an easy component of `-z` is a
-  `LagrangianDualSolver` configuration (`vstr_LDSl_NoEasy` without
+  `LagrangianDualSolver` configuration (`vstrNoEasy` without
   `HydroSystemUnitBlock`, `vstr_LDSl_Cfg` and `int_InnerS_WVarSCfg`), as are
   `config/get_var_solution_bundle.txt` and `config/BendersBSCfg.txt`, which
   only the code building the configuration read

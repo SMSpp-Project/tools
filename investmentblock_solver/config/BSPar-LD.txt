@@ -4,7 +4,7 @@
 # A txt description of a BlockSolverConfig for a UCBlock to be solved by a
 # LagrangianDualSolver using a BundleSolver as the inner Solver, which is the
 # UCBlock of a stage of the SDDPBlock of examples/instance-3: the components
-# that must be hard (vintNoEasy) are those of that instance.
+# that must be hard (vstrNoEasy) are those of that instance.
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -135,16 +135,15 @@ strMPBSolverCfg   MPBCfg.txt            # BlockSolverConfig of the Solver of
 # now all the vector-of-double parameters
 # [none]
 
-2 # number of vector-of-string parameters
+1 # number of vector-of-string parameters
 
 # now all the vector-of-string parameters
-# the components of the UCBlock of a stage that are hard: the
-# HydroSystemUnitBlock, the ThermalUnitBlock and the BatteryUnitBlock, whose
-# state passes from a stage to the next, and they are also those whose
-# primal solution the SDDPSolver needs, which is not provided for the easy
-# components
-vstr_LDSl_NoEasy 3 HydroSystemUnitBlock ThermalUnitBlock BatteryUnitBlock
-vstr_LDSl_VarSol 3 HydroSystemUnitBlock ThermalUnitBlock BatteryUnitBlock
+# the components of the UCBlock of a stage that the inner BundleSolver never
+# treats as "easy": the HydroSystemUnitBlock, the ThermalUnitBlock and the
+# BatteryUnitBlock, whose state passes from a stage to the next, and they are
+# also those whose primal solution the SDDPSolver needs, which is not
+# provided for the easy components
+vstrNoEasy 3 HydroSystemUnitBlock ThermalUnitBlock BatteryUnitBlock
 
 # pointer to the "extra" Configuration
 * # [none]

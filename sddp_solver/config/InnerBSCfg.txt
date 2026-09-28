@@ -5,9 +5,9 @@
 # a map from the classname() of the inner Block of each LagBFunction to the
 # BlockSolverConfig to be used for it, with "*" as the default. This is the
 # optimization (SDDPSolver) variant: only ThermalUnitBlock and
-# HydroSystemUnitBlock are hard components (cf. vintNoEasy as constructed by
-# config_Lagrangian_dual in sddp_solver.cpp), every other component is easy
-# and gets the default LP BlockSolverConfig.
+# HydroSystemUnitBlock are hard components (cf. vstrNoEasy in
+# BSPar-LD.txt), every other component is easy and gets the default LP
+# BlockSolverConfig.
 #
 # All filenames are resolved against the directory the tool is run from
 # (the root of the tools/sddp_solver directory), as in the other tools.

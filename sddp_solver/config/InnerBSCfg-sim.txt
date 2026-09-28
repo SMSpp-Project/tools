@@ -8,8 +8,7 @@
 # HydroSystemUnitBlock, also BatteryUnitBlock and IntermittentUnitBlock are
 # hard components, because their primal solutions link two consecutive
 # stages and BundleSolver does not provide primal solutions for easy
-# components (cf. vintNoEasy as constructed by config_Lagrangian_dual in
-# sddp_solver.cpp).
+# components (cf. vstrNoEasy in BSPar-greedy-LD.txt).
 #
 # All filenames are resolved against the directory the tool is run from
 # (the root of the tools/sddp_solver directory), as in the other tools.
