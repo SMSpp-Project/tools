@@ -1,0 +1,17 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - -  GetInnerVarSolConfig.txt - - - - - - - - - - - -
+#
+# A txt description of a Configuration that is loaded by LagrangianDualSolver
+# to be passed to get_var_solution() of the "inner Solver" when
+# LagrangianDualSolver::get_dual_solution() is called
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# what to get of the dual solution of all easy components
+SimpleConfiguration<int>
+1   # dual prices (but not reduced costs)
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - -  END GetInnerVarSolConfig.txt - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

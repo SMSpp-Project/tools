@@ -94,7 +94,7 @@ def main():
         keys[(density(inst), kind)][size(inst)].add((inst, kind, seed))
 
     # gain.png
-    fig, axes = panels("Gain of re-optimizing (G > 1: it pays)")
+    fig, axes = panels("Gain of reoptimizing (G > 1: it pays)")
     for ax, kind in zip(axes, mt.KINDS):
         for c, (a, lab) in enumerate(mt.ALGOS):
             for dens, style in (("8", "-"), ("sr", "--")):
@@ -119,7 +119,7 @@ def main():
     plt.close(fig)
 
     # resolve.png
-    fig, axes = panels("Average time of a re-solve, re-optimizing")
+    fig, axes = panels("Average time of a re-solve, reoptimizing")
     for ax, kind in zip(axes, mt.KINDS):
         for c, (a, lab) in enumerate(mt.ALGOS):
             for dens, style in (("8", "-"), ("sr", "--")):
@@ -193,7 +193,7 @@ def sens(argv):
                 g = mt.gmean(mt.ri_g(meas, keys, a)[1])
                 if g and frac:
                     pts[kind][lab].append((float(frac), g))
-    fig, axes = panels("Gain of re-optimizing against the fraction changed")
+    fig, axes = panels("Gain of reoptimizing against the fraction changed")
     for ax, kind in zip(axes, mt.KINDS):
         for c, (a, lab) in enumerate(mt.ALGOS):
             p = sorted(pts[kind][lab])

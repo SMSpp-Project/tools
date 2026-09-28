@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
-# make-instances [ out-dir ]
+# make-instances [ out-dir [ list ] ]
 #
-# Writes the instances of instances.txt in <out-dir> (default instances/),
+# Writes the instances of <list> (default instances.txt, whose format it
+# has) in <out-dir> (default instances/),
 # in DIMACS format, with the generators of gen/bin [see gen/fetch-generators]
 # and the parameters of Kovacs (2015): n = 2^<log2n> nodes; arc capacities
 # uniform in [ 1 , 1000 ] and costs in [ 1 , 10000 ]; for NETGEN and GRIDGEN
@@ -16,11 +17,12 @@
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 out=${1:-$here/instances}
+list=${2:-$here/instances.txt}
 bin=$here/gen/bin
 [ -x "$bin/netgen" ] || { echo "make-instances: run gen/fetch-generators first" >&2; exit 1; }
 mkdir -p "$out"
 
-grep -v '^#' "$here/instances.txt" | while read -r fam l s; do
+grep -v '^#' "$list" | while read -r fam l s; do
   [ -n "$fam" ] || continue
   f=$out/$fam-$l-$s.dmx
   [ -s "$f" ] && continue

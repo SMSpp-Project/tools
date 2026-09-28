@@ -10,18 +10,29 @@
 # which, as gen/bin, is not tracked.
 #
 # The sources are C of the early nineties and Fortran 77, which a current
-# compiler takes with two changes made here and nowhere else: the random()
-# of NETGEN is renamed, since it clashes with the one of the C library, and
-# the call to etime() of GRIDGRAPH, which only times the generator and whose
+# compiler takes with two changes made here and nowhere else: the random() of
+# NETGEN is renamed, since it clashes with the one of the C library, and the
+# call to etime() of GRIDGRAPH, which only times the generator and whose
 # argument a current gfortran rejects, is replaced by zero. Two more raise
-# the largest sizes that the largest instances of the study need (2^18
-# nodes with 8 arcs each, 2^14 nodes with 128 arcs each, grids of 16384 by
-# 16 and of 512 by 512): those of NETGEN, 17000 nodes and 150000 arcs in
-# its netgen.h, to 2^20 and 2^22, and those of GRIDGRAPH, 1000 for the side
-# of the grid and 65536 nodes and 524272 arcs (the sizes of its arrays,
-# written as numbers in each of its routines, beyond which it writes past
-# them), to 2^16, 2^20 and 2^22, which pushes some of its lines past the
+# the largest sizes to those of instances of 2^18 nodes with 8 arcs each, of
+# 2^14 nodes with 128 arcs each and of grids of 16384 by 16 and of 512 by
+# 512, beyond the ones of the study: those of NETGEN, 17000 nodes and 150000
+# arcs in its netgen.h, to 2^20 and 2^22, and those of GRIDGRAPH, 1000 for
+# the side of the grid and 65536 nodes and 524272 arcs (the sizes of its
+# arrays, written as numbers in each of its routines, beyond which it writes
+# past them), to 2^16, 2^20 and 2^22, which pushes some of its lines past the
 # 72 columns of fixed-form Fortran (hence -ffixed-line-length-none).
+#
+# It also downloads dmx2pprn, the "meta" generator of Multicommodity Min-Cost
+# Flow instances of Castro and Nabona (1996) in the version of the MMCF page
+# of the Operations Research group of Pisa, which builds a MMCF instance with
+# k commodities on the graph of a single-commodity one in DIMACS format, and
+# builds it with the feasibility control (ISFEASIBLE), which solves one MCF
+# per commodity to make the mutual capacities large enough for a feasible
+# multicommodity flow (with RelaxIV, the MCFClass of the umbrella project
+# giving the sources). A current compiler needs one change there too: the
+# keyword of the problem line ("min") is read in an array of 3 characters,
+# which operator>> now fills with at most 2 of them.
 
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
@@ -59,4 +70,13 @@ sed -e 's/etime(it)/0.0/' \
     "$src/gridgraph/ggraph1.f" > "$src/gridgraph/ggraph.f"
 gfortran -O2 -std=legacy -ffixed-line-length-none -w -o "$bin/gridgraph" "$src/gridgraph/ggraph.f"
 
-echo "fetch-generators: netgen gridgen goto gridgraph in $bin"
+mmcf=https://commalab.di.unipi.it/files/Data/MMCF
+curl -sfL -m 120 -o "$src/dmx2pprn.tgz" "$mmcf/dmx2pprn.tgz"
+tar xzf "$src/dmx2pprn.tgz" -C "$src" --exclude='._*'
+sed -i 's/char buf\[ 3 \];/char buf[ 16 ];/' "$src/dmx2pprn/dmx2pprn.C"
+mcfc=$here/../../../../MCFClassSolver/MCFClass
+c++ -O2 -w -DISFEASIBLE -DOPT_USE_NAMESPACES=1 -I"$mcfc/MCFClass" \
+    -I"$mcfc/OPTUtils" -I"$mcfc/RelaxIV" -o "$bin/dmx2pprn" \
+    "$src/dmx2pprn/dmx2pprn.C" "$mcfc/RelaxIV/RelaxIV.C"
+
+echo "fetch-generators: netgen gridgen goto gridgraph dmx2pprn in $bin"

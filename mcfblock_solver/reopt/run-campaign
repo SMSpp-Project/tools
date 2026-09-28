@@ -32,7 +32,13 @@
 # with PAR > 1 includes what the runs cost each other) before two methods
 # are compared.
 #
-# Environment: BENCH (the reopt_bench to run, default build/reopt_bench),
+# With KINDS=lds the runs are not the changes of reopt_bench but the
+# replays of the traces of run-record [see reopt_bench -r]: the instances
+# are those of the LIST, <name>.trc in INST (the out-dir of run-record), the
+# seed of each is 0 (the seed in runs.csv being then the subproblem), and
+# ROUNDS and FRAC do not matter.
+#
+# Environment: LIST (the list of the instances, default instances.txt), BENCH (the reopt_bench to run, default build/reopt_bench),
 # INST (the directory of the instances, default instances/), METHODS
 # (default "0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15", the indices of the
 # Solver in config/MCFBSCfg.txt), KINDS (default "cost cap dfct arcs mix lag"),
@@ -48,9 +54,11 @@ shift
 here=$(cd "$(dirname "$0")" && pwd)
 export bench=${BENCH:-$here/build/reopt_bench}
 export inst=${INST:-$here/instances}
+list=${LIST:-$here/instances.txt}
 methods=${METHODS:-0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15}
 kinds=${KINDS:-cost cap dfct arcs mix lag}
 seeds=${SEEDS:-1 2 3}
+[ "$kinds" = lds ] && seeds=0
 export rounds=${ROUNDS:-100}
 export frac=${FRAC:-0.01}
 reps=${REPS:-2}
@@ -102,6 +110,7 @@ one() {  # one <name> <kind> <seed> <k> <rep>
   l=${rest%-*}
   m=$(echo $names | cut -d' ' -f$(( k + 1 )))
   file=$inst/$name.dmx
+  [ "$kind" = lds ] && file=$inst/$name.trc
   say() { echo "[$(date +%m-%d_%H:%M)] $*"; }
   # a run already there is skipped only if it is a measure, i.e., the other
   # processes kept fewer cores busy than the threshold during it
@@ -138,9 +147,10 @@ one() {  # one <name> <kind> <seed> <k> <rep>
   l0=$(ext)
   b0=$(awk '/^cpu /{ print $2 + $3 + $4 + $7 + $8 + $9 }' /proc/stat)
   w0=$(date +%s.%N); n0=$(mine)
+  local args="-w $kind -n $rounds -f $frac -e $seed"
+  [ "$kind" = lds ] && args="-r -w $kind"
   lines=$(taskset -c "$core" timeout "$timeout" "$bench" -c "$out/config/" \
-            -k "$k" -m "$m" -w "$kind" -n "$rounds" -f "$frac" -e "$seed" \
-            "$file" 2>> "$out/errors")
+            -k "$k" -m "$m" $args "$file" 2>> "$out/errors")
   rc=$?
   b1=$(awk '/^cpu /{ print $2 + $3 + $4 + $7 + $8 + $9 }' /proc/stat)
   w1=$(date +%s.%N); n1=$(mine)
@@ -167,14 +177,19 @@ export -f one
 
 # the runs, from the smallest instances to the largest, shuffled within a
 # size with a fixed seed
-grep -v '^#' "$here/instances.txt" | grep -v '^ *$' |
+grep -v '^#' "$list" | grep -v '^ *$' |
 while read -r fam l s; do
   name=$fam-$l-$s
   if [ $# -gt 0 ] && ! printf '%s\n' "$@" | grep -qx "$name"; then
     continue
   fi
-  [ -e "$inst/$name.dmx" ] ||
-    { echo "run-campaign: no $name, run make-instances" >&2; continue; }
+  if [ "$kinds" = lds ]; then
+    [ -e "$inst/$name.trc" ] ||
+      { echo "run-campaign: no $name.trc, run run-record" >&2; continue; }
+  else
+    [ -e "$inst/$name.dmx" ] ||
+      { echo "run-campaign: no $name, run make-instances" >&2; continue; }
+  fi
   for kind in $kinds; do for seed in $seeds; do for k in $methods; do
     for rep in $(seq 1 "$reps"); do
       echo "$l $name $kind $seed $k $rep"

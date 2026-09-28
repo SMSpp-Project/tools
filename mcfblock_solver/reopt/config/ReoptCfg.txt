@@ -5,7 +5,13 @@
 # after a change of the instance starts from what it had at the end of the
 # previous solve: the :MCFSolver and the four MCFLemonSolver take the same
 # kReopt. The Solver that starts from scratch at each solve takes this one
-# with kReopt 0 [see ScratchCfg.txt].
+# with kReopt 0 [see ScratchCfg.txt]. The tolerance on the reduced costs
+# (dblAAccDSol, which the codes of MCFClass read as kEpsCst, absolute) is
+# 1e-7: the default one, 100 times the machine epsilon, is below the
+# rounding of the potentials (up to about 2e7, those of the artificial arcs
+# of MCFSimplex being 1e7) when the costs are fractional, and MCFSimplex may
+# then pivot for ever on an arc whose reduced cost is zero up to rounding;
+# with integer costs the reduced costs are exact and nothing changes.
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -20,10 +26,10 @@ ComputeConfig # exact type of the ComputeConfig object
 # now all the integer parameters
 kReopt         1    # whether to re-optimize from the previous solve
 
-0  # number of double parameters
+1  # number of double parameters
 
 # now all the double parameters
-# [none]
+dblAAccDSol    1e-7 # tolerance on the reduced costs
 
 0  # number of string parameters
 

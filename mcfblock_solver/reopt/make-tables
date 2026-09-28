@@ -24,6 +24,19 @@
 #               same method against itself), per method: its median and its
 #               90th percentile, in percent of their mean.
 #
+# A campaign that replays the traces of run-record (KINDS=lds) gets instead,
+# with a row per instance of mmcf-instances.txt and the indices of Frangioni
+# and Manca (2006), i.e., averaged over the subproblems (the commodities):
+#
+#   lds-time.tex  for each algorithm, T1, the time of the first solve (from
+#                 scratch), and Ttot, the time of the whole sequence of the
+#                 re-optimizing method;
+#   lds-ri.tex    for each algorithm, RI = ( Ttot - T1 ) / ( T1 ( N - 1 ) ),
+#                 N being the length of the sequence, and G, the time of the
+#                 re-solves from scratch over that of the re-solves
+#                 re-optimizing, the times being summed over the subproblems;
+#
+# and noise.tex as above.
 # With --sens, the campaigns in the <out-dir> are the same one run with
 # different fractions of changed data (FRAC of run-campaign, which it records
 # in params.txt), and <out-file> gets one table: a row per fraction and kind
@@ -53,7 +66,8 @@ KINDS = ["cost", "cap", "dfct", "arcs", "mix", "lag"]
 FAMS = {"netgen8": "NETGEN-8", "netgensr": "NETGEN-SR",
         "gridgen8": "GRIDGEN-8", "gridgensr": "GRIDGEN-SR",
         "goto8": "GOTO-8", "gotosr": "GOTO-SR", "gridwide": "GRID-WIDE",
-        "gridlong": "GRID-LONG", "gridsquare": "GRID-SQUARE"}
+        "gridlong": "GRID-LONG", "gridsquare": "GRID-SQUARE",
+        "pds": "PDS"}
 
 
 def fmt(x, d=2):
@@ -223,18 +237,20 @@ def main():
     quiet = float(sys.argv[2]) if len(sys.argv) > 2 else 4.0
     here = os.path.dirname(os.path.abspath(__file__))
 
-    rows = []  # (family, l) in the order of instances.txt
-    with open(os.path.join(here, "instances.txt")) as f:
+    byrun, timedout, frac = load(out, quiet)
+    ref = check(byrun)
+    meas, reps = measures(byrun)
+    lds = any(k[2] == "lds" for k in meas)
+
+    rows = []  # (family, l) in the order of the list of the instances
+    lst = "mmcf-instances.txt" if lds else "instances.txt"
+    with open(os.path.join(here, lst)) as f:
         for line in f:
             p = line.split()
             if not p or p[0].startswith("#"):
                 continue
             if (p[0], p[1]) not in rows:
                 rows.append((p[0], p[1]))
-
-    byrun, timedout, frac = load(out, quiet)
-    ref = check(byrun)
-    meas, reps = measures(byrun)
 
     def keys_of(fam, l, kind=None):
         pre = "%s-%s-" % (fam, l)
@@ -256,6 +272,13 @@ def main():
                                                  " & ".join(cells(fam, l))))
                 last = fam
             f.write("\\bottomrule\n\\end{tabular}\n")
+
+    if lds:
+        lds_tables(out, meas, keys_of, table)
+        noise(out, reps)
+        print("make-tables: %d runs (%d timed out), tables in %s"
+              % (len(byrun), len(timedout), os.path.join(out, "tables")))
+        return
 
     # t1.tex: the first solve, from scratch
     head = ("\\begin{tabular}{lr" + "r" * len(ALGOS) + "}\n\\toprule\n"
@@ -302,13 +325,66 @@ def main():
         return c
     table("infeas.tex", head, infeas)
 
-    # noise.tex: the same run repeated
+    noise(out, reps)
+
+    print("make-tables: %d runs (%d timed out), tables in %s"
+          % (len(byrun), len(timedout), os.path.join(out, "tables")))
+
+
+def lds_tables(out, meas, keys_of, table):
+    """lds-time.tex and lds-ri.tex, from the replays of the traces."""
+    def tot(fam, l, m, i):  # sum over the subproblems of the i-th field
+        v = [meas[(k[0], m, k[1], k[2])]
+             for k in keys_of(fam, l, "lds") if (k[0], m, k[1], k[2]) in meas]
+        return (sum(x[i] for x in v), len(v)) if v else (None, 0)
+
+    def cols(n):
+        return ("\\begin{tabular}{lr" + "rr" * len(ALGOS) +
+                "}\n\\toprule\n & & " +
+                " & ".join("\\multicolumn{2}{c}{%s}" % a[1] for a in ALGOS) +
+                " \\\\\n" + "".join("\\cmidrule(lr){%d-%d}"
+                                     % (3 + 2 * i, 4 + 2 * i)
+                                     for i in range(len(ALGOS))) +
+                "\nfamily & $\\log_2 n$ & " +
+                " & ".join([n] * len(ALGOS)) + " \\\\\n\\midrule\n")
+
+    def times(fam, l):
+        c = []
+        for a, _ in ALGOS:
+            t1, k1 = tot(fam, l, a + "c", 0)
+            tt, kt = tot(fam, l, a + "w", 1)
+            c += [fmtt(t1 / k1 if k1 else None), fmtt(tt / kt if kt else None)]
+        return c
+    table("lds-time.tex", cols("$T_1$ & $T_{tot}$"), times)
+
+    def ri(fam, l):
+        c = []
+        for a, _ in ALGOS:
+            t1, _ = tot(fam, l, a + "w", 0)
+            tt, _ = tot(fam, l, a + "w", 1)
+            nn, _ = tot(fam, l, a + "w", 2)
+            s1, _ = tot(fam, l, a + "c", 0)
+            st, _ = tot(fam, l, a + "c", 1)
+            k = len([1 for x in keys_of(fam, l, "lds")
+                     if (x[0], a + "w", x[1], x[2]) in meas])
+            r = g = None
+            if t1 and nn and nn > k:  # N - 1 re-solves per subproblem
+                r = (tt - t1) / (t1 / k * (nn - k))
+            if tt is not None and st is not None and tt > t1:
+                g = (st - s1) / (tt - t1)
+            c += [fmt(r), fmt(g)]
+        return c
+    table("lds-ri.tex", cols("$RI$ & $G$"), ri)
+
+
+def noise(out, reps):
+    """noise.tex: the same run repeated."""
     with open(os.path.join(out, "tables", "noise.tex"), "w") as f:
         f.write("% written by make-tables\n")
         f.write("\\begin{tabular}{lrr}\n\\toprule\nmethod & median & "
                 "90th perc. \\\\\n\\midrule\n")
         for a, lab in ALGOS:
-            for suf, what in (("w", "re-opt."), ("c", "scratch")):
+            for suf, what in (("w", "reopt."), ("c", "scratch")):
                 d = sorted(100 * (max(v) - min(v)) / mean(v)
                            for k, v in reps.items()
                            if k[1] == a + suf and len(v) > 1 and mean(v) > 0)
@@ -319,9 +395,6 @@ def main():
                 else:
                     f.write("%s %s & -- & -- \\\\\n" % (lab, what))
         f.write("\\bottomrule\n\\end{tabular}\n")
-
-    print("make-tables: %d runs (%d timed out), tables in %s"
-          % (len(byrun), len(timedout), os.path.join(out, "tables")))
 
 
 if __name__ == "__main__":

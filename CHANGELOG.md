@@ -46,12 +46,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   LEMON, its network simplex also on SmartDigraph, MCFSimplex, RelaxIV and
   the network simplex of CPLEX), each re-optimizing one next to the same
   from scratch, the download and build of the four DIMACS generators with
-  the sizes they need raised, the generation of the 117 instances of the
-  families of Kovacs (2015) up to 2^18 nodes, the campaign, which runs
+  the sizes they need raised, the generation of the 81 instances of the
+  families of Kovacs (2015) up to 2^14 nodes, the campaign, which runs
   several runs at a time on cores of their own, only while the rest of the
-  machine is idle, and the tables and the figures of its results; it
-  depends on nothing else in the tools and is built on its own, with CMake
-  against an installation or with its makefile
+  machine is idle, and the tables and the figures of its results; besides,
+  the sequences of the subproblems of the Lagrangian relaxation of the
+  Multicommodity Min-Cost Flow instances of Frangioni and Manca (2006),
+  built by the meta generator dmx2pprn, which `reopt_record` records from a
+  `LagrangianDualSolver` whose subproblems a `MCFSimplex` solves and writes
+  (`MCFTrace`), and which `reopt_bench -r` replays with every method, with
+  their tables; it depends on nothing else in the tools and is built on its
+  own, with CMake against an installation or with its makefile (the latter
+  for `reopt_bench` alone)
 
 - `tssb_solver/ldld`, the computational study on the nested and the
   recursive Lagrangian dual of a `TwoStageStochasticBlock`: a driver of its

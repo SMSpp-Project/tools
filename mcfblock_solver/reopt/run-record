@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+#
+# run-record < out-dir > [ instance ... ]
+#
+# The recording runs of the study: for each instance of mmcf-instances.txt
+# (or only those named, as <family>-<log2n>-<seed>, e.g., netgen8-12-1 or
+# pds-40-1), reopt_record solves its Lagrangian dual, whose subproblems are
+# solved by MCFSimplex, writing their sequence in <out-dir>/<name>.trc
+# [see reopt_record and MCFTrace.h], which run-campaign then replays with
+# every method (KINDS=lds). A line per instance goes to <out-dir>/record.csv,
+#
+#   instance,status,lb,ub,time,solves,bytes
+#
+# i.e., what reopt_record prints followed by the size of the trace. The
+# instances are those of make-mmcf-instances, in INST (default instances/);
+# PAR (default 1) of them are recorded at a time, the time of a recording
+# being of no interest, and a trace already there is not written again.
+
+set -u
+out=${1:?usage: run-record <out-dir> [instance ...]}
+shift
+here=$(cd "$(dirname "$0")" && pwd)
+export rec=${REC:-$here/build/reopt_record}
+export inst=${INST:-$here/instances}
+export cfg=$here/config
+par=${PAR:-1}
+
+[ -x "$rec" ] || { echo "run-record: no reopt_record at $rec" >&2; exit 1; }
+mkdir -p "$out"
+export out=$(cd "$out" && pwd)
+touch "$out/record.csv"
+
+one() {  # one <family> <log2n> <seed>
+  local fam=$1 l=$2 s=$3 name file type rc line
+  name=$fam-$l-$s
+  [ -s "$out/$name.trc" ] && return 0
+  if [ "$fam" = pds ]; then
+    file=$inst/pds/pds$l; type=m
+  else
+    file=$inst/$name.pprn; type=c
+  fi
+  line=$("$rec" -c "$cfg" -t "$type" -o "$out/$name.trc.tmp" "$file" \
+           2>> "$out/errors")
+  rc=$?
+  line=$(echo "$line" | tail -1)
+  if [ "$rc" -ne 0 ] || [ -z "$line" ]; then
+    echo "[$(date +%m-%d_%H:%M)] $name: failed" >&2
+    rm -f "$out/$name.trc.tmp"
+    return 0
+  fi
+  mv "$out/$name.trc.tmp" "$out/$name.trc"
+  # the name of the instance, as run-campaign and make-tables use it
+  line=$name,${line#*,}
+  flock "$out/record.csv" -c \
+    "echo '$line,$(stat -c %s "$out/$name.trc")' >> '$out/record.csv'"
+  echo "[$(date +%m-%d_%H:%M)] $name: $line"
+}
+export -f one
+
+grep -v '^#' "$here/mmcf-instances.txt" | grep -v '^ *$' |
+while read -r fam l s; do
+  if [ $# -gt 0 ] && ! printf '%s\n' "$@" | grep -qx "$fam-$l-$s"; then
+    continue
+  fi
+  echo "$fam $l $s"
+done | xargs -P "$par" -L 1 bash -c 'one "$@"' _

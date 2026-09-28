@@ -54,8 +54,7 @@ change of the graph, they start from scratch.
 `instances.txt` lists them by family, size and seed. The families are those
 of Kovacs (2015), with the same parameters: NETGEN, GRIDGEN and GOTO with
 `m = 8n` and `m = n sqrt(n)` arcs, and GRIDGRAPH on grids of 16 columns, of
-16 rows and square ones, from `n = 2^10` to `2^16` nodes (`2^14` for the
-dense ones), 3 seeds each. The generators are those of the first DIMACS
+16 rows and square ones, from `n = 2^10` to `2^14` nodes, 3 seeds each. The generators are those of the first DIMACS
 Implementation Challenge, which `gen/fetch-generators` downloads and builds
 in `gen/bin` (their sources are not in the repository, since NETGEN comes
 with restrictions on its redistribution), and `make-instances` writes the
@@ -78,6 +77,33 @@ times a standard normal step, kept nonnegative, so that the costs are
 fractional. The changes depend only on the instance, the kind and the
 seed, hence every method solves the same sequence of instances and their
 optimal values can be compared round by round.
+
+## The sequences of a Lagrangian relaxation
+
+Besides the changes that `reopt_bench` makes, the study replays the
+sequences of instances that an application generates, as in Frangioni and
+Manca (2006): the subproblems of the Lagrangian relaxation of the mutual
+capacities of a Multicommodity Min-Cost Flow (MMCF) problem, one MCF per
+commodity whose costs change at each iteration of the bundle method that
+solves the Lagrangian dual. `mmcf-instances.txt` lists the MMCF instances:
+those that `dmx2pprn` (the "meta" generator of Castro and Nabona, built by
+`gen/fetch-generators`) builds with 10 commodities on the graphs of some
+instances of `instances.txt`, with the parameters of Frangioni and Manca
+(2006), and the PDS ones, which `make-mmcf-instances` writes in
+`instances/`.
+
+`reopt_record` solves the Lagrangian dual of an instance with
+`LagrangianDualSolver` [see `config/LDBSCfg.txt`], whose subproblems are
+solved one at a time by `MCFSolver<MCFTrace>`: `MCFTrace` [see
+`MCFTrace.h`] is a `MCFSimplex` that writes to a trace, at each solve, what
+has changed since the previous solve of the same subproblem. Then
+`reopt_bench -r` gives the trace to one method, which solves the same
+sequence, interleaved as it was, and compares each optimal value with the
+one of the recording run. Thus every method solves exactly the same
+instances, which a Lagrangian relaxation run with each of them would not
+give, since different optimal solutions of a subproblem lead the bundle
+method along different paths; this is the tester class of Frangioni and
+Manca (2006) split in two runs.
 
 ## The measures
 
@@ -104,7 +130,9 @@ e.g., `cmake --install <build> --prefix <dir>`):
 Inside the umbrella project the Find modules of the external libraries are
 taken from `../../../SMS++/cmake`; elsewhere they are given with
 `-DCMAKE_MODULE_PATH`. With the makefiles, from this directory inside the
-umbrella project, `make` builds `reopt_bench` here.
+umbrella project, `make` builds `reopt_bench` here; `reopt_record`, which
+needs `MMCFBlock`, `LagrangianDualSolver` and `BundleSolver`, is built by
+CMake alone, when they are there.
 
 ## Running
 
@@ -113,6 +141,12 @@ umbrella project, `make` builds `reopt_bench` here.
     PAR=32 ./run-campaign results/<name>   # every method on every instance
     ./make-tables results/<name>           # results/<name>/tables/*.tex
     ./make-plots results/<name>            # results/<name>/plots/*.png
+
+    ./make-mmcf-instances                  # instances/ from mmcf-instances.txt
+    ./run-record traces                    # traces/<name>.trc
+    KINDS=lds LIST=mmcf-instances.txt INST=traces PAR=32 \
+      ./run-campaign results/lds           # every method on every trace
+    ./make-tables results/lds              # lds-time.tex and lds-ri.tex
 
 `run-campaign` runs each method on each instance, kind of change, seed and
 repetition in a process of its own, PAR of them at a time, each pinned to a

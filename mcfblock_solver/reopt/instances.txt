@@ -9,8 +9,8 @@
 #   gridwide, gridlong,  GRIDGRAPH on grids of 16 columns, of 16 rows and
 #   gridsquare           square ones
 #
-# The sparse families go up to 2^18 nodes, and the dense ones stop at 2^14,
-# their number of arcs growing as n sqrt(n).
+# All the families go up to 2^14 nodes, about the size of the largest
+# instances of Frangioni and Manca (2006).
 netgen8 10 1
 netgen8 10 2
 netgen8 10 3
@@ -20,12 +20,6 @@ netgen8 12 3
 netgen8 14 1
 netgen8 14 2
 netgen8 14 3
-netgen8 16 1
-netgen8 16 2
-netgen8 16 3
-netgen8 18 1
-netgen8 18 2
-netgen8 18 3
 gridgen8 10 1
 gridgen8 10 2
 gridgen8 10 3
@@ -35,12 +29,6 @@ gridgen8 12 3
 gridgen8 14 1
 gridgen8 14 2
 gridgen8 14 3
-gridgen8 16 1
-gridgen8 16 2
-gridgen8 16 3
-gridgen8 18 1
-gridgen8 18 2
-gridgen8 18 3
 goto8 10 1
 goto8 10 2
 goto8 10 3
@@ -50,12 +38,6 @@ goto8 12 3
 goto8 14 1
 goto8 14 2
 goto8 14 3
-goto8 16 1
-goto8 16 2
-goto8 16 3
-goto8 18 1
-goto8 18 2
-goto8 18 3
 gridwide 10 1
 gridwide 10 2
 gridwide 10 3
@@ -65,12 +47,6 @@ gridwide 12 3
 gridwide 14 1
 gridwide 14 2
 gridwide 14 3
-gridwide 16 1
-gridwide 16 2
-gridwide 16 3
-gridwide 18 1
-gridwide 18 2
-gridwide 18 3
 gridlong 10 1
 gridlong 10 2
 gridlong 10 3
@@ -80,12 +56,6 @@ gridlong 12 3
 gridlong 14 1
 gridlong 14 2
 gridlong 14 3
-gridlong 16 1
-gridlong 16 2
-gridlong 16 3
-gridlong 18 1
-gridlong 18 2
-gridlong 18 3
 gridsquare 10 1
 gridsquare 10 2
 gridsquare 10 3
@@ -95,12 +65,6 @@ gridsquare 12 3
 gridsquare 14 1
 gridsquare 14 2
 gridsquare 14 3
-gridsquare 16 1
-gridsquare 16 2
-gridsquare 16 3
-gridsquare 18 1
-gridsquare 18 2
-gridsquare 18 3
 netgensr 10 1
 netgensr 10 2
 netgensr 10 3

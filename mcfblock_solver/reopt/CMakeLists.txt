@@ -2,14 +2,17 @@
 #    CMake file of the study on the re-optimization of the Min-Cost Flow      #
 #    problem                                                                  #
 #                                                                             #
-#    A project of its own, not added to the one of tools/: it is configured  #
-#    from this directory against an SMS++ build or installation, e.g.,       #
+#    A project of its own, not added to the one of tools/: it is configured   #
+#    from this directory against an SMS++ build or installation, e.g.,        #
 #                                                                             #
 #      cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \                       #
 #            -DCMAKE_PREFIX_PATH=<the SMS++ build or install directory>       #
 #      cmake --build build                                                    #
 #                                                                             #
-#    and builds the driver reopt_bench alone.                                 #
+#    and builds the driver reopt_bench, plus reopt_record, which records      #
+#    the sequences of a Lagrangian relaxation of the multicommodity flow      #
+#    problem, when MMCFBlock, LagrangianDualSolver and BundleSolver are       #
+#    there.                                                                   #
 #                                                                             #
 #                               Donato Meoli                                  #
 #                          Dipartimento di Informatica                        #
@@ -47,3 +50,19 @@ target_link_libraries(reopt_bench PRIVATE
                       SMS++::MCFBlock
                       SMS++::MCFClassSolver
                       SMS++::MCFLemonSolver)
+
+find_package(MMCFBlock QUIET)
+find_package(LagrangianDualSolver QUIET)
+find_package(BundleSolver QUIET)
+if (MMCFBlock_FOUND AND LagrangianDualSolver_FOUND AND BundleSolver_FOUND)
+    add_executable(reopt_record reopt_record.cpp)
+    target_link_libraries(reopt_record PRIVATE
+                          SMS++::MMCFBlock
+                          SMS++::MCFBlock
+                          SMS++::MCFClassSolver
+                          SMS++::LagrangianDualSolver
+                          SMS++::BundleSolver)
+else ()
+    message(STATUS "reopt_record left out: it needs MMCFBlock, "
+                   "LagrangianDualSolver and BundleSolver")
+endif ()
