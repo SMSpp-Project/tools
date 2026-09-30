@@ -199,6 +199,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `tssb_solver -k` writes (-O) the Solution of the `TwoStageStochasticBlock`,
+  one `ScenarioSolution` per scenario as without -k, rather than that of the
+  root of its Benders form, which pypsa2smspp could not read back; and
+  `solve_all()` takes the function saying whether this process writes the
+  Solution and the State, which `tssb_solver` passes since it can run under
+  MPI, so that the tool compiles again
+
 - the `MPBCfg.txt` of `ucblock_solver`, `tssb_solver`, `sddp_solver` and
   `investmentblock_solver`, which every default configuration with a
   BundleSolver names, asked for Gurobi, so that these tools stopped at once

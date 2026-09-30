@@ -55,7 +55,9 @@
  * to the TwoStageStochasticBlock, the Benders form is assembled around it,
  * and the BlockSolverConfig is applied to the root of the form, which is
  * where a Benders decomposition Solver is attached. The form is given back
- * once solved. It is only available for a BlockFile.
+ * once solved, and the Solution written (-O) is that of the
+ * TwoStageStochasticBlock, as without -k. It is only available for a
+ * BlockFile.
  *
  * A MultiStageStochasticBlock is a TwoStageStochasticBlock, and this tool
  * solves it as well when it is built with that module: with -k, the
@@ -310,13 +312,19 @@ static void solve_Benders_form( const std::string & name ,
 
  set_solver_logs( form );
 
- // Solve
- solve_all( form , is_solution_writer );
+ // Solve, the Solution being that of the TwoStageStochasticBlock
+ solve_all( form , is_solution_writer , false );
 
  // cleanup
  cleanup_bsc( form , s_config );
  delete s_config;
  tssb->give_back_Benders_form( form );
+
+ // the leaves are back in the TwoStageStochasticBlock, with the values
+ // the Solver has written into them
+ if( is_solution_writer() )
+  write_final_Solution( tssb );
+
  delete block;
  }
 

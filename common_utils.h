@@ -473,9 +473,16 @@ inline void print_solver_parameters( Block * block ) {
 
 /*--------------------------------------------------------------------------*/
 /// compute() the Block with all available Solver(s) (unless dry run)
-/** With -v 2, print_solver_parameters() is called first. */
+/** With -v 2, print_solver_parameters() is called first. The final Solution
+ * and State are written only if \p is_writer, when given, returns true once
+ * the Solvers have been asked for their solution (under MPI, by rank 0
+ * only); the final Solution is not written at all if \p write_solution is
+ * false, which is the case when it has to be taken from another Block than
+ * \p block, e.g., the one \p block has been assembled around. */
 
-int solve_all( Block * block );
+int solve_all( Block * block ,
+               const std::function< bool( void ) > & is_writer = {} ,
+               bool write_solution = true );
 
 /*--------------------------------------------------------------------------*/
 /// writes a new nc4 problem using the Block and its Configuration(s)

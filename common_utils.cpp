@@ -1040,7 +1040,8 @@ void print_solver_parameters( const std::vector< Block * > & roots )
 
 /*--------------------------------------------------------------------------*/
 
-int solve_all( Block * block )
+int solve_all( Block * block , const std::function< bool( void ) > & is_writer ,
+               bool write_solution )
 {
  // load initial Solution, if provided - - - - - - - - - - - - - - - - - - - -
  int retval = 0;
@@ -1115,11 +1116,16 @@ int solve_all( Block * block )
     }
    }
 
+  // only the writer writes, once all have retrieved the solution- - - - - -
+  const bool writer = ( ! is_writer ) || is_writer();
+
   // write final Solution, if required - - - - - - - - - - - - - - - - - - - -
-  write_final_Solution( block , outsolcfg );
+  if( writer && write_solution )
+   write_final_Solution( block , outsolcfg );
 
   // write final State, if required- - - - - - - - - - - - - - - - - - - - - -
-  write_final_State( solver );
+  if( writer )
+   write_final_State( solver );
 
   }  // end( for( each Solver ) )- - - - - - - - - - - - - - - - - - - - - - -
      //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
