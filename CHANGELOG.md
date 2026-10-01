@@ -36,29 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   an SVM: the configuration of the Solvers compared, the download of the data
   sets, the campaign guarded by the load of the machine and the tables
 
-- `mcfblock_solver/reopt`, the computational study on the re-optimization of
-  the Min-Cost Flow problem: a driver of its own (`reopt_bench`, which runs
-  one `Solver` of a `BlockSolverConfig` per process on a sequence of changes
-  of the costs, of the capacities, of the deficits or of the closed arcs,
-  or of all the costs a little at each round, as those of a Lagrangian
-  subproblem along a subgradient method, the same for every method, and prints the value and the time of each
-  solve), the configuration of the sixteen methods (the four algorithms of
-  LEMON, its network simplex also on SmartDigraph, MCFSimplex, RelaxIV and
-  the network simplex of CPLEX), each re-optimizing one next to the same
-  from scratch, the download and build of the four DIMACS generators with
-  the sizes they need raised, the generation of the 81 instances of the
-  families of Kovacs (2015) up to 2^14 nodes, the campaign, which runs
-  several runs at a time on cores of their own, only while the rest of the
-  machine is idle, and the tables and the figures of its results; besides,
-  the sequences of the subproblems of the Lagrangian relaxation of the
-  Multicommodity Min-Cost Flow instances of Frangioni and Manca (2006),
-  built by the meta generator dmx2pprn, which `reopt_record` records from a
-  `LagrangianDualSolver` whose subproblems a `MCFSimplex` solves and writes
-  (`MCFTrace`), and which `reopt_bench -r` replays with every method, with
-  their tables; it depends on nothing else in the tools and is built on its
-  own, with CMake against an installation or with its makefile (the latter
-  for `reopt_bench` alone)
-
 - `tssb_solver/ldld`, the computational study on the nested and the
   recursive Lagrangian dual of a `TwoStageStochasticBlock`: a driver of its
   own (`ldld_bench`, which runs one `Solver` of a `BlockSolverConfig` per
