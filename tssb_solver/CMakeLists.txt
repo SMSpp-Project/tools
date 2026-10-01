@@ -36,7 +36,7 @@ if (TARGET SMS++::UCBlock AND
 
     add_executable(tssb_solver ../common_utils.cpp
                                tssb_solver.cpp)
-    target_compile_features(tssb_solver PUBLIC cxx_std_17)
+    target_compile_features(tssb_solver PUBLIC cxx_std_20)
     target_include_directories(tssb_solver PRIVATE .. ../ucblock_solver)
     target_link_libraries(tssb_solver PRIVATE
                           SMS++::UCBlock

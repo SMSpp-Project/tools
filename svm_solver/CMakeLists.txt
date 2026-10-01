@@ -33,7 +33,7 @@ if (TARGET SMS++::SVMBlock)
     add_executable(svm_solver ../common_utils.cpp
                               ../ml_utils.cpp
                               svm_solver.cpp)
-    target_compile_features(svm_solver PUBLIC cxx_std_17)
+    target_compile_features(svm_solver PUBLIC cxx_std_20)
     target_include_directories(svm_solver PRIVATE ..)
     target_link_libraries(svm_solver PRIVATE SMS++::SVMBlock)
 

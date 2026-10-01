@@ -7,7 +7,7 @@ endif ()
 
 # -------- chgcfg ----------------------------------------------------------- #
 add_executable(chgcfg ../common_utils.cpp chgcfg.cpp)
-target_compile_features(chgcfg PUBLIC cxx_std_17)
+target_compile_features(chgcfg PUBLIC cxx_std_20)
 target_include_directories(chgcfg PRIVATE ..)
 target_link_libraries(chgcfg PRIVATE SMS++::SMS++)
 
