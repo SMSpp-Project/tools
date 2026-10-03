@@ -74,6 +74,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a `CapacitatedFacilityLocationBlock` can be solved by Lagrangian
   decomposition and by a Branch-and-Bound on it
 
+- a meta BlockSolverConfig is applied father-first, as the meta BlockConfig
+  and the other dispatches by classname already were, and the sub-Block of
+  a Block are looked up after it has been configured
+
 - the hard components of the Lagrangian Dual in `BSPar-LD.txt` and
   `BSPar-greedy-LD.txt` of `sddp_solver`, and in `BSPar-LD.txt` of
   `investmentblock_solver`, are named with `vstrNoEasy` of the inner
@@ -180,6 +184,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   only the code building the configuration read
 
 ### Fixed
+
+- `cleanup_bsc()` also cleans the Block configured by the `"*"` entry of a
+  meta BlockSolverConfig, whose Solver were never removed
 
 - `tssb_solver -k` writes (-O) the Solution of the `TwoStageStochasticBlock`,
   one `ScenarioSolution` per scenario as without -k, rather than that of the
