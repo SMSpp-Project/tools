@@ -685,42 +685,27 @@ std::string installed_config_dir( void )
 
 /*--------------------------------------------------------------------------*/
 
+using MapConfig = SimpleConfiguration< std::map< std::string ,
+						 Configuration * > >;
+
+/*--------------------------------------------------------------------------*/
+
 void config_Block( Block * block ,
 		   Configuration * b_config , Configuration * s_config )
 {
- // std::list rather than std::vector since it's built by push_back and
- // only trasversed head-to-tail
- std::list< Block * > BFS;
-
  if( b_config ) {
-  // handle the special case of a "meta" BlockConfig
-  if( auto * mb =
-      dynamic_cast< SimpleConfiguration< std::map< std::string ,
-                                                   Configuration * > >
-                                         * >( b_config ) ) {
-
-   // construct the list of all Block inside block
-   BFS.push_back( block );
-   for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
-    for( auto el : ( *bit )->get_nested_Blocks() )
-     BFS.push_back( el );
-
-   auto & map = mb->f_value;
-
-   // now BlockConfig-ure all Block whose classname() matches, falling back
-   // to the "*" entry (if any) for the non-matching ones
-   for( auto b : BFS ) {
-    auto bcit = map.find( b->classname() );
-    if( bcit == map.end() )
-     bcit = map.find( "*" );
-    if( bcit != map.end() )
-     if( auto bc = dynamic_cast< BlockConfig * >( bcit->second ) ) {
-      auto cbc = bc->clone();
-      cbc->apply( b );
-      delete cbc;
-      }
-    }
-   }
+  // handle the special case of a "meta" BlockConfig: BlockConfig-ure all
+  // Block whose classname() matches, falling back to the "*" entry (if any)
+  // for the non-matching ones
+  if( auto mb = dynamic_cast< MapConfig * >( b_config ) )
+   for_each_by_classname( block , mb->f_value ,
+			  []( Block * b , Configuration * c ) {
+			   if( auto bc = dynamic_cast< BlockConfig * >( c ) ) {
+			    auto cbc = bc->clone();
+			    cbc->apply( b );
+			    delete cbc;
+			    }
+			   } );
   else  // must be an "ordinary" BlockConfig, just apply() it
    if( auto * bc = dynamic_cast< BlockConfig * >( b_config ) )
     bc->apply( block );
@@ -730,39 +715,19 @@ void config_Block( Block * block ,
   }
 
  if( s_config ) {
-  // handle the special case of a "meta" BlockSolverConfig
-  if( auto * mb =
-      dynamic_cast< SimpleConfiguration< std::map< std::string ,
-                                                   Configuration * > >
-                                         * >( s_config ) ) {
-
-   // construct the list of all Block inside block (if not there already)
-   if( BFS.empty() ) {
-    BFS.push_back( block );
-    for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
-     for( auto el : ( *bit )->get_nested_Blocks() )
-      BFS.push_back( el );
-    }
-
-   auto & map = mb->f_value;
-
-   // now BlockSolverConfig-ure all Block whose classname() matches, falling
-   // back to the "*" entry (if any) for the non-matching ones, leaf-first
-   // (reverse BFS order): a Solver attached to a parent Block (e.g. a
-   // LagrangianDualSolver decomposing it) must see the Solvers of its
-   // sub-Blocks already in place, so the sub-Blocks are configured first
-   for( auto bit = BFS.rbegin() ; bit != BFS.rend() ; ++bit ) {
-    auto bscit = map.find( ( *bit )->classname() );
-    if( bscit == map.end() )
-     bscit = map.find( "*" );
-    if( bscit != map.end() )
-     if( auto bsc = dynamic_cast< BlockSolverConfig * >( bscit->second ) )
-      bsc->apply( *bit );
-    }
+  // handle the special case of a "meta" BlockSolverConfig: the same, father
+  // first, as the Solver of a Block finds those of its sub-Block when it is
+  // compute()-d, not when it is registered
+  if( auto mb = dynamic_cast< MapConfig * >( s_config ) ) {
+   for_each_by_classname( block , mb->f_value ,
+			  []( Block * b , Configuration * c ) {
+			   if( auto bsc =
+			       dynamic_cast< BlockSolverConfig * >( c ) )
+			    bsc->apply( b );
+			   } );
 
    // finally, clear() all the BlockSolverConfig for final cleanup
-   for( auto & el : map )
-    (el.second)->clear();
+   mb->clear();
    }
   else {  // must be an "ordinary" BlockSolverConfig, just apply() it
    if( auto * sc = dynamic_cast< BlockSolverConfig * >( s_config ) ) {
@@ -783,28 +748,18 @@ void cleanup_bsc( Block * block , Configuration * s_config )
  if( ! s_config )
   return;
 
-  // handle the special case of a "meta" BlockSolverConfig
-  if( auto * mb =
-      dynamic_cast< SimpleConfiguration< std::map< std::string ,
-                                                   Configuration * > >
-                                         * >( s_config ) ) {
-   std::list< Block * > BFS;
-   BFS.push_back( block );
-   for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
-    for( auto el : ( *bit )->get_nested_Blocks() )
-     BFS.push_back( el );
-
-   auto & map = mb->f_value;
-
-   // now apply the clear()-ed BlockSolverConfig to all Block whose
-   // classname() matches
-   for( auto b : BFS )
-    if( auto bscit = map.find( b->classname() ); bscit != map.end() )
-     if( auto bsc = dynamic_cast< BlockSolverConfig * >( bscit->second ) )
-      bsc->apply( b );
-   }
-  else  // it *must* be a BlockSolverConfig, it has been checked before
-   static_cast< BlockSolverConfig * >( s_config )->apply( block );
+ // handle the special case of a "meta" BlockSolverConfig: apply the
+ // clear()-ed BlockSolverConfig to all Block whose classname() matches,
+ // or that of the "*" entry (if any) to the non-matching ones
+ if( auto mb = dynamic_cast< MapConfig * >( s_config ) )
+  for_each_by_classname( block , mb->f_value ,
+			 []( Block * b , Configuration * c ) {
+			  if( auto bsc =
+			      dynamic_cast< BlockSolverConfig * >( c ) )
+			   bsc->apply( b );
+			  } );
+ else  // it *must* be a BlockSolverConfig, it has been checked before
+  static_cast< BlockSolverConfig * >( s_config )->apply( block );
  }
 
 /*--------------------------------------------------------------------------*/
