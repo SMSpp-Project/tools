@@ -22,6 +22,9 @@ if (NOT hasParent)
     # Blocks
     find_package(CapacitatedFacilityLocationBlock)
     # Solvers
+    find_package(LagrangianDualSolver)
+    find_package(BundleSolver)
+    find_package(BranchAndXSolver)
     find_package(MILPSolver)
 endif ()
 
@@ -34,6 +37,18 @@ if (TARGET SMS++::CapacitatedFacilityLocationBlock)
     target_link_libraries(cflblock_solver PRIVATE
             SMS++::CapacitatedFacilityLocationBlock)
 
+    if (TARGET SMS++::LagrangianDualSolver)
+        target_link_libraries(cflblock_solver PRIVATE
+                SMS++::LagrangianDualSolver)
+    endif ()
+    if (TARGET SMS++::BundleSolver)
+        target_link_libraries(cflblock_solver PRIVATE
+                SMS++::BundleSolver)
+    endif ()
+    if (TARGET SMS++::BranchAndXSolver)
+        target_link_libraries(cflblock_solver PRIVATE
+                SMS++::BranchAndXSolver)
+    endif ()
     if (TARGET SMS++::MILPSolver)
         target_link_libraries(cflblock_solver PRIVATE
                 SMS++::MILPSolver)

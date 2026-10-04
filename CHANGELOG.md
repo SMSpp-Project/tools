@@ -69,6 +69,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `cflblock_solver` links `LagrangianDualSolver`, `BundleSolver` and
+  `BranchAndXSolver` when they are built, as `ucblock_solver` does, so that
+  a `CapacitatedFacilityLocationBlock` can be solved by Lagrangian
+  decomposition and by a Branch-and-Bound on it
+
 - the hard components of the Lagrangian Dual in `BSPar-LD.txt` and
   `BSPar-greedy-LD.txt` of `sddp_solver`, and in `BSPar-LD.txt` of
   `investmentblock_solver`, are named with `vstrNoEasy` of the inner
