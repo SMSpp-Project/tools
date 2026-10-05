@@ -41,6 +41,13 @@ if (TARGET SMS++::CapacitatedFacilityLocationBlock)
         target_link_libraries(cflblock_solver PRIVATE
                 SMS++::LagrangianDualSolver)
     endif ()
+    # a configuration may ask for LagrangianDualRelaxationSolverML by name,
+    # and the class is in the library of its own that only a build with
+    # Torch has
+    if (TARGET SMS++::LagrangianDualSolverML)
+        target_link_libraries(cflblock_solver PRIVATE
+                SMS++::LagrangianDualSolverML)
+    endif ()
     if (TARGET SMS++::BundleSolver)
         target_link_libraries(cflblock_solver PRIVATE
                 SMS++::BundleSolver)
