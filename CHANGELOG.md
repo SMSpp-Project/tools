@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the configurations that attach the dynamic programming Solver of the
+  nuclear units inside `ucblock_solver` and inside the timing study
+  (`NUBSCfg-DP.txt`), the Lagrangian chain of a unit commitment whose units
+  are nuclear being otherwise that of the thermal ones
+
 - `investmentblock_solver`: `InnerBCfg-LD.txt` solves the inner UCBlock of the
   `InvestmentFunction` by the `LagrangianDualSolver` (`IBOCfg-LD.txt`,
   `IFCfg-LD.txt`, `BSCfg-LD.txt`), whose ComputeConfig is in `LDCfg.txt`,
@@ -269,11 +274,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.0] - 2026-09-12
 
 ### Added
-
-- the configurations that attach the dynamic programming Solver of the
-  nuclear units inside `ucblock_solver` and inside the timing study
-  (`NUBSCfg-DP.txt`), the Lagrangian chain of a unit commitment whose units
-  are nuclear being otherwise that of the thermal ones
 
 - `svm_solver`, a SVMBlock solver that trains a Support Vector Machine and
   performs the model selection around it: hold-out and k-fold
