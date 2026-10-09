@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `investmentblock_solver`: `InnerBCfg-LD.txt` solves the inner UCBlock of the
+  `InvestmentFunction` by the `LagrangianDualSolver` (`IBOCfg-LD.txt`,
+  `IFCfg-LD.txt`, `BSCfg-LD.txt`), whose ComputeConfig is in `LDCfg.txt`,
+  shared with `BSPar-LD.txt`
+
 - `investmentblock_solver` solves an `InvestmentBlock` whose inner Block is an
   `SDDPBlock`, from a Block file as from a problem file: the UCBlock of each
   stage, which sits behind a `BendersBFunction` that no BlockConfig crosses,
@@ -68,6 +73,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   BendersDecompositionSolver when CMake finds it, the makefile does not
 
 ### Changed
+
+- `investmentblock_solver` passes to each stage of an `SDDPBlock` the
+  `InitUpDownTime` of every thermal unit that the simulation gives, besides
+  `InitialPower`, and puts it back at the end of the simulation; a unit whose
+  Variable are generated takes only a value that keeps its initial state [see
+  `ThermalUnitBlock::set_init_updown_time()`] and otherwise keeps its own,
+  which is said once on the standard error
 
 - `cflblock_solver` links `LagrangianDualSolver`, `BundleSolver` and
   `BranchAndXSolver` when they are built, as `ucblock_solver` does, so that
@@ -187,6 +199,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `cleanup_bsc()` also cleans the Block configured by the `"*"` entry of a
   meta BlockSolverConfig, whose Solver were never removed
+
+- `investmentblock_solver` exits with a message when the `InvestmentBlock`
+  cannot be built (e.g., without -p), instead of crashing; the data that a
+  simulation writes into the stages of an `SDDPBlock` are put back at its end,
+  so that the next training starts from those of the stages
 
 - `tssb_solver -k` writes (-O) the Solution of the `TwoStageStochasticBlock`,
   one `ScenarioSolution` per scenario as without -k, rather than that of the

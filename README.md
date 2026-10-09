@@ -258,7 +258,10 @@ UCBlock of every stage of an SDDPBlock included. Its `InvestmentBlock` entry
 is an OBlockConfig (`IBOCfg.txt`), which reformulates the bounds on the
 investment and gives the InvestmentFunction its ComputeConfig (`IFCfg.txt`):
 the file of the investment candidates and, in the extra Configuration, the
-BlockSolverConfig of the inner Block. `examples/instance-3` holds an
+BlockSolverConfig of the inner Block. With `-B InnerBCfg-LD.txt` the inner
+UCBlock is solved by the LagrangianDualSolver of `BSCfg-LD.txt` instead of
+the linear program of `BSCfg.txt`, the BlockSolverConfig of the
+InvestmentBlock (`-S`) being the same. `examples/instance-3` holds an
 InvestmentBlock over an SDDPBlock, solved with `-B SDDPBCfg-LD.txt`.
 
 The `-c` option specifies the prefix to the paths to all configuration
