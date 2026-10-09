@@ -1,11 +1,9 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - BSCfg.txt - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - BSCfg.txt - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for an MCFBlock, solved by the
 # MCFSimplex of MCFClass; the other Solvers of MCFBlock, RelaxIV, the
 # network simplex of LEMON or any :MILPSolver, can replace it
-#
-#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

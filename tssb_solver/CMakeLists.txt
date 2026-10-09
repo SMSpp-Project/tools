@@ -1,12 +1,9 @@
 # ----- Settings ------------------------------------------------------------ #
-# Since we are using the block factory, objects from linked libraries
-# may wrongly appear unused, and by default the linker does not include them,
-# so we have to force the linking.
-if (BUILD_SHARED_LIBS)
-    if (UNIX AND (NOT APPLE))
-        add_link_options("-Wl,--no-as-needed")
-    endif ()
-else ()
+# The classes of the modules register themselves in the factories from static
+# objects, which nothing in the tool names: a shared library is kept by what
+# the module itself asks of the linker [see its CMakeLists.txt], while an
+# archive has to be taken whole, or those objects are dropped.
+if (NOT BUILD_SHARED_LIBS)
     if (MSVC)
         add_link_options("/WHOLEARCHIVE" "/FORCE:MULTIPLE")
     else () # Unix
@@ -25,8 +22,10 @@ if (NOT hasParent)
     # Blocks
     find_package(UCBlock)
     find_package(TwoStageStochasticBlock)
+    find_package(MultiStageStochasticBlock)
     # Solvers
     find_package(LagrangianDualSolver)
+    find_package(BendersDecompositionSolver)
     find_package(BundleSolver)
     find_package(MILPSolver)
 endif ()
@@ -37,11 +36,16 @@ if (TARGET SMS++::UCBlock AND
 
     add_executable(tssb_solver ../common_utils.cpp
                                tssb_solver.cpp)
-    target_compile_features(tssb_solver PUBLIC cxx_std_17)
+    target_compile_features(tssb_solver PUBLIC cxx_std_20)
     target_include_directories(tssb_solver PRIVATE .. ../ucblock_solver)
     target_link_libraries(tssb_solver PRIVATE
                           SMS++::UCBlock
                           SMS++::TwoStageStochasticBlock)
+
+    if (TARGET SMS++::MultiStageStochasticBlock)
+        target_link_libraries(tssb_solver PRIVATE
+                              SMS++::MultiStageStochasticBlock)
+    endif ()
 
     if (TARGET SMS++::LagrangianDualSolver)
         target_link_libraries(tssb_solver PRIVATE SMS++::LagrangianDualSolver)
@@ -49,6 +53,11 @@ if (TARGET SMS++::UCBlock AND
 
     if (TARGET SMS++::BundleSolver)
         target_link_libraries(tssb_solver PRIVATE SMS++::BundleSolver)
+    endif ()
+
+    if (TARGET SMS++::BendersDecompositionSolver)
+        target_link_libraries(tssb_solver PRIVATE
+                              SMS++::BendersDecompositionSolver)
     endif ()
 
     if (TARGET SMS++::MILPSolver)

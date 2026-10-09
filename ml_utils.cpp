@@ -27,6 +27,8 @@
 
 #include <numeric>
 
+#include <set>
+
 #include <sstream>
 
 #include <stdexcept>
@@ -208,6 +210,60 @@ std::vector< DataSplit > k_fold( std::size_t n , unsigned k , unsigned seed ,
  return( splits );
 
  }  // end( k_fold )
+
+/*--------------------------------------------------------------------------*/
+
+std::vector< DataSplit > leave_p_out( std::size_t n , unsigned p , unsigned m ,
+                                      unsigned seed ,
+                                      const std::vector< double > & labels )
+{
+ if( ( p < 1 ) || ( p >= n ) )
+  throw( std::invalid_argument( "ml_utils: the samples left out must be "
+                                "between one and n - 1" ) );
+ if( ! m )
+  throw( std::invalid_argument( "ml_utils: no subset to draw" ) );
+
+ /* How many distinct subsets of size p there are, capped as soon as the
+  * count exceeds m: the number is binomial and overflows at once, while all
+  * that is needed of it is whether it is below m. */
+ std::size_t howmany = 1;
+ for( unsigned i = 0 ; i < p ; ++i ) {
+  howmany = howmany * ( n - i ) / ( i + 1 );
+  if( howmany > m )
+   break;
+  }
+ if( howmany < m )
+  m = howmany;
+
+ /* The order of the samples is the one of the other splits, so that the same
+  * seed gives the same permutation here and there; the subsets are its
+  * windows, shifted by a draw, and a subset already drawn is discarded. */
+ const IndexSet order = shuffled_indices( n , seed );
+
+ std::set< IndexSet > seen;
+ std::vector< DataSplit > splits;
+ splits.reserve( m );
+
+ for( unsigned r = 0 ; splits.size() < m ; ++r ) {
+  const IndexSet shuffled = shuffled_indices( n , seed + r + 1 );
+  IndexSet test( shuffled.begin() , shuffled.begin() + p );
+  std::sort( test.begin() , test.end() );
+
+  if( ! seen.insert( test ).second )
+   continue;
+
+  DataSplit split;
+  split.test = test;
+  for( auto i : order )
+   if( ! std::binary_search( test.begin() , test.end() , i ) )
+    split.train.push_back( i );
+
+  splits.push_back( std::move( split ) );
+  }
+
+ return( splits );
+
+ }  // end( leave_p_out )
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- SCORES -----------------------------------*/

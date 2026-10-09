@@ -1,12 +1,10 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - BSCfg.txt - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - BSCfg.txt - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a BinaryKnapsackBlock,
 # solved by the exact core Dynamic Programming; the full-table one, the
 # greedy solution of the continuous relaxation or any :MILPSolver can
 # replace it
-#
-#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

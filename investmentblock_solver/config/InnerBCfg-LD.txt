@@ -1,0 +1,29 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - InnerBCfg-LD.txt  - - - - - - - - - - - - - - -
+#
+# The "meta"-BlockConfig of InnerBCfg.txt, i.e., a map from a Block
+# classname() to the BlockConfig to apply to every Block of that class, with
+# the InvestmentBlock given IBOCfg-LD.txt, so that the inner UCBlock of the
+# InvestmentFunction is solved by the LagrangianDualSolver of BSCfg-LD.txt:
+#
+#   investmentblock_solver -B InnerBCfg-LD.txt <file>
+#
+# The BlockSolverConfig of the InvestmentBlock (-S) does not change.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# a "meta"-BlockConfig , i.e., a map classname --> its BlockConfig
+SimpleConfiguration<std::map<std::string,Configuration*>>
+
+5 # the number of elements in the map
+InvestmentBlock         *IBOCfg-LD.txt
+
+ThermalUnitBlock        *TUBCfg.txt
+DCNetworkBlock          *DCNBCfg.txt
+ACNetworkBlock          *ACBCfg.txt
+PolyhedralFunctionBlock *PFBCfg.txt
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - END InnerBCfg-LD.txt  - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

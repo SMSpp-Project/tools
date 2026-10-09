@@ -1,0 +1,27 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - BSCfg-LD.txt  - - - - - - - - - - - - - - - -
+#
+# The BlockSolverConfig of the inner UCBlock of the InvestmentFunction that
+# solves it by the LagrangianDualSolver of LDCfg.txt instead of the linear
+# program of BSCfg.txt [see IFCfg-LD.txt]: the InvestmentFunction uses the
+# first Solver of its inner Block, which is the only one here.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+1  # number of (the names of) Solver in this BlockSolverConfig
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+LagrangianDualSolver  # name of Solver
+
+1  # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - -
+*LDCfg.txt
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END BSCfg-LD.txt  - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -1,11 +1,9 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - BSCfg.txt - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - BSCfg.txt - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a
 # CapacitatedFacilityLocationBlock, solved as a MILP by a :MILPSolver;
 # intRelaxIntVars 1 solves its continuous relaxation instead
-#
-#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

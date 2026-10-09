@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - TUBCfg.txt- - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - -  TUBCfg.txt - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockConfig for a ThermalUnitBlock that is being
 # solved by a :MILPSolver. As such it is relevant:
@@ -13,8 +13,6 @@
 #
 # Note that if the latter does not include P/C (+8), then the former is
 # actually irrelevant
-#
-#   Antonio Frangioni, Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -38,7 +36,8 @@ SimpleConfiguration<std::pair<double,double>>
 
 # static_variables
 SimpleConfiguration<int>
-1    # 0 = 3bin, 1 = T, 2 = pt, 3 = DP, 4 = SU, 5 = SD, 6 = SUSD (Formulation)
+1    # 0 = 3bin, 1 = T, 2 = pt, 3 = DP, 4 = SU, 5 = SD, 6 = SUSD
+     # (Formulation)
 #9    # +8 with Perspective Cuts
 #17   # +16: start-up / shut-down variables are continuous
 
@@ -61,5 +60,5 @@ SimpleConfiguration<int>
 *    # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - END TUBCfg.txt- - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -  END TUBCfg.txt - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

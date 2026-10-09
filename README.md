@@ -39,14 +39,24 @@ is a link to it.
 
 These instructions will let you build SMS++ Tools on your system.
 
-The tools also come ready-made, one package each: `sudo apt install
-smspp-ucblock` from the [PPA of the
-project](https://launchpad.net/~smspp/+archive/ubuntu/ppa) gives
-`smspp_ucblock_solver` with its configuration files, its examples and its man
-page, and `smspp-project` gives them all; `conda install -c conda-forge
-smspp-project` and `brew install smspp` carry them too. A tool of a package
-finds its configuration next to its own executable, so it runs with no `-S` or
-`-B`. What follows is about building them yourself.
+The tools also come ready-made, one package each, in any of
+
+```sh
+sudo add-apt-repository ppa:smspp-project/smspp   # Ubuntu
+sudo apt install smspp-ucblock                    # and smspp-project for them all
+
+conda install -c conda-forge smspp-project        # Linux, macOS, Windows
+
+brew tap SMSpp-Project/smspp                      # macOS, Linux
+brew install smspp
+
+vcpkg install "smspp[core,ucblock,tools]"         # from the sources
+```
+
+where a package gives the tool, here `smspp_ucblock_solver`, with its
+configuration files, its examples and its man page. A tool finds its
+configuration next to its own executable, so it runs with no `-S` or `-B`.
+What follows is about building them yourself.
 
 ### Requirements
 
@@ -128,8 +138,17 @@ Options:
   -o, --output-solution           output the solutions
   -n, --nc4problem <file>         write nc4 problem on file
   -D, --dryrun                    skip the compute() call
-  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic, 2 = debug)
+  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic,
+                                  2 = debug, with the Solver logs and the
+                                  parameters of the Solvers of the Block,
+                                  3 = those of the sub-Blocks' Solvers too)
 ```
+
+With `-v 2` the tool prints, before solving, the value each parameter of
+the Solvers of the Block has actually been given, along with its default;
+with `-v 3` it does the same for the Solvers of all the sub-Blocks, those
+identical to each other printed once with their number. Together with `-D`
+this checks a configuration without solving anything.
 
 See the [`examples`](ucblock_solver/examples) directory for sample
 input files and configurations.
@@ -142,7 +161,7 @@ up relative to the `-c` prefix. For `sddp_solver`, `tssb_solver` and
 
 | tool                     | default `-B`                          | default `-S`   |
 |--------------------------|---------------------------------------|----------------|
-| `sddp_solver`            | `SDDPBCfg.txt` (or `SDDPBCfg-LD.txt`) | `SDDPSCfg.txt` |
+| `sddp_solver`            | `SDDPBCfg.txt`                        | `SDDPSCfg.txt` |
 | `tssb_solver`            | `TSSBCfg.txt`                         | `TSSBSCfg.txt` |
 | `mssb_solver`            | `InnerBCfg.txt`                       | `MSSBSCfg.txt` |
 | `investmentblock_solver` | `InnerBCfg.txt`                       | `BSPar.txt`    |
@@ -150,10 +169,11 @@ up relative to the `-c` prefix. For `sddp_solver`, `tssb_solver` and
 | `block_solver`           | `BCfg.txt`                            | `BSCfg.txt`    |
 | `mcfblock_solver` and the other four | `BCfg.txt`                | `BSCfg.txt`    |
 
-For `sddp_solver` the default `-B` is applied through the inner-Block "meta"
-BlockConfig (`SDDPBCfg.txt`, or `SDDPBCfg-LD.txt` when the SDDPSolver drives a
-LagrangianDualSolver), which linearises the `PolyhedralFunctionBlock` and
-shapes the network/units; passing a generic `BCfg.txt` instead is wrong and
+For `sddp_solver` the default `-B` is the "meta" BlockConfig `SDDPBCfg.txt`,
+dispatched to the Blocks of the inner Block of each stage, which linearises
+the `PolyhedralFunctionBlock` and shapes the network/units; the stages are
+solved via `LagrangianDualSolver` with `-B SDDPBCfg-LD.txt -S SDDPSCfg-LD.txt`
+(`-S SDDPSCfg-greedy-LD.txt` in simulation). Passing a generic `BCfg.txt` instead is wrong and
 makes the MILPSolver throw "Unknown type of Objective Function". The fallback
 applies only when the file is actually reachable, so a missing default is
 silently ignored, and explicit `-B`/`-S` always take precedence; an empty
@@ -161,8 +181,8 @@ name, as in `-B ''`, means no file at all.
 
 The `-c` prefix is applied to *every* Configuration filename, not only the
 top-level `-B`/`-S` files but also every filename referenced from inside a
-config file: the `*filename` include mechanism and the `strInnerBSC` /
-`str_LagBF_BSCfg` meta-config chains. A run from any working directory therefore
+config file: the `*filename` include mechanism, the `strInnerBSC` of
+`sddp_solver` and the `str_LagBF_BSCfg` meta-config chains. A run from any working directory therefore
 resolves every config relative to `-c`: point `-c` at the directory holding the
 `.txt` files and the tool needs no particular current directory (this is what
 lets an external driver such as pySMSpp invoke the tool from an arbitrary
@@ -218,21 +238,31 @@ files and configurations.
 ones:
 
 ```sh
-  -l, --load-cuts <file>          load cuts from a file
-  -n, --num-blocks <number>       number of sub-Blocks per stage
-  -r, --relax                     relax integer variables
-  -s, --simulate                  simulate the given investment
   -x, --initial-investment <file> initial investment
 ```
 
 The input netCDF file can be a problem file or a block file:
 
 - a problem file already contains a Block configuration and a Solver
-  configuration; any Block or Solver configuration provided by command line
-  will be ignored;
+  configuration for the InvestmentBlock; the `-S` option is ignored, and the
+  `-B` one only concerns the inner Block of the InvestmentFunction;
 
-- for a block file, if a Block configuration or a Solver configuration is not
-  provided, a default configuration will be used.
+- for a block file, `-S` gives the BlockSolverConfig of the InvestmentBlock
+  and `-B` its BlockConfig, by default `BSPar.txt` and `InnerBCfg.txt`.
+
+Everything the InvestmentBlock and its InvestmentFunction receive comes from
+the configuration files. `-B` is typically a "meta"-BlockConfig, a map from a
+Block classname() to its BlockConfig, which the tool dispatches to the
+InvestmentBlock and over the inner Block of its InvestmentFunction, the
+UCBlock of every stage of an SDDPBlock included. Its `InvestmentBlock` entry
+is an OBlockConfig (`IBOCfg.txt`), which reformulates the bounds on the
+investment and gives the InvestmentFunction its ComputeConfig (`IFCfg.txt`):
+the file of the investment candidates and, in the extra Configuration, the
+BlockSolverConfig of the inner Block. With `-B InnerBCfg-LD.txt` the inner
+UCBlock is solved by the LagrangianDualSolver of `BSCfg-LD.txt` instead of
+the linear program of `BSCfg.txt`, the BlockSolverConfig of the
+InvestmentBlock (`-S`) being the same. `examples/instance-3` holds an
+InvestmentBlock over an SDDPBlock, solved with `-B SDDPBCfg-LD.txt`.
 
 The `-c` option specifies the prefix to the paths to all configuration
 files. This means that if PATH is the value passed to the `-c` option, then
@@ -251,45 +281,7 @@ finite, then x_i = l_i. Otherwise, if the upper bound u_i on the i-th
 investment is finite, then x_i = u_i. Otherwise, if both bounds are not
 finite, then x_i = 0.
 
-To simulate a given investment, i.e., to compute the investment function at a
-given point, the `-s` option must be used. The investment to be simulated is
-given by the initial point as described above: a given point provided by the
-`-x` option or the default initial point.
-
-If the `-o` option is used, then part of the primal and dual solutions of
-every UCBlock for each scenario is output while the investment function is
-computed. Typically, one may want the solutions to be output in simulation
-mode (i.e., when the `-s` option is used).
-
-The `-n` option specifies the number of sub-Blocks of SDDPBlock that must be
-constructed for each stage. By default, SDDPBlock contains a single
-sub-Blocks for each stage. This option must be provided in order to solve
-multiple scenarios in parallel. In this case, the number of scenarios that
-are solved in parallel is n (assuming n is not larger than the number of
-scenarios).
-
-The `-B` and `-S` options are only considered if the given netCDF file is a
-BlockFile. The `-B` option specifies a BlockConfig file to be applied to every
-InvestmentBlock; while the `-S` option specifies a BlockSolverConfig file for
-every InvestmentBlock. If the `-B` option is not provided when the given
-netCDF file is a BlockFile, then a default configuration is considered.
-
-Initial cuts can be provided by using the `-l` option. This option must be
-followed by the path to the file containing the initial cuts. This file
-must have the following format. The first line contains a header and its
-content is ignored. Each of the following lines represent a cut and has the
-following format:
-
-    t, a_0, a_1, ..., a_k, b
-
-where 't' is a stage (an integer between 0 and time horizon minus 1), 'a_0',
-..., 'a_k' are the coefficients of the cut, and 'b' is the constant term of
-the cut.
-
-The `-r` option relaxes the integrality of every integer variable in the
-inner Block (typically the binary commitment variables of every
-ThermalUnitBlock), so that the investment function is evaluated over the
-LP relaxation of the operational problem.
+The `-o` option outputs the investment found and its value.
 
 There are a few ways to specify the initial state for the first stage
 subproblem. This can be done by setting the initial state variable of
@@ -348,10 +340,11 @@ scenarios in parallel. In this case, the number of scenarios that are solved
 in parallel is n (assuming n is not larger than the number of scenarios).
 
 The `-B` and `-S` options are only considered if the given netCDF file is a
-BlockFile. The `-B` option specifies a BlockConfig file to be applied to every
-SDDPBlock; while the `-S` option specifies a BlockSolverConfig file for every
-SDDPBlock. If each of these options is not provided when the given netCDF file
-is a BlockFile, then default configurations are considered.
+BlockFile. The `-B` option specifies either a BlockConfig, applied to every
+SDDPBlock, or a "meta" BlockConfig, dispatched by classname to the Blocks of
+the inner Block of each stage; the `-S` option specifies
+the BlockSolverConfig of every SDDPBlock. When they are not given, `SDDPBCfg.txt`
+and `SDDPSCfg.txt` are used.
 
 Initial cuts can be provided by using the `-l` option. This option must be
 followed by the path to the file containing the initial cuts. This file must
@@ -494,6 +487,10 @@ conduct, and the process for submitting merge requests to us.
   Università di Pisa
 
 - **Rafael Durbano Lobato**  
+  Dipartimento di Informatica  
+  Università di Pisa
+
+- **Donato Meoli**  
   Dipartimento di Informatica  
   Università di Pisa
 

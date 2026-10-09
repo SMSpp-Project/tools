@@ -1,0 +1,62 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - BSPar-LD.txt  - - - - - - - - - - - - - - - -
+#
+# A txt description of a BlockSolverConfig for a UCBlock to be solved by a
+# LagrangianDualSolver using a BundleSolver as the inner Solver, which is the
+# UCBlock of a stage of the SDDPBlock of examples/instance-3: the components
+# that must be hard (vstrNoEasy) are those of that instance.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+2  # number of (the names of) Solver in this BlockSolverConfig
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+CPXMILPSolver           # name of 1st Solver
+LagrangianDualSolver    # name of 2nd Solver
+
+2  # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig
+
+# 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# ComputeConfig of the CPXMILPSolver
+
+ComputeConfig # exact type of the ComputeConfig object
+
+1  # f_diff == 0 ==> all non-provided parameters are set to the default value
+   # f_diff == 1 ==> all non-provided parameters are not changed
+
+4  # Number of integer parameters
+intLogVerb 0
+CPXPARAM_Threads 1
+CPXPARAM_LPMethod 2
+intRelaxIntVars 1
+
+0  # Number of double parameters
+#dblAAccSol 1e-04
+#dblMaxTime 20000
+
+0  # Number of string parameters
+#strOutputFile uc_lp.lp
+
+0 # number of vector-of-int parameters
+0 # number of vector-of-double parameters
+0 # number of vector-of-string parameters
+
+# Pointer to the "extra" Configuration
+* # [none]
+
+# end of 1st ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# 2nd ComputeConfig: that of the LagrangianDualSolver [see LDCfg.txt]
+*LDCfg.txt
+
+# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END BSPar-LD.txt  - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

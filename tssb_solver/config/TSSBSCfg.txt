@@ -1,9 +1,10 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - TSSBSCfg.txt- - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - -  TSSBSCfg.txt - - - - - - - - - - - - - - -
 #
-# A txt description of a BlockSolverConfig for a TSSBSolver
-#
-#   Donato Meoli
+# A txt description of a BlockSolverConfig for a TSSBlock to be solved by a
+# :MILPSolver on its deterministic equivalent, i.e., on the extensive form
+# of the whole scenario tree; TSSBSCfg-LD.txt solves the same Block by a
+# LagrangianDualSolver instead
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -43,7 +44,7 @@ intLogVerb               1 # log verbosity
 0 # number of string parameters
 
 # now all the string parameters
-#strOutputFile	tssb.lp
+#strOutputFile  tssb.lp
 
 0 # number of vector-of-int parameters
 
@@ -68,5 +69,5 @@ intLogVerb               1 # log verbosity
 # end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - END TSSBSCfg.txt- - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -  END TSSBSCfg.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

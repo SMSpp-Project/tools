@@ -1,0 +1,38 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - IFCfg-SDDP.txt  - - - - - - - - - - - - - - -
+#
+# The ComputeConfig of IFCfg.txt for an InvestmentFunction whose inner Block
+# is an SDDPBlock, as in examples/instance-3: its extra Configuration holds
+# the BlockSolverConfig of the SDDPBlock in place of that of a UCBlock. The
+# backward pass solves the stages on their continuous relaxation, as the
+# forward one; SDDPBSCfg.txt is the alternative whose backward pass solves
+# them via LagrangianDualSolver.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+*IFCfg.txt +
+
+1  # f_diff == 1 ==> only the entries below are changed
+
+0  # number of integer parameters
+
+0  # number of double parameters
+
+0  # number of string parameters
+
+0  # number of vector-of-int parameters
+
+0  # number of vector-of-double parameters
+
+0  # number of vector-of-string parameters
+
+# the extra Configuration, which replaces that of IFCfg.txt: the
+# BlockSolverConfig of the SDDPBlock
+SimpleConfiguration<std::map<std::string,Configuration*>>
+1                  # the number of elements in the map
+BlockSolverConfig  *SDDPBSCfg-LP.txt
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END IFCfg-SDDP.txt  - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

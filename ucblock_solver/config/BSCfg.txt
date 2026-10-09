@@ -1,10 +1,8 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - BSCfg.txt - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - BSCfg.txt - - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for any Block that is a simple
 # MILP / MIQP / MIQCQP and can be solved by a :MILPSolver
-#
-#   Antonio Frangioni
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -38,14 +36,14 @@ intRelaxIntVars 1    # nonzero if the continuous relaxation is solved
 3 # number of double parameters
 
 # now all the double parameters
-dblAAccSol 1e-04     # absolute accuracy of the solution    
-dblRAccSol 1e-04     # relative accuracy of the solution 
+dblAAccSol 1e-04     # absolute accuracy of the solution
+dblRAccSol 1e-04     # relative accuracy of the solution
 dblMaxTime 3600      # max running time (seconds)
 
 0 # number of string parameters
 
 # now all the string parameters
-#strOutputFile	 uc.lp                    # filename for .lp file 
+#strOutputFile   uc.lp                    # filename for .lp file
 #strLogFileName  uc-milp.log              # filename for the Solver log
 
 0 # number of vector-of-int parameters

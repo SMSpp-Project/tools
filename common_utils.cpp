@@ -26,6 +26,8 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <set>
+#include <sstream>
 
 #if defined( __APPLE__ )
  #include <mach-o/dyld.h>  // for _NSGetExecutablePath()
@@ -168,7 +170,10 @@ std::string help =
  "  -o, --output-solution           output the solutions\n"
  "  -n, --nc4problem <file>         write nc4 problem on file\n"
  "  -D, --dryrun                    skip the compute() call\n"
- "  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic, 2 = debug)\n";
+ "  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic,\n"
+ "                                  2 = debug, with the Solver logs and the\n"
+ "                                  parameters of the Solvers of the Block,\n"
+ "                                  3 = those of the sub-Blocks' Solvers too)\n";
 
 /** @} ---------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -680,42 +685,27 @@ std::string installed_config_dir( void )
 
 /*--------------------------------------------------------------------------*/
 
+using MapConfig = SimpleConfiguration< std::map< std::string ,
+						 Configuration * > >;
+
+/*--------------------------------------------------------------------------*/
+
 void config_Block( Block * block ,
 		   Configuration * b_config , Configuration * s_config )
 {
- // std::list rather than std::vector since it's built by push_back and
- // only trasversed head-to-tail
- std::list< Block * > BFS;
-
  if( b_config ) {
-  // handle the special case of a "meta" BlockConfig
-  if( auto * mb =
-      dynamic_cast< SimpleConfiguration< std::map< std::string ,
-                                                   Configuration * > >
-                                         * >( b_config ) ) {
-
-   // construct the list of all Block inside block
-   BFS.push_back( block );
-   for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
-    for( auto el : ( *bit )->get_nested_Blocks() )
-     BFS.push_back( el );
-
-   auto & map = mb->f_value;
-
-   // now BlockConfig-ure all Block whose classname() matches, falling back
-   // to the "*" entry (if any) for the non-matching ones
-   for( auto b : BFS ) {
-    auto bcit = map.find( b->classname() );
-    if( bcit == map.end() )
-     bcit = map.find( "*" );
-    if( bcit != map.end() )
-     if( auto bc = dynamic_cast< BlockConfig * >( bcit->second ) ) {
-      auto cbc = bc->clone();
-      cbc->apply( b );
-      delete cbc;
-      }
-    }
-   }
+  // handle the special case of a "meta" BlockConfig: BlockConfig-ure all
+  // Block whose classname() matches, falling back to the "*" entry (if any)
+  // for the non-matching ones
+  if( auto mb = dynamic_cast< MapConfig * >( b_config ) )
+   for_each_by_classname( block , mb->f_value ,
+			  []( Block * b , Configuration * c ) {
+			   if( auto bc = dynamic_cast< BlockConfig * >( c ) ) {
+			    auto cbc = bc->clone();
+			    cbc->apply( b );
+			    delete cbc;
+			    }
+			   } );
   else  // must be an "ordinary" BlockConfig, just apply() it
    if( auto * bc = dynamic_cast< BlockConfig * >( b_config ) )
     bc->apply( block );
@@ -725,39 +715,19 @@ void config_Block( Block * block ,
   }
 
  if( s_config ) {
-  // handle the special case of a "meta" BlockSolverConfig
-  if( auto * mb =
-      dynamic_cast< SimpleConfiguration< std::map< std::string ,
-                                                   Configuration * > >
-                                         * >( s_config ) ) {
-
-   // construct the list of all Block inside block (if not there already)
-   if( BFS.empty() ) {
-    BFS.push_back( block );
-    for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
-     for( auto el : ( *bit )->get_nested_Blocks() )
-      BFS.push_back( el );
-    }
-
-   auto & map = mb->f_value;
-
-   // now BlockSolverConfig-ure all Block whose classname() matches, falling
-   // back to the "*" entry (if any) for the non-matching ones, leaf-first
-   // (reverse BFS order): a Solver attached to a parent Block (e.g. a
-   // LagrangianDualSolver decomposing it) must see the Solvers of its
-   // sub-Blocks already in place, so the sub-Blocks are configured first
-   for( auto bit = BFS.rbegin() ; bit != BFS.rend() ; ++bit ) {
-    auto bscit = map.find( ( *bit )->classname() );
-    if( bscit == map.end() )
-     bscit = map.find( "*" );
-    if( bscit != map.end() )
-     if( auto bsc = dynamic_cast< BlockSolverConfig * >( bscit->second ) )
-      bsc->apply( *bit );
-    }
+  // handle the special case of a "meta" BlockSolverConfig: the same, father
+  // first, as the Solver of a Block finds those of its sub-Block when it is
+  // compute()-d, not when it is registered
+  if( auto mb = dynamic_cast< MapConfig * >( s_config ) ) {
+   for_each_by_classname( block , mb->f_value ,
+			  []( Block * b , Configuration * c ) {
+			   if( auto bsc =
+			       dynamic_cast< BlockSolverConfig * >( c ) )
+			    bsc->apply( b );
+			   } );
 
    // finally, clear() all the BlockSolverConfig for final cleanup
-   for( auto & el : map )
-    (el.second)->clear();
+   mb->clear();
    }
   else {  // must be an "ordinary" BlockSolverConfig, just apply() it
    if( auto * sc = dynamic_cast< BlockSolverConfig * >( s_config ) ) {
@@ -778,28 +748,18 @@ void cleanup_bsc( Block * block , Configuration * s_config )
  if( ! s_config )
   return;
 
-  // handle the special case of a "meta" BlockSolverConfig
-  if( auto * mb =
-      dynamic_cast< SimpleConfiguration< std::map< std::string ,
-                                                   Configuration * > >
-                                         * >( s_config ) ) {
-   std::list< Block * > BFS;
-   BFS.push_back( block );
-   for( auto bit = BFS.begin() ; bit != BFS.end() ; ++bit )
-    for( auto el : ( *bit )->get_nested_Blocks() )
-     BFS.push_back( el );
-
-   auto & map = mb->f_value;
-
-   // now apply the clear()-ed BlockSolverConfig to all Block whose
-   // classname() matches
-   for( auto b : BFS )
-    if( auto bscit = map.find( b->classname() ); bscit != map.end() )
-     if( auto bsc = dynamic_cast< BlockSolverConfig * >( bscit->second ) )
-      bsc->apply( b );
-   }
-  else  // it *must* be a BlockSolverConfig, it has been checked before
-   static_cast< BlockSolverConfig * >( s_config )->apply( block );
+ // handle the special case of a "meta" BlockSolverConfig: apply the
+ // clear()-ed BlockSolverConfig to all Block whose classname() matches,
+ // or that of the "*" entry (if any) to the non-matching ones
+ if( auto mb = dynamic_cast< MapConfig * >( s_config ) )
+  for_each_by_classname( block , mb->f_value ,
+			 []( Block * b , Configuration * c ) {
+			  if( auto bsc =
+			      dynamic_cast< BlockSolverConfig * >( c ) )
+			   bsc->apply( b );
+			  } );
+ else  // it *must* be a BlockSolverConfig, it has been checked before
+  static_cast< BlockSolverConfig * >( s_config )->apply( block );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -985,7 +945,58 @@ void write_final_State( Solver * solver , bool replace )
 
 /*--------------------------------------------------------------------------*/
 
-int solve_all( Block * block )
+void print_solver_parameters( const std::vector< Block * > & roots )
+{
+ if( verbosity_level < 2 )
+  return;
+
+ // one entry per distinct ( Solver class , Block class , parameters ), in
+ // the order they are first met, with the number of Solvers sharing it
+ struct Entry {
+  std::string solver , owner , pars;
+  std::size_t count;
+  };
+ std::vector< Entry > entries;
+ std::set< Block * > visited;
+
+ std::function< void( Block * ) > visit = [ & ]( Block * b ) {
+  if( ( ! b ) || ( ! visited.insert( b ).second ) )
+   return;
+  for( auto solver : b->get_registered_solvers() ) {
+   std::ostringstream pars;
+   solver->print_parameters( pars );
+   Entry e{ solver->classname() , b->classname() , pars.str() , 1 };
+   auto it = std::find_if( entries.begin() , entries.end() ,
+                           [ & ]( const Entry & o ) {
+                            return( ( o.solver == e.solver ) &&
+                                    ( o.owner == e.owner ) &&
+                                    ( o.pars == e.pars ) ); } );
+   if( it == entries.end() )
+    entries.push_back( std::move( e ) );
+   else
+    ++it->count;
+   }
+  if( verbosity_level >= 3 )
+   for( auto sb : b->get_nested_Blocks() )
+    visit( sb );
+  };
+ for( auto b : roots )
+  visit( b );
+
+ for( const auto & e : entries ) {
+  std::cout << std::endl << "--- parameters of " << e.solver << " on "
+            << e.owner;
+  if( e.count > 1 )
+   std::cout << " (" << e.count << " Solvers)";
+  std::cout << std::endl << e.pars;
+  }
+ std::cout << std::endl;
+ }
+
+/*--------------------------------------------------------------------------*/
+
+int solve_all( Block * block , const std::function< bool( void ) > & is_writer ,
+               bool write_solution )
 {
  // load initial Solution, if provided - - - - - - - - - - - - - - - - - - - -
  int retval = 0;
@@ -1014,6 +1025,8 @@ int solve_all( Block * block )
    "no Solver registered to the Block: a BlockSolverConfig must be provided "
    "(did you forget the -S option?)" ) );
   }
+
+ print_solver_parameters( block );
 
  // for each of the registered Solver- - - - - - - - - - - - - - - - - - - - -
  //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1058,11 +1071,16 @@ int solve_all( Block * block )
     }
    }
 
+  // only the writer writes, once all have retrieved the solution- - - - - -
+  const bool writer = ( ! is_writer ) || is_writer();
+
   // write final Solution, if required - - - - - - - - - - - - - - - - - - - -
-  write_final_Solution( block , outsolcfg );
+  if( writer && write_solution )
+   write_final_Solution( block , outsolcfg );
 
   // write final State, if required- - - - - - - - - - - - - - - - - - - - - -
-  write_final_State( solver );
+  if( writer )
+   write_final_State( solver );
 
   }  // end( for( each Solver ) )- - - - - - - - - - - - - - - - - - - - - - -
      //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

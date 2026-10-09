@@ -450,9 +450,39 @@ void write_final_Solution( Block * block , Configuration * cfg = nullptr ,
 void write_final_State( Solver * solver , bool replace = false );
 
 /*--------------------------------------------------------------------------*/
-/// compute() the Block with all available Solver(s) (unless dry run)
+/// print the parameters of the Solvers, if -v 2 or -v 3 is given
+/** Prints what print_parameters() says of the Solvers, i.e., the value each
+ * parameter has been actually given, after the BlockSolverConfig, along with
+ * its default. With verbosity_level == 2 these are only the Solvers
+ * registered to the Blocks in \p roots (for a Solver that wraps another one,
+ * as LagrangianDualSolver does, the parameters of the wrapped one are shown
+ * too, since they are in its index space); with verbosity_level >= 3 they
+ * are those registered to any of their sub-Blocks as well, recursively. The
+ * Solvers of the same class registered to Blocks of the same class and with
+ * the very same parameters, as those of the many sub-Blocks of a
+ * decomposition typically are, are printed once, with their number. The
+ * Blocks in \p roots are all considered, for the Block trees that a Function
+ * holds apart from that of the Block using it [see InvestmentFunction], each
+ * Block being visited once. A no-op when verbosity_level < 2. */
 
-int solve_all( Block * block );
+void print_solver_parameters( const std::vector< Block * > & roots );
+
+inline void print_solver_parameters( Block * block ) {
+ print_solver_parameters( std::vector< Block * >{ block } );
+ }
+
+/*--------------------------------------------------------------------------*/
+/// compute() the Block with all available Solver(s) (unless dry run)
+/** With -v 2, print_solver_parameters() is called first. The final Solution
+ * and State are written only if \p is_writer, when given, returns true once
+ * the Solvers have been asked for their solution (under MPI, by rank 0
+ * only); the final Solution is not written at all if \p write_solution is
+ * false, which is the case when it has to be taken from another Block than
+ * \p block, e.g., the one \p block has been assembled around. */
+
+int solve_all( Block * block ,
+               const std::function< bool( void ) > & is_writer = {} ,
+               bool write_solution = true );
 
 /*--------------------------------------------------------------------------*/
 /// writes a new nc4 problem using the Block and its Configuration(s)

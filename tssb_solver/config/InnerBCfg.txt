@@ -11,8 +11,6 @@
 #   ACNetworkBlock          -> its scaling factors (ACBCfg.txt)
 #   PolyhedralFunctionBlock -> its "linearized" representation (PFBCfg.txt)
 #
-#   Donato Meoli
-#
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -27,5 +25,5 @@ ACNetworkBlock          *ACBCfg.txt
 PolyhedralFunctionBlock *PFBCfg.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - END InnerBCfg.txt - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END InnerBCfg.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - HSUBSCfg.txt- - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - -  HSUBSCfg.txt - - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for the HydroSystemUnitBlock
 #
@@ -7,8 +7,6 @@
 #       0 Solver, in which case HydroSystemUnitBlock will be treated as
 #       "easy components" (this is a problem if the HydroSystemUnitBlock is
 #       modified by adding rows, but not for "one-shot" solutions)
-#
-#   Antonio Frangioni
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -29,5 +27,5 @@ BlockSolverConfig     # exact type of the Configuration object
 #*LPCCfg.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - END HSUBSCfg.txt- - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -  END HSUBSCfg.txt - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

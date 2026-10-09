@@ -1,12 +1,10 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - BUBCfg.txt- - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - -  BUBCfg.txt - - - - - - - - - - - - - - - -
 #
 # A txt description of the BlockConfig for a BatteryUnitBlock: no negative
 # prices (static variables Configuration == 0), bound constraints generated
 # as OneVarConstraints (static constraints Configuration == 1), plus the
 # is_feasible() tolerances.
-#
-#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -51,5 +49,5 @@ SimpleConfiguration<std::pair<double,int>>
 *    # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - END BUBCfg.txt- - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -  END BUBCfg.txt - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -1,0 +1,67 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - SDDPCfg.txt - - - - - - - - - - - - - - - -
+#
+# The ComputeConfig of the ParallelSDDPSolver that trains the SDDPBlock
+# inside an InvestmentBlock, run once per new investment to rebuild the cuts:
+# it must end with kOK, so the accuracy has to be attainable. The number of
+# simulations equals the 5 scenarios of examples/instance-3: with fewer, the
+# backward pass keeps a fixed subset of the scenarios while the forward pass
+# draws another at every pass, and the curves cross. The backward pass solves
+# the stages via LagrangianDualSolver, the forward one on the continuous
+# relaxation [see BSPar-LD.txt]. The extra Configuration gives the SDDPSolver
+# the BlockSolverConfig of the stages, and the components whose primal
+# solution is written.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ComputeConfig # exact type of the ComputeConfig object
+
+1  # f_diff == 0 ==> all non-provided parameters are set to the default value
+   # f_diff == 1 ==> all non-provided parameters are not changed
+
+10 # number of integer parameters
+
+# now all the integer parameters
+intMaxIter              60
+intLogVerb               1 # log verbosity
+intNStepConv             1 # frequency at which convergence is checked
+intPrintTime             1 # whether computational time should be displayed
+intNbSimulCheckForConv   5 # simulations when checking convergence (<= #scen)
+intNbSimulForward        5 # simulations in the forward pass (<= #scenarios)
+intNbSimulBackward       5 # simulations in the backward pass (<= #scenarios)
+intOutputFrequency       1
+intBackwardSolverIndex   1 # the LagrangianDualSolver of BSPar-LD.txt
+intForwardSolverIndex    0 # the continuous relaxation of BSPar-LD.txt
+
+1 # number of double parameters
+
+# now all the double parameters
+dblAccuracy 0.002 # attainable: the gap is ~0.018% at the second iteration
+
+0 # number of string parameters
+
+0 # number of vector-of-int parameters
+0 # number of vector-of-double parameters
+0 # number of vector-of-string parameters
+
+# pointer to the "extra" Configuration: no BlockConfig for the UCBlock of
+# each stage, its BlockSolverConfig, and the Configuration of
+# get_var_solution()
+SimpleConfiguration<std::vector<Configuration*>>
+3             # the number of elements in the vector
+*             # no BlockConfig
+*BSPar-LD.txt # the BlockSolverConfig of the UCBlock of each stage
+
+# the Configuration of get_var_solution(): the components whose primal
+# solution the SDDPSolver needs, by class, which are those whose state
+# passes from a stage to the next
+SimpleConfiguration<std::map<std::string,Configuration*>>
+3                     # the number of elements in the map
+HydroSystemUnitBlock  *  # all of its solution
+ThermalUnitBlock      *  # all of its solution
+BatteryUnitBlock      *  # all of its solution
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - END SDDPCfg.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

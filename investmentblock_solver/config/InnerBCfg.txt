@@ -2,16 +2,16 @@
 # - - - - - - - - - - - - - - - - InnerBCfg.txt - - - - - - - - - - - - - - -
 #
 # A "meta"-BlockConfig: a map from a Block classname() to the BlockConfig to
-# apply to every sub-Block of that class. config_Block() dispatches it by
-# classname over the whole Block tree, so it configures the inner sub-Blocks
-# of the UCBlock of the InvestmentFunction regardless of where they sit:
+# apply to every Block of that class. investmentblock_solver dispatches it to
+# the InvestmentBlock and over the whole inner Block of its
+# InvestmentFunction, so it configures both regardless of where they sit:
 #
+#   InvestmentBlock         -> its bounds and the Solver of the inner Block
+#                              (IBOCfg.txt)
 #   ThermalUnitBlock        -> its formulation / P-C parameters (TUBCfg.txt)
 #   DCNetworkBlock          -> its formulation selector (DCNBCfg.txt)
 #   ACNetworkBlock          -> its scaling factors (ACBCfg.txt)
 #   PolyhedralFunctionBlock -> its "linearized" representation (PFBCfg.txt)
-#
-#   Donato Meoli
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -19,7 +19,8 @@
 # a "meta"-BlockConfig , i.e., a map classname --> its BlockConfig
 SimpleConfiguration<std::map<std::string,Configuration*>>
 
-4 # the number of elements in the map
+5 # the number of elements in the map
+InvestmentBlock         *IBOCfg.txt
 
 ThermalUnitBlock        *TUBCfg.txt
 DCNetworkBlock          *DCNBCfg.txt

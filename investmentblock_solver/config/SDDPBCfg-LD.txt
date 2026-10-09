@@ -1,0 +1,33 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - SDDPBCfg-LD.txt - - - - - - - - - - - - - - -
+#
+# The "meta" BlockConfig, given with -B, for an InvestmentBlock whose inner
+# Block is an SDDPBlock, as in examples/instance-3: the InvestmentBlock gets
+# IBOCfg-SDDP.txt, and in the UCBlock of each stage, which may be solved via
+# LagrangianDualSolver, the ThermalUnitBlock gets the reserve variables in
+# the Objective (the reserve demand constraints are dualized) and the
+# IntermittentUnitBlock gets the zero-max-power replacement.
+#
+# All filenames are resolved against the -c prefix of the tool, i.e., this
+# directory.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+SimpleConfiguration<std::map<std::string,Configuration*>>
+
+9 # the number of elements in the map
+InvestmentBlock		*IBOCfg-SDDP.txt  # bounds, and the Solver of the SDDPBlock
+
+PolyhedralFunctionBlock	*PFBCfg.txt    # linearized representation
+SlackUnitBlock		*SUBCfg.txt    # OneVarConstraints
+BatteryUnitBlock	*BUBCfg.txt    # OneVarConstraints, no negative prices
+ThermalUnitBlock	*TUBCfg-LD.txt # OneVarConstraints + reserves in Objective
+IntermittentUnitBlock	*IUBCfg-LD.txt # zero-max-power replacement
+DCNetworkBlock		*DCNBCfg.txt   # network formulation (KIRCHHOFF)
+ACNetworkBlock		*ACBCfg.txt    # AC Network scaling factors
+*			*BCfg.txt      # everything else (is_feasible only)
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END SDDPBCfg-LD.txt - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

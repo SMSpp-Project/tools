@@ -1,0 +1,73 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - -   SVMSCfg-liblinear.txt   - - - - - - - - - - - - -
+#
+# A txt description of a BlockSolverConfig for a SVMBlock to be trained by
+# LIBLINEARSolver, i.e., by LIBLINEAR, which solves the linear SVM by a dual
+# coordinate descent rather than by a two-variable method, and is the code
+# one
+# reaches for when the kernel is linear and the samples are many: the model
+# it
+# gives is the model of the same problem, so the comparison is on the time.
+# It requires the module to have been built with LIBLINEAR, and it refuses
+# what LIBLINEAR cannot express, i.e., any kernel other than the linear one
+# and a weight of the regularisation term other than one
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one
+
+1  # number of (the names of) Solver in this BlockSolverConfig
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+LIBLINEARSolver    # name of Solver
+
+1  # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig
+
+ComputeConfig # exact type of the ComputeConfig object
+
+1  # f_diff == 0 ==> all non-provided parameters are set to the default value
+   # f_diff == 1 ==> all non-provided parameters are not changed
+
+0  # number of integer parameters
+
+# now all the integer parameters
+# [none]
+
+1  # number of double parameters
+
+# now all the double parameters
+dblLLINTol 1e-6 # tolerance on the optimality conditions of the dual: the
+                # value is the one SVMSCfg.txt gives dblSMOTol, and has to
+                # stay so, a comparison of two Solver at different tolerances
+                # being no comparison
+
+0 # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0 # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0 # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0 # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+* # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - -   END SVMSCfg-liblinear.txt   - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
