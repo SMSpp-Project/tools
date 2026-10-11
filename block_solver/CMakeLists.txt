@@ -22,6 +22,7 @@ if (NOT hasParent)
     # Blocks
     find_package(SMS++)
     find_package(MCFBlock)
+    find_package(MMCFBlock)
     find_package(InvestmentBlock)
     # Solvers
     find_package(LagrangianDualSolver)
@@ -39,6 +40,9 @@ target_link_libraries(block_solver PRIVATE SMS++::SMS++)
 
 if (TARGET SMS++::MCFBlock)
     target_link_libraries(block_solver PRIVATE SMS++::MCFBlock)
+endif ()
+if (TARGET SMS++::MMCFBlock)
+    target_link_libraries(block_solver PRIVATE SMS++::MMCFBlock)
 endif ()
 
 if (TARGET SMS++::InvestmentBlock)
