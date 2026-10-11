@@ -380,7 +380,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now in makefile\_common to reduce code duplication within makefiles
   and to make adapting to one's environment quicker
 
-- all *\_solver executables share the same baisc set of command-line
+- all *\_solver executables share the same basic set of command-line
   options, then can add upon it
 
 - updated block solver handling in CutProcessing
