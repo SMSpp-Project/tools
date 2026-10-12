@@ -56,7 +56,7 @@
 using namespace SMSpp_di_unipi_it;
 
 /*--------------------------------------------------------------------------*/
-/*------------------------ MPI SAFE ENVIRONMENT -----------------------------*/
+/*------------------------ MPI SAFE ENVIRONMENT ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /* Some tools (those using SDDPBlock or InvestmentBlock) call MPI_Init().
  * On systems where Open MPI / UCX are installed but no usable transport is
