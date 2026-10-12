@@ -170,10 +170,12 @@ std::string help =
  "  -o, --output-solution           output the solutions\n"
  "  -n, --nc4problem <file>         write nc4 problem on file\n"
  "  -D, --dryrun                    skip the compute() call\n"
- "  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic,\n"
+ "  -v[N], --verbose[=N]            verbose output (0 = silent, 1 = basic,\n"
  "                                  2 = debug, with the Solver logs and the\n"
  "                                  parameters of the Solvers of the Block,\n"
- "                                  3 = those of the sub-Blocks' Solvers too)\n";
+ "                                  3 = those of the sub-Blocks' Solvers too);\n"
+ "                                  N is attached, as in -v2 or --verbose=2:\n"
+ "                                  -v 2, with the space, gives level 1\n";
 
 /** @} ---------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/

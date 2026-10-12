@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the help of -v says that its level is attached (-v2, --verbose=2), since
+  -v 2, with the space, gives level 1; so do the README and its examples
+
 - `block_solver` links MMCFBlock when the build has it, as it does MCFBlock
   and InvestmentBlock, so that it can read an MMCFBlock from a Block file
 

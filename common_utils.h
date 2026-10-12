@@ -450,7 +450,7 @@ void write_final_Solution( Block * block , Configuration * cfg = nullptr ,
 void write_final_State( Solver * solver , bool replace = false );
 
 /*--------------------------------------------------------------------------*/
-/// print the parameters of the Solvers, if -v 2 or -v 3 is given
+/// print the parameters of the Solvers, if -v2 or -v3 is given
 /** Prints what print_parameters() says of the Solvers, i.e., the value each
  * parameter has been actually given, after the BlockSolverConfig, along with
  * its default. With verbosity_level == 2 these are only the Solvers
@@ -473,7 +473,7 @@ inline void print_solver_parameters( Block * block ) {
 
 /*--------------------------------------------------------------------------*/
 /// compute() the Block with all available Solver(s) (unless dry run)
-/** With -v 2, print_solver_parameters() is called first. The final Solution
+/** With -v2, print_solver_parameters() is called first. The final Solution
  * and State are written only if \p is_writer, when given, returns true once
  * the Solvers have been asked for their solution (under MPI, by rank 0
  * only); the final Solution is not written at all if \p write_solution is
