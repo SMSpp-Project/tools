@@ -30,7 +30,7 @@ ComputeConfig # exact type of the ComputeConfig object
 # now all the integer parameters
 intMaxIter            10
 intLogVerb            1 # log verbosity
-intNStepConv            5 # Frequency at which the convergence is checked
+intNStepConv            1 # Frequency at which the convergence is checked
 intPrintTime            1 # Indicates whether computational time should be
                           # displayed
 intNbSimulCheckForConv  5 # Number of simulations considered when checking

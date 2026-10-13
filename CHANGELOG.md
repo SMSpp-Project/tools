@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `SDDPSCfg-LD.txt` and `SDDPSCfg.txt` of `sddp_solver` check the
+  convergence of the SDDP at every iteration (`intNStepConv 1`), and the
+  former stops at the relative accuracy 1e-6 within 10 iterations: with
+  `dblAccuracy 0` and a check every 5 iterations the only early stop was
+  the crossing of the backward value over the forward one of iteration 0,
+  which a difference of 1e-9 decides
 - the help of -v says that its level is attached (-v2, --verbose=2), since
   -v 2, with the space, gives level 1; so do the README and its examples
 
