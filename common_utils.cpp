@@ -716,6 +716,24 @@ void config_Block( Block * block ,
 				  "[meta]BlockConfig" ) );
   }
 
+ // the initial Solution, if any, is written once the BlockConfig is in
+ // place and before the Solvers are registered, since a Solver may read it
+ // when it is attached (say, LagrangianDualSolver takes its first
+ // multipliers from the dual values of the relaxed constraints); the
+ // abstract representation it is written into is therefore generated here,
+ // and solve_all() writes it again before each compute()
+ if( s_config && ( ! sol_input.empty() ) ) {
+  std::function< void( Block * ) > generate = [ & ]( Block * b ) {
+   b->generate_abstract_variables();
+   b->generate_abstract_constraints();
+   b->generate_objective();
+   for( auto sb : b->get_nested_Blocks() )
+    generate( sb );
+   };
+  generate( block );
+  get_initial_Solution( block );
+  }
+
  if( s_config ) {
   // handle the special case of a "meta" BlockSolverConfig: the same, father
   // first, as the Solver of a Block finds those of its sub-Block when it is

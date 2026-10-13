@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the initial Solution given with -I is written before the Solvers are
+  registered, once the BlockConfig is in place, as well as before each
+  `compute()`: a Solver that reads the Block when it is attached, as
+  `LagrangianDualSolver` does with the dual values it takes as its first
+  multipliers, found it not written yet
 - `SDDPSCfg-LD.txt` and `SDDPSCfg.txt` of `sddp_solver` check the
   convergence of the SDDP at every iteration (`intNStepConv 1`), and the
   former stops at the relative accuracy 1e-6 within 10 iterations: with
