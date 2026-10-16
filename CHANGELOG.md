@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `intDoEasy` in the configurations follows the new bits of BundleSolver
+  (15 is now 7)
+
 ### Fixed
 
 - the initial Solution given with -I is written before the Solvers are
