@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the tools that solve one Block of a given class (`cflblock_solver`,
+  `bkblock_solver` and the like) give the Solvers of the Block their log
+  with `-v2`, as the README says and as `block_solver` does
 - the initial Solution given with -I is written before the Solvers are
   registered, once the BlockConfig is in place, as well as before each
   `compute()`: a Solver that reads the Block when it is attached, as

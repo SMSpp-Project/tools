@@ -530,6 +530,8 @@ int solve_Block_file( const std::string & classname , bool native = true ,
  if( writeprob )
   write_nc4problem( block , b_config , s_config );
 
+ set_solver_logs( block );
+
  std::cout.setf( std::ios::scientific , std::ios::floatfield );
  std::cout << std::setprecision( 8 );
  solve_all( block );
