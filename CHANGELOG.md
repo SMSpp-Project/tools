@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- in the simulation of `sddp_solver`, a thermal unit that shuts down at the
+  last instant of a stage starts the next one off for 1 instant
+  (`InitUpDownTime` -1) rather than shut down at its instant 0 (0), which
+  kept it off 1 instant more than its `MinDownTime`; a unit that has not
+  switched since the first stage also counts the `InitUpDownTime` of it
 - the tools that solve one Block of a given class (`cflblock_solver`,
   `bkblock_solver` and the like) give the Solvers of the Block their log
   with `-v2`, as the README says and as `block_solver` does
