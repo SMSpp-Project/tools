@@ -538,8 +538,8 @@ void simulate( SDDPBlock * sddp_block )
  const auto sub_block_index = Index( solver->get_int_par(
                                      SDDPGreedySolver::intSubBlockIndex ) );
 
- solver->set_callback( [ sddp_block , sub_block_index ]( Index stage ) {
-                        callback( sddp_block , stage , sub_block_index );
+ solver->set_callback( [ sub_block_index ]( SDDPBlock * b , Index stage ) {
+                        callback( b , stage , sub_block_index );
                         } );
 
  // Load possibly given cuts
@@ -993,8 +993,8 @@ void multiple_simulations( const netCDF::NcFile & file )
    const auto sub_block_index = Index( solver->get_int_par(
                                        SDDPGreedySolver::intSubBlockIndex ) );
 
-   solver->set_callback( [ sddp_block , sub_block_index ]( Index stage ) {
-                          callback( sddp_block , stage , sub_block_index );
+   solver->set_callback( [ sub_block_index ]( SDDPBlock * b , Index stage ) {
+                          callback( b , stage , sub_block_index );
                           } );
 
    if( i > 0 ) {

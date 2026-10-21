@@ -75,12 +75,9 @@
 
 #include "common_utils.h"
 
-#include <atomic>
 #include <filesystem>
-#include <functional>
 #include <iomanip>
 #include <iostream>
-#include <memory>
 #include <queue>
 
 #include <AbstractPath.h>
@@ -170,14 +167,9 @@ Block * get_uc_block( const SDDPBlock * sddp_block , Index stage ,
  }
 
 /*--------------------------------------------------------------------------*/
-/// what puts back the data a simulation has changed, in the order of change
-
-using Restore = std::vector< std::function< void( void ) > >;
-
-/*--------------------------------------------------------------------------*/
 
 bool update_hydro_unit( Block * previous_block , Block * block ,
-			Index stage , Restore & restore )
+			Index stage )
 {
  auto unit = dynamic_cast< HydroUnitBlock * >( block );
  auto previous_unit = dynamic_cast< HydroUnitBlock * >( previous_block );
@@ -206,15 +198,10 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
 
  std::vector< double > flow_rate( number_generators );
 
- std::vector< double > old( number_generators );
- for( Index g = 0 ; g < number_generators ; ++g ) {
+ for( Index g = 0 ; g < number_generators ; ++g )
   flow_rate[ g ] =
    previous_unit->get_flow_rate( g , time_horizon - 1 )->get_value();
-  old[ g ] = unit->get_initial_flow_rate( g );
-  }
 
- restore.push_back( [ unit , old ]() {
-                     unit->set_initial_flow_rate( old.cbegin() ); } );
  unit->set_initial_flow_rate( flow_rate.cbegin() );
 
  return( true );
@@ -223,7 +210,7 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
 /*--------------------------------------------------------------------------*/
 
 bool update_battery_unit( Block * previous_block , Block * block ,
-			  Index stage , Restore & restore )
+			  Index stage )
 {
  auto unit = dynamic_cast< BatteryUnitBlock * >( block );
  auto previous_unit = dynamic_cast< BatteryUnitBlock * >( previous_block );
@@ -242,17 +229,11 @@ bool update_battery_unit( Block * previous_block , Block * block ,
  std::vector< double > initial_power_data = {
   ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
 
- const std::vector< double > old_power = { unit->get_initial_power() };
- restore.push_back( [ unit , old_power ]() {
-                     unit->set_initial_power( old_power.cbegin() ); } );
  unit->set_initial_power( initial_power_data.cbegin() );
 
  std::vector< double > initial_storage_data = {
   previous_unit->get_storage_level()[ time_horizon - 1 ].get_value() };
 
- const std::vector< double > old_storage = { unit->get_initial_storage() };
- restore.push_back( [ unit , old_storage ]() {
-                     unit->set_initial_storage( old_storage.cbegin() ); } );
  unit->set_initial_storage( initial_storage_data.cbegin() );
 
  return( true );
@@ -311,7 +292,7 @@ int init_updown_time( const SDDPBlock * sddp_block , Index stage ,
 
 bool update_thermal_unit( const SDDPBlock * sddp_block ,
                           Index sub_block_index , Block * previous_block ,
-                          Block * block , Index stage , Restore & restore )
+                          Block * block , Index stage )
 {
  auto previous_unit = dynamic_cast< ThermalUnitBlock * >( previous_block );
  auto unit = dynamic_cast< ThermalUnitBlock * >( block );
@@ -327,57 +308,27 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
 
  const auto time_horizon = previous_unit->get_time_horizon();
 
- // the time the unit has been on or off: a value that would change the
- // Variable of the unit, which are generated, is refused by it [see
- // ThermalUnitBlock::set_init_updown_time()], and then the unit keeps its
- // own, which is said once
+ // the time the unit has been on or off and its power at the end of the
+ // previous stage, which the unit of a copy of the SDDPBlock takes since its
+ // Variable are generated only once its stage is solved [see
+ // InvestmentFunction::compute_SDDPBlock()]
  const std::vector< int > init_ud = { init_updown_time( sddp_block , stage ,
                                                         sub_block_index ,
                                                         unit ,
                                                         previous_unit ) };
- const std::vector< int > old_init_ud = { unit->get_init_up_down_time() };
- try {
-  unit->set_init_updown_time( init_ud.cbegin() );
-  restore.push_back( [ unit , old_init_ud ]() {
-                      unit->set_init_updown_time( old_init_ud.cbegin() ); } );
-  }
- catch( std::logic_error & e ) {
-  static std::atomic< bool > said( false );
-  if( ! said.exchange( true ) )
-   std::cerr << "Warning: a ThermalUnitBlock of stage " << stage
-             << " keeps its InitUpDownTime " << old_init_ud[ 0 ]
-             << " instead of the " << init_ud[ 0 ] << " of the simulation ("
-             << e.what() << "); this is said only once" << std::endl;
-  }
+ unit->set_init_updown_time( init_ud.cbegin() );
 
- // the power at the end of the previous stage: a value that the unit
- // refuses (e.g., below its minimum power while it is still on, having kept
- // its InitUpDownTime above) leaves it with its own, which is said once
  std::vector< double > active_power_data = {
   ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
- const std::vector< double > old_power = { unit->get_initial_power() };
- try {
-  unit->set_initial_power( active_power_data.cbegin() );
-  restore.push_back( [ unit , old_power ]() {
-                      unit->set_initial_power( old_power.cbegin() ); } );
-  }
- catch( std::logic_error & e ) {
-  static std::atomic< bool > said( false );
-  if( ! said.exchange( true ) )
-   std::cerr << "Warning: a ThermalUnitBlock of stage " << stage
-             << " keeps its InitialPower " << old_power[ 0 ]
-             << " instead of the " << active_power_data[ 0 ]
-             << " of the simulation (" << e.what()
-             << "); this is said only once" << std::endl;
-  }
+ unit->set_initial_power( active_power_data.cbegin() );
 
  return( true );
  }
 
 /*--------------------------------------------------------------------------*/
 
-void callback( SDDPBlock * sddp_block , Index stage , Index sub_block_index ,
-               Restore & restore ) {
+void callback( SDDPBlock * sddp_block , Index stage , Index sub_block_index )
+{
  if( stage == 0 )
   return;
 
@@ -414,26 +365,11 @@ void callback( SDDPBlock * sddp_block , Index stage , Index sub_block_index ,
   // the simulation passes to the next stage the volumes of the reservoirs,
   // and the state of the thermal and battery units as well (the initial
   // power and the time on or off, the initial power and storage)
-  if( ! update_hydro_unit( previous_block , block , stage , restore ) )
+  if( ! update_hydro_unit( previous_block , block , stage ) )
    update_thermal_unit( sddp_block , sub_block_index , previous_block ,
-                        block , stage , restore )
-    || update_battery_unit( previous_block , block , stage , restore );
+                        block , stage )
+    || update_battery_unit( previous_block , block , stage );
   }
- }
-
-/*--------------------------------------------------------------------------*/
-/// puts back, last change first, the data that callback() has changed
-/** Called at the end of each simulation [see
- * SDDPGreedySolver::set_end_callback()], so that the next training of the
- * SDDPBlock, which shares the stage Blocks with the simulation, starts from
- * the initial conditions of the stages and not from those that the last
- * simulation has written. */
-
-void restore_stages( Restore & restore )
-{
- for( auto it = restore.rbegin() ; it != restore.rend() ; ++it )
-  ( *it )();
- restore.clear();
  }
 
 /*--------------------------------------------------------------------------*/
@@ -630,9 +566,10 @@ void configure_inner_Blocks( InvestmentFunction * investment_function ,
  * InvestmentBlock gives to its Objective (see config/IBOCfg.txt). When the
  * inner Block is an SDDPBlock, the SDDPGreedySolver so registered, which
  * simulate the scenarios one stage after the other, are each given the
- * callback() that passes the final state of a stage to the next, and
- * restore_stages(), which puts back the data so changed once the simulation
- * is over. */
+ * callback() that passes the final state of a stage to the next; the
+ * InvestmentFunction gives it to the SDDPGreedySolver of the copy of the
+ * SDDPBlock each scenario is simulated on, so the data of the inner Block
+ * are not changed. */
 
 void check_inner_Solvers( InvestmentFunction * investment_function )
 {
@@ -651,16 +588,11 @@ void check_inner_Solvers( InvestmentFunction * investment_function )
     if( auto greedy = dynamic_cast< SDDPGreedySolver * >( solver ) ) {
      const auto sub_block_index = Index( greedy->get_int_par(
                                      SDDPGreedySolver::intSubBlockIndex ) );
-     // one record of the changes per SDDPGreedySolver, which may run in
-     // parallel with the others, each on its own sub-Block of the stages
-     auto restore = std::make_shared< Restore >();
-     greedy->set_callback( [ sddp_block , sub_block_index , restore ](
-                                                             Index stage ) {
-                            callback( sddp_block , stage , sub_block_index ,
-                                      *restore );
+     // the SDDPBlock is the one simulated, a copy of the inner Block [see
+     // SDDPGreedySolver::get_callback()]
+     greedy->set_callback( [ sub_block_index ]( SDDPBlock * b , Index stage ) {
+                            callback( b , stage , sub_block_index );
                             } );
-     greedy->set_end_callback( [ restore ]() {
-                                restore_stages( *restore ); } );
      }
   }
  }

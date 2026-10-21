@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `investmentblock_solver` passes the state of a stage to the next on the
+  copy of the `SDDPBlock` that the `InvestmentFunction` simulates, and no
+  longer puts back the data of the stages at the end of the simulation, nor
+  warns that a `ThermalUnitBlock` keeps its `InitUpDownTime`
 - `intDoEasy` in the configurations follows the new bits of BundleSolver
   (15 is now 7)
 
