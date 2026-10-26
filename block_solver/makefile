@@ -55,10 +55,6 @@ include $(BNDSLVSDR)/makefile-s
 LgDSLVSDR = ../../LagrangianDualSolver
 include $(LgDSLVSDR)/makefile
 
-# BranchAndXSolver, which LagrangianDualSolver needs
-BAXSLVSDR = $(LgDSLVSDR)/../BranchAndXSolver
-include $(BAXSLVSDR)/makefile
-
 # not necessary, BundleSolver does that already
 # MILPSolver
 #MILPSSDR = ../../MILPSolver
@@ -82,13 +78,12 @@ include $(InvsBkSDR)/makefile-s
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(BAXSLVOBJ) $(UCBckOBJ) $(SMS++OBJ) \
-	$(MCFLEOBJ) $(MCFCSOBJ) $(libMCFClOBJ) $(MCFBkOBJ) $(InvsBkOBJ) \
-	$(CMMNUOBJ)
+MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) $(SMS++OBJ) $(MCFLEOBJ) \
+	$(MCFCSOBJ) $(libMCFClOBJ) $(MCFBkOBJ) $(InvsBkOBJ) $(CMMNUOBJ)
 
 # libraries
-MLIB =  $(SMS++LIB) $(BNDSLVLIB) $(LgDSLVLIB) $(BAXSLVLIB) $(UCBckLIB) \
-	$(MCFBkLIB) $(libMCFClLIB) $(MCFLELIB) $(MILPSLIB) $(InvsBkLIB)
+MLIB =  $(SMS++LIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB) $(MCFBkLIB) \
+	$(libMCFClLIB) $(MCFLELIB) $(MILPSLIB) $(InvsBkLIB)
 
 $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
@@ -96,13 +91,12 @@ $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
-MINC =  $(SMS++INC) $(BNDSLVINC) $(LgDSLVINC) $(BAXSLVINC) $(UCBckINC) \
-	$(MCFBkINC) $(MCFCSINC) $(libMCFClINC) $(MCFLEINC) $(InvsBkINC) \
-	$(CMMNUINC)
+MINC =  $(SMS++INC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) $(MCFBkINC) \
+	$(MCFCSINC) $(libMCFClINC) $(MCFLEINC) $(InvsBkINC) $(CMMNUINC)
 
 # includes
-MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(BAXSLVH) $(UCBckH) $(MCFBkH) \
-	$(MCFCSH) $(MCFLEH) $(InvsBkH) $(CMMNUH)
+MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(MCFBkH) $(MCFCSH) \
+	$(MCFLEH) $(InvsBkH) $(CMMNUH)
 
 # compile command
 

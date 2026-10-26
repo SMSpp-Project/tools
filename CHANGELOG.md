@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the makefiles that include LagrangianDualSolver no longer include
+  BranchAndXSolver, which it no longer needs
+
 - `investmentblock_solver` passes the state of a stage to the next on the
   copy of the `SDDPBlock` that the `InvestmentFunction` simulates, and no
   longer puts back the data of the stages at the end of the simulation, nor
