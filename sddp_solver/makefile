@@ -38,6 +38,10 @@ include $(BNDSLVSDR)/makefile-s
 LgDSLVSDR = ../../LagrangianDualSolver
 include $(LgDSLVSDR)/makefile
 
+# BranchAndXSolver, which LagrangianDualSolver needs
+BAXSLVSDR = $(LgDSLVSDR)/../BranchAndXSolver
+include $(BAXSLVSDR)/makefile
+
 # define input macros for SDDPBlock makefile + dependencies, then include it
 SDDPBkSDR = ../../SDDPBlock
 include $(SDDPBkSDR)/makefile-s
@@ -49,21 +53,23 @@ include $(UCBckDIR)/lib/makefile
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(SMS++OBJ) $(SDDPBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) \
-	$(CMMNUOBJ)
+MOBJ =  $(SMS++OBJ) $(SDDPBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(BAXSLVOBJ) \
+	$(UCBckOBJ) $(CMMNUOBJ)
 
 # libraries
-MLIB =  $(SMS++LIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB)
+MLIB =  $(SMS++LIB) $(SDDPBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(BAXSLVLIB) \
+	$(UCBckLIB)
 
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
-MINC =  $(SMS++INC) $(SDDPBkINC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) \
-	-I$(DIR) $(CMMNUINC)
+MINC =  $(SMS++INC) $(SDDPBkINC) $(BNDSLVINC) $(LgDSLVINC) $(BAXSLVINC) \
+	$(UCBckINC) -I$(DIR) $(CMMNUINC)
 
 # includes
-MH =    $(SMS++H) $(SDDPBkH) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(CMMNUH) \
-	$(DIR)/SDDPBlockSolutionOutput.h $(DIR)/UCBlockSolutionOutput.h
+MH =    $(SMS++H) $(SDDPBkH) $(BNDSLVH) $(LgDSLVH) $(BAXSLVH) $(UCBckH) \
+	$(CMMNUH) $(DIR)/SDDPBlockSolutionOutput.h \
+	$(DIR)/UCBlockSolutionOutput.h
 
 # compile commands
 

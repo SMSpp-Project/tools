@@ -44,14 +44,18 @@ include $(BNDSLVSDR)/makefile-s
 LgDSLVSDR = ../../LagrangianDualSolver
 include $(LgDSLVSDR)/makefile
 
+# BranchAndXSolver, which LagrangianDualSolver needs
+BAXSLVSDR = $(LgDSLVSDR)/../BranchAndXSolver
+include $(BAXSLVSDR)/makefile
+
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(SMS++OBJ) $(SVMBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) \
+MOBJ =  $(SMS++OBJ) $(SVMBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(BAXSLVOBJ) \
 	$(CMMNUOBJ) $(MLUTOBJ)
 
 # libraries
-MLIB =  $(SMS++LIB) $(SVMBkLIB) $(BNDSLVLIB) $(LgDSLVLIB)
+MLIB =  $(SMS++LIB) $(SVMBkLIB) $(BNDSLVLIB) $(LgDSLVLIB) $(BAXSLVLIB)
 
 $(DIR)/svm_solver: $(DIR)/svm_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/svm_solver $^ $(MLIB) $(SW)
@@ -59,11 +63,11 @@ $(DIR)/svm_solver: $(DIR)/svm_solver.o $(MOBJ)
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
-MINC =  $(SMS++INC) $(SVMBkINC) $(BNDSLVINC) $(LgDSLVINC) \
+MINC =  $(SMS++INC) $(SVMBkINC) $(BNDSLVINC) $(LgDSLVINC) $(BAXSLVINC) \
 	-I$(DIR) $(CMMNUINC) $(MLUTINC)
 
 # includes
-MH =    $(SMS++H) $(SVMBkH) $(BNDSLVH) $(LgDSLVH) $(CMMNUH) $(MLUTH)
+MH =    $(SMS++H) $(SVMBkH) $(BNDSLVH) $(LgDSLVH) $(BAXSLVH) $(CMMNUH) $(MLUTH)
 
 # compile command
 

@@ -35,9 +35,10 @@ include $(InvsBkSDR)/makefile-c
 # the inner Block of an InvestmentBlock may be a stochastic one: the
 # TwoStageStochasticBlock comes with InvestmentBlock, the multi-stage one has
 # to be asked for, since nothing depends on it, the Block being reached
-# polymorphically and only the factory needing to know how to build it
+# polymorphically and only the factory needing to know how to build it; the
+# basic makefile, since TwoStageStochasticBlock comes with InvestmentBlock
 MSSBkSDR = ../../MultiStageStochasticBlock
-include $(MSSBkSDR)/makefile-s
+include $(MSSBkSDR)/makefile
 
 # define input macros for BundleSolver makefile, then include it
 BNDSLVSDR = ../../BundleSolver
@@ -47,6 +48,10 @@ include $(BNDSLVSDR)/makefile-s
 LgDSLVSDR = ../../LagrangianDualSolver
 include $(LgDSLVSDR)/makefile
 
+# BranchAndXSolver, which LagrangianDualSolver needs
+BAXSLVSDR = $(LgDSLVSDR)/../BranchAndXSolver
+include $(BAXSLVSDR)/makefile
+
 # not necessary, BundleSolver does that already
 # MILPSolver
 #MILPSSDR = ../../MILPSolver
@@ -55,10 +60,11 @@ include $(LgDSLVSDR)/makefile
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(InvsBkOBJ) $(MSSBkOBJ) $(CMMNUOBJ)
+MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(BAXSLVOBJ) $(InvsBkOBJ) $(MSSBkOBJ) \
+        $(CMMNUOBJ)
 
 # libraries
-MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(InvsBkLIB) $(MSSBkLIB)
+MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(BAXSLVLIB) $(InvsBkLIB) $(MSSBkLIB)
 
 $(DIR)/$(NAME): $(MOBJ) $(DIR)/investmentblock_solver.o
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
@@ -66,10 +72,10 @@ $(DIR)/$(NAME): $(MOBJ) $(DIR)/investmentblock_solver.o
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
-MINC =  $(BNDSLVINC) $(LgDSLVINC) $(InvsBkINC) $(CMMNUINC)
+MINC =  $(BNDSLVINC) $(LgDSLVINC) $(BAXSLVINC) $(InvsBkINC) $(CMMNUINC)
 
 # includes
-MH =    $(BNDSLVH) $(LgDSLVH) $(InvsBkH) $(CMMNUH)
+MH =    $(BNDSLVH) $(LgDSLVH) $(BAXSLVH) $(InvsBkH) $(CMMNUH)
 
 # compile command
 

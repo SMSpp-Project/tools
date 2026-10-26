@@ -18,6 +18,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the makefiles of the tests and of the tools build also with g++: they
+  take the option that stops at the first error and the one of the
+  debugging information, which clang++ and g++ spell differently
+  (`-ferror-limit=1` and `-glldb` against `-fmax-errors=1` and `-ggdb`),
+  from `SMSppSWERR` and `SMSppSWDBG` of `lib/makefile-OS` of SMS++
+
+- the makefiles that include the one of LagrangianDualSolver include also
+  the one of BranchAndXSolver, whose branching rules LagrangianDualSolver
+  uses, and so build again
+
+- `chgcfg/makefile` compiles and links `common_utils` and SMS++, as CMake
+  does, and so builds again
+
+- `investmentblock_solver/makefile` includes the basic makefile of
+  MultiStageStochasticBlock, whose TwoStageStochasticBlock comes with
+  InvestmentBlock already, so that the objects are not linked twice
+
 - in the simulation of `sddp_solver`, a thermal unit that shuts down at the
   last instant of a stage starts the next one off for 1 instant
   (`InitUpDownTime` -1) rather than shut down at its instant 0 (0), which
