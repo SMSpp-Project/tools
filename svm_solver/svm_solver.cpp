@@ -10,8 +10,8 @@
  * BlockFile or a ProbFile, or in one of the two plain text formats that
  * SVMBlock reads, the dense one and, with -l, the sparse one of the LIBSVM
  * data sets [see SVMBlock::load( std::istream , char )], in which case -t
- * says whether it is a classification or a regression problem. This tool can be executed as
- * follows:
+ * says whether it is a classification or a regression problem. This tool
+ * can be executed as follows:
  *
  *   ./svm_solver [-B FILE] [-S FILE] [-O FILE] [-k NUMBER] [-x FRACTION]
  *                [-g SPEC] [-t TASK] [-e NUMBER] [-p PATH] [-c PATH]
@@ -111,6 +111,7 @@
 #include <sstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 
 #include <ff/parallel_for.hpp>
 
@@ -146,7 +147,7 @@ double test_fraction = 0;   ///< held-out fraction, 0 = none
 std::string grid_spec;      ///< the grid of hyper-parameters to compare
 Index n_chunk = 1;          ///< chunks of the consensus rewriting, 1 = none
 std::string task = "c";     ///< "c" or "r", only used by the text format
-std::string kernel;         ///< name of the kernel, empty = the one of the file
+std::string kernel;         ///< name of the kernel, empty = that of the file
 bool libsvm = false;        ///< the text format is the sparse one of LIBSVM
 bool reg_bias = false;      ///< the bias is regularised with the weights
 unsigned seed = 1;          ///< seed of the splits
@@ -487,8 +488,12 @@ static void write_model( SVMBlock * svm )
 static void report_training( double value )
 {
  print_status( train_status );
+ // all the digits of a double, which whoever reads the bounds needs
+ const auto prec = std::cout.precision(
+                     std::numeric_limits< double >::max_digits10 );
  std::cout << "Upper bound = " << train_ub << std::endl;
  std::cout << "Lower bound = " << train_lb << std::endl;
+ std::cout.precision( prec );
  std::cout << "training problem: " << std::scientific << std::setprecision( 7 )
            << value << std::endl;
 
@@ -1268,8 +1273,8 @@ int main( int argc , char ** argv )
          "overrides\n"
          "                                  the one of the file, its "
          "parameters kept\n"
-         "  -P, --leaveout <p>              samples held out at a time, i.e. a "
-         "leave-p-out\n"
+         "  -P, --leaveout <p>              samples held out at a time, i.e. "
+         "a leave-p-out\n"
          "                                  estimate on -r subsets rather "
          "than a k-fold\n"
          "  -r, --repeats <n>               repetitions of the estimate, one "
@@ -1408,7 +1413,8 @@ int main( int argc , char ** argv )
  std::cout << ( leave_out
                 ? "leave-" + std::to_string( leave_out ) + "-out on "
                   + std::to_string( splits.size() ) + " subsets"
-                : ( n_fold ? std::to_string( n_fold ) + "-fold cross-validation"
+                : ( n_fold ? std::to_string( n_fold ) +
+                             "-fold cross-validation"
                            : "hold-out of " + std::to_string( test_fraction ) )
                   + ( repeats > 1 ? " repeated " + std::to_string( repeats )
                                     + " times" : "" ) )
@@ -1424,7 +1430,8 @@ int main( int argc , char ** argv )
                          ? evaluate_incremental( svm , splits , grid , points )
                          : ( reopt ? evaluate_reopt( svm , splits , grid ,
                                                      points )
-                                   : evaluate( svm , splits , grid , points ) );
+                                   : evaluate( svm , splits , grid ,
+                                               points ) );
  const double sel_seconds = std::chrono::duration< double >(
                        std::chrono::steady_clock::now() - sel_start ).count();
 
@@ -1495,7 +1502,8 @@ int main( int argc , char ** argv )
    for( std::size_t f = 0 ; f < splits.size() ; ++f ) {
     const std::size_t t = q * splits.size() + f;
     csv << filename << "," << n << "," << svm->get_NFeatures() << ","
-        << svm->get_kernel_type() << "," << solver_name << "," << estimate << ","
+        << svm->get_kernel_type() << "," << solver_name << ","
+        << estimate << ","
         << ( incremental ? 1 : ( reopt ? 2 : 0 ) ) << ","
         << ( warm ? 1 : 0 ) << ",\""
         << ( grid.empty() ? std::string( "-" )

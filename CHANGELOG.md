@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the tools print the upper and the lower bound with all the digits of a
+  double (`max_digits10`), rather than with the 6 of the default precision
+  of the stream, which is what whoever reads the objective from the output
+  of a tool (as pySMSpp does) was given; some lines are wrapped within 79
+  columns
+
 - the makefiles of the tests and of the tools build also with g++: they
   take the option that stops at the first error and the one of the
   debugging information, which clang++ and g++ spell differently
