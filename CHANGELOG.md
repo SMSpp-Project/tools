@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   warns that a `ThermalUnitBlock` keeps its `InitUpDownTime`
 - `intDoEasy` in the configurations follows the new bits of BundleSolver
   (15 is now 7)
+- `investmentblock_solver` no longer refuses an inner Block that is not a
+  `UCBlock`, a `TwoStageStochasticBlock` or an `SDDPBlock`: the
+  `InvestmentBlock` refuses at load one its assets cannot be sized on
 
 ### Fixed
 
@@ -82,6 +85,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `InvestmentFunction` by the `LagrangianDualSolver` (`IBOCfg-LD.txt`,
   `IFCfg-LD.txt`, `BSCfg-LD.txt`), whose ComputeConfig is in `LDCfg.txt`,
   shared with `BSPar-LD.txt`
+
+- `investmentblock_solver` solves an InvestmentBlock made of several
+  components, as the one into which deserialize splits a
+  TwoStageStochasticBlock: every step that took the single
+  InvestmentFunction of the InvestmentBlock goes over all of them, and each
+  is given the ComputeConfig that the OBlockConfig of the InvestmentBlock
+  gives to its Objective, which there holds no InvestmentFunction
 
 - `investmentblock_solver` solves an `InvestmentBlock` whose inner Block is an
   `SDDPBlock`, from a Block file as from a problem file: the UCBlock of each
