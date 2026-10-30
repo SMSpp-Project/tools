@@ -7,7 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `design_converter`, which writes a Block in design mode (a `UCBlock`
+  whose units or lines carry the design Variable of their investment, or a
+  `StochasticBlock`, `TwoStageStochasticBlock` or
+  `MultiStageStochasticBlock` holding such `UCBlock`) as an
+  `InvestmentBlock`, each design an asset, the form an `InvestmentBlock`
+  accepts; an `InvestmentBlock` whose inner Block is in design mode has its
+  designs made its assets
+
 ### Changed
+
+- the "meta"-BlockConfig of `investmentblock_solver` give each component of
+  an `InvestmentBlock` that has split its inner Block (an `AbstractBlock`)
+  the `OBlockConfig` of the `InvestmentBlock`, which gives the
+  `InvestmentFunction` of the component the Solver of its inner Block
 
 - the makefiles that include LagrangianDualSolver no longer include
   BranchAndXSolver, which it no longer needs
@@ -86,12 +101,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `IFCfg-LD.txt`, `BSCfg-LD.txt`), whose ComputeConfig is in `LDCfg.txt`,
   shared with `BSPar-LD.txt`
 
-- `investmentblock_solver` solves an InvestmentBlock made of several
-  components, as the one into which deserialize splits a
-  TwoStageStochasticBlock: every step that took the single
-  InvestmentFunction of the InvestmentBlock goes over all of them, and each
-  is given the ComputeConfig that the OBlockConfig of the InvestmentBlock
-  gives to its Objective, which there holds no InvestmentFunction
+- `investmentblock_solver` solves an `InvestmentBlock` made of several
+  components, as the one into which `deserialize()` splits a
+  `TwoStageStochasticBlock`: every step that took the single
+  `InvestmentFunction` of the `InvestmentBlock` goes over all of them [see
+  `InvestmentBlock::get_investment_functions()`]
 
 - `investmentblock_solver` solves an `InvestmentBlock` whose inner Block is an
   `SDDPBlock`, from a Block file as from a problem file: the UCBlock of each

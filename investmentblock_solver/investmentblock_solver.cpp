@@ -87,7 +87,6 @@
 #include <HydroSystemUnitBlock.h>
 #include <IntermittentUnitBlock.h>
 #include <NetworkBlock.h>
-#include <RBlockConfig.h>
 #include <SDDPBlock.h>
 #include <StochasticBlock.h>
 #include <SDDPGreedySolver.h>
@@ -576,7 +575,10 @@ void check_inner_Solvers( InvestmentFunction * investment_function )
    std::cerr << "The inner Block of the InvestmentFunction has no Solver: "
              << "the BlockConfig of the InvestmentBlock must be an "
              << "OBlockConfig giving its InvestmentFunction a ComputeConfig "
-             << "with a BlockSolverConfig (see config/IBOCfg.txt)."
+             << "with a BlockSolverConfig (see config/IBOCfg.txt); the "
+             << "components of an InvestmentBlock that has split its inner "
+             << "Block are AbstractBlock, which a \"meta\"-BlockConfig "
+             << "gives the same OBlockConfig (see config/InnerBCfg.txt)."
              << std::endl;
    exit( 1 );
    }
@@ -607,38 +609,6 @@ void check_inner_Solvers( InvestmentFunction * investment_function )
            << "for under the prefix of -p (now \"" << block_prefix
            << "\")." << std::endl;
  exit( 1 );
- }
-
-/*--------------------------------------------------------------------------*/
-/// gives each component the ComputeConfig of the InvestmentFunction
-/** The OBlockConfig of the InvestmentBlock gives its ComputeConfig to the
- * Objective of the InvestmentBlock, which holds the InvestmentFunction only if
- * there is a single one. When the InvestmentBlock is a sum of components, one
- * InvestmentFunction each [see InvestmentBlock::add_component()], as when the
- * scenarios of a TwoStageStochasticBlock are separated, each of them is given
- * it here, out of \p block_config: the OBlockConfig, or a "meta"-BlockConfig
- * holding one. */
-
-void configure_components( InvestmentBlock * investment_block ,
-                           Configuration * block_config )
-{
- if( investment_block->get_function() )
-  return;
-
- if( auto meta = dynamic_cast< SimpleConfiguration< std::map< std::string ,
-                                                   Configuration * > > * >(
-                                                             block_config ) ) {
-  auto it = meta->f_value.find( investment_block->classname() );
-  if( it == meta->f_value.end() )
-   it = meta->f_value.find( "*" );
-  block_config = ( it == meta->f_value.end() ) ? nullptr : it->second;
-  }
-
- if( auto config = dynamic_cast< OBlockConfig * >( block_config ) )
-  if( auto compute_config = config->get_Config_Objective() )
-   for( auto investment_function :
-          investment_block->get_investment_functions() )
-    investment_function->set_ComputeConfig( compute_config );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -699,7 +669,6 @@ void process_prob_file( const netCDF::NcFile & file )
   investment_block->generate_abstract_variables();
   investment_block->generate_objective();
   block_config->apply( investment_block );
-  configure_components( investment_block , block_config );
   block_config->clear();
 
   for( auto investment_function : investment_functions )
@@ -823,7 +792,6 @@ void process_block_file( const netCDF::NcFile & file )
   investment_block->generate_abstract_variables();
   investment_block->generate_objective();
   config_Block( investment_block , given_block_config , nullptr );
-  configure_components( investment_block , given_block_config );
 
   for( auto investment_function : investment_functions )
    check_inner_Solvers( investment_function );

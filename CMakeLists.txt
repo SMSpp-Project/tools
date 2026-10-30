@@ -196,6 +196,7 @@ add_subdirectory(bkblock_solver)
 add_subdirectory(cflblock_solver)
 add_subdirectory(mmcfblock_solver)
 add_subdirectory(sfdcrblock_solver)
+add_subdirectory(design_converter)
 
 add_subdirectory(chgcfg)
 

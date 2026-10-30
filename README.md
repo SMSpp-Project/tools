@@ -31,6 +31,12 @@ At the moment we provide:
   BinaryKnapsackBlock, CapacitatedFacilityLocationBlock, MMCFBlock and
   SingleFlowDCRBlock, which also read the native text formats of their Block
 
+- `design_converter`: converts a file whose Block is in design mode (a
+  `UCBlock` whose units or lines carry the design Variable of their
+  investment, or a stochastic Block holding such `UCBlock`) into one of
+  `InvestmentBlock`, each design an asset, which is the form an
+  `InvestmentBlock` accepts
+
 - `chgcfg`: a small utility to change some parameters in a configuration
   file while leaving all the rest unchanged
 
