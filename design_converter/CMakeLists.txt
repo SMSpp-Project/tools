@@ -19,17 +19,20 @@ endif ()
 # If it's not being called by the umbrella, we need to
 # look for the system-installed libraries.
 if (NOT hasParent)
-    # the units, whose design Variable the first-stage paths are read against,
-    # come with InvestmentBlock
+    # the InvestmentBlock, whose types of assets it writes, and the UCBlock,
+    # whose units give the design Variable the first-stage paths are read
+    # against
     find_package(InvestmentBlock)
+    find_package(UCBlock)
 endif ()
 
 # ----- design_converter ---------------------------------------------------- #
-if (TARGET SMS++::InvestmentBlock)
+if (TARGET SMS++::InvestmentBlock AND TARGET SMS++::UCBlock)
 
     add_executable(design_converter design_converter.cpp)
     target_compile_features(design_converter PUBLIC cxx_std_20)
-    target_link_libraries(design_converter PRIVATE SMS++::InvestmentBlock)
+    target_link_libraries(design_converter PRIVATE SMS++::InvestmentBlock
+                          SMS++::UCBlock)
 
     smspp_install(design_converter)
     smspp_install_data(design_converter

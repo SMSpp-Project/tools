@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `investmentblock_solver`, `design_converter` and `block_solver` link the
+  Blocks the inner Block of an InvestmentBlock is made of (UCBlock, and
+  SDDPBlock and TwoStageStochasticBlock for the first and the last), which
+  InvestmentBlock no longer brings, by CMake and by the makefiles; the
+  BlockSolverConfig of the SDDPBlock of `investmentblock_solver`
+  (`SDDPBSCfg.txt`, `SDDPBSCfg-LP.txt`) has the `SDDPSimulationSolver` of
+  SDDPBlock as its first Solver, which the InvestmentFunction takes
+
 - the "meta"-BlockConfig of `investmentblock_solver` give each component of
   an `InvestmentBlock` that has split its inner Block (an `AbstractBlock`)
   the `OBlockConfig` of the `InvestmentBlock`, which gives the

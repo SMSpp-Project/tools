@@ -32,11 +32,20 @@ include ../makefile_common
 InvsBkSDR = ../../InvestmentBlock
 include $(InvsBkSDR)/makefile-c
 
-# the inner Block of an InvestmentBlock may be a stochastic one: the
-# TwoStageStochasticBlock comes with InvestmentBlock, the multi-stage one has
-# to be asked for, since nothing depends on it, the Block being reached
-# polymorphically and only the factory needing to know how to build it; the
-# basic makefile, since TwoStageStochasticBlock comes with InvestmentBlock
+# the Blocks the inner Block of an InvestmentBlock is made of, which it
+# reaches polymorphically and this program names: UCBlock, SDDPBlock (with
+# StochasticBlock) and the basic makefile of TwoStageStochasticBlock, since
+# StochasticBlock comes with SDDPBlock already
+UCBckDIR = ../../UCBlock
+include $(UCBckDIR)/lib/makefile
+SDDPBkSDR = ../../SDDPBlock
+include $(SDDPBkSDR)/makefile-s
+TSSBkSDR = ../../TwoStageStochasticBlock
+include $(TSSBkSDR)/makefile
+
+# the multi-stage stochastic Block has to be asked for too, the Block being
+# reached polymorphically and only the factory needing to know how to build
+# it; the basic makefile, since TwoStageStochasticBlock is there already
 MSSBkSDR = ../../MultiStageStochasticBlock
 include $(MSSBkSDR)/makefile
 
@@ -56,10 +65,12 @@ include $(LgDSLVSDR)/makefile
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(InvsBkOBJ) $(MSSBkOBJ) $(CMMNUOBJ)
+MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(InvsBkOBJ) $(UCBckOBJ) $(SDDPBkOBJ) \
+	$(TSSBkOBJ) $(MSSBkOBJ) $(CMMNUOBJ)
 
 # libraries
-MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(InvsBkLIB) $(MSSBkLIB)
+MLIB =  $(BNDSLVLIB) $(LgDSLVLIB) $(InvsBkLIB) $(UCBckLIB) $(SDDPBkLIB) \
+	$(TSSBkLIB) $(MSSBkLIB)
 
 $(DIR)/$(NAME): $(MOBJ) $(DIR)/investmentblock_solver.o
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
@@ -67,10 +78,12 @@ $(DIR)/$(NAME): $(MOBJ) $(DIR)/investmentblock_solver.o
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
-MINC =  $(BNDSLVINC) $(LgDSLVINC) $(InvsBkINC) $(CMMNUINC)
+MINC =  $(BNDSLVINC) $(LgDSLVINC) $(InvsBkINC) $(UCBckINC) $(SDDPBkINC) \
+	$(TSSBkINC) $(CMMNUINC)
 
 # includes
-MH =    $(BNDSLVH) $(LgDSLVH) $(InvsBkH) $(CMMNUH)
+MH =    $(BNDSLVH) $(LgDSLVH) $(InvsBkH) $(UCBckH) $(SDDPBkH) $(TSSBkH) \
+	$(CMMNUH)
 
 # compile command
 
