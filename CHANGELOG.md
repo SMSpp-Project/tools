@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instant, as `DCNetworkBlock` reads them; a Block with an `ObjectiveWeight`
   other than 1, which its Solver does not apply and the `InvestmentBlock`
   would, and an `InvestmentBlock` with the design mode in a `Component_<k>`,
-  are refused
+  are refused, and a refused conversion leaves no output file
 
 ### Changed
 

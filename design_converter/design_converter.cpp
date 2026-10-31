@@ -64,6 +64,8 @@
 
 #include <algorithm>
 
+#include <filesystem>
+
 #include <iostream>
 
 #include <memory>
@@ -706,6 +708,10 @@ int main( int argc , char ** argv )
   return( 1 );
   }
 
+ // the output is written aside, and renamed when all is done: a refused
+ // conversion leaves no file
+ const std::string part = std::string( argv[ 2 ] ) + ".part";
+
  try {
   netCDF::NcFile in( argv[ 1 ] , netCDF::NcFile::read );
 
@@ -717,30 +723,35 @@ int main( int argc , char ** argv )
                                  std::string( argv[ 1 ] ) + " is neither a "
                                  "Block file nor a problem file" ) );
 
-  netCDF::NcFile out( argv[ 2 ] , netCDF::NcFile::replace ,
-                      netCDF::NcFile::nc4 );
-  for( const auto & att : in.getAtts() )
-   netCDF::ncCheck( nc_copy_att( in.getId() , NC_GLOBAL ,
-                                 att.first.c_str() , out.getId() ,
-                                 NC_GLOBAL ) , __FILE__ , __LINE__ );
-
-  // in a Block file each child group is a Block, in a problem file the
-  // child "Block" of each child group is
   int converted = 0;
-  for( const auto & [ name , group ] : in.getGroups() ) {
-   auto dst = out.addGroup( name );
-   if( file_type == eBlockFile )
-    converted += convert_Block( group , dst );
-   else {
-    copy_skipping( group , dst , { "Block" } );
-    if( auto block = group.getGroup( "Block" ) ; ! block.isNull() )
-     converted += convert_Block( block , dst.addGroup( "Block" ) );
+  {
+   netCDF::NcFile out( part , netCDF::NcFile::replace ,
+                       netCDF::NcFile::nc4 );
+   for( const auto & att : in.getAtts() )
+    netCDF::ncCheck( nc_copy_att( in.getId() , NC_GLOBAL ,
+                                  att.first.c_str() , out.getId() ,
+                                  NC_GLOBAL ) , __FILE__ , __LINE__ );
+
+   // in a Block file each child group is a Block, in a problem file the
+   // child "Block" of each child group is
+   for( const auto & [ name , group ] : in.getGroups() ) {
+    auto dst = out.addGroup( name );
+    if( file_type == eBlockFile )
+     converted += convert_Block( group , dst );
+    else {
+     copy_skipping( group , dst , { "Block" } );
+     if( auto block = group.getGroup( "Block" ) ; ! block.isNull() )
+      converted += convert_Block( block , dst.addGroup( "Block" ) );
+     }
     }
    }
+  std::filesystem::rename( part , argv[ 2 ] );
 
   std::cout << converted << " Block converted" << std::endl;
   }
  catch( const std::exception & e ) {
+  std::error_code ec;
+  std::filesystem::remove( part , ec );
   std::cerr << e.what() << std::endl;
   return( 1 );
   }
