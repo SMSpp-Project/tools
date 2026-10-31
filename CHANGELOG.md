@@ -26,6 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `investmentblock_solver` no longer shifts the initial point and the
+  solution by the lower bounds of the design Variable, which InvestmentBlock
+  no longer reformulates, and its `IBOCfg*.txt` give no Configuration for
+  the static constraints
+
 - `investmentblock_solver`, `design_converter` and `block_solver` link the
   Blocks the inner Block of an InvestmentBlock is made of (UCBlock, and
   SDDPBlock and TwoStageStochasticBlock for the first and the last), which

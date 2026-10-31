@@ -269,8 +269,8 @@ the configuration files. `-B` is typically a "meta"-BlockConfig, a map from a
 Block classname() to its BlockConfig, which the tool dispatches to the
 InvestmentBlock and over the inner Block of its InvestmentFunction, the
 UCBlock of every stage of an SDDPBlock included. Its `InvestmentBlock` entry
-is an OBlockConfig (`IBOCfg.txt`), which reformulates the bounds on the
-investment and gives the InvestmentFunction its ComputeConfig (`IFCfg.txt`):
+is an OBlockConfig (`IBOCfg.txt`), which gives the InvestmentFunction its
+ComputeConfig (`IFCfg.txt`):
 the file of the investment candidates and, in the extra Configuration, the
 BlockSolverConfig of the inner Block. With `-B InnerBCfg-LD.txt` the inner
 UCBlock is solved by the LagrangianDualSolver of `BSCfg-LD.txt` instead of
