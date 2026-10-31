@@ -51,6 +51,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `ucblock_solver/config/TUBSCfg-DP.txt`,
+  `ucblock_solver/config/NUBSCfg-DP.txt` and
+  `tssb_solver/config/TUBSCfg-DP.txt` declared no ComputeConfig and wrote
+  one all the same, empty, which SMS++ never read: it is gone, and the
+  dynamic programming Solver runs with its defaults as it did
+
 - the tools print the upper and the lower bound with all the digits of a
   double (`max_digits10`), rather than with the 6 of the default precision
   of the stream, which is what whoever reads the objective from the output
