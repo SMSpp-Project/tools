@@ -201,6 +201,18 @@ static double scalar( const netCDF::NcGroup & g , const std::string & name ,
 
 /*--------------------------------------------------------------------------*/
 
+// the double attribute name of g, def if it has none
+
+static double attribute( const netCDF::NcGroup & g , const std::string & name ,
+                         double def )
+{
+ if( auto att = g.getAtt( name ) ; ! att.isNull() )
+  att.getValues( & def );
+ return( def );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 // the "type" attribute of g, the empty string if it has none
 
 static std::string type_of( const netCDF::NcGroup & g )
@@ -333,6 +345,11 @@ static Designs ucblock_designs( const netCDF::NcGroup & uc )
    if( scalar( g , datum , 1 ) != 1 )
     refuse( "has a " + std::string( datum ) + " other than 1, which the "
             "investment would overwrite" );
+  // the copies of the unit, which serialize() writes as the weight of its
+  // Variable [see UnitBlock::replicate()]
+  if( attribute( g , "VariableWeight" , 1 ) != 1 )
+   refuse( "has a VariableWeight other than 1, i.e., copies, which the "
+           "investment would overwrite" );
 
   if( type == "IntermittentUnitBlock" ) {
    ++d.number;

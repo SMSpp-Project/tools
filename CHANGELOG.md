@@ -18,8 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   designs made its assets. The flow limits of a line are read for each
   instant, as `DCNetworkBlock` reads them; a Block with an `ObjectiveWeight`
   other than 1, which its Solver does not apply and the `InvestmentBlock`
-  would, and an `InvestmentBlock` with the design mode in a `Component_<k>`,
-  are refused, and a refused conversion leaves no output file
+  would, an `InvestmentBlock` with the design mode in a `Component_<k>`,
+  and a unit in design mode with copies ("Scale", or the "VariableWeight"
+  that `serialize()` writes, other than 1) or a kappa other than 1, which
+  the investment would overwrite, are refused, and a refused conversion
+  leaves no output file
 
 ### Changed
 
