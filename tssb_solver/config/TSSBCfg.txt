@@ -17,31 +17,31 @@ BlockConfig # exact type of the ComputeConfig object
 
 # static_constraints
 SimpleConfiguration<int>
-0    # 0 = anchor constraints, 1 = sequential constraints
+0  # 0 = anchor constraints, 1 = sequential constraints
 
 # dynamic_constraints
-*    # [none]
+*  # [none]
 
 # static_variables
-*    # [none]
+*  # [none]
 
 # dynamic_variables
-*    # [none]
+*  # [none]
 
 # objective
-*    # [none]
+*  # [none]
 
 # is_feasible
-*    # [none]
+*  # [none]
 
 # is_optimal
-*    # [none]
+*  # [none]
 
 # solution
-*    # [none]
+*  # [none]
 
 # extra
-*    # [none]
+*  # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - END TSSBCfg.txt - - - - - - - - - - - - - - -

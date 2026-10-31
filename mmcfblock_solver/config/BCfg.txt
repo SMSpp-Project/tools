@@ -17,32 +17,32 @@ BlockConfig # exact type of the ComputeConfig object
 
 # static_constraints
 SimpleConfiguration<int>
-0             # use [1] or not [0] the strong forcing constraints
+0  # use [1] or not [0] the strong forcing constraints
 
 # dynamic_constraints
-*    # [none]
+*  # [none]
 
 # static_variables
 SimpleConfiguration<int>
-0    # 0 = Flow, 1 = Knapsack (Formulation)
+0  # 0 = Flow, 1 = Knapsack (Formulation)
 
 # dynamic_variables
-*    # [none]
+*  # [none]
 
 # objective
-*    # [none]
+*  # [none]
 
 # is_feasible
-*    # [none]
+*  # [none]
 
 # is_optimal
-*    # [none]
+*  # [none]
 
 # solution
-*    # [none]
+*  # [none]
 
 # extra
-*    # [none]
+*  # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - -  END BCfg.txt - - - - - - - - - - - - - - -

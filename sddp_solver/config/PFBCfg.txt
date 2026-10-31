@@ -19,33 +19,34 @@ BlockConfig # exact type of the Configuration object
 *  # [none]
 
 # static_constraints
-*    # [none]
+*  # [none]
 
 # dynamic_constraints
-*    # [none]
+*  # [none]
 
 # static_variables
 SimpleConfiguration<int>
-1    # use the "linearized" representation of the PolyhedralFunction
+1  # use the "linearized" representation of the PolyhedralFunction
 
 # dynamic_variables
-*    # [none]
+*  # [none]
 
 # objective
-*    # [none]
+*  # [none]
 
 # is_feasible
 SimpleConfiguration<std::pair<double,int>>
 1e-6 1  # feasibility tolerance, relative violation
 
 # is_optimal
-*    # [none]
+*  # [none]
 
 # solution
-*    # [none]
+*  # [none]
 
 # extra: the four tolerances of remove_redundant_rows()
 SimpleConfiguration<std::vector<double>>
+
 4       # the number of elements in the vector
 0.0     # parallel abs tolerance
 0.0     # parallel rel tolerance

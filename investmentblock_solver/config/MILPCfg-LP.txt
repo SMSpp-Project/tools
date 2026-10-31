@@ -16,7 +16,7 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-6 # number of integer parameters
+6  # number of integer parameters
 
 # now all the integer parameters
 intLogVerb                  0 # log verbosity
@@ -28,37 +28,37 @@ CPXPARAM_SolutionType       2 # basic solution
 #CPXPARAM_Preprocessing_Presolve 0
 #intThrowReducedCostException    1
 
-1 # number of double parameters
+1  # number of double parameters
 
 # now all the double parameters
 CPXPARAM_Simplex_Tolerances_Optimality 1e-9 # optimality tolerance
 #dblAAccSol 1e-04
 #dblMaxTime 20000
 
-0 # number of string parameters
+0  # number of string parameters
 
 # now all the string parameters
 #strOutputFile lp.lp
 
-0 # number of vector-of-int parameters
+0  # number of vector-of-int parameters
 
 # now all the vector-of-int parameters
 # [none]
 
-0 # number of vector-of-double parameters
+0  # number of vector-of-double parameters
 
 # now all the vector-of-double parameters
 # [none]
 
-0 # number of vector-of-string parameters
+0  # number of vector-of-string parameters
 
 # now all the vector-of-string parameters
 # [none]
 
 # pointer to the "extra" Configuration
-* # [none]
+*  # [none]
 
-# end of ComputeConfig  - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - -  END MILPCfg-LP.txt - - - - - - - - - - - - - -

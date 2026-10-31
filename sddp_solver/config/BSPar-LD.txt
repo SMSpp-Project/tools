@@ -28,27 +28,46 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-4  # Number of integer parameters
+4  # number of integer parameters
+
+# now all the integer parameters
 intLogVerb 0
 CPXPARAM_Threads 1
 CPXPARAM_LPMethod 2
 intRelaxIntVars 1
 
-0  # Number of double parameters
+0  # number of double parameters
 #dblAAccSol 1e-04
 #dblMaxTime 20000
 
-0  # Number of string parameters
+# now all the double parameters
+# [none]
+
+0  # number of string parameters
 #strOutputFile uc_lp.lp
 
-0 # number of vector-of-int parameters
-0 # number of vector-of-double parameters
-0 # number of vector-of-string parameters
+# now all the string parameters
+# [none]
 
+0  # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0  # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0  # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
 # Pointer to the "extra" Configuration
-* # [none]
 
-# end of 1st ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+# pointer to the "extra" Configuration
+*  # [none]
+
+# end of 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # 2nd ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # ComputeConfig of the LagrangianDualSolver; it mostly is the
@@ -59,15 +78,15 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-18 # number of integer parameters
+18  # number of integer parameters
 
 # now all the integer parameters
-intMPStbl              0 # stabilization: 0 = proximal, 1 = level, 2 = doubly
-                         # stabilized
-intDoEasy  7      # do easy components for (some) LagBFunction
-intMaxIter 200  # max number of iterations for each call
-intMaxThread 1   # MaxThread, max number of new tasks to spawn
-intLogVerb 15      # log verbosity of main Bundle algorithm
+intMPStbl   0     # stabilization: 0 = proximal, 1 = level, 2 = doubly
+                  # stabilized
+intDoEasy   7     # do easy components for (some) LagBFunction
+intMaxIter 200    # max number of iterations for each call
+intMaxThread 1    # MaxThread, max number of new tasks to spawn
+intLogVerb 15     # log verbosity of main Bundle algorithm
 intFrcLstSS 2
 intWZNorm  10     # which norm to use in the norm-based stopping condition
 intBPar1   20     # discard items when they have been useless for <this>
@@ -85,11 +104,10 @@ intMnNSC    1     # min number of consecutive NS with the same t for a t
 inttSPar1  12     # long-term t-strategy (0 = none, 4 = soft, 8 = hard, 12 =
                   # balancing)
 intMaxNrEvls 2    # maximum number of function evaluations at each iteration
-
-# OSiMPSolver's parameters :- - - - - - - - - - - - - - - - - - - - - - - - -
+# OSiMPSolver's parameters : - - - - - - - - - - - - - - - - - - - - - - - -
 intRstAlg   2     # parameter to handle the reset of the algorithm
 
-15 # number of double parameters
+15  # number of double parameters
 
 # now all the double parameters
 dblRelAcc  1e-8   # relative accuracy required to solution
@@ -108,34 +126,36 @@ dblmnIncr  1.5    # min increase of t (each time it is increased)
 dblmxDecr  0.1    # max decrease of t
 dblmnDecr  0.66   # min decrease of t (each time it is decreased)
 dbltMaior  1e+6   # maximum value for t
-dbltMinor  1e-10   # minimum value for t
+dbltMinor  1e-10  # minimum value for t
 dbltInit   1e-5   # initial value for t
 dbltSPar2  1e-2   # parameter for the long-term t-strategy
 
-3 # number of string parameters
+3  # number of string parameters
 
 # now all the string parameters
 str_LDSlv_ISName        ParallelBundleSolver  # the inner Solver used by
                                               # LagrangianDualSolver
 #str_LDSlv_ISName       BundleSolver  # the inner Solver used by
                                       # LagrangianDualSolver
-str_LagBF_BSCfg         InnerBSCfg.txt # meta BlockSolverConfig for the
-                                       # LagBFunctions, dispatched by inner
-                                       # Block classname()
-strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's
-                             # Solver
+str_LagBF_BSCfg         InnerBSCfg.txt        # meta BlockSolverConfig for
+                                              # the
+                                              # LagBFunctions, dispatched by
+                                              # inner Block classname()
+strMPBSolverCfg         MPBCfg.txt            # BlockSolverConfig for the
+                                              # MasterProblemBlock's
+                                              # Solver
 
-0 # number of vector-of-int parameters
+0  # number of vector-of-int parameters
 
 # now all the vector-of-int parameters
 # [none]
 
-0 # number of vector-of-double parameters
+0  # number of vector-of-double parameters
 
 # now all the vector-of-double parameters
 # [none]
 
-1 # number of vector-of-string parameters
+1  # number of vector-of-string parameters
 
 # now all the vector-of-string parameters
 # the components that the inner BundleSolver never treats as "easy": the
@@ -146,11 +166,10 @@ strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's
 vstrNoEasy 2 ThermalUnitBlock HydroSystemUnitBlock
 
 # pointer to the "extra" Configuration
-* # [none]
+*  # [none]
 
-# end of 2nd ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
-
-# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of 2nd ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - -  END BSPar-LD.txt - - - - - - - - - - - - - -

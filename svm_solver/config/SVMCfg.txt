@@ -19,36 +19,36 @@ BlockConfig # exact type of the Configuration object
 *  # [none]
 
 # static_constraints
-*    # [none]
+*  # [none]
 
 # dynamic_constraints
-*    # [none]
+*  # [none]
 
 # static_variables
 SimpleConfiguration<int>
-0    # 0 = Wolfe dual, 1 = the training problem itself the primal only exists
-     # for the linear kernel. Writing the problem as chunks tied by consensus
-     # constraints, which is what a Lagrangian Solver attacks, is not a
-     # formulation of the Block: it is assembled out of it, see the -s option
-     # of svm_solver
+0  # 0 = Wolfe dual, 1 = the training problem itself the primal only exists
+   # for the linear kernel. Writing the problem as chunks tied by consensus
+   # constraints, which is what a Lagrangian Solver attacks, is not a
+   # formulation of the Block: it is assembled out of it, see the -s option
+   # of svm_solver
 
 # dynamic_variables
-*    # [none]
+*  # [none]
 
 # objective
-*    # [none]
+*  # [none]
 
 # is_feasible
-*    # [none]
+*  # [none]
 
 # is_optimal
-*    # [none]
+*  # [none]
 
 # solution
-*    # [none]
+*  # [none]
 
 # extra
-*    # [none]
+*  # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - -  END SVMCfg.txt - - - - - - - - - - - - - - -

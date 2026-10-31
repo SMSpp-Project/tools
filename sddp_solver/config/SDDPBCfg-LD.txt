@@ -13,7 +13,7 @@
 
 SimpleConfiguration<std::map<std::string,Configuration*>>
 
-8 # the number of elements in the map
+8  # the number of elements in the map
 
 PolyhedralFunctionBlock *PFBCfg.txt    # linearized representation
 SlackUnitBlock          *SUBCfg.txt    # OneVarConstraints

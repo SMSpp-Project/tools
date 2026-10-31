@@ -14,15 +14,15 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-18 # number of integer parameters
+18  # number of integer parameters
 
 # now all the integer parameters
-intMPStbl              0 # stabilization: 0 = proximal, 1 = level, 2 = doubly
-                         # stabilized
-intDoEasy  7      # do easy components for (some) LagBFunction
-intMaxIter 200  # max number of iterations for each call
-intMaxThread 1   # MaxThread, max number of new tasks to spawn
-intLogVerb 15      # log verbosity of main Bundle algorithm
+intMPStbl   0     # stabilization: 0 = proximal, 1 = level, 2 = doubly
+                  # stabilized
+intDoEasy   7     # do easy components for (some) LagBFunction
+intMaxIter 200    # max number of iterations for each call
+intMaxThread 1    # MaxThread, max number of new tasks to spawn
+intLogVerb 15     # log verbosity of main Bundle algorithm
 intFrcLstSS 2
 intWZNorm  10     # which norm to use in the norm-based stopping condition
 intBPar1   20     # discard items when they have been useless for <this>
@@ -40,11 +40,10 @@ intMnNSC    1     # min number of consecutive NS with the same t for a t
 inttSPar1  12     # long-term t-strategy (0 = none, 4 = soft, 8 = hard, 12 =
                   # balancing)
 intMaxNrEvls 2    # maximum number of function evaluations at each iteration
-
-# OSiMPSolver's parameters :- - - - - - - - - - - - - - - - - - - - - - - - -
+# OSiMPSolver's parameters : - - - - - - - - - - - - - - - - - - - - - - - -
 intRstAlg   2     # parameter to handle the reset of the algorithm
 
-15 # number of double parameters
+15  # number of double parameters
 
 # now all the double parameters
 dblRelAcc  1e-8   # relative accuracy required to solution
@@ -63,11 +62,11 @@ dblmnIncr  1.5    # min increase of t (each time it is increased)
 dblmxDecr  0.1    # max decrease of t
 dblmnDecr  0.66   # min decrease of t (each time it is decreased)
 dbltMaior  1e+6   # maximum value for t
-dbltMinor  1e-10   # minimum value for t
+dbltMinor  1e-10  # minimum value for t
 dbltInit   1e-5   # initial value for t
 dbltSPar2  1e-2   # parameter for the long-term t-strategy
 
-3 # number of string parameters
+3  # number of string parameters
 
 # now all the string parameters
 str_LDSlv_ISName  ParallelBundleSolver  # the inner Solver of the
@@ -78,17 +77,17 @@ str_LagBF_BSCfg   InnerBSCfg.txt        # meta BlockSolverConfig of the
 strMPBSolverCfg   MPBCfg.txt            # BlockSolverConfig of the Solver of
                                         # the MasterProblemBlock
 
-0 # number of vector-of-int parameters
+0  # number of vector-of-int parameters
 
 # now all the vector-of-int parameters
 # [none]
 
-0 # number of vector-of-double parameters
+0  # number of vector-of-double parameters
 
 # now all the vector-of-double parameters
 # [none]
 
-1 # number of vector-of-string parameters
+1  # number of vector-of-string parameters
 
 # now all the vector-of-string parameters
 # the components of the UCBlock that the inner BundleSolver never treats as
@@ -99,7 +98,7 @@ strMPBSolverCfg   MPBCfg.txt            # BlockSolverConfig of the Solver of
 vstrNoEasy 3 HydroSystemUnitBlock ThermalUnitBlock BatteryUnitBlock
 
 # pointer to the "extra" Configuration
-* # [none]
+*  # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - END LDCfg.txt - - - - - - - - - - - - - - - -

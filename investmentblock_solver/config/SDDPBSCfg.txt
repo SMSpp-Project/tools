@@ -4,7 +4,8 @@
 # The BlockSolverConfig of the SDDPBlock inside an InvestmentBlock: the
 # InvestmentFunction takes the first Solver, the SDDPSimulationSolver, which
 # trains the cuts with the (Parallel)SDDPSolver and simulates the scenarios
-# with copies of the SDDPGreedySolver. The backward pass solves the stages via LagrangianDualSolver,
+# with copies of the SDDPGreedySolver. The backward pass solves the stages
+# via LagrangianDualSolver,
 # whose cuts may lie above the continuous relaxation the forward pass
 # computes, the stages having binary variables: from an investment of 1.75 up
 # the curves then cross and the training stops [see SDDPBSCfg-LP.txt].
@@ -29,7 +30,7 @@ ParallelSDDPSolver    # name of 3rd Solver (the trainer)
 *GreedyCfg.txt
 *SDDPCfg.txt
 
-# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - END SDDPBSCfg.txt - - - - - - - - - - - - - - -

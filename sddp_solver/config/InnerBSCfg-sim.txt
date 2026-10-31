@@ -18,14 +18,14 @@
 
 SimpleConfiguration<std::map<std::string,Configuration*>>
 
-5 # the number of elements in the map
+5  # the number of elements in the map
 
-ThermalUnitBlock        *TUBSCfg-DP.txt   # specialized DP solver
-HydroSystemUnitBlock    *HSUBSCfg.txt  # hard component (primal solution
-                                       # needed)
-BatteryUnitBlock        *OUBSCfg.txt   # hard component (links two stages)
-IntermittentUnitBlock   *OUBSCfg.txt   # hard component (links two stages)
-*                       *LPBSCfg.txt   # everything else
+ThermalUnitBlock        *TUBSCfg-DP.txt  # specialized DP solver
+HydroSystemUnitBlock    *HSUBSCfg.txt    # hard component (primal solution
+                                         # needed)
+BatteryUnitBlock        *OUBSCfg.txt     # hard component (links two stages)
+IntermittentUnitBlock   *OUBSCfg.txt     # hard component (links two stages)
+*                       *LPBSCfg.txt     # everything else
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - -  END InnerBSCfg-sim.txt - - - - - - - - - - - - -

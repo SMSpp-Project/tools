@@ -17,20 +17,40 @@
 
 0  # number of integer parameters
 
+# now all the integer parameters
+# [none]
+
 0  # number of double parameters
+
+# now all the double parameters
+# [none]
 
 0  # number of string parameters
 
+# now all the string parameters
+# [none]
+
 0  # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
 
 0  # number of vector-of-double parameters
 
+# now all the vector-of-double parameters
+# [none]
+
 0  # number of vector-of-string parameters
 
+# now all the vector-of-string parameters
 # the extra Configuration, which replaces that of IFCfg.txt: the
 # BlockSolverConfig of the SDDPBlock
+
+# pointer to the "extra" Configuration
 SimpleConfiguration<std::map<std::string,Configuration*>>
-1                  # the number of elements in the map
+
+1  # the number of elements in the map
+
 BlockSolverConfig  *SDDPBSCfg-LP.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

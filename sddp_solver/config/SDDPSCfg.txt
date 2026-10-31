@@ -25,30 +25,29 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-8 # number of integer parameters
+8  # number of integer parameters
 
 # now all the integer parameters
-intMaxIter            10
-intLogVerb            1 # log verbosity
-intNStepConv            1 # Frequency at which the convergence is checked
-intPrintTime            1 # Indicates whether computational time should be
-                          # displayed
-intNbSimulCheckForConv  5 # Number of simulations considered when checking
-                          # convergence
-intNbSimulForward       1 # Number of simulations considered in the forward
-                          # pass
-intNbSimulBackward      5 # Number of simulations considered in the backward
-                          # pass
+intMaxIter              10
+intLogVerb              1   # log verbosity
+intNStepConv            1   # Frequency at which the convergence is checked
+intPrintTime            1   # Indicates whether computational time should be
+                            # displayed
+intNbSimulCheckForConv  5   # Number of simulations considered when checking
+                            # convergence
+intNbSimulForward       1   # Number of simulations considered in the forward
+                            # pass
+intNbSimulBackward      5   # Number of simulations considered in the
+                            # backward
+                            # pass
 intOutputFrequency      1
 
-1 # number of double parameters
+1  # number of double parameters
 
 # now all the double parameters
 dblAccuracy 1.0e-6 # relative accuracy for declaring a solution optimal
 
-# now all the double parameters
-
-3 # number of string parameters
+3  # number of string parameters
 
 # now all the string parameters
 strInnerBSC   UCBSCfg.txt   # BlockSolverConfig for the UCBlock
@@ -59,27 +58,26 @@ strOutputFile cuts.txt
 strFilenameSuffix .0
 #strRandomCutsFile random-cuts.nc4
 
-0 # number of vector-of-int parameters
+0  # number of vector-of-int parameters
 
 # now all the vector-of-int parameters
 # [none]
 
-0 # number of vector-of-double parameters
+0  # number of vector-of-double parameters
 
 # now all the vector-of-double parameters
 # [none]
 
-0 # number of vector-of-string parameters
+0  # number of vector-of-string parameters
 
 # now all the vector-of-string parameters
 # [none]
 
 # pointer to the "extra" Configuration
-* # [none]
+*  # [none]
 
-# end of 1st ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
-
-# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - -  END SDDPSCfg.txt - - - - - - - - - - - - - -

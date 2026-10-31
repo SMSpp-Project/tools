@@ -11,11 +11,11 @@ BlockSolverConfig     # exact type of the Configuration object
 
 1  # the BlockSolverConfig is a "differential" one
 
-1 # number of (the names of) Solver in this BlockSolverConfig
+1  # number of (the names of) Solver in this BlockSolverConfig
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
 NuclearUnitExtDPSolver
 
-0 # number of ComputeConfig in this BlockSolverConfig
+0  # number of ComputeConfig in this BlockSolverConfig
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - -  END NUBSCfg-DP.txt - - - - - - - - - - - - - -

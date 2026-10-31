@@ -23,7 +23,7 @@
 # a "meta"-BlockConfig , i.e., a map classname --> its BlockConfig
 SimpleConfiguration<std::map<std::string,Configuration*>>
 
-2 # the number of elements in the map
+2  # the number of elements in the map
 
 ThermalUnitBlock        *TUBSCfg-DP.txt
 *                       *BSCfg2.txt

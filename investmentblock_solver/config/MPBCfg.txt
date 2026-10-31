@@ -12,7 +12,7 @@ BlockSolverConfig     # exact type of the Configuration object
 
 1  # the BlockSolverConfig is a "differential" one
 
-1 # number of (the names of) Solver in this BlockSolverConfig
+1  # number of (the names of) Solver in this BlockSolverConfig
 
 # now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
 #CPXMILPSolver        # name of Solver
@@ -20,18 +20,18 @@ BlockSolverConfig     # exact type of the Configuration object
 #SCIPMILPSolver       # name of Solver
 HiGHSMILPSolver       # name of Solver
 
-1 # number of ComputeConfig in this BlockSolverConfig
+1  # number of ComputeConfig in this BlockSolverConfig
 
 # now all the ComputeConfig
 # 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # ComputeConfig of the :MILPSolver
 
-ComputeConfig         # exact type of the ComputeConfig object
+ComputeConfig # exact type of the ComputeConfig object
 
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-4 # number of integer parameters
+4  # number of integer parameters
 
 # now all the integer parameters
 intLogVerb      0 # log verbosity of the MILPSolver
@@ -65,7 +65,7 @@ intMaxThread    1 # single-threaded for deterministic master reproducibility
                   # declared infeasible on tolerance when the model is badly
                   # scaled, and the bundle reads that as a numerical error
 
-3 # number of double parameters
+3  # number of double parameters
 
 # now all the double parameters
 dblRelAcc       1e-08 # relative accuracy required to solution
@@ -85,7 +85,7 @@ dblRAccSol      1e-08 # relative accuracy of the solution pool
 #primal_feasibility_tolerance     1e-9
 #dual_feasibility_tolerance       1e-9
 
-0 # number of string parameters
+0  # number of string parameters
 
 # now all the string parameters
 # [none]
@@ -96,27 +96,26 @@ dblRAccSol      1e-08 # relative accuracy of the solution pool
 #presolve  off    # disable presolve for reproducibility
 #solver    ipm    # interior point: converges to analytic center (unique x*)
 
-0 # number of vector-of-int parameters
+0  # number of vector-of-int parameters
 
 # now all the vector-of-int parameters
 # [none]
 
-0 # number of vector-of-double parameters
+0  # number of vector-of-double parameters
 
 # now all the vector-of-double parameters
 # [none]
 
-0 # number of vector-of-string parameters
+0  # number of vector-of-string parameters
 
 # now all the vector-of-string parameters
 # [none]
 
 # pointer to the "extra" Configuration
-* # [none]
+*  # [none]
 
-# end of ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - END MPBCfg.txt  - - - - - - - - - - - - - - - -

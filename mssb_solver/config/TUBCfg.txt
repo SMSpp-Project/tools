@@ -27,37 +27,38 @@ BlockConfig # exact type of the ComputeConfig object
 *  # [none]
 
 # static_constraints
-*    # [none]
+*  # [none]
 
 # dynamic_constraints
 SimpleConfiguration<std::pair<double,double>>
-1e-6    # threshold parameter for P/C separation
-1e-4    # tolerance value to consider a binary variable
+1e-6  # threshold parameter for P/C separation
+
+1e-4  # tolerance value to consider a binary variable
 
 # static_variables
 SimpleConfiguration<int>
-1    # 0 = 3bin, 1 = T, 2 = pt, 3 = DP, 4 = SU, 5 = SD, 6 = SUSD
-     # (Formulation)
+1  # 0 = 3bin, 1 = T, 2 = pt, 3 = DP, 4 = SU, 5 = SD, 6 = SUSD
+   # (Formulation)
 #9    # +8 with Perspective Cuts
 #17   # +16: start-up / shut-down variables are continuous
 
 # dynamic_variables
-*    # [none]
+*  # [none]
 
 # objective
-*    # [none]
+*  # [none]
 
 # is_feasible
-*    # [none]
+*  # [none]
 
 # is_optimal
-*    # [none]
+*  # [none]
 
 # solution
-*    # [none]
+*  # [none]
 
 # extra
-*    # [none]
+*  # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - -  END TUBCfg.txt - - - - - - - - - - - - - - -
