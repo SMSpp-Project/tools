@@ -395,8 +395,24 @@ static Designs ucblock_designs( const netCDF::NcGroup & uc )
   const auto cost = values( g , "InvestmentCost" , n , 0 );
   const auto lo = values( g , "MinCapacityDesign" , n , 0 );
   const auto hi = values( g , "MaxCapacityDesign" , n , 1 );
-  const auto fmin = values( uc , "MinPowerFlow" , lines , 0 );
-  const auto fmax = values( uc , "MaxPowerFlow" , lines , 0 );
+  // the flow limits of each line at each instant, read as DCNetworkBlock
+  // reads them; one that is not there is 0
+  Block::Index instants = 1;
+  deserialize_dim( uc , "NumberInstants" , instants , true );
+  boost::multi_array< double , 2 > fmin , fmax;
+  ::deserialize( uc , "MinPowerFlow" , { lines , instants } , fmin , true ,
+                 true );
+  ::deserialize( uc , "MaxPowerFlow" , { lines , instants } , fmax , true ,
+                 true );
+  // whether the design of line l widens it only: its flow interval holds 0
+  // at every instant
+  const auto widening = [ & ]( Block::Index l ) {
+   for( Block::Index t = 0 ; t < instants ; ++t )
+    if( ( fmin.num_elements() && ( fmin[ l ][ t ] > 0 ) ) ||
+        ( fmax.num_elements() && ( fmax[ l ][ t ] < 0 ) ) )
+     return( false );
+   return( true );
+   };
   std::vector< Block::Index > line;
   if( ! ::deserialize( g , "DesignLines" , n , line , true , true ) ) {
    line.resize( n );
@@ -408,8 +424,7 @@ static Designs ucblock_designs( const netCDF::NcGroup & uc )
    d.assets.push_back( design_asset( line[ p ] , eLine ,
                                      cost[ p ] , lo[ p ] ,
                                      hi[ p ] < 0 ? -1 : hi[ p ] ,
-                                     ( fmin[ line[ p ] ] <= 0 ) &&
-                                     ( fmax[ line[ p ] ] >= 0 ) ) );
+                                     widening( line[ p ] ) ) );
   }
 
  return( d );
@@ -642,8 +657,9 @@ static void convert_design_mode( const netCDF::NcGroup & group ,
 static bool convert_Block( const netCDF::NcGroup & src , netCDF::NcGroup dst )
 {
  if( type_of( src ) == "InvestmentBlock" ) {
-  const auto inner = src.getGroup( "InnerBlock" );
-  if( inner.isNull() || ( ! has_design( inner ) ) ) {
+  // the design mode is in its InnerBlock, or in that of a Component_<k>,
+  // which convert_design_mode() refuses
+  if( ! has_design( src ) ) {
    copy_skipping( src , dst );
    return( false );
    }
@@ -655,6 +671,17 @@ static bool convert_Block( const netCDF::NcGroup & src , netCDF::NcGroup dst )
   copy_skipping( src , dst );
   return( false );
   }
+
+ // the Solver of a Block does not apply the weight of its Objective, which
+ // the InvestmentBlock wrapping it would
+ double weight = 1;
+ if( auto att = src.getAtt( "ObjectiveWeight" ) ; ! att.isNull() )
+  att.getValues( & weight );
+ if( weight != 1 )
+  throw( std::logic_error( "design_converter: the Block has an "
+                           "'ObjectiveWeight' other than 1, which the "
+                           "InvestmentBlock would apply and its Solver "
+                           "does not" ) );
 
  // an InvestmentBlock with src as its inner Block and no asset, in memory,
  // which is then converted as any other

@@ -15,7 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MultiStageStochasticBlock` holding such `UCBlock`) as an
   `InvestmentBlock`, each design an asset, the form an `InvestmentBlock`
   accepts; an `InvestmentBlock` whose inner Block is in design mode has its
-  designs made its assets
+  designs made its assets. The flow limits of a line are read for each
+  instant, as `DCNetworkBlock` reads them; a Block with an `ObjectiveWeight`
+  other than 1, which its Solver does not apply and the `InvestmentBlock`
+  would, and an `InvestmentBlock` with the design mode in a `Component_<k>`,
+  are refused
 
 ### Changed
 
