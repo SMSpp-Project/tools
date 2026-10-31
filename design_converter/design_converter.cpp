@@ -407,8 +407,10 @@ static Designs ucblock_designs( const netCDF::NcGroup & uc )
    std::vector< double > v;
    if( ! ::deserialize( h , name , m , v , true , true ) )
     v.assign( m , def );
-   else if( v.size() == 1 )
-    v.assign( m , v[ 0 ] );
+   else if( v.size() == 1 ) {
+    const double v0 = v[ 0 ];  // assign() takes no reference into v
+    v.assign( m , v0 );
+    }
    return( v );
    };
   const auto cost = values( g , "InvestmentCost" , n , 0 );

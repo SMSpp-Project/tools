@@ -63,6 +63,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `design_converter` copies the one value of a vector given once before
+  assigning it to every element: `assign()` was given a reference into the
+  vector itself, which it does not allow, and with the libc++ of macOS the
+  elements could be other than the value
+
 - on Windows, the executables that copy their DLLs next to themselves
   are linked one at a time (a job pool of Ninja), since two copies of the
   same DLL into one directory collided (e.g., with the clang++ of MSYS2)
