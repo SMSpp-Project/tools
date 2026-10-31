@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the README leaves the channels that distribute SMS++ to the
+  installation guide of the wiki (Installing-SMS++), keeping the names
+  of the packages of the module
+
 - `investmentblock_solver` no longer shifts the initial point and the
   solution by the lower bounds of the design Variable, which InvestmentBlock
   no longer reformulates, and its `IBOCfg*.txt` give no Configuration for
