@@ -59,6 +59,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `investmentblock_solver/config/BSCfg.txt` asks HiGHS for a primal
+  feasibility tolerance of 1e-7 rather than 1e-9: the tolerance is absolute,
+  and HiGHS declared the optimum of an inner Block whose solution it called
+  infeasible, so that a run ended with no solution
+
 - `ucblock_solver/config/TUBSCfg-DP.txt`,
   `ucblock_solver/config/NUBSCfg-DP.txt` and
   `tssb_solver/config/TUBSCfg-DP.txt` declared no ComputeConfig and wrote

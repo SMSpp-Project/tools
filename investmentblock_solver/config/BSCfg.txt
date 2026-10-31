@@ -82,7 +82,8 @@ intCutSepPar        7    # separate user cuts + lazy constraints
 
 # now all the double parameters
 # All specific HiGHS parameter (uncomment based on Solver)
-primal_feasibility_tolerance  1e-9
+primal_feasibility_tolerance  1e-7  # absolute: with 1e-9 HiGHS declares an
+                                    # optimum and its solution infeasible
 dual_feasibility_tolerance    1e-5  # HiPO duals on QP have no crossover
                                     # cleanup
 
