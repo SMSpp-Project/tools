@@ -308,7 +308,7 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
   flow_rate[ g ] =
    previous_unit->get_flow_rate( g , time_horizon - 1 )->get_value();
 
- unit->set_initial_flow_rate( flow_rate.cbegin() );
+ unit->set_initial_flow_rate( Block::MF_dbl_sp( flow_rate ) );
 
  return( true );
  }
@@ -335,12 +335,12 @@ bool update_battery_unit( Block * previous_block , Block * block ,
  std::vector< double > initial_power_data = {
   ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
 
- unit->set_initial_power( initial_power_data.cbegin() );
+ unit->set_initial_power( Block::MF_dbl_sp( initial_power_data ) );
 
  std::vector< double > initial_storage_data =
   { previous_unit->get_storage_level()[ time_horizon - 1 ].get_value() };
 
- unit->set_initial_storage( initial_storage_data.cbegin() );
+ unit->set_initial_storage( Block::MF_dbl_sp( initial_storage_data ) );
 
  return( true );
  }
@@ -419,14 +419,14 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
            sddp_block , previous_unit , unit , stage , sub_block_index );
 
   std::vector< int > init_up_down_time_data = { init_up_down_time };
-  unit->set_init_updown_time( init_up_down_time_data.cbegin() );
+  unit->set_init_updown_time( Block::MF_int_sp( init_up_down_time_data ) );
   }
 
  const auto time_horizon = previous_unit->get_time_horizon();
 
  std::vector< double > active_power_data = {
   ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
- unit->set_initial_power( active_power_data.cbegin() );
+ unit->set_initial_power( Block::MF_dbl_sp( active_power_data ) );
 
  return( true );
  }
