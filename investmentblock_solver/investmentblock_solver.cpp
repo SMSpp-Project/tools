@@ -52,8 +52,7 @@
  * ThermalUnitBlock or the DCNetworkBlock of the inner UCBlock.
  *
  * The BlockConfig of the InvestmentBlock is an OBlockConfig (see
- * config/IBOCfg.txt): besides reformulating the bounds on the investment,
- * which BundleSolver needs to be of the form 0 <= x <= u, it gives the
+ * config/IBOCfg.txt): it gives the
  * InvestmentFunction its ComputeConfig (see config/IFCfg.txt), whose extra
  * Configuration holds the BlockSolverConfig of the inner Block (a UCBlock, a
  * TwoStageStochasticBlock or an SDDPBlock). Everything is thus said by the
@@ -75,12 +74,9 @@
 
 #include "common_utils.h"
 
-#include <atomic>
 #include <filesystem>
-#include <functional>
 #include <iomanip>
 #include <iostream>
-#include <memory>
 #include <queue>
 
 #include <AbstractPath.h>
@@ -96,9 +92,6 @@
 #include <SDDPSolver.h>
 #include <SlackUnitBlock.h>
 #include <ThermalUnitBlock.h>
-#include <TwoStageStochasticBlock.h>
-
-#include <UCBlock.h>
 
 #include "InvestmentBlock.h"
 #include "InvestmentFunction.h"
@@ -170,14 +163,9 @@ Block * get_uc_block( const SDDPBlock * sddp_block , Index stage ,
  }
 
 /*--------------------------------------------------------------------------*/
-/// what puts back the data a simulation has changed, in the order of change
-
-using Restore = std::vector< std::function< void( void ) > >;
-
-/*--------------------------------------------------------------------------*/
 
 bool update_hydro_unit( Block * previous_block , Block * block ,
-			Index stage , Restore & restore )
+			Index stage )
 {
  auto unit = dynamic_cast< HydroUnitBlock * >( block );
  auto previous_unit = dynamic_cast< HydroUnitBlock * >( previous_block );
@@ -206,16 +194,11 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
 
  std::vector< double > flow_rate( number_generators );
 
- std::vector< double > old( number_generators );
- for( Index g = 0 ; g < number_generators ; ++g ) {
+ for( Index g = 0 ; g < number_generators ; ++g )
   flow_rate[ g ] =
    previous_unit->get_flow_rate( g , time_horizon - 1 )->get_value();
-  old[ g ] = unit->get_initial_flow_rate( g );
-  }
 
- restore.push_back( [ unit , old ]() {
-                     unit->set_initial_flow_rate( old.cbegin() ); } );
- unit->set_initial_flow_rate( flow_rate.cbegin() );
+ unit->set_initial_flow_rate( Block::MF_dbl_sp( flow_rate ) );
 
  return( true );
  }
@@ -223,7 +206,7 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
 /*--------------------------------------------------------------------------*/
 
 bool update_battery_unit( Block * previous_block , Block * block ,
-			  Index stage , Restore & restore )
+			  Index stage )
 {
  auto unit = dynamic_cast< BatteryUnitBlock * >( block );
  auto previous_unit = dynamic_cast< BatteryUnitBlock * >( previous_block );
@@ -242,18 +225,12 @@ bool update_battery_unit( Block * previous_block , Block * block ,
  std::vector< double > initial_power_data = {
   ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
 
- const std::vector< double > old_power = { unit->get_initial_power() };
- restore.push_back( [ unit , old_power ]() {
-                     unit->set_initial_power( old_power.cbegin() ); } );
- unit->set_initial_power( initial_power_data.cbegin() );
+ unit->set_initial_power( Block::MF_dbl_sp( initial_power_data ) );
 
  std::vector< double > initial_storage_data = {
   previous_unit->get_storage_level()[ time_horizon - 1 ].get_value() };
 
- const std::vector< double > old_storage = { unit->get_initial_storage() };
- restore.push_back( [ unit , old_storage ]() {
-                     unit->set_initial_storage( old_storage.cbegin() ); } );
- unit->set_initial_storage( initial_storage_data.cbegin() );
+ unit->set_initial_storage( Block::MF_dbl_sp( initial_storage_data ) );
 
  return( true );
  }
@@ -311,7 +288,7 @@ int init_updown_time( const SDDPBlock * sddp_block , Index stage ,
 
 bool update_thermal_unit( const SDDPBlock * sddp_block ,
                           Index sub_block_index , Block * previous_block ,
-                          Block * block , Index stage , Restore & restore )
+                          Block * block , Index stage )
 {
  auto previous_unit = dynamic_cast< ThermalUnitBlock * >( previous_block );
  auto unit = dynamic_cast< ThermalUnitBlock * >( block );
@@ -327,57 +304,27 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
 
  const auto time_horizon = previous_unit->get_time_horizon();
 
- // the time the unit has been on or off: a value that would change the
- // Variable of the unit, which are generated, is refused by it [see
- // ThermalUnitBlock::set_init_updown_time()], and then the unit keeps its
- // own, which is said once
+ // the time the unit has been on or off and its power at the end of the
+ // previous stage, which the unit of a copy of the SDDPBlock takes since its
+ // Variable are generated only once its stage is solved [see
+ // InvestmentFunction::compute_SDDPBlock()]
  const std::vector< int > init_ud = { init_updown_time( sddp_block , stage ,
                                                         sub_block_index ,
                                                         unit ,
                                                         previous_unit ) };
- const std::vector< int > old_init_ud = { unit->get_init_up_down_time() };
- try {
-  unit->set_init_updown_time( init_ud.cbegin() );
-  restore.push_back( [ unit , old_init_ud ]() {
-                      unit->set_init_updown_time( old_init_ud.cbegin() ); } );
-  }
- catch( std::logic_error & e ) {
-  static std::atomic< bool > said( false );
-  if( ! said.exchange( true ) )
-   std::cerr << "Warning: a ThermalUnitBlock of stage " << stage
-             << " keeps its InitUpDownTime " << old_init_ud[ 0 ]
-             << " instead of the " << init_ud[ 0 ] << " of the simulation ("
-             << e.what() << "); this is said only once" << std::endl;
-  }
+ unit->set_init_updown_time( Block::MF_int_sp( init_ud ) );
 
- // the power at the end of the previous stage: a value that the unit
- // refuses (e.g., below its minimum power while it is still on, having kept
- // its InitUpDownTime above) leaves it with its own, which is said once
  std::vector< double > active_power_data = {
   ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
- const std::vector< double > old_power = { unit->get_initial_power() };
- try {
-  unit->set_initial_power( active_power_data.cbegin() );
-  restore.push_back( [ unit , old_power ]() {
-                      unit->set_initial_power( old_power.cbegin() ); } );
-  }
- catch( std::logic_error & e ) {
-  static std::atomic< bool > said( false );
-  if( ! said.exchange( true ) )
-   std::cerr << "Warning: a ThermalUnitBlock of stage " << stage
-             << " keeps its InitialPower " << old_power[ 0 ]
-             << " instead of the " << active_power_data[ 0 ]
-             << " of the simulation (" << e.what()
-             << "); this is said only once" << std::endl;
-  }
+ unit->set_initial_power( Block::MF_dbl_sp( active_power_data ) );
 
  return( true );
  }
 
 /*--------------------------------------------------------------------------*/
 
-void callback( SDDPBlock * sddp_block , Index stage , Index sub_block_index ,
-               Restore & restore ) {
+void callback( SDDPBlock * sddp_block , Index stage , Index sub_block_index )
+{
  if( stage == 0 )
   return;
 
@@ -414,26 +361,11 @@ void callback( SDDPBlock * sddp_block , Index stage , Index sub_block_index ,
   // the simulation passes to the next stage the volumes of the reservoirs,
   // and the state of the thermal and battery units as well (the initial
   // power and the time on or off, the initial power and storage)
-  if( ! update_hydro_unit( previous_block , block , stage , restore ) )
+  if( ! update_hydro_unit( previous_block , block , stage ) )
    update_thermal_unit( sddp_block , sub_block_index , previous_block ,
-                        block , stage , restore )
-    || update_battery_unit( previous_block , block , stage , restore );
+                        block , stage )
+    || update_battery_unit( previous_block , block , stage );
   }
- }
-
-/*--------------------------------------------------------------------------*/
-/// puts back, last change first, the data that callback() has changed
-/** Called at the end of each simulation [see
- * SDDPGreedySolver::set_end_callback()], so that the next training of the
- * SDDPBlock, which shares the stage Blocks with the simulation, starts from
- * the initial conditions of the stages and not from those that the last
- * simulation has written. */
-
-void restore_stages( Restore & restore )
-{
- for( auto it = restore.rbegin() ; it != restore.rend() ; ++it )
-  ( *it )();
- restore.clear();
  }
 
 /*--------------------------------------------------------------------------*/
@@ -499,21 +431,6 @@ void set_initial_point( InvestmentBlock * investment_block )
                             std::to_string( initial_point.size() ) + ", but "
                             "there are " + std::to_string( num_variables ) +
                             " variables." ) );
-
-  // the bounds are reformulated (or not) when the constraints are generated
-  investment_block->generate_abstract_constraints();
-  if( investment_block->get_reformulate_bounds() ) {
-   // If variable bounds have been reformulated, the initial point must be
-   // adjusted.
-
-   const auto & var_lower_bound =
-    investment_block->get_variable_lower_bound();
-   for( Index i = 0 ; i < initial_point.size() ; ++i ) {
-    if( ( i < var_lower_bound.size() ) &&
-        ( var_lower_bound[ i ] > -Inf< double >() ) )
-     initial_point[ i ] -= var_lower_bound[ i ];
-    }
-   }
   }
  else  // Since no initial point has been provided, we use the default one.
   initial_point = get_default_initial_point( investment_block );
@@ -526,9 +443,6 @@ void set_initial_point( InvestmentBlock * investment_block )
 
 void invest( InvestmentBlock * investment_block )
 {
- auto investment_function = static_cast< InvestmentFunction * >(
-					 investment_block->get_function() );
-
  // Optimize
  auto investment_solver = investment_block->get_registered_solvers().front();
 
@@ -541,7 +455,10 @@ void invest( InvestmentBlock * investment_block )
  // load the given State, if provided - - - - - - - - - - - - - - - - - - - -
  get_initial_State( investment_solver );
 
- print_solver_parameters( { investment_block , investment_function } );
+ std::vector< Block * > roots = { investment_block };
+ for( auto investment_function : investment_block->get_investment_functions() )
+  roots.push_back( investment_function );
+ print_solver_parameters( roots );
 
  // solve the investment problem- - - - - - - - - - - - - - - - - - - - - - -
  if( ! dryrun ) {
@@ -563,13 +480,9 @@ void invest( InvestmentBlock * investment_block )
    investment_solver->get_var_solution();
    std::cout << "Solution: " << std::endl;
    const auto & variables = investment_block->get_variables();
-   const auto & var_lb = investment_block->get_variable_lower_bound();
    const auto width = std::to_string( variables.size() ).size();
    for( Index i = 0 ; i < variables.size() ; ++i ) {
-    auto value = variables[ i ].get_value();
-    if( investment_block->get_reformulate_bounds() && ( i < var_lb.size() ) &&
-	( var_lb[ i ] > -Inf< double >() ) )
-     value += var_lb[ i ];
+    const auto value = variables[ i ].get_value();
     std::cout << std::setw( width ) << i << " " << value << std::endl;
     }
    }
@@ -630,9 +543,10 @@ void configure_inner_Blocks( InvestmentFunction * investment_function ,
  * InvestmentBlock gives to its Objective (see config/IBOCfg.txt). When the
  * inner Block is an SDDPBlock, the SDDPGreedySolver so registered, which
  * simulate the scenarios one stage after the other, are each given the
- * callback() that passes the final state of a stage to the next, and
- * restore_stages(), which puts back the data so changed once the simulation
- * is over. */
+ * callback() that passes the final state of a stage to the next; the
+ * InvestmentFunction gives it to the SDDPGreedySolver of the copy of the
+ * SDDPBlock each scenario is simulated on, so the data of the inner Block
+ * are not changed. */
 
 void check_inner_Solvers( InvestmentFunction * investment_function )
 {
@@ -641,7 +555,10 @@ void check_inner_Solvers( InvestmentFunction * investment_function )
    std::cerr << "The inner Block of the InvestmentFunction has no Solver: "
              << "the BlockConfig of the InvestmentBlock must be an "
              << "OBlockConfig giving its InvestmentFunction a ComputeConfig "
-             << "with a BlockSolverConfig (see config/IBOCfg.txt)."
+             << "with a BlockSolverConfig (see config/IBOCfg.txt); the "
+             << "components of an InvestmentBlock that has split its inner "
+             << "Block are AbstractBlock, which a \"meta\"-BlockConfig "
+             << "gives the same OBlockConfig (see config/InnerBCfg.txt)."
              << std::endl;
    exit( 1 );
    }
@@ -651,16 +568,11 @@ void check_inner_Solvers( InvestmentFunction * investment_function )
     if( auto greedy = dynamic_cast< SDDPGreedySolver * >( solver ) ) {
      const auto sub_block_index = Index( greedy->get_int_par(
                                      SDDPGreedySolver::intSubBlockIndex ) );
-     // one record of the changes per SDDPGreedySolver, which may run in
-     // parallel with the others, each on its own sub-Block of the stages
-     auto restore = std::make_shared< Restore >();
-     greedy->set_callback( [ sddp_block , sub_block_index , restore ](
-                                                             Index stage ) {
-                            callback( sddp_block , stage , sub_block_index ,
-                                      *restore );
+     // the SDDPBlock is the one simulated, a copy of the inner Block [see
+     // SDDPGreedySolver::get_callback()]
+     greedy->set_callback( [ sub_block_index ]( SDDPBlock * b , Index stage ) {
+                            callback( b , stage , sub_block_index );
                             } );
-     greedy->set_end_callback( [ restore ]() {
-                                restore_stages( *restore ); } );
      }
   }
  }
@@ -717,13 +629,14 @@ void process_prob_file( const netCDF::NcFile & file )
   if( ! investment_block )
    no_investment_block( problem.first );
 
-  auto investment_function = static_cast< InvestmentFunction * >(
-					 investment_block->get_function() );
+  const auto investment_functions =
+                                investment_block->get_investment_functions();
 
   // Configure the inner Block, then the InvestmentBlock, whose BlockConfig
   // gives the InvestmentFunction the Solver of the inner Block
   if( inner_block_config )
-   configure_inner_Blocks( investment_function , inner_block_config );
+   for( auto investment_function : investment_functions )
+    configure_inner_Blocks( investment_function , inner_block_config );
 
   auto block_config_group = problem_group.getGroup( "BlockConfig" );
   auto block_config = dynamic_cast< BlockConfig * >(
@@ -731,14 +644,14 @@ void process_prob_file( const netCDF::NcFile & file )
   if( ! block_config )
    throw( std::logic_error( "BlockConfig group was not properly provided" ) );
   // the OBlockConfig gives its ComputeConfig to the Objective, which has to
-  // be there already; the constraints wait for the BlockConfig, which says
-  // whether the bounds are reformulated
+  // be there already
   investment_block->generate_abstract_variables();
   investment_block->generate_objective();
   block_config->apply( investment_block );
   block_config->clear();
 
-  check_inner_Solvers( investment_function );
+  for( auto investment_function : investment_functions )
+   check_inner_Solvers( investment_function );
 
   // Possibly set the initial point
   set_initial_point( investment_block );
@@ -756,13 +669,14 @@ void process_prob_file( const netCDF::NcFile & file )
 
   // Set the output stream for the log of the inner Solvers
 
-  for( auto block : investment_function->get_nested_Blocks() )
-   if( auto sddp_block = dynamic_cast< SDDPBlock * >( block ) )
-    set_log( sddp_block , &std::cout );
-   else
-    for( auto solver : block->get_registered_solvers() )
-     if( solver )
-      solver->set_log( &std::cout );
+  for( auto investment_function : investment_functions )
+   for( auto block : investment_function->get_nested_Blocks() )
+    if( auto sddp_block = dynamic_cast< SDDPBlock * >( block ) )
+     set_log( sddp_block , &std::cout );
+    else
+     for( auto solver : block->get_registered_solvers() )
+      if( solver )
+       solver->set_log( &std::cout );
 
   // Solve
   invest( investment_block );
@@ -840,21 +754,8 @@ void process_block_file( const netCDF::NcFile & file )
   if( ! investment_block )
    no_investment_block( block_description.first );
 
-  auto investment_function = static_cast< InvestmentFunction * >(
-				        investment_block->get_function() );
-
-  // the inner Block may also be a stochastic one, in which case the
-  // investment is the here-and-now decision taken above the scenarios, or
-  // an SDDPBlock, in which case it is taken above the stages
-  for( auto block_ : investment_function->get_nested_Blocks() )
-   if( ! ( dynamic_cast< UCBlock * >( block_ ) ||
-           dynamic_cast< TwoStageStochasticBlock * >( block_ ) ||
-           dynamic_cast< SDDPBlock * >( block_ ) ) ) {
-    std::cerr << "The sub-Block of the InvestmentBlock is neither a UCBlock "
-              << "nor a TwoStageStochasticBlock nor an SDDPBlock."
-              << std::endl;
-    exit( 1 );
-    }
+  const auto investment_functions =
+                                investment_block->get_investment_functions();
 
   // Configure the inner Block, then the InvestmentBlock, whose (O)BlockConfig
   // gives the InvestmentFunction the Solver of the inner Block: a plain
@@ -862,15 +763,16 @@ void process_block_file( const netCDF::NcFile & file )
   // is also dispatched inside the InvestmentFunction, since the nested-Block
   // BFS of config_Block() cannot cross the Function boundary
   if( ! given_plain_block_config )
-   configure_inner_Blocks( investment_function , given_block_config );
+   for( auto investment_function : investment_functions )
+    configure_inner_Blocks( investment_function , given_block_config );
   // the OBlockConfig gives its ComputeConfig to the Objective, which has to
-  // be there already; the constraints wait for the BlockConfig, which says
-  // whether the bounds are reformulated
+  // be there already
   investment_block->generate_abstract_variables();
   investment_block->generate_objective();
   config_Block( investment_block , given_block_config , nullptr );
 
-  check_inner_Solvers( investment_function );
+  for( auto investment_function : investment_functions )
+   check_inner_Solvers( investment_function );
 
   // Possibly set the initial point
 
@@ -882,13 +784,14 @@ void process_block_file( const netCDF::NcFile & file )
 
   // Set the output stream for the log of the inner Solvers
 
-  for( auto block : investment_function->get_nested_Blocks() )
-   if( auto sddp_block = dynamic_cast< SDDPBlock * >( block ) )
-    set_log( sddp_block , &std::cout );
-   else
-    for( auto solver : block->get_registered_solvers() )
-     if( solver )
-      solver->set_log( &std::cout );
+  for( auto investment_function : investment_functions )
+   for( auto block : investment_function->get_nested_Blocks() )
+    if( auto sddp_block = dynamic_cast< SDDPBlock * >( block ) )
+     set_log( sddp_block , &std::cout );
+    else
+     for( auto solver : block->get_registered_solvers() )
+      if( solver )
+       solver->set_log( &std::cout );
 
   // Solve
   invest( investment_block );

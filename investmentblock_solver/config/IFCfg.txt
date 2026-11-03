@@ -16,7 +16,13 @@ ComputeConfig # exact type of the ComputeConfig object
 
 0  # number of integer parameters
 
+# now all the integer parameters
+# [none]
+
 0  # number of double parameters
+
+# now all the double parameters
+# [none]
 
 1  # number of string parameters
 
@@ -27,14 +33,25 @@ strOutputFilename  investment_candidates.txt  # where the investment and the
 
 0  # number of vector-of-int parameters
 
+# now all the vector-of-int parameters
+# [none]
+
 0  # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
 
 0  # number of vector-of-string parameters
 
+# now all the vector-of-string parameters
 # pointer to the "extra" Configuration: the BlockSolverConfig of the inner
 # Block of the InvestmentFunction
+
+# pointer to the "extra" Configuration
 SimpleConfiguration<std::map<std::string,Configuration*>>
-1                  # the number of elements in the map
+
+1  # the number of elements in the map
+
 BlockSolverConfig  *BSCfg.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

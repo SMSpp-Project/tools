@@ -61,9 +61,15 @@ include $(LgDSLVSDR)/makefile
 #include $(MILPSSDR)/makefile-c
 
 # define input macros for UCBlock makefile, then include it
-# not necessary, InvestmentBlock does it already
-#UCBckDIR = ../../UCBlock
-#include $(UCBckDIR)/lib/makefile
+UCBckDIR = ../../UCBlock
+include $(UCBckDIR)/lib/makefile
+
+# SDDPBlock (with StochasticBlock), and the basic makefile of
+# TwoStageStochasticBlock, since StochasticBlock comes with SDDPBlock already
+SDDPBkSDR = ../../SDDPBlock
+include $(SDDPBkSDR)/makefile-s
+TSSBkSDR = ../../TwoStageStochasticBlock
+include $(TSSBkSDR)/makefile
 
 # MCFLemonSolver, assuming all dependencies (MCFBlock) are there already
 # (comment out if not required)
@@ -79,11 +85,13 @@ include $(InvsBkSDR)/makefile-s
 
 # object files
 MOBJ =  $(BNDSLVOBJ) $(LgDSLVOBJ) $(UCBckOBJ) $(SMS++OBJ) $(MCFLEOBJ) \
-	$(MCFCSOBJ) $(libMCFClOBJ) $(MCFBkOBJ) $(InvsBkOBJ) $(CMMNUOBJ)
+	$(MCFCSOBJ) $(libMCFClOBJ) $(MCFBkOBJ) $(InvsBkOBJ) \
+	$(SDDPBkOBJ) $(TSSBkOBJ) $(CMMNUOBJ)
 
 # libraries
 MLIB =  $(SMS++LIB) $(BNDSLVLIB) $(LgDSLVLIB) $(UCBckLIB) $(MCFBkLIB) \
-	$(libMCFClLIB) $(MCFLELIB) $(MILPSLIB) $(InvsBkLIB)
+	$(libMCFClLIB) $(MCFLELIB) $(MILPSLIB) $(InvsBkLIB) \
+	$(SDDPBkLIB) $(TSSBkLIB)
 
 $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 	$(CC) -o $(DIR)/$(NAME) $^ $(MLIB) $(SW)
@@ -92,11 +100,13 @@ $(DIR)/$(NAME): $(DIR)/block_solver.o $(MOBJ)
 
 # include directives
 MINC =  $(SMS++INC) $(BNDSLVINC) $(LgDSLVINC) $(UCBckINC) $(MCFBkINC) \
-	$(MCFCSINC) $(libMCFClINC) $(MCFLEINC) $(InvsBkINC) $(CMMNUINC)
+	$(MCFCSINC) $(libMCFClINC) $(MCFLEINC) $(InvsBkINC) \
+	$(SDDPBkINC) $(TSSBkINC) $(CMMNUINC)
 
 # includes
 MH =    $(SMS++H) $(BNDSLVH) $(LgDSLVH) $(UCBckH) $(MCFBkH) $(MCFCSH) \
-	$(MCFLEH) $(InvsBkH) $(CMMNUH)
+	$(MCFLEH) $(InvsBkH) $(SDDPBkH) $(TSSBkH) \
+	$(CMMNUH)
 
 # compile command
 

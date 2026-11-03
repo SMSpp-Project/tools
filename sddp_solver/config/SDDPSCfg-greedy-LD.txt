@@ -28,34 +28,35 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-2 # number of integer parameters
+2  # number of integer parameters
 
 # now all the integer parameters
 intLogVerb 1      # log verbosity
 # intScenarioId 0 # index of the scenario to be considered
-intUnregisterSolver 1 # unregister the Solver of the inner Block after
-                      # solving it
+intUnregisterSolver 1  # unregister the Solver of the inner Block after
+                       # solving it
 
-0 # number of double parameters
+0  # number of double parameters
 
 # now all the double parameters
+# [none]
 
-0 # number of string parameters
+0  # number of string parameters
 
 # now all the string parameters
 # [none]
 
-0 # number of vector-of-int parameters
+0  # number of vector-of-int parameters
 
 # now all the vector-of-int parameters
 # [none]
 
-0 # number of vector-of-double parameters
+0  # number of vector-of-double parameters
 
 # now all the vector-of-double parameters
 # [none]
 
-0 # number of vector-of-string parameters
+0  # number of vector-of-string parameters
 
 # now all the vector-of-string parameters
 # [none]
@@ -63,6 +64,7 @@ intUnregisterSolver 1 # unregister the Solver of the inner Block after
 # pointer to the "extra" Configuration: the Configurations of the inner
 # Block of each stage
 SimpleConfiguration<std::vector<Configuration*>>
+
 4  # number of elements in this vector
 
 # the BlockConfig of the inner Block
@@ -75,7 +77,9 @@ SimpleConfiguration<std::vector<Configuration*>>
 # solution the simulation needs, by class, which are the hard ones of
 # BSPar-greedy-LD.txt
 SimpleConfiguration<std::map<std::string,Configuration*>>
-9                      # the number of elements in the map
+
+9  # the number of elements in the map
+
 ThermalUnitBlock       *  # all of its solution
 HydroSystemUnitBlock   *  # all of its solution
 BatteryUnitBlock       *  # all of its solution
@@ -90,12 +94,13 @@ DesignNetworkBlock     *  # all of its solution
 # linking constraints of the UCBlock (the -1 not being any sub-Block), those
 # of its sub-Blocks are not needed
 SimpleConfiguration<std::vector<std::pair<int,int>>>
+
 1  # number of elements in this vector
+
 -1 -1
 
-# end of 1st ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
-
-# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of 1st ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - -  END SDDPSCfg-greedy-LD.txt - - - - - - - - - - - -

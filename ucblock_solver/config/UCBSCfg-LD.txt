@@ -24,6 +24,7 @@ LagrangianDualSolver
 # now all the ComputeConfig
 # the ComputeConfig of the LagrangianDualSolver (mostly the ComputeConfig of
 # its inner [Parallel]BundleSolver)
+
 *LDCfg.txt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

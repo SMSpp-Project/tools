@@ -27,16 +27,16 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-19 # number of integer parameters
+19  # number of integer parameters
 
 # now all the integer parameters
-intMPStbl              0 # stabilization: 0 = proximal, 1 = level, 2 = doubly
-                         # stabilized
-intPushCostToOwner 1 # whether sub-Block Objective are changed
-intDoEasy        0      # do easy components for (some) LagBFunction
-intMaxIter       10000  # max number of iterations for each call
-intMaxThread 1      # MaxThread, max number of new tasks to spawn
-intLogVerb       7      # log verbosity of main Bundle algorithm
+intMPStbl   0     # stabilization: 0 = proximal, 1 = level, 2 = doubly
+                  # stabilized
+intPushCostToOwner 1  # whether sub-Block Objective are changed
+intDoEasy   0     # do easy components for (some) LagBFunction
+intMaxIter 10000  # max number of iterations for each call
+intMaxThread 1    # MaxThread, max number of new tasks to spawn
+intLogVerb  7     # log verbosity of main Bundle algorithm
 intWZNorm   2     # which norm to use in the norm-based stopping condition
 intBPar1   20     # discard items when they have been useless for <this>
                   # iterations
@@ -59,10 +59,9 @@ intTrgtMng  0     # bit-wise encoding targets and accuracies management: bit
                   # convex/concave component bit 2-3: if accuracy is set (2 =
                   # upper - lower, 3 = using EpsU) bit 4: if Lipschitz
                   # constant is used to compute the upper model
+intRstAlg   2     # parameter to handle the reset of the algorithm
 
-intRstAlg  2      # parameter to handle the reset of the algorithm
-
-15 # number of double parameters
+15  # number of double parameters
 
 # now all the double parameters
 dblRelAcc  1e-6   # relative accuracy required to solution
@@ -85,7 +84,7 @@ dbltMinor  1e-10  # minimum value for t
 dbltInit   1e-3   # initial value for t
 dbltSPar2  1e-2   # parameter for the long-term t-strategy
 
-3 # number of string parameters
+3  # number of string parameters
 
 # now all the string parameters
 #strLogFileName      tssb.log              # filename for the Solver log
@@ -95,30 +94,30 @@ str_LDSlv_ISName    BundleSolver          # the inner Solver used by
                                           # LagrangianDualSolver
 str_LagBF_BSCfg     LPBSCfg-LD1.txt       # BlockSolverConfig for the
                                           # LagBFunctions
-strMPBSolverCfg   MPBCfg.txt # BlockSolverConfig for the MasterProblemBlock's
-                             # Solver
+strMPBSolverCfg     MPBCfg.txt            # BlockSolverConfig for the
+                                          # MasterProblemBlock's
+                                          # Solver
 
-0 # number of vector-of-int parameters
+0  # number of vector-of-int parameters
 
 # now all the vector-of-int parameters
 # [none]
 
-0 # number of vector-of-double parameters
+0  # number of vector-of-double parameters
 
 # now all the vector-of-double parameters
 # [none]
 
-0 # number of vector-of-string parameters
+0  # number of vector-of-string parameters
 
 # now all the vector-of-string parameters
 # [none]
 
 # pointer to the "extra" Configuration
-* # [none]
+*  # [none]
 
-# end of 2nd ComputeConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
-
-# end of BlockSolverConfig- - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of 2nd ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - -
+# end of BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - -  END TSSBSCfg-LD1-LD1.txt - - - - - - - - - - - -

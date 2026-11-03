@@ -20,7 +20,7 @@ ComputeConfig # exact type of the ComputeConfig object
 1  # f_diff == 0 ==> all non-provided parameters are set to the default value
    # f_diff == 1 ==> all non-provided parameters are not changed
 
-10 # number of integer parameters
+10  # number of integer parameters
 
 # now all the integer parameters
 intMaxIter              60
@@ -34,22 +34,38 @@ intOutputFrequency       1
 intBackwardSolverIndex   1 # the LagrangianDualSolver of BSPar-LD.txt
 intForwardSolverIndex    0 # the continuous relaxation of BSPar-LD.txt
 
-1 # number of double parameters
+1  # number of double parameters
 
 # now all the double parameters
 dblAccuracy 0.002 # attainable: the gap is ~0.018% at the second iteration
 
-0 # number of string parameters
+0  # number of string parameters
 
-0 # number of vector-of-int parameters
-0 # number of vector-of-double parameters
-0 # number of vector-of-string parameters
+# now all the string parameters
+# [none]
 
+0  # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0  # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0  # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
 # pointer to the "extra" Configuration: no BlockConfig for the UCBlock of
 # each stage, its BlockSolverConfig, and the Configuration of
 # get_var_solution()
+
+# pointer to the "extra" Configuration
 SimpleConfiguration<std::vector<Configuration*>>
-3             # the number of elements in the vector
+
+3  # the number of elements in the vector
+
 *             # no BlockConfig
 *BSPar-LD.txt # the BlockSolverConfig of the UCBlock of each stage
 
@@ -57,7 +73,9 @@ SimpleConfiguration<std::vector<Configuration*>>
 # solution the SDDPSolver needs, by class, which are those whose state
 # passes from a stage to the next
 SimpleConfiguration<std::map<std::string,Configuration*>>
-3                     # the number of elements in the map
+
+3  # the number of elements in the map
+
 HydroSystemUnitBlock  *  # all of its solution
 ThermalUnitBlock      *  # all of its solution
 BatteryUnitBlock      *  # all of its solution

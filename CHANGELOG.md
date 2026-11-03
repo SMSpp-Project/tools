@@ -7,6 +7,135 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-03
+
+### Added
+
+- `design_converter`, which writes a Block in design mode (a `UCBlock`
+  whose units or lines carry the design Variable of their investment, or a
+  `StochasticBlock`, `TwoStageStochasticBlock` or
+  `MultiStageStochasticBlock` holding such `UCBlock`) as an
+  `InvestmentBlock`, each design an asset, the form an `InvestmentBlock`
+  accepts; an `InvestmentBlock` whose inner Block is in design mode has its
+  designs made its assets. The flow limits of a line are read for each
+  instant, as `DCNetworkBlock` reads them; a Block with an `ObjectiveWeight`
+  other than 1, which its Solver does not apply and the `InvestmentBlock`
+  would, an `InvestmentBlock` with the design mode in a `Component_<k>`,
+  and a unit in design mode with copies ("Scale", or the "VariableWeight"
+  that `serialize()` writes, other than 1) or a kappa other than 1, which
+  the investment would overwrite, are refused, and a refused conversion
+  leaves no output file
+
+### Changed
+
+- `sddp_solver` and `investmentblock_solver` pass the initial state of the
+  units to their setters as spans, the forms taking an iterator being gone
+
+- the README leaves the channels that distribute SMS++ to the
+  installation guide of the wiki (Installing-SMS++), keeping the names
+  of the packages of the module
+
+- `investmentblock_solver` no longer shifts the initial point and the
+  solution by the lower bounds of the design Variable, which InvestmentBlock
+  no longer reformulates, and its `IBOCfg*.txt` give no Configuration for
+  the static constraints
+
+- `investmentblock_solver`, `design_converter` and `block_solver` link the
+  Blocks the inner Block of an InvestmentBlock is made of (UCBlock, and
+  SDDPBlock and TwoStageStochasticBlock for the first and the last), which
+  InvestmentBlock no longer brings, by CMake and by the makefiles; the
+  BlockSolverConfig of the SDDPBlock of `investmentblock_solver`
+  (`SDDPBSCfg.txt`, `SDDPBSCfg-LP.txt`) has the `SDDPSimulationSolver` of
+  SDDPBlock as its first Solver, which the InvestmentFunction takes
+
+- the "meta"-BlockConfig of `investmentblock_solver` give each component of
+  an `InvestmentBlock` that has split its inner Block (an `AbstractBlock`)
+  the `OBlockConfig` of the `InvestmentBlock`, which gives the
+  `InvestmentFunction` of the component the Solver of its inner Block
+
+- the makefiles that include LagrangianDualSolver no longer include
+  BranchAndXSolver, which it no longer needs
+
+- `investmentblock_solver` passes the state of a stage to the next on the
+  copy of the `SDDPBlock` that the `InvestmentFunction` simulates, and no
+  longer puts back the data of the stages at the end of the simulation, nor
+  warns that a `ThermalUnitBlock` keeps its `InitUpDownTime`
+- `intDoEasy` in the configurations follows the new bits of BundleSolver
+  (15 is now 7)
+- `investmentblock_solver` no longer refuses an inner Block that is not a
+  `UCBlock`, a `TwoStageStochasticBlock` or an `SDDPBlock`: the
+  `InvestmentBlock` refuses at load one its assets cannot be sized on
+
+### Fixed
+
+- `design_converter` copies the one value of a vector given once before
+  assigning it to every element: `assign()` was given a reference into the
+  vector itself, which it does not allow, and with the libc++ of macOS the
+  elements could be other than the value
+
+- on Windows, the executables that copy their DLLs next to themselves
+  are linked one at a time (a job pool of Ninja), since two copies of the
+  same DLL into one directory collided (e.g., with the clang++ of MSYS2)
+
+- `investmentblock_solver/config/BSCfg.txt` asks HiGHS for a primal
+  feasibility tolerance of 1e-7 rather than 1e-9: the tolerance is absolute,
+  and HiGHS declared the optimum of an inner Block whose solution it called
+  infeasible, so that a run ended with no solution
+
+- `ucblock_solver/config/TUBSCfg-DP.txt`,
+  `ucblock_solver/config/NUBSCfg-DP.txt` and
+  `tssb_solver/config/TUBSCfg-DP.txt` declared no ComputeConfig and wrote
+  one all the same, empty, which SMS++ never read: it is gone, and the
+  dynamic programming Solver runs with its defaults as it did
+
+- the tools print the upper and the lower bound with all the digits of a
+  double (`max_digits10`), rather than with the 6 of the default precision
+  of the stream, which is what whoever reads the objective from the output
+  of a tool (as pySMSpp does) was given; some lines are wrapped within 79
+  columns
+
+- the makefiles of the tests and of the tools build also with g++: they
+  take the option that stops at the first error and the one of the
+  debugging information, which clang++ and g++ spell differently
+  (`-ferror-limit=1` and `-glldb` against `-fmax-errors=1` and `-ggdb`),
+  from `SMSppSWERR` and `SMSppSWDBG` of `lib/makefile-OS` of SMS++
+
+- the makefiles that include the one of LagrangianDualSolver include also
+  the one of BranchAndXSolver, whose branching rules LagrangianDualSolver
+  uses, and so build again
+
+- `chgcfg/makefile` compiles and links `common_utils` and SMS++, as CMake
+  does, and so builds again
+
+- `investmentblock_solver/makefile` includes the basic makefile of
+  MultiStageStochasticBlock, whose TwoStageStochasticBlock comes with
+  InvestmentBlock already, so that the objects are not linked twice
+
+- in the simulation of `sddp_solver`, a thermal unit that shuts down at the
+  last instant of a stage starts the next one off for 1 instant
+  (`InitUpDownTime` -1) rather than shut down at its instant 0 (0), which
+  kept it off 1 instant more than its `MinDownTime`; a unit that has not
+  switched since the first stage also counts the `InitUpDownTime` of it
+- the tools that solve one Block of a given class (`cflblock_solver`,
+  `bkblock_solver` and the like) give the Solvers of the Block their log
+  with `-v2`, as the README says and as `block_solver` does
+- the initial Solution given with -I is written before the Solvers are
+  registered, once the BlockConfig is in place, as well as before each
+  `compute()`: a Solver that reads the Block when it is attached, as
+  `LagrangianDualSolver` does with the dual values it takes as its first
+  multipliers, found it not written yet
+- `SDDPSCfg-LD.txt` and `SDDPSCfg.txt` of `sddp_solver` check the
+  convergence of the SDDP at every iteration (`intNStepConv 1`), and the
+  former stops at the relative accuracy 1e-6 within 10 iterations: with
+  `dblAccuracy 0` and a check every 5 iterations the only early stop was
+  the crossing of the backward value over the forward one of iteration 0,
+  which a difference of 1e-9 decides
+- the help of -v says that its level is attached (-v2, --verbose=2), since
+  -v 2, with the space, gives level 1; so do the README and its examples
+
+- `block_solver` links MMCFBlock when the build has it, as it does MCFBlock
+  and InvestmentBlock, so that it can read an MMCFBlock from a Block file
+
 ## [0.8.0] - 2026-10-09
 
 ### Added
@@ -20,6 +149,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `InvestmentFunction` by the `LagrangianDualSolver` (`IBOCfg-LD.txt`,
   `IFCfg-LD.txt`, `BSCfg-LD.txt`), whose ComputeConfig is in `LDCfg.txt`,
   shared with `BSPar-LD.txt`
+
+- `investmentblock_solver` solves an `InvestmentBlock` made of several
+  components, as the one into which `deserialize()` splits a
+  `TwoStageStochasticBlock`: every step that took the single
+  `InvestmentFunction` of the `InvestmentBlock` goes over all of them [see
+  `InvestmentBlock::get_investment_functions()`]
 
 - `investmentblock_solver` solves an `InvestmentBlock` whose inner Block is an
   `SDDPBlock`, from a Block file as from a problem file: the UCBlock of each
@@ -490,7 +625,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First test release.
 
-[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.8.0...develop
+[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.9.0...develop
+[0.9.0]: https://gitlab.com/smspp/tools/-/compare/0.8.0...0.9.0
 [0.8.0]: https://gitlab.com/smspp/tools/-/compare/0.7.1...0.8.0
 [0.7.1]: https://gitlab.com/smspp/tools/-/compare/0.7.0...0.7.1
 [0.7.0]: https://gitlab.com/smspp/tools/-/compare/0.6.0...0.7.0

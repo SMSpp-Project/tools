@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <set>
 #include <sstream>
 
@@ -56,7 +57,7 @@
 using namespace SMSpp_di_unipi_it;
 
 /*--------------------------------------------------------------------------*/
-/*------------------------ MPI SAFE ENVIRONMENT -----------------------------*/
+/*------------------------ MPI SAFE ENVIRONMENT ----------------------------*/
 /*--------------------------------------------------------------------------*/
 /* Some tools (those using SDDPBlock or InvestmentBlock) call MPI_Init().
  * On systems where Open MPI / UCX are installed but no usable transport is
@@ -129,7 +130,7 @@ std::string prob_file {};       ///< filename of the problem written back (-n)
 char input_format = 0;          ///< native format of the input file (-f)
 bool dryrun = false;            ///< if compute() need not really ba called
 
-int verbosity_level = 0;        ///< verbosity level (0 = silent, >0 = verbose output)
+int verbosity_level = 0;        ///< verbosity (0 = silent, > 0 = verbose)
 
 /// default short command-line options
 std::string short_opts = "a:B:b:p:S:c:on:I:O:C:Dv::hV";
@@ -170,10 +171,13 @@ std::string help =
  "  -o, --output-solution           output the solutions\n"
  "  -n, --nc4problem <file>         write nc4 problem on file\n"
  "  -D, --dryrun                    skip the compute() call\n"
- "  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic,\n"
+ "  -v[N], --verbose[=N]            verbose output (0 = silent, 1 = basic,\n"
  "                                  2 = debug, with the Solver logs and the\n"
  "                                  parameters of the Solvers of the Block,\n"
- "                                  3 = those of the sub-Blocks' Solvers too)\n";
+ "                                  3 = those of the sub-Blocks' Solvers"
+ " too);\n"
+ "                                  N is attached, as in -v2 or --verbose=2:\n"
+ "                                  -v 2, with the space, gives level 1\n";
 
 /** @} ---------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -226,7 +230,8 @@ bool config_found( void )
 {
  auto found = []( const std::string & name ) {
   return( ( ! name.empty() ) &&
-	  std::filesystem::exists( resolve_with_prefix( conf_prefix , name ) ) );
+	  std::filesystem::exists(
+		       resolve_with_prefix( conf_prefix , name ) ) );
   };
 
  return( found( bconf_file ) || found( sconf_file ) || found( sol_cfg_file ) ||
@@ -262,8 +267,8 @@ void docopt( void )
 
  // how the Configuration files are looked up, the same for every tool
  std::cout << "Configuration files:" << std::endl
-	   << "  The files given to -B, -S and -C, and those included by them, "
-	   << "are looked" << std::endl
+	   << "  The files given to -B, -S and -C, and those included by "
+	   << "them, are looked" << std::endl
 	   << "  up under the -c prefix ["
 	   << ( tool_conf_prefix.empty() ? "current directory"
 		                         : tool_conf_prefix )
@@ -443,8 +448,8 @@ void process_args( int argc , char ** argv ,
  // this executable-wide prefix. This mirrors Block::set_filename_prefix(),
  // set from the -p prefix for the Block "filename" references. Because the
  // prefix is now applied here, the -B / -S / Solution-config filenames are
- // passed to Configuration::deserialize() *bare* (no resolve_with_prefix at the
- // point of use), so it is prepended exactly once
+ // passed to Configuration::deserialize() *bare* (no resolve_with_prefix at
+ // the point of use), so it is prepended exactly once
  Configuration::set_filename_prefix( std::string( conf_prefix ) );
 
  // report which Configuration files are in use, so a run with defaults makes
@@ -712,6 +717,24 @@ void config_Block( Block * block ,
    else
     throw( std::invalid_argument( "config_Block: b_config is not a valid "
 				  "[meta]BlockConfig" ) );
+  }
+
+ // the initial Solution, if any, is written once the BlockConfig is in
+ // place and before the Solvers are registered, since a Solver may read it
+ // when it is attached (say, LagrangianDualSolver takes its first
+ // multipliers from the dual values of the relaxed constraints); the
+ // abstract representation it is written into is therefore generated here,
+ // and solve_all() writes it again before each compute()
+ if( s_config && ( ! sol_input.empty() ) ) {
+  std::function< void( Block * ) > generate = [ & ]( Block * b ) {
+   b->generate_abstract_variables();
+   b->generate_abstract_constraints();
+   b->generate_objective();
+   for( auto sb : b->get_nested_Blocks() )
+    generate( sb );
+   };
+  generate( block );
+  get_initial_Solution( block );
   }
 
  if( s_config ) {
@@ -995,7 +1018,8 @@ void print_solver_parameters( const std::vector< Block * > & roots )
 
 /*--------------------------------------------------------------------------*/
 
-int solve_all( Block * block , const std::function< bool( void ) > & is_writer ,
+int solve_all( Block * block ,
+               const std::function< bool( void ) > & is_writer ,
                bool write_solution )
 {
  // load initial Solution, if provided - - - - - - - - - - - - - - - - - - - -
@@ -1055,8 +1079,12 @@ int solve_all( Block * block , const std::function< bool( void ) > & is_writer ,
    auto ub = solver->get_ub();
    auto lb = solver->get_lb();
    print_status( status );
+   // all the digits of a double, which whoever reads the bounds needs
+   const auto prec = std::cout.precision(
+                      std::numeric_limits< double >::max_digits10 );
    std::cout << "Upper bound = " << ub << std::endl;
    std::cout << "Lower bound = " << lb << std::endl;
+   std::cout.precision( prec );
 
    if( ! sol_output.empty() ) {
     if( solver->has_var_solution() )

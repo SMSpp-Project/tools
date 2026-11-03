@@ -25,35 +25,40 @@ LagrangianDualSolver
 # now all the ComputeConfig
 # the ComputeConfig of the LagrangianDualSolver (mostly the ComputeConfig of
 # its inner [Parallel]BundleSolver), with intDoEasy overridden to 0
+
 *LDCfg.txt +
 
 1  # f_diff == 1 ==> only the entries listed below are changed
 
-1 # number of integer parameters
+1  # number of integer parameters
 
+# now all the integer parameters
 intDoEasy 0 # do easy components for (some) LagBFunction
 
-0 # number of double parameters
+0  # number of double parameters
 
 # now all the double parameters
 # [none]
 
-0 # number of string parameters
+0  # number of string parameters
 
 # now all the string parameters
 # [none]
 
-0 # number of vector-of-int parameters
+0  # number of vector-of-int parameters
 
 # now all the vector-of-int parameters
 # [none]
 
-0 # number of vector-of-double parameters
+0  # number of vector-of-double parameters
 
 # now all the vector-of-double parameters
 # [none]
 
-0 # number of vector-of-string parameters
+0  # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
 
 # now all the vector-of-string parameters
 # [none]

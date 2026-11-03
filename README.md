@@ -1,5 +1,11 @@
 # SMS++ Tools
 
+[![Pipeline](https://gitlab.com/smspp/tools/badges/develop/pipeline.svg)](https://gitlab.com/smspp/tools/-/pipelines?ref=develop)
+[![Release](https://gitlab.com/smspp/tools/-/badges/release.svg)](https://gitlab.com/smspp/tools/-/releases)
+[![Documentation](https://img.shields.io/badge/docs-Doxygen-blue)](https://smspp.gitlab.io/smspp-project/)
+[![C++ Standard](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
+
 A set of tools and examples that use SMS++ library and other modules.
 At the moment we provide:
 
@@ -25,6 +31,12 @@ At the moment we provide:
   BinaryKnapsackBlock, CapacitatedFacilityLocationBlock, MMCFBlock and
   SingleFlowDCRBlock, which also read the native text formats of their Block
 
+- `design_converter`: converts a file whose Block is in design mode (a
+  `UCBlock` whose units or lines carry the design Variable of their
+  investment, or a stochastic Block holding such `UCBlock`) into one of
+  `InvestmentBlock`, each design an asset, which is the form an
+  `InvestmentBlock` accepts
+
 - `chgcfg`: a small utility to change some parameters in a configuration
   file while leaving all the rest unchanged
 
@@ -39,24 +51,14 @@ is a link to it.
 
 These instructions will let you build SMS++ Tools on your system.
 
-The tools also come ready-made, one package each, in any of
-
-```sh
-sudo add-apt-repository ppa:smspp-project/smspp   # Ubuntu
-sudo apt install smspp-ucblock                    # and smspp-project for them all
-
-conda install -c conda-forge smspp-project        # Linux, macOS, Windows
-
-brew tap SMSpp-Project/smspp                      # macOS, Linux
-brew install smspp
-
-vcpkg install "smspp[core,ucblock,tools]"         # from the sources
-```
-
-where a package gives the tool, here `smspp_ucblock_solver`, with its
+The tools also come ready-made, one package each: on Ubuntu as `smspp-ucblock`
+(and `smspp-project` for them all), in vcpkg as `smspp[core,ucblock,tools]`,
+and in the other channels that the [installation
+guide](https://gitlab.com/smspp/smspp-project/-/wikis/Installing-SMS++) of
+SMS++ lists. A package gives the tool, here `smspp_ucblock_solver`, with its
 configuration files, its examples and its man page. A tool finds its
-configuration next to its own executable, so it runs with no `-S` or `-B`.
-What follows is about building them yourself.
+configuration next to its own executable, so it runs with no `-S` or `-B`. What
+follows is about building them yourself.
 
 ### Requirements
 
@@ -138,15 +140,17 @@ Options:
   -o, --output-solution           output the solutions
   -n, --nc4problem <file>         write nc4 problem on file
   -D, --dryrun                    skip the compute() call
-  -v, --verbose[=N]               verbose output (0 = silent, 1 = basic,
+  -v[N], --verbose[=N]            verbose output (0 = silent, 1 = basic,
                                   2 = debug, with the Solver logs and the
                                   parameters of the Solvers of the Block,
-                                  3 = those of the sub-Blocks' Solvers too)
+                                  3 = those of the sub-Blocks' Solvers too);
+                                  N is attached, as in -v2 or --verbose=2:
+                                  -v 2, with the space, gives level 1
 ```
 
-With `-v 2` the tool prints, before solving, the value each parameter of
+With `-v2` the tool prints, before solving, the value each parameter of
 the Solvers of the Block has actually been given, along with its default;
-with `-v 3` it does the same for the Solvers of all the sub-Blocks, those
+with `-v3` it does the same for the Solvers of all the sub-Blocks, those
 identical to each other printed once with their number. Together with `-D`
 this checks a configuration without solving anything.
 
@@ -255,8 +259,8 @@ the configuration files. `-B` is typically a "meta"-BlockConfig, a map from a
 Block classname() to its BlockConfig, which the tool dispatches to the
 InvestmentBlock and over the inner Block of its InvestmentFunction, the
 UCBlock of every stage of an SDDPBlock included. Its `InvestmentBlock` entry
-is an OBlockConfig (`IBOCfg.txt`), which reformulates the bounds on the
-investment and gives the InvestmentFunction its ComputeConfig (`IFCfg.txt`):
+is an OBlockConfig (`IBOCfg.txt`), which gives the InvestmentFunction its
+ComputeConfig (`IFCfg.txt`):
 the file of the investment candidates and, in the extra Configuration, the
 BlockSolverConfig of the inner Block. With `-B InnerBCfg-LD.txt` the inner
 UCBlock is solved by the LagrangianDualSolver of `BSCfg-LD.txt` instead of

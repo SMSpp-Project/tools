@@ -19,12 +19,13 @@ endif ()
 # If it's not being called by the umbrella, we need to
 # look for the system-installed libraries.
 if (NOT hasParent)
-    # Blocks
+    # Blocks: the InvestmentBlock, and the Blocks its inner Block is made
+    # of, which it reaches polymorphically, the tool naming the units and the
+    # SDDPBlock to configure and simulate them; the multi-stage stochastic
+    # Block brings the two-stage one
     find_package(InvestmentBlock)
-    # the inner Block of an InvestmentBlock may be a stochastic one: the
-    # TwoStageStochasticBlock comes with InvestmentBlock, the multi-stage one
-    # has to be asked for, since nothing depends on it, the Block being
-    # reached polymorphically
+    find_package(UCBlock)
+    find_package(SDDPBlock)
     find_package(MultiStageStochasticBlock)
     # Solvers
     find_package(LagrangianDualSolver)
@@ -33,12 +34,20 @@ if (NOT hasParent)
 endif ()
 
 # ----- Tests --------------------------------------------------------------- #
-if (TARGET SMS++::InvestmentBlock)
+if (TARGET SMS++::InvestmentBlock AND TARGET SMS++::UCBlock AND
+    TARGET SMS++::SDDPBlock)
 
     add_executable(investmentblock_solver ../common_utils.cpp
                                           investmentblock_solver.cpp)
     target_include_directories(investmentblock_solver PRIVATE ..)
-    target_link_libraries(investmentblock_solver PRIVATE SMS++::InvestmentBlock)
+    target_link_libraries(investmentblock_solver PRIVATE
+                          SMS++::InvestmentBlock SMS++::UCBlock
+                          SMS++::SDDPBlock)
+
+    if (TARGET SMS++::TwoStageStochasticBlock)
+        target_link_libraries(investmentblock_solver PRIVATE
+                              SMS++::TwoStageStochasticBlock)
+    endif ()
 
     if (TARGET SMS++::MultiStageStochasticBlock)
         target_link_libraries(investmentblock_solver PRIVATE

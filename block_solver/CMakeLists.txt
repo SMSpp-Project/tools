@@ -22,7 +22,11 @@ if (NOT hasParent)
     # Blocks
     find_package(SMS++)
     find_package(MCFBlock)
+    find_package(MMCFBlock)
     find_package(InvestmentBlock)
+    find_package(UCBlock)
+    find_package(SDDPBlock)
+    find_package(TwoStageStochasticBlock)
     # Solvers
     find_package(LagrangianDualSolver)
     find_package(BundleSolver)
@@ -40,10 +44,16 @@ target_link_libraries(block_solver PRIVATE SMS++::SMS++)
 if (TARGET SMS++::MCFBlock)
     target_link_libraries(block_solver PRIVATE SMS++::MCFBlock)
 endif ()
-
-if (TARGET SMS++::InvestmentBlock)
-    target_link_libraries(block_solver PRIVATE SMS++::InvestmentBlock)
+if (TARGET SMS++::MMCFBlock)
+    target_link_libraries(block_solver PRIVATE SMS++::MMCFBlock)
 endif ()
+
+# each Block whose module is there, which block_solver reads by the factory
+foreach (block InvestmentBlock UCBlock SDDPBlock TwoStageStochasticBlock)
+    if (TARGET SMS++::${block})
+        target_link_libraries(block_solver PRIVATE SMS++::${block})
+    endif ()
+endforeach ()
 
 if (TARGET SMS++::LagrangianDualSolver)
     target_link_libraries(block_solver PRIVATE SMS++::LagrangianDualSolver)

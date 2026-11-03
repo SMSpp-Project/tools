@@ -21,12 +21,13 @@ include ../makefile_common
 
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
-$(DIR)/$(NAME): $(DIR)/chgcfg.o
-	$(CC) -o $(DIR)/$(NAME) $^ $(SW)
+# common_utils and SMS++, whose Configuration it reads and writes
+$(DIR)/$(NAME): $(DIR)/chgcfg.o $(CMMNUOBJ) $(SMS++OBJ)
+	$(CC) -o $(DIR)/$(NAME) $^ $(SMS++LIB) $(SW)
 
 # compile command - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-$(DIR)/chgcfg.o: $(DIR)/chgcfg.cpp
-	$(CC) -c $(DIR)/chgcfg.cpp -o $@ $(SW)
+$(DIR)/chgcfg.o: $(DIR)/chgcfg.cpp $(CMMNUH) $(SMS++H)
+	$(CC) -c $(DIR)/chgcfg.cpp -o $@ $(CMMNUINC) $(SMS++INC) $(SW)
 
 ############################ End of makefile #################################

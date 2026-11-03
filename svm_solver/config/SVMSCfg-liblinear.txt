@@ -1,5 +1,5 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - -   SVMSCfg-liblinear.txt   - - - - - - - - - - - - -
+# - - - - - - - - - - - - - SVMSCfg-liblinear.txt - - - - - - - - - - - - - -
 #
 # A txt description of a BlockSolverConfig for a SVMBlock to be trained by
 # LIBLINEARSolver, i.e., by LIBLINEAR, which solves the linear SVM by a dual
@@ -45,29 +45,29 @@ dblLLINTol 1e-6 # tolerance on the optimality conditions of the dual: the
                 # stay so, a comparison of two Solver at different tolerances
                 # being no comparison
 
-0 # number of string parameters
+0  # number of string parameters
 
 # now all the string parameters
 # [none]
 
-0 # number of vector-of-int parameters
+0  # number of vector-of-int parameters
 
 # now all the vector-of-int parameters
 # [none]
 
-0 # number of vector-of-double parameters
+0  # number of vector-of-double parameters
 
 # now all the vector-of-double parameters
 # [none]
 
-0 # number of vector-of-string parameters
+0  # number of vector-of-string parameters
 
 # now all the vector-of-string parameters
 # [none]
 
 # pointer to the "extra" Configuration
-* # [none]
+*  # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - -   END SVMSCfg-liblinear.txt   - - - - - - - - - - - -
+# - - - - - - - - - - - - END SVMSCfg-liblinear.txt - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

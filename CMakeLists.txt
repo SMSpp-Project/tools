@@ -44,6 +44,14 @@ function(smspp_install target_name)
                 $<TARGET_FILE_DIR:${target_name}>
                 COMMAND_EXPAND_LISTS
                 COMMENT "Copying runtime DLLs next to ${target_name}.exe")
+        # one link at a time, since two copies of the same DLL into a
+        # directory collide, and Ninja links in parallel
+        get_property(_pools GLOBAL PROPERTY JOB_POOLS)
+        if (NOT _pools MATCHES "smspp_runtime_dlls=")
+            set_property(GLOBAL APPEND PROPERTY JOB_POOLS smspp_runtime_dlls=1)
+        endif ()
+        set_property(TARGET ${target_name}
+                     PROPERTY JOB_POOL_LINK smspp_runtime_dlls)
     endif ()
 
     # the executables carry the name of the project, since they are installed
@@ -74,12 +82,15 @@ function(smspp_install target_name)
 
     # the completions, of both names, since both are commands
     foreach (toolName ${target_name} smspp_${target_name})
-        configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/cmake/completion.bash.in
+        configure_file(
+                ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/cmake/completion.bash.in
                 ${toolName}-completion.bash @ONLY)
-        configure_file(${CMAKE_CURRENT_FUNCTION_LIST_DIR}/cmake/completion.zsh.in
+        configure_file(
+                ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/cmake/completion.zsh.in
                 ${toolName}-completion.zsh @ONLY)
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${toolName}-completion.bash
-                DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
+                DESTINATION
+                ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
                 RENAME ${toolName})
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${toolName}-completion.zsh
                 DESTINATION ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
@@ -196,6 +207,7 @@ add_subdirectory(bkblock_solver)
 add_subdirectory(cflblock_solver)
 add_subdirectory(mmcfblock_solver)
 add_subdirectory(sfdcrblock_solver)
+add_subdirectory(design_converter)
 
 add_subdirectory(chgcfg)
 

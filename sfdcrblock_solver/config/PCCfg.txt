@@ -24,34 +24,35 @@ BlockConfig # exact type of the Configuration object
 
 # static_constraints
 SimpleConfiguration<int>
-1    # the formulation: 1 = P/C, 2 = SOCP
+1  # the formulation: 1 = P/C, 2 = SOCP
 
 # dynamic_constraints
 SimpleConfiguration<std::pair<double,double>>
-1e-6    # threshold below which a cone is not deemed violated
-1e-4    # threshold above which a routing variable counts as nonzero
+1e-6  # threshold below which a cone is not deemed violated
+
+1e-4  # threshold above which a routing variable counts as nonzero
 
 # static_variables
-*    # [none]
+*  # [none]
 
 # dynamic_variables
-*    # [none]
+*  # [none]
 
 # objective
-*    # [none]
+*  # [none]
 
 # is_feasible
 SimpleConfiguration<double>
-1e-4    # relative tolerance of the feasibility checks
+1e-4  # relative tolerance of the feasibility checks
 
 # is_optimal
-*    # [none]
+*  # [none]
 
 # solution
-*    # [none]
+*  # [none]
 
 # extra
-*    # [none]
+*  # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - END PCCfg.txt - - - - - - - - - - - - - - -

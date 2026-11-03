@@ -20,33 +20,33 @@ BlockConfig # exact type of the Configuration object
 
 # static_constraints
 SimpleConfiguration<int>
-1    # generate OneVarConstraints
+1  # generate OneVarConstraints
 
 # dynamic_constraints
-*    # [none]
+*  # [none]
 
 # static_variables
 SimpleConfiguration<int>
-0    # no negative prices, hence no intake level variables
+0  # no negative prices, hence no intake level variables
 
 # dynamic_variables
-*    # [none]
+*  # [none]
 
 # objective
-*    # [none]
+*  # [none]
 
 # is_feasible
 SimpleConfiguration<std::pair<double,int>>
 1e-6 1  # feasibility tolerance, relative violation
 
 # is_optimal
-*    # [none]
+*  # [none]
 
 # solution
-*    # [none]
+*  # [none]
 
 # extra
-*    # [none]
+*  # [none]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - END BUBCfg.txt  - - - - - - - - - - - - - - -

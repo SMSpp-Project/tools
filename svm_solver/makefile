@@ -47,8 +47,8 @@ include $(LgDSLVSDR)/makefile
 # main module (linking phase) - - - - - - - - - - - - - - - - - - - - - - - -
 
 # object files
-MOBJ =  $(SMS++OBJ) $(SVMBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) \
-	$(CMMNUOBJ) $(MLUTOBJ)
+MOBJ =  $(SMS++OBJ) $(SVMBkOBJ) $(BNDSLVOBJ) $(LgDSLVOBJ) $(CMMNUOBJ) \
+	$(MLUTOBJ)
 
 # libraries
 MLIB =  $(SMS++LIB) $(SVMBkLIB) $(BNDSLVLIB) $(LgDSLVLIB)
@@ -59,8 +59,8 @@ $(DIR)/svm_solver: $(DIR)/svm_solver.o $(MOBJ)
 # dependencies: every .o from its .cpp + every recursively included .h- - - -
 
 # include directives
-MINC =  $(SMS++INC) $(SVMBkINC) $(BNDSLVINC) $(LgDSLVINC) \
-	-I$(DIR) $(CMMNUINC) $(MLUTINC)
+MINC =  $(SMS++INC) $(SVMBkINC) $(BNDSLVINC) $(LgDSLVINC) -I$(DIR) \
+	$(CMMNUINC) $(MLUTINC)
 
 # includes
 MH =    $(SMS++H) $(SVMBkH) $(BNDSLVH) $(LgDSLVH) $(CMMNUH) $(MLUTH)

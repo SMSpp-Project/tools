@@ -308,7 +308,7 @@ bool update_hydro_unit( Block * previous_block , Block * block ,
   flow_rate[ g ] =
    previous_unit->get_flow_rate( g , time_horizon - 1 )->get_value();
 
- unit->set_initial_flow_rate( flow_rate.cbegin() );
+ unit->set_initial_flow_rate( Block::MF_dbl_sp( flow_rate ) );
 
  return( true );
  }
@@ -335,81 +335,65 @@ bool update_battery_unit( Block * previous_block , Block * block ,
  std::vector< double > initial_power_data = {
   ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
 
- unit->set_initial_power( initial_power_data.cbegin() );
+ unit->set_initial_power( Block::MF_dbl_sp( initial_power_data ) );
 
  std::vector< double > initial_storage_data =
   { previous_unit->get_storage_level()[ time_horizon - 1 ].get_value() };
 
- unit->set_initial_storage( initial_storage_data.cbegin() );
+ unit->set_initial_storage( Block::MF_dbl_sp( initial_storage_data ) );
 
  return( true );
  }
 
 /*--------------------------------------------------------------------------*/
 
+// the InitUpDownTime of the unit at the stage, from its commitment at the
+// stages before back to the last switch (plus the InitUpDownTime of the
+// stage 0 if there is none): a unit off at the last instant only has been
+// off for 1 instant, -1, since 0 is one that shuts down at the instant 0
+
 int compute_init_up_down_time( const SDDPBlock * sddp_block ,
                                ThermalUnitBlock * previous_unit ,
                                ThermalUnitBlock * unit , Index stage ,
                                Index sub_block_index )
 {
- auto time_horizon = previous_unit->get_time_horizon();
- auto commitment = previous_unit->get_commitment( 0 ) + time_horizon - 1;
-
- auto shutdown = previous_unit->get_shut_down( time_horizon - 1 );
- if( shutdown && shutdown->get_value() >= 0.5 )
-  return( 0 );
-
- int init_up_down_time = 0;
- const bool on = commitment->get_value() >= 0.5;
- if( on )
-  init_up_down_time = 1;
- else
-  init_up_down_time = -1;
-
  AbstractPath path;
+ int count = 0;
+ bool on = false;
 
- for( Index outer_t = 0 ; outer_t < stage ; ++outer_t ) {
-  for( Index t = 1 ; t < time_horizon ; ++t , --commitment ) {
-   if( std::abs( commitment->get_value() -
-                 ( commitment - 1 )->get_value() ) > 0.5 )
-    return( init_up_down_time );
-   if( on ) ++init_up_down_time;
-   else --init_up_down_time;
+ for( Index s = stage ; s-- > 0 ; ) {
+  auto u = previous_unit;
+  if( s + 1 < stage ) {
+   if( path.empty() )
+    path.build( unit , get_uc_block( sddp_block , stage , sub_block_index ) );
+   u = dynamic_cast< ThermalUnitBlock * >( path.get_element< Block >(
+                        get_uc_block( sddp_block , s , sub_block_index ) ) );
    }
 
-  if( outer_t == stage - 1 )
-   break;
-
-  if( path.empty() ) {
-   auto uc_block = get_uc_block( sddp_block , stage , sub_block_index );
-   path.build( unit , uc_block );
-   }
-
-  auto previous_uc_block = get_uc_block( sddp_block , stage - outer_t - 2 ,
-                                         sub_block_index );
-  previous_unit = dynamic_cast< ThermalUnitBlock * >(
-                           path.get_element< Block >( previous_uc_block ) );
-
-  time_horizon = previous_unit->get_time_horizon();
-
-  if( ! previous_unit )
+  if( ! u )
    throw( std::logic_error(
-            "sddp_solver::update_thermal_block: ThermalUnitBlock not found "
-            "at stage " + std::to_string( stage - outer_t - 2 ) ) );
+            "sddp_solver::compute_init_up_down_time: ThermalUnitBlock not "
+            "found at stage " + std::to_string( s ) ) );
 
-  commitment = previous_unit->get_commitment( 0 ) + time_horizon - 1;
-
-  if( on ) {
-   if( commitment->get_value() >= 0.5 ) ++init_up_down_time;
-   else break;
+  const auto commitment = u->get_commitment( 0 );
+  for( Index t = u->get_time_horizon() ; t-- > 0 ; ) {
+   const bool on_t = ( commitment[ t ].get_value() >= 0.5 );
+   if( count == 0 )
+    on = on_t;
+   else
+    if( on_t != on )
+     return( on ? count : - count );
+   ++count;
    }
-  else {
-   if( commitment->get_value() < 0.5 ) --init_up_down_time;
-   else break;
+
+  if( s == 0 ) {  // no switch since the beginning
+   const int init = u->get_init_up_down_time();
+   if( ( init > 0 ) == on )
+    count += std::abs( init );
    }
   }
 
- return( init_up_down_time );
+ return( on ? count : - count );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -435,14 +419,14 @@ bool update_thermal_unit( const SDDPBlock * sddp_block ,
            sddp_block , previous_unit , unit , stage , sub_block_index );
 
   std::vector< int > init_up_down_time_data = { init_up_down_time };
-  unit->set_init_updown_time( init_up_down_time_data.cbegin() );
+  unit->set_init_updown_time( Block::MF_int_sp( init_up_down_time_data ) );
   }
 
  const auto time_horizon = previous_unit->get_time_horizon();
 
  std::vector< double > active_power_data = {
   ( previous_unit->get_active_power( 0 ) + time_horizon - 1 )->get_value() };
- unit->set_initial_power( active_power_data.cbegin() );
+ unit->set_initial_power( Block::MF_dbl_sp( active_power_data ) );
 
  return( true );
  }
@@ -554,8 +538,8 @@ void simulate( SDDPBlock * sddp_block )
  const auto sub_block_index = Index( solver->get_int_par(
                                      SDDPGreedySolver::intSubBlockIndex ) );
 
- solver->set_callback( [ sddp_block , sub_block_index ]( Index stage ) {
-                        callback( sddp_block , stage , sub_block_index );
+ solver->set_callback( [ sub_block_index ]( SDDPBlock * b , Index stage ) {
+                        callback( b , stage , sub_block_index );
                         } );
 
  // Load possibly given cuts
@@ -1009,8 +993,8 @@ void multiple_simulations( const netCDF::NcFile & file )
    const auto sub_block_index = Index( solver->get_int_par(
                                        SDDPGreedySolver::intSubBlockIndex ) );
 
-   solver->set_callback( [ sddp_block , sub_block_index ]( Index stage ) {
-                          callback( sddp_block , stage , sub_block_index );
+   solver->set_callback( [ sub_block_index ]( SDDPBlock * b , Index stage ) {
+                          callback( b , stage , sub_block_index );
                           } );
 
    if( i > 0 ) {
