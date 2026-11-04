@@ -264,7 +264,7 @@ static void copy_skipping( const netCDF::NcGroup & src , netCDF::NcGroup dst ,
  for( const auto & [ name , var ] : src.getVars() ) {
   if( skip.count( name ) )
    continue;
-  if( var.getType() != netCDF::ncString ) {
+  if( var.getType() != netCDF::NcString() ) {
    netCDF::ncCheck( nc_copy_var( src.getId() , var.getId() , dst.getId() ) ,
                     __FILE__ , __LINE__ );
    continue;
@@ -277,7 +277,7 @@ static void copy_skipping( const netCDF::NcGroup & src , netCDF::NcGroup dst ,
                                netCDF::NcGroup::ParentsAndCurrent ) );
    size *= dim.getSize();
    }
-  auto copy = dst.addVar( name , netCDF::ncString , dims );
+  auto copy = dst.addVar( name , netCDF::NcString() , dims );
   for( const auto & att : var.getAtts() )
    netCDF::ncCheck( nc_copy_att( src.getId() , var.getId() ,
                                  att.first.c_str() , dst.getId() ,
