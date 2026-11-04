@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `smspp_svm_solver` prints the bias of the trained model after the two
+  bounds, with all its digits, so that the models of two solvers can be
+  compared beyond their scores
+
 ### Fixed
 
 - `smspp_design_converter` links on Windows, where the DLL of netCDF-C++
