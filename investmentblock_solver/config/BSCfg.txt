@@ -3,31 +3,16 @@
 #
 # A txt description of a BlockSolverConfig for the inner UCBlock-style block
 # of an InvestmentBlock, to be solved by a :MILPSolver as the LP relaxation
-# (intRelaxIntVars 1) of the underlying MIP. To get reproducible results
-# across CPLEX/Gurobi/HiGHS the LP must be solved without presolve (presolve
-# can transform the model and shift the optimal vertex on degenerate LPs);
-# HiGHS additionally needs IPM rather than simplex because its simplex
-# implementation visits different vertices than CPLEX/Gurobi.
+# (intRelaxIntVars 1) of the underlying MIP, without presolve, which can move
+# the optimal vertex of a degenerate LP.
 #
-# NOTE: if the ThermalUnitBlock have quadratic costs (QuadTerm), the relaxed
-# problem is a convex QP. This needs HiGHS >= 1.14 built with HIPO=ON (see
-# INSTALL.sh), so that "solver ipm" routes the QP to the HiPO interior point
-# solver: the legacy active-set QP solver (the only one in HiGHS <= 1.13,
-# still selectable as "solver qpasm") routinely aborts on degenerate UC
-# instances with model status "Solve error", making the whole investment run
-# fail with Fi = inf. Since crossover is not available for QP, the duals of
-# HiPO only satisfy the dual feasibility check at ~1e-5: a tighter
-# dual_feasibility_tolerance makes HiGHS reject the (correct) HiPO optimum
-# with "Solve error". On LPs (no QuadTerm) crossover runs and the basic
-# optimum is exact regardless of this acceptance tolerance.
-#
-# Even so, as of HiGHS 1.14.0 HiPO is only reliable on one-shot QP solves:
-# in the investment loop, where the same QP is repeatedly re-solved after
-# Modification, some modified QPs stall ("Hipo: No progress" with dual
-# residual ~1e-4 even from a cold start, regardless of kkt_tolerance /
-# presolve), and the run ends with status kError. Until this is fixed
-# upstream, on QP instances use CPXMILPSolver or GRBMILPSolver for actual
-# investment runs.
+# HiGHS solves it by the simplex method: its interior point stalls in the
+# investment loop, where the same problem is solved again after each
+# Modification. On a degenerate LP the simplex of HiGHS may stop at another
+# vertex than CPLEX or Gurobi, which changes the path of the bundle and not
+# (within its accuracy) its optimum. A ThermalUnitBlock with quadratic costs
+# (QuadTerm) makes the relaxation a convex QP, which HiGHS does not solve
+# reliably in the loop: there, use CPXMILPSolver or GRBMILPSolver.
 #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -82,7 +67,7 @@ dual_feasibility_tolerance    1e-5  # HiPO duals on QP have no crossover
 # now all the string parameters
 # All specific HiGHS parameter (uncomment based on Solver)
 presolve  off    # disable presolve for reproducibility
-solver    ipm    # interior point: converges to analytic center (unique x*)
+solver    simplex  # the interior point stalls in the loop
 
 #strOutputFile uc_lp.lp
 

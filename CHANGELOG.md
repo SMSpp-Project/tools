@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the configuration of `investmentblock_solver` stabilizes the master by a
+  trust region and solves the inner Block by the simplex of HiGHS: with the
+  proximal master, whose QP HiGHS does not solve reliably, and the interior
+  point, which stalls when the problem is solved again, runs ended with
+  `kError` or with "has not solved a convex QP"
+
 - `smspp_design_converter` links on Windows, where the DLL of netCDF-C++
   does not export the type objects such as `netCDF::ncString`
 
