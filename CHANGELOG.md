@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bounds, with all its digits, so that the models of two solvers can be
   compared beyond their scores
 
+### Changed
+
+- the configuration of `investmentblock_solver` no longer mentions
+  `intHomogeneousDirection`, which has no effect in `:MILPSolver`
+
 ### Fixed
 
 - `smspp_design_converter` links on Windows, where the DLL of netCDF-C++
