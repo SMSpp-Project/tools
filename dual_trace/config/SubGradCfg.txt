@@ -1,0 +1,55 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - SubGradCfg.txt  - - - - - - - - - - - - - - - -
+#
+# The ComputeConfig of the SubGradSolver of DualBSCfg.txt: ColorTV and
+# Volume, which the variants override, and the handler of dual_trace
+# called at every iteration.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ComputeConfig # exact type of the ComputeConfig object
+
+1  # f_diff == 1 ==> all non-provided parameters are not changed
+
+3  # number of integer parameters
+
+# now all the integer parameters
+intMaxIter       200  # max number of iterations of each compute()
+intEverykIt        1  # the handler of dual_trace at every iteration
+intLogVerb         0  # log verbosity
+
+1  # number of double parameters
+
+# now all the double parameters
+dblRelAcc       1e-6  # relative accuracy of the stopping conditions
+
+2  # number of string parameters
+
+# now all the string parameters
+strStepsize   ColorTV  # the stepsize rule
+strDeflection Volume   # the deflection rule
+
+0  # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0  # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0  # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+*  # [none]
+
+# end of ComputeConfig
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - END SubGradCfg.txt  - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

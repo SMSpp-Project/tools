@@ -40,6 +40,13 @@ At the moment we provide:
 - `chgcfg`: a small utility to change some parameters in a configuration
   file while leaving all the rest unchanged
 
+- `dual_trace`: solves the Lagrangian dual of a tiny problem with two
+  multipliers with every Solver of a BlockSolverConfig (BundleSolver,
+  SubGradSolver) and writes, at every iteration, a trace of multipliers,
+  value, subgradient, column, serious step and stability centre, which the
+  pages of [opt-playground](https://github.com/dmeoli/opt-playground) replay;
+  its configuration files and an instance are in `dual_trace/config`
+
 The installed executables carry the name of the project, e.g.
 `smspp_ucblock_solver` and `smspp_chgcfg`, so that they are recognisable
 among all the others in a directory such as `/usr/bin`. Each of them is also

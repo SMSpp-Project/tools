@@ -1,0 +1,58 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - BundleCfg.txt - - - - - - - - - - - - - - - -
+#
+# The ComputeConfig of the BundleSolver of DualBSCfg.txt: proximal
+# stabilization, the master solved by BDMinQuadSolver [see MasterBSCfg.txt],
+# and the handler of dual_trace called at every iteration.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ComputeConfig # exact type of the ComputeConfig object
+
+0  # f_diff == 0 ==> all non-provided parameters are set to the default value
+
+6  # number of integer parameters
+
+# now all the integer parameters
+intMaxIter       100  # max number of iterations of each compute()
+intEverykIt        1  # the handler of dual_trace at every iteration
+intLogVerb         0  # log verbosity
+intMPPrimal        1  # the primal master, which BDMinQuadSolver needs
+intMPHScaling      0  # no scaling of the hard components
+intDoEasy          0  # the LagBFunction is not put whole in the master
+
+2  # number of double parameters
+
+# now all the double parameters
+dblRelAcc       1e-6  # relative accuracy of the stopping conditions
+dbltInit           1  # initial value of the proximal parameter t
+
+1  # number of string parameters
+
+# now all the string parameters
+strMPBSolverCfg MasterBSCfg.txt  # BlockSolverConfig of the master
+
+0  # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0  # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0  # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+*  # [none]
+
+# end of ComputeConfig
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - END BundleCfg.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

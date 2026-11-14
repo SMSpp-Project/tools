@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `smspp_dual_trace` solves the Lagrangian dual of a tiny problem with two
+  multipliers with every Solver of a BlockSolverConfig and writes, at every
+  iteration, the trace that the pages of opt-playground replay
+
 - `smspp_svm_solver` prints the bias of the trained model after the two
   bounds, with all its digits, so that the models of two solvers can be
   compared beyond their scores
