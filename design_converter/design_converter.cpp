@@ -20,7 +20,7 @@
  *
  * Usage:
  *
- *     design_converter <input file> <output file>
+ *     smspp_design_converter <input file> <output file>
  *
  * The input is a Block file or a problem file [see eBlockFile and
  * eProbFile]. Each Block in it is written in the output file

@@ -121,9 +121,9 @@ The Block solver (`block_solver`) and the Unit Commitment solver (`ucblock_solve
 share the same interface:
 
 ```sh
-Usage: <*_solver> [options] <file>
-  or:  <*_solver> -h | --help
-  or:  <*_solver> -V | --version
+Usage: smspp_<*_solver> [options] <file>
+  or:  smspp_<*_solver> -h | --help
+  or:  smspp_<*_solver> -V | --version
 
 Options:
   -h, --help                      print this help
