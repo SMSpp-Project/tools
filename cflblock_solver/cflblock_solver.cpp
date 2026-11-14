@@ -42,11 +42,11 @@ int main( int argc , char ** argv )
   "            file (.nc4, a Block file, or a problem file of which only\n"
   "            the Block is used) or in a text format of its load(), see -f\n";
  docopt_examples =
-  "  cflblock_solver capa.txt\n"
+  "  smspp_cflblock_solver capa.txt\n"
   "      solve with the default configuration, i.e., the MILP with HiGHS\n"
-  "  cflblock_solver -O sol.nc4 capa.txt\n"
+  "  smspp_cflblock_solver -O sol.nc4 capa.txt\n"
   "      also save the facilities and the allocations in sol.nc4\n"
-  "  cflblock_solver -c myconfig/ capa.txt\n"
+  "  smspp_cflblock_solver -c myconfig/ capa.txt\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
  add_format_option(

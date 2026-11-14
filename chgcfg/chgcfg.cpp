@@ -87,7 +87,7 @@ static void docopt( const char * exe )
      "  -V, --version  print the SMS++ tools version and exit\n"
      "\n"
      "Examples:\n"
-     "  chgcfg BSCfg.txt BSCfg-2.txt intMaxIter 100\n"
+     "  smspp_chgcfg BSCfg.txt BSCfg-2.txt intMaxIter 100\n"
      "      a copy of BSCfg.txt with 100 as intMaxIter\n"
      "\n"
      "Exit status:\n"

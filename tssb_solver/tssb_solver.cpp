@@ -386,17 +386,17 @@ int main( int argc , char ** argv )
   "            a Block file, or a problem file, whose own configuration is\n"
   "            then used and -B and -S are ignored\n";
  docopt_examples =
-  "  tssb_solver instance.nc4\n"
+  "  smspp_tssb_solver instance.nc4\n"
   "      solve the deterministic equivalent with a :MILPSolver\n"
-  "  tssb_solver --mpi-procs 3 -S PIPSConfig.txt instance.nc4\n"
+  "  smspp_tssb_solver --mpi-procs 3 -S PIPSConfig.txt instance.nc4\n"
   "      launch three MPI processes using your PIPS solver configuration\n"
-  "  tssb_solver -S TSSBSCfg-LD.txt instance.nc4\n"
+  "  smspp_tssb_solver -S TSSBSCfg-LD.txt instance.nc4\n"
   "      solve the Lagrangian dual of the scenario decomposition, whose\n"
   "      master problem needs CPLEX or Gurobi\n"
-  "  tssb_solver -k -S TSSBSCfg-BDS.txt instance.nc4\n"
+  "  smspp_tssb_solver -k -S TSSBSCfg-BDS.txt instance.nc4\n"
   "      solve the Benders form of the problem with the\n"
   "      BendersDecompositionSolver of TSSBSCfg-BDS.txt\n"
-  "  tssb_solver -c myconfig/ instance.nc4\n"
+  "  smspp_tssb_solver -c myconfig/ instance.nc4\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
 

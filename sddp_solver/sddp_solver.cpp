@@ -1102,13 +1102,13 @@ int main( int argc , char ** argv )
   "            -B and -S are ignored; <file> and the files of the stages it\n"
   "            refers to are looked up under the -p prefix\n";
  docopt_examples =
-  "  sddp_solver -p dir/ SDDPBlock.nc4\n"
+  "  smspp_sddp_solver -p dir/ SDDPBlock.nc4\n"
   "      solve dir/SDDPBlock.nc4, whose stages are in dir/ too, with the\n"
   "      default configuration\n"
-  "  sddp_solver -d out/ -p dir/ SDDPBlock.nc4\n"
+  "  smspp_sddp_solver -d out/ -p dir/ SDDPBlock.nc4\n"
   "      the same, writing the Bellman values and the solutions in out/,\n"
   "      which must exist\n"
-  "  sddp_solver -c myconfig/ -p dir/ SDDPBlock.nc4\n"
+  "  smspp_sddp_solver -c myconfig/ -p dir/ SDDPBlock.nc4\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
 

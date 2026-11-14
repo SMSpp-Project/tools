@@ -99,13 +99,13 @@ int main( int argc , char ** argv )
   "            or a problem file of which only the Block is used;\n"
   "            <file>[i] selects the i-th Block (or problem) of the file\n";
  docopt_examples =
-  "  ucblock_solver instance.nc4\n"
+  "  smspp_ucblock_solver instance.nc4\n"
   "      solve with the default configuration\n"
-  "  ucblock_solver -B '' instance.nc4\n"
+  "  smspp_ucblock_solver -B '' instance.nc4\n"
   "      the same, with the formulation stored in instance.nc4\n"
-  "  ucblock_solver -O sol.nc4 -C OSolCfg.txt instance.nc4\n"
+  "  smspp_ucblock_solver -O sol.nc4 -C OSolCfg.txt instance.nc4\n"
   "      also save the Solution of the units and of the network in sol.nc4\n"
-  "  ucblock_solver -c myconfig/ instance.nc4\n"
+  "  smspp_ucblock_solver -c myconfig/ instance.nc4\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
  // the default -B is the "meta" BlockConfig InnerBCfg.txt, which chooses the

@@ -58,9 +58,9 @@ int main( int argc , char ** argv )
   "            is solved with -B and -S, or a problem file, each of whose\n"
   "            problems is solved with its own configuration\n";
  docopt_examples =
-  "  block_solver -S BSCfg.txt instance.nc4\n"
+  "  smspp_block_solver -S BSCfg.txt instance.nc4\n"
   "      solve the Blocks of instance.nc4 with the Solvers of BSCfg.txt\n"
-  "  block_solver -B BCfg.txt -S BSCfg.txt instance.nc4\n"
+  "  smspp_block_solver -B BCfg.txt -S BSCfg.txt instance.nc4\n"
   "      the same, after configuring the Blocks with BCfg.txt\n";
  process_args( argc , argv );
 

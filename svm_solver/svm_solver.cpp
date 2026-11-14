@@ -1196,12 +1196,12 @@ int main( int argc , char ** argv )
   "            dense one or, with -l, the sparse one of the LIBSVM data\n"
   "            sets\n";
  docopt_examples =
-  "  svm_solver -O model.nc4 data.nc4\n"
+  "  smspp_svm_solver -O model.nc4 data.nc4\n"
   "      train on all the samples and write the trained model\n"
-  "  svm_solver -l -k 5 -g \"C=0.1,1,10\" data.txt\n"
+  "  smspp_svm_solver -l -k 5 -g \"C=0.1,1,10\" data.txt\n"
   "      compare three values of C by 5-fold cross-validation on a data\n"
   "      set in the LIBSVM format\n"
-  "  svm_solver -c myconfig/ data.nc4\n"
+  "  smspp_svm_solver -c myconfig/ data.nc4\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
 

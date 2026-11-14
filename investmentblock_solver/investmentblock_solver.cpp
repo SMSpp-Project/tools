@@ -836,9 +836,9 @@ int main( int argc , char ** argv )
   "            file, or a problem file, whose own configuration is then\n"
   "            used and -B and -S are ignored\n";
  docopt_examples =
-  "  investmentblock_solver instance.nc4\n"
+  "  smspp_investmentblock_solver instance.nc4\n"
   "      solve with the default configuration\n"
-  "  investmentblock_solver -c myconfig/ instance.nc4\n"
+  "  smspp_investmentblock_solver -c myconfig/ instance.nc4\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
  short_opts.append( my_short_opts );

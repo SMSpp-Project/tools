@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `smspp_design_converter` links on Windows, where the DLL of netCDF-C++
   does not export the type objects such as `netCDF::ncString`
 
+- the examples of `--help` call each tool by the name it is installed with,
+  e.g. `smspp_mcfblock_solver`, rather than by the old one, which is only a
+  link
+
 ## [0.9.0] - 2026-11-03
 
 ### Added

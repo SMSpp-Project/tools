@@ -41,11 +41,11 @@ int main( int argc , char ** argv )
   "            or a problem file of which only the Block is used) or in the\n"
   "            DIMACS format of MCFBlock::load()\n";
  docopt_examples =
-  "  mcfblock_solver instance.dmx\n"
+  "  smspp_mcfblock_solver instance.dmx\n"
   "      solve with the default configuration, i.e., with MCFSimplex\n"
-  "  mcfblock_solver -O sol.nc4 instance.nc4\n"
+  "  smspp_mcfblock_solver -O sol.nc4 instance.nc4\n"
   "      also save the flows in sol.nc4\n"
-  "  mcfblock_solver -c myconfig/ instance.dmx\n"
+  "  smspp_mcfblock_solver -c myconfig/ instance.dmx\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
 
