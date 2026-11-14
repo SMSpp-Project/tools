@@ -302,6 +302,8 @@ SDDPBlock or by setting the initial state parameter of SDDPGreedySolver.
   -n, --num-blocks <number>       number of sub-Blocks per stage
   -i, --scenario <index>          the index of the scenario
   -m, --num-simulations <number>  number of simulations to be performed
+  -r, --resolve <file>            solve again with the scenarios of the
+                                  SDDPBlock in the file (repeatable)
   -s, --simulation                simulation mode
   -t, --stage <stage>             stage from which initial state is taken
 ```

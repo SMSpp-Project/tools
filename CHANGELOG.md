@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `smspp_sddp_solver -r <file>`, which can be repeated, solves the SDDPBlock
+  again after each solution with the scenarios of the SDDPBlock in the file,
+  the SDDPSolver starting from the cuts of the previous solution as its
+  `intCutsOnChange` says, and a line `Solve k:` gives, for each solution, the
+  iterations, the problems of the stages solved in the forward and backward
+  passes, the backward and forward values and the cuts moved and removed
+
 - `smspp_svm_solver` prints the bias of the trained model after the two
   bounds, with all its digits, so that the models of two solvers can be
   compared beyond their scores

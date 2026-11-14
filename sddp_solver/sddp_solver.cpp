@@ -8,8 +8,8 @@
  * be given in a netCDF file. This tool can be executed as follows:
  *
  *   ./sddp_solver [-s] [-e] [-l FILE] [-i INDEX] [-m NUMBER] [-t STAGE]
- *                 [-n NUMBER] [-B FILE] [-S FILE] [-p PATH] [-c PATH]
- *                 <nc4-file>
+ *                 [-n NUMBER] [-r FILE]... [-B FILE] [-S FILE] [-p PATH]
+ *                 [-c PATH] <nc4-file>
  *
  * The only mandatory argument is the netCDF file containing the description
  * of the SDDPBlock. This netCDF file can be either a BlockFile or a
@@ -67,6 +67,19 @@
  * the final cuts are output in both formats, see the
  * BellmanValues[All]OUT.nc4 and BellmanValues[All]OUT.csv files produced
  * in the directory specified by the -d option.
+ *
+ * The -r option, which can be given more than once, re-solves the SDDPBlock
+ * after each solution with the scenarios of the SDDPBlock in the given
+ * netCDF file (looked up under the -p prefix, as the Block file or problem
+ * file whose first SDDPBlock it is), which must have the same structure
+ * (number of stages, size of the sub-scenarios and random data groups), in
+ * the order in which the files are given: SDDPBlock::set_scenarios()
+ * replaces the scenarios, and the SDDPSolver starts from the cuts of the
+ * previous solution as its intCutsOnChange parameter says. A line "Solve k:"
+ * gives, for the first solution (k = 0) and for each re-solution, the
+ * status, the iterations, the problems of the stages solved in the forward
+ * and backward passes, the backward and forward values, and the cuts moved
+ * and removed before it.
  *
  * As a preprocessing, given redundant cuts can be removed by using the -e
  * option. Notice that all cuts will be subject to being removed, whether they
@@ -148,6 +161,7 @@ long number_simulations = 1;
 long initial_solution_stage = -1;
 bool simulation_mode = false;
 bool eliminate_redundant_cuts = false;
+std::vector< std::string > resolve_filenames;
 
 // If set_polyhedral_function_bound is true, the PolyhedralFunction of each
 // stage (the Bellman, cost-to-go function) gets the finite global lower
@@ -159,7 +173,7 @@ constexpr double polyhedral_function_bound = 0;
 
 /*--------------------------------------------------------------------------*/
 
-const std::string my_short_opts = "d:e:l:n:i:m:st:";
+const std::string my_short_opts = "d:e:l:n:i:m:r:st:";
 
 const std::vector< option > my_long_opts = {
   { "output-dir" ,               required_argument , nullptr , 'd' } ,
@@ -168,6 +182,7 @@ const std::vector< option > my_long_opts = {
   { "num-blocks" ,               required_argument , nullptr , 'n' } ,
   { "scenario" ,                 required_argument , nullptr , 'i' } ,
   { "num-simulations" ,          required_argument , nullptr , 'm' } ,
+  { "resolve" ,                  required_argument , nullptr , 'r' } ,
   { "simulation" ,               no_argument ,       nullptr , 's' } ,
   { "stage" ,                    required_argument , nullptr , 't' }
   };
@@ -180,6 +195,8 @@ const std::string my_help =
  "  -n, --num-blocks <number>       number of sub-Blocks per stage\n"
  "  -i, --scenario <index>          the index of the scenario\n"
  "  -m, --num-simulations <number>  number of simulations to be performed\n"
+ "  -r, --resolve <file>            solve again with the scenarios of the\n"
+ "                                  SDDPBlock in the file (repeatable)\n"
  "  -s, --simulation                simulation mode\n"
  "  -t, --stage <stage>             stage from which initial state is taken";
 
@@ -216,6 +233,7 @@ static bool process_specific_arg( int opt )
              exit( 1 );
              }
             return( true );
+  case 'r': resolve_filenames.emplace_back( optarg ); return( true );
   case 's': simulation_mode = true; return( true );
   case 't': initial_solution_stage = get_long_option(); return( true );
   case '?':
@@ -634,6 +652,53 @@ static void serialize_cuts( const SDDPBlock * sddp_block ,
 
 /*--------------------------------------------------------------------------*/
 
+/// prints the line that sums up the k-th solution of the SDDPSolver
+
+static void show_solve( Index k , const SDDPSolver * solver , int status )
+{
+ const auto & changed = solver->get_cuts_change();
+ std::cout << "Solve " << k << ": status " << status << " iterations "
+           << solver->get_number_iterations_performed()
+           << " forward solves " << solver->get_number_solves( true )
+           << " backward solves " << solver->get_number_solves( false )
+           << std::setprecision( 12 )
+           << " backward " << solver->get_backward_value()
+           << " forward " << solver->get_forward_value()
+           << " cuts moved " << ( k ? changed[ 0 ] : 0 )
+           << " removed " << ( k ? changed[ 1 ] : 0 ) << std::endl;
+ }
+
+/*--------------------------------------------------------------------------*/
+/// replaces the scenarios of the SDDPBlock with those in the given file
+
+static void read_new_scenarios( SDDPBlock * sddp_block ,
+                                const std::string & filename )
+{
+ netCDF::NcFile file;
+ const auto type = read_open_netCDF( file , filename );
+ const auto groups = file.getGroups();
+ if( groups.empty() )
+  throw( std::invalid_argument( "no SDDPBlock in " + filename ) );
+
+ // the (first) SDDPBlock of a Block file, or of a problem file
+ auto group = groups.begin()->second;
+ if( type == eProbFile )
+  group = group.getGroup( "Block" );
+
+ ScenarioSet scenario_set;
+ scenario_set.deserialize( group );
+
+ std::vector< std::vector< double > > scenarios( scenario_set.size() );
+ for( Index i = 0 ; i < scenarios.size() ; ++i )
+  scenarios[ i ].assign( scenario_set.scenario( i ) ,
+                         scenario_set.scenario( i ) +
+                         scenario_set.get_scenario_size() );
+
+ sddp_block->set_scenarios( std::move( scenarios ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 void solve( SDDPBlock * sddp_block )
 {
  // retrieve SDDPSolver- - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -657,6 +722,15 @@ void solve( SDDPBlock * sddp_block )
  if( ! dryrun ) {
   auto status = solver->compute();
   show_status( status );
+  show_solve( 0 , solver , status );
+
+  // and again with each new set of scenarios
+  for( Index k = 0 ; k < resolve_filenames.size() ; ++k ) {
+   read_new_scenarios( sddp_block , resolve_filenames[ k ] );
+   status = solver->compute();
+   show_status( status );
+   show_solve( k + 1 , solver , status );
+   }
   }
 
  // write final Solution, if required - - - - - - - - - - - - - - - - - - - -
