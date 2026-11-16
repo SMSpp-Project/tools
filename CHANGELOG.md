@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- the tools keep the modules they link and copy the DLLs as the modules do
+  [see `SMSppModule.cmake` of SMS++], with no test on the system or on the
+  compiler; CMake 3.24 or later is needed
+
+- the name of a tool without the prefix is a link to it, or a copy where the
+  system makes no links, with the suffix of the executables of the system
+
 ## [0.10.0] - 2026-11-16
 
 ### Added

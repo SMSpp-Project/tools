@@ -11,7 +11,7 @@
 #                         Dipartimento di Informatica                         #
 #                             Universita' di Pisa                             #
 # --------------------------------------------------------------------------- #
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.24)
 cmake_policy(VERSION 3.15)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/DeriveVersion.cmake)
 smspp_derive_version(SMSPP_MODULE_VERSION)
@@ -34,25 +34,7 @@ get_directory_property(hasParent PARENT_DIRECTORY)
 # Utility function to standardize installation and runtime dependency handling
 # for SMS++ tools.
 function(smspp_install target_name)
-    if (WIN32 AND BUILD_SHARED_LIBS AND NOT DEFINED ENV{CONDA_BUILD})
-        # On Windows with shared libraries enabled copies all runtime DLL
-        # dependencies next to the executable in the build directory
-        # (POST_BUILD), using CMake's TARGET_RUNTIME_DLLS generator expression
-        add_custom_command(TARGET ${target_name} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_RUNTIME_DLLS:${target_name}>
-                $<TARGET_FILE_DIR:${target_name}>
-                COMMAND_EXPAND_LISTS
-                COMMENT "Copying runtime DLLs next to ${target_name}.exe")
-        # one link at a time, since two copies of the same DLL into a
-        # directory collide, and Ninja links in parallel
-        get_property(_pools GLOBAL PROPERTY JOB_POOLS)
-        if (NOT _pools MATCHES "smspp_runtime_dlls=")
-            set_property(GLOBAL APPEND PROPERTY JOB_POOLS smspp_runtime_dlls=1)
-        endif ()
-        set_property(TARGET ${target_name}
-                     PROPERTY JOB_POOL_LINK smspp_runtime_dlls)
-    endif ()
+    smspp_copy_runtime(${target_name})
 
     # the executables carry the name of the project, since they are installed
     # among those of everything else: smspp_ucblock_solver, smspp_chgcfg, ...
@@ -63,22 +45,23 @@ function(smspp_install target_name)
             RUNTIME DESTINATION ${SMSPP_TOOLS_INSTALL_DIR})
 
     # the name without the prefix keeps working, for whoever calls the tool
-    # from a script written before the release that renamed them
-    if (WIN32)
-        install(PROGRAMS $<TARGET_FILE:${target_name}>
-                DESTINATION ${SMSPP_TOOLS_INSTALL_DIR}
-                RENAME ${target_name}.exe)
-    else ()
-        # the directory is the one of the install and not the one of the
-        # configure, so that the link follows the tool wherever
-        # `cmake --install --prefix` puts it
-        install(CODE "
-            set(toolsDir \"${SMSPP_TOOLS_INSTALL_DIR}\")
-            cmake_path(ABSOLUTE_PATH toolsDir
-                       BASE_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\")
-            file(CREATE_LINK smspp_${target_name}
-                 \"\$ENV{DESTDIR}\${toolsDir}/${target_name}\" SYMBOLIC)")
-    endif ()
+    # from a script written before the release that renamed them: a link,
+    # or a copy where the system makes no links. The directory is the one
+    # of the install and not the one of the configure, so that the link
+    # follows the tool wherever `cmake --install --prefix` puts it
+    set(_exe ${CMAKE_EXECUTABLE_SUFFIX})
+    install(CODE "
+        set(toolsDir \"${SMSPP_TOOLS_INSTALL_DIR}\")
+        cmake_path(ABSOLUTE_PATH toolsDir
+                   BASE_DIRECTORY \"\${CMAKE_INSTALL_PREFIX}\")
+        set(toolsDir \"\$ENV{DESTDIR}\${toolsDir}\")
+        file(CREATE_LINK smspp_${target_name}${_exe}
+             \"\${toolsDir}/${target_name}${_exe}\"
+             RESULT linked SYMBOLIC)
+        if (NOT linked EQUAL 0)
+            file(COPY_FILE \"\${toolsDir}/smspp_${target_name}${_exe}\"
+                 \"\${toolsDir}/${target_name}${_exe}\")
+        endif ()")
 
     # the completions, of both names, since both are commands
     foreach (toolName ${target_name} smspp_${target_name})
@@ -183,16 +166,7 @@ cmake_path(ABSOLUTE_PATH SMSPP_TOOLS_INSTALL_DIR
 # The installed tools look for the SMS++ libraries relative to their own
 # location, so that the installed tree can be moved as a whole, and for the
 # external libraries where they were found at link time.
-if (NOT CMAKE_INSTALL_RPATH)
-    if (APPLE)
-        set(rpathOrigin "@loader_path")
-    else ()
-        set(rpathOrigin "$ORIGIN")
-    endif ()
-    file(RELATIVE_PATH binToLib ${toolsFullDir} ${CMAKE_INSTALL_FULL_LIBDIR})
-    set(CMAKE_INSTALL_RPATH "${rpathOrigin}/${binToLib}")
-endif ()
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+smspp_install_rpath()
 
 # ----- Tools --------------------------------------------------------------- #
 add_subdirectory(block_solver)

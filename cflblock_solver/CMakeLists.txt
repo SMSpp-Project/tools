@@ -1,20 +1,3 @@
-# ----- Settings ------------------------------------------------------------ #
-# The classes of the modules register themselves in the factories from static
-# objects, which nothing in the tool names: a shared library is kept by what
-# the module itself asks of the linker [see its CMakeLists.txt], while an
-# archive has to be taken whole, or those objects are dropped.
-if (NOT BUILD_SHARED_LIBS)
-    if (MSVC)
-        add_link_options("/WHOLEARCHIVE" "/FORCE:MULTIPLE")
-    else () # Unix
-        if (APPLE)
-            add_link_options("-Wl,-all_load")
-        else ()
-            add_link_options("-Wl,--whole-archive,--allow-multiple-definition")
-        endif ()
-    endif ()
-endif ()
-
 # ----- Requirements -------------------------------------------------------- #
 # If it's not being called by the umbrella, we need to
 # look for the system-installed libraries.
@@ -27,6 +10,13 @@ if (NOT hasParent)
     find_package(BranchAndXSolver)
     find_package(MILPSolver)
 endif ()
+
+# ----- Settings ------------------------------------------------------------ #
+# The classes of the modules register themselves in the factories from
+# static objects, which nothing here names: a shared library is kept by
+# what its module asks of the linker, while an archive has to be taken
+# whole [see SMSppModule.cmake of SMS++].
+smspp_keep_modules()
 
 # ----- cflblock_solver ----------------------------------------------------- #
 if (TARGET SMS++::CapacitatedFacilityLocationBlock)
