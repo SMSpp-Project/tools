@@ -16,6 +16,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - the name of a tool without the prefix is a link to it, or a copy where the
   system makes no links, with the suffix of the executables of the system
 
+- the tools find the path of their executable, and from it the
+  configuration files installed next to it, by Boost.DLL instead of
+  `/proc/self/exe`, `_NSGetExecutablePath()` and `_get_pgmptr()`, with no
+  test on the operating system
+
+- the tools set the defaults of the variables of Open MPI and UCX that are
+  not set yet by `putenv()`, which POSIX and the C library of Windows both
+  have, instead of `setenv()` and `_putenv_s()`; `tssb_solver --mpi-procs`
+  runs `mpirun` by `std::system()` on every system, instead of `execvp()`
+  where there is one, refuses the arguments that a shell would expand
+  within double quotes, and exits with success or failure only
+
 ## [0.10.0] - 2026-11-16
 
 ### Added

@@ -42,12 +42,15 @@
  * suppresses it for launchers not covered by detection. An existing MPI job
  * keeps its process count even when --mpi-procs is supplied.
  *
- * Automatic launch requires POSIX execvp and mpirun on PATH, compatible with
- * the MPI library used by the Solver. The executable and input/configuration
- * files must be accessible to all workers. This option only arranges launch:
- * the chosen Solver must support MPI. Solution output (-O) is written only
- * by rank 0, after all ranks participate in solution retrieval. Other output
- * files (-a, -n) are not coordinated between ranks by this tool.
+ * Automatic launch requires mpirun on PATH, compatible with the MPI library
+ * used by the Solver; it is run by the shell of the system, and an argument
+ * holding a character that a shell expands within double quotes is
+ * refused. The exit status tells only success from failure. The executable
+ * and input/configuration files must be accessible to all workers. This
+ * option only arranges launch: the chosen Solver must support MPI. Solution
+ * output (-O) is written only by rank 0, after all ranks participate in
+ * solution retrieval. Other output files (-a, -n) are not coordinated
+ * between ranks by this tool.
  *
  * The -k option solves the Benders form of each TwoStageStochasticBlock
  * rather than the TwoStageStochasticBlock itself [see
@@ -90,13 +93,8 @@
 #include <cerrno>
 #include <climits>
 #include <cstdlib>
-#include <cstring>
 #include <string>
 #include <vector>
-
-#ifndef _WIN32
-#include <unistd.h>
-#endif
 
 #include <AbstractBlock.h>
 
@@ -211,14 +209,7 @@ static bool is_solution_writer()
 
 static int relaunch_under_mpi( const std::vector< std::string > & original )
 {
-#ifdef _WIN32
- (void) original;
- std::cerr << "Automatic MPI launch requires POSIX execvp; launch with "
-              "mpiexec and --mpi-worker on Windows." << std::endl;
- return( EXIT_FAILURE );
-#else
  // Pass argv[0] unchanged, just as in: mpirun -np N ./tssb_solver.
- // mpirun handles executable lookup; no shell is involved.
  std::vector< std::string > arguments = {
   "mpirun", "-np", std::to_string( mpi_processes ), original.front(),
   "--mpi-worker"
@@ -226,14 +217,30 @@ static int relaunch_under_mpi( const std::vector< std::string > & original )
  // Retain all original options, including --mpi-procs: --mpi-worker takes
  // precedence. Insert our marker before any original '--' end-of-options.
  arguments.insert( arguments.end() , original.begin() + 1 , original.end() );
- std::vector< char * > command;
- for( auto & argument : arguments ) command.push_back( argument.data() );
- command.push_back( nullptr );
- execvp( command.front() , command.data() );
- const auto error = errno;
- std::cerr << "Cannot launch mpirun: " << std::strerror( error ) << std::endl;
- return( EXIT_FAILURE );
-#endif
+
+ // The command line is run by the shell of the system, which takes an
+ // argument in double quotes as it is, the characters that a shell expands
+ // there (" $ ` % and a backslash before another or at the end) excepted
+ std::string command;
+ for( const auto & argument : arguments ) {
+  if( ( argument.find_first_of( "\"$`%\n" ) != std::string::npos ) ||
+      ( argument.find( "\\\\" ) != std::string::npos ) ||
+      ( ( ! argument.empty() ) && ( argument.back() == '\\' ) ) ) {
+   std::cerr << "Cannot launch mpirun with the argument " << argument
+             << ": launch with mpirun and --mpi-worker." << std::endl;
+   return( EXIT_FAILURE );
+   }
+  command += ( command.empty() ? "\"" : " \"" ) + argument + "\"";
+  }
+
+ std::cout.flush();
+ std::cerr.flush();
+ if( std::system( command.c_str() ) != 0 ) {
+  std::cerr << "mpirun failed, or it could not be launched: launch with "
+               "mpirun and --mpi-worker." << std::endl;
+  return( EXIT_FAILURE );
+  }
+ return( EXIT_SUCCESS );
  }
 
 /*--------------------------------------------------------------------------*/

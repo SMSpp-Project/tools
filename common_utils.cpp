@@ -24,14 +24,17 @@
 /*--------------------------------------------------------------------------*/
 
 #include <algorithm>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <list>
 #include <set>
 #include <sstream>
 
-#if defined( __APPLE__ )
- #include <mach-o/dyld.h>  // for _NSGetExecutablePath()
+#ifdef SMSPP_TOOL_CONFIG_DIR
+ #define BOOST_DLL_USE_STD_FS
+ #include <boost/dll/runtime_symbol_info.hpp>  // program_location()
 #endif
 
 #include <Block.h>
@@ -65,22 +68,23 @@ using namespace SMSpp_di_unipi_it;
  * component hangs probing the GPU topology via XOpenDisplay(), the MPI
  * runtime can hang on startup spinning on futex / X11 sockets.
  *
- * To make every tool work out-of-the-box, we pre-seed safe defaults with
- * setenv(..., 0): the third argument is "overwrite = false", so any user
- * who has already exported UCX_TLS / OMPI_MCA_* / HWLOC_COMPONENTS (e.g.
- * on an HPC cluster with a real fabric) keeps full control. This is
- * executed before main() via a static initializer; it is the same
- * mechanism used by tests/common_utils.cpp.                              */
+ * To make every tool work out-of-the-box, we pre-seed safe defaults for
+ * the variables that are not set yet, so any user who has already exported
+ * UCX_TLS / OMPI_MCA_* / HWLOC_COMPONENTS (e.g. on an HPC cluster with a
+ * real fabric) keeps full control. This is executed before main() via a
+ * static initializer; it is the same mechanism used by
+ * tests/common_utils.cpp. */
 
 namespace {
 
 void set_default_env( const char * name , const char * value ) {
-#ifdef _WIN32
- if( std::getenv( name ) == nullptr )
-  _putenv_s( name , value );
-#else
- setenv( name , value , 0 );
-#endif
+ if( std::getenv( name ) )
+  return;
+ // putenv(), which POSIX and the C library of Windows have under this
+ // name, keeps the string itself, which hence lives as long as the process
+ static auto & entries = * new std::list< std::string >;
+ entries.push_back( std::string( name ) + "=" + value );
+ putenv( entries.back().data() );
 }
 
 struct SmsppMpiSafeEnvInit {
@@ -635,21 +639,8 @@ std::string installed_config_dir( void )
   static const std::string dir = []() -> std::string {
    // the path of the running executable
    std::error_code ec;
-   std::filesystem::path self;
-   #if defined( _WIN32 )
-    char * p = nullptr;
-    if( ( _get_pgmptr( &p ) == 0 ) && p )
-     self = p;
-   #elif defined( __APPLE__ )
-    uint32_t size = 0;
-    _NSGetExecutablePath( nullptr , &size );
-    std::string buf( size , '\0' );
-    if( _NSGetExecutablePath( buf.data() , &size ) == 0 )
-     self = buf.c_str();
-   #else
-    self = std::filesystem::read_symlink( "/proc/self/exe" , ec );
-   #endif
-   if( self.empty() )
+   std::filesystem::path self = boost::dll::program_location( ec );
+   if( ec || self.empty() )
     return( std::string() );
 
    // resolve the links first, so that a link to the executable (as the ones
