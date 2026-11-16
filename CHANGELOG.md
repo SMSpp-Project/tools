@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the tools use `smspp_terminate()` of the core, with which each aborts with
+  a message when `std::terminate()` is called with no exception, e.g., by the
+  destructor of a `std::thread` that can still be joined, where rethrowing
+  the null exception crashed
+
 - the configuration of `investmentblock_solver` stabilizes the master by a
   trust region and solves the inner Block by the simplex of HiGHS: with the
   proximal master, whose QP HiGHS does not solve reliably, and the interior
