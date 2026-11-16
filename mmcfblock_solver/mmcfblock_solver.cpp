@@ -41,13 +41,13 @@ int main( int argc , char ** argv )
   "            or a problem file of which only the Block is used) or in a\n"
   "            text format of MMCFBlock::load(), see -f\n";
  docopt_examples =
-  "  mmcfblock_solver instance.dat\n"
+  "  smspp_mmcfblock_solver instance.dat\n"
   "      solve an instance of the Canad set with the default\n"
   "      configuration, i.e., the MILP with HiGHS\n"
-  "  mmcfblock_solver -f m 64-4-1\n"
+  "  smspp_mmcfblock_solver -f m 64-4-1\n"
   "      the same, for the Mnetgen instance in 64-4-1.nod, .arc, .mut\n"
   "      and .sup\n"
-  "  mmcfblock_solver -c myconfig/ instance.dat\n"
+  "  smspp_mmcfblock_solver -c myconfig/ instance.dat\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
  add_format_option(

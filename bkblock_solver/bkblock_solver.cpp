@@ -43,11 +43,11 @@ int main( int argc , char ** argv )
   "            used) or in a text format of BinaryKnapsackBlock::load(),\n"
   "            see -f\n";
  docopt_examples =
-  "  bkblock_solver instance.txt\n"
+  "  smspp_bkblock_solver instance.txt\n"
   "      solve with the default configuration, i.e., with the core DP\n"
-  "  bkblock_solver -f P knapPI_1_100_1000_1\n"
+  "  smspp_bkblock_solver -f P knapPI_1_100_1000_1\n"
   "      the same, for an instance of the Pisinger benchmarks\n"
-  "  bkblock_solver -c myconfig/ instance.txt\n"
+  "  smspp_bkblock_solver -c myconfig/ instance.txt\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
  add_format_option(

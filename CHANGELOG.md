@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-16
+
+### Added
+
+- `smspp_sddp_solver -r <file>`, which can be repeated, solves the SDDPBlock
+  again after each solution with the scenarios of the SDDPBlock in the file,
+  the SDDPSolver starting from the cuts of the previous solution as its
+  `intCutsOnChange` says, and a line `Solve k:` gives, for each solution, the
+  iterations, the problems of the stages solved in the forward and backward
+  passes, the backward and forward values and the cuts moved and removed
+
+- `smspp_svm_solver` prints the bias of the trained model after the two
+  bounds, with all its digits, so that the models of two solvers can be
+  compared beyond their scores
+
+### Changed
+
+- the configuration of `investmentblock_solver` no longer mentions
+  `intHomogeneousDirection`, which has no effect in `:MILPSolver`
+
+### Fixed
+
+- the tools use `smspp_terminate()` of the core, with which each aborts with
+  a message when `std::terminate()` is called with no exception, e.g., by the
+  destructor of a `std::thread` that can still be joined, where rethrowing
+  the null exception crashed
+
+- the configuration of `investmentblock_solver` stabilizes the master by a
+  trust region and solves the inner Block by the simplex of HiGHS: with the
+  proximal master, whose QP HiGHS does not solve reliably, and the interior
+  point, which stalls when the problem is solved again, runs ended with
+  `kError` or with "has not solved a convex QP"
+
+- `smspp_design_converter` links on Windows, where the DLL of netCDF-C++
+  does not export the type objects such as `netCDF::ncString`
+
+- the examples of `--help` call each tool by the name it is installed with,
+  e.g. `smspp_mcfblock_solver`, rather than by the old one, which is only a
+  link
+
 ## [0.9.0] - 2026-11-03
 
 ### Added
@@ -625,7 +665,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First test release.
 
-[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.9.0...develop
+[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.10.0...develop
+[0.10.0]: https://gitlab.com/smspp/tools/-/compare/0.9.0...0.10.0
 [0.9.0]: https://gitlab.com/smspp/tools/-/compare/0.8.0...0.9.0
 [0.8.0]: https://gitlab.com/smspp/tools/-/compare/0.7.1...0.8.0
 [0.7.1]: https://gitlab.com/smspp/tools/-/compare/0.7.0...0.7.1

@@ -121,9 +121,9 @@ The Block solver (`block_solver`) and the Unit Commitment solver (`ucblock_solve
 share the same interface:
 
 ```sh
-Usage: <*_solver> [options] <file>
-  or:  <*_solver> -h | --help
-  or:  <*_solver> -V | --version
+Usage: smspp_<*_solver> [options] <file>
+  or:  smspp_<*_solver> -h | --help
+  or:  smspp_<*_solver> -V | --version
 
 Options:
   -h, --help                      print this help
@@ -302,6 +302,8 @@ SDDPBlock or by setting the initial state parameter of SDDPGreedySolver.
   -n, --num-blocks <number>       number of sub-Blocks per stage
   -i, --scenario <index>          the index of the scenario
   -m, --num-simulations <number>  number of simulations to be performed
+  -r, --resolve <file>            solve again with the scenarios of the
+                                  SDDPBlock in the file (repeatable)
   -s, --simulation                simulation mode
   -t, --stage <stage>             stage from which initial state is taken
 ```

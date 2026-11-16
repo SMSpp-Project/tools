@@ -42,13 +42,13 @@ int main( int argc , char ** argv )
   "            Block file, or a problem file of which only the Block is\n"
   "            used; the DIMACS format does not carry the delay data\n";
  docopt_examples =
-  "  sfdcrblock_solver instance.nc4\n"
+  "  smspp_sfdcrblock_solver instance.nc4\n"
   "      solve with the default configuration, i.e., with the Benders\n"
   "      Solver of SingleFlowDCRBlock\n"
-  "  sfdcrblock_solver -B PCCfg.txt -S MILPCfg.txt instance.nc4\n"
+  "  smspp_sfdcrblock_solver -B PCCfg.txt -S MILPCfg.txt instance.nc4\n"
   "      solve the P/C formulation with HiGHS, which, the cones being\n"
   "      outer-approximated by linear cuts, gives a lower bound\n"
-  "  sfdcrblock_solver -c myconfig/ instance.nc4\n"
+  "  smspp_sfdcrblock_solver -c myconfig/ instance.nc4\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
 

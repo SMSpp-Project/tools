@@ -482,10 +482,11 @@ static void write_model( SVMBlock * svm )
 /*--------------------------------------------------------------------------*/
 /// reports the training problem, in the format every SMS++ tool uses
 /** Reports what the Solver said about the training problem of the model that
- * the run produces, i.e., the status and the two bounds, and then the value
- * of \p value, which is the one of the two that is finite. */
+ * the run produces, i.e., the status and the two bounds, then the value of
+ * \p value, which is the one of the two that is finite, and the bias of the
+ * model trained in \p svm. */
 
-static void report_training( double value )
+static void report_training( double value , const SVMBlock * svm )
 {
  print_status( train_status );
  // all the digits of a double, which whoever reads the bounds needs
@@ -493,6 +494,7 @@ static void report_training( double value )
                      std::numeric_limits< double >::max_digits10 );
  std::cout << "Upper bound = " << train_ub << std::endl;
  std::cout << "Lower bound = " << train_lb << std::endl;
+ std::cout << "Bias = " << svm->get_b() << std::endl;
  std::cout.precision( prec );
  std::cout << "training problem: " << std::scientific << std::setprecision( 7 )
            << value << std::endl;
@@ -1194,12 +1196,12 @@ int main( int argc , char ** argv )
   "            dense one or, with -l, the sparse one of the LIBSVM data\n"
   "            sets\n";
  docopt_examples =
-  "  svm_solver -O model.nc4 data.nc4\n"
+  "  smspp_svm_solver -O model.nc4 data.nc4\n"
   "      train on all the samples and write the trained model\n"
-  "  svm_solver -l -k 5 -g \"C=0.1,1,10\" data.txt\n"
+  "  smspp_svm_solver -l -k 5 -g \"C=0.1,1,10\" data.txt\n"
   "      compare three values of C by 5-fold cross-validation on a data\n"
   "      set in the LIBSVM format\n"
-  "  svm_solver -c myconfig/ data.nc4\n"
+  "  smspp_svm_solver -c myconfig/ data.nc4\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
 
@@ -1394,7 +1396,7 @@ int main( int argc , char ** argv )
 
   // plain training on the whole data set - - - - - - - - - - - - - - - - - -
 
-  report_training( train( svm ) );
+  report_training( train( svm ) , svm );
 
   auto y_pred = predict( svm , svm , shuffled_indices( n , 0 ) );
   auto y_true = targets( svm , shuffled_indices( n , 0 ) );
@@ -1524,17 +1526,16 @@ int main( int argc , char ** argv )
   std::cout << "retrained on all the samples with "
             << to_string( grid , best_point ) << std::endl;
 
-  report_training( train( model ) );
+  report_training( train( model ) , model );
 
   write_model( model );
 
   delete model;
   }
- else
-  if( ! sol_output.empty() ) {
-   report_training( train( svm ) );
-   write_model( svm );
-   }
+ else if( ! sol_output.empty() ) {
+  report_training( train( svm ) , svm );
+  write_model( svm );
+  }
 
  delete svm;
 

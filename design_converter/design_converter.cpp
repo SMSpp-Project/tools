@@ -20,7 +20,7 @@
  *
  * Usage:
  *
- *     design_converter <input file> <output file>
+ *     smspp_design_converter <input file> <output file>
  *
  * The input is a Block file or a problem file [see eBlockFile and
  * eProbFile]. Each Block in it is written in the output file
@@ -264,7 +264,7 @@ static void copy_skipping( const netCDF::NcGroup & src , netCDF::NcGroup dst ,
  for( const auto & [ name , var ] : src.getVars() ) {
   if( skip.count( name ) )
    continue;
-  if( var.getType() != netCDF::ncString ) {
+  if( var.getType() != netCDF::NcString() ) {
    netCDF::ncCheck( nc_copy_var( src.getId() , var.getId() , dst.getId() ) ,
                     __FILE__ , __LINE__ );
    continue;
@@ -277,7 +277,7 @@ static void copy_skipping( const netCDF::NcGroup & src , netCDF::NcGroup dst ,
                                netCDF::NcGroup::ParentsAndCurrent ) );
    size *= dim.getSize();
    }
-  auto copy = dst.addVar( name , netCDF::ncString , dims );
+  auto copy = dst.addVar( name , netCDF::NcString() , dims );
   for( const auto & att : var.getAtts() )
    netCDF::ncCheck( nc_copy_att( src.getId() , var.getId() ,
                                  att.first.c_str() , dst.getId() ,

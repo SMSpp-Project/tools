@@ -153,9 +153,9 @@ int main( int argc , char ** argv )
   "            a Block file, or a problem file, whose own configuration is\n"
   "            then used and -B and -S are ignored\n";
  docopt_examples =
-  "  mssb_solver instance.nc4\n"
+  "  smspp_mssb_solver instance.nc4\n"
   "      solve the deterministic equivalent with a :MILPSolver\n"
-  "  mssb_solver -c myconfig/ instance.nc4\n"
+  "  smspp_mssb_solver -c myconfig/ instance.nc4\n"
   "      use the Configuration files in myconfig/, e.g. a modified copy\n"
   "      of the installed ones\n";
 

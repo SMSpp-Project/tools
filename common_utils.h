@@ -73,6 +73,7 @@
 #include <Block.h>
 #include <BlockSolverConfig.h>
 #include <CDASolver.h>
+#include <SMSTerminate.h>
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- USING -----------------------------------*/
@@ -258,11 +259,6 @@ void process_args( int argc , char ** argv );
 
 void process_args( int argc , char ** argv ,
                    bool ( *custom_arg )( int opt ) );
-
-/*--------------------------------------------------------------------------*/
-/// custom terminate function to print the exception message
-
-void smspp_terminate( void );
 
 /*--------------------------------------------------------------------------*/
 /// get Block from file
