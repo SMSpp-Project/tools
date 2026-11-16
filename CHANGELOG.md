@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-16
+
 ### Added
 
 - `smspp_sddp_solver -r <file>`, which can be repeated, solves the SDDPBlock
@@ -663,7 +665,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First test release.
 
-[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.9.0...develop
+[Unreleased]: https://gitlab.com/smspp/tools/-/compare/0.10.0...develop
+[0.10.0]: https://gitlab.com/smspp/tools/-/compare/0.9.0...0.10.0
 [0.9.0]: https://gitlab.com/smspp/tools/-/compare/0.8.0...0.9.0
 [0.8.0]: https://gitlab.com/smspp/tools/-/compare/0.7.1...0.8.0
 [0.7.1]: https://gitlab.com/smspp/tools/-/compare/0.7.0...0.7.1
