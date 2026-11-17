@@ -1,0 +1,50 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  SATCfg-node.txt  - - - - - - - - - - - - - - -
+#
+# The ComputeConfig of the SATSolver that the BranchAndXSolver of
+# ColBSCfg.txt enumerates on [see BXBSCfg.txt]: that of SATCfg.txt, with
+# OLL stopping after 20 calls of the SAT solver in each node.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+*SATCfg.txt +
+
+1  # f_diff == 1 ==> only the entries listed below are changed
+
+1  # number of integer parameters
+
+# now all the integer parameters
+intMaxIter 20  # calls of the SAT solver of OLL in a node
+
+0  # number of double parameters
+
+# now all the double parameters
+# [none]
+
+0  # number of string parameters
+
+# now all the string parameters
+# [none]
+
+0  # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0  # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0  # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+*  # [none]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - -  END SATCfg-node.txt  - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `smspp_trace` solves an instance, a DIMACS CNF or WCNF file read into a
+  `SATBlock` or an MPS or LP file read into an `AbstractBlock`, with every
+  Solver of a BlockSolverConfig in turn, and writes for each the trace of
+  its search as JSON lines (the steps of the SAT solver of a `SATSolver`,
+  the nodes of `BranchAndXSolver`, the incumbent and the bound of a
+  `MILPSolver`, then the result), with the configurations of the colouring
+  scene in `trace/config`
+
 ### Changed
 
 - the tools keep the modules they link and copy the DLLs as the modules do

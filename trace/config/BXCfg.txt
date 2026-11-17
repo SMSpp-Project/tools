@@ -1,0 +1,52 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - -  BXCfg.txt  - - - - - - - - - - - - - - - -
+#
+# The ComputeConfig of the BranchAndXSolver of ColBSCfg.txt: it enumerates
+# on the SATSolver of BXBSCfg.txt, best-first with dives, with the same
+# time limit as the other Solver.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ComputeConfig # exact type of the ComputeConfig object
+
+1  # f_diff == 1 ==> all non-provided parameters are not changed
+
+1  # number of integer parameters
+
+# now all the integer parameters
+intSolveMethod 3  # best-first with dives
+
+1  # number of double parameters
+
+# now all the double parameters
+dblMaxTime 60  # seconds
+
+1  # number of string parameters
+
+# now all the string parameters
+strNameOfBlockSolverConfigurationFile BXBSCfg.txt
+
+0  # number of vector-of-int parameters
+
+# now all the vector-of-int parameters
+# [none]
+
+0  # number of vector-of-double parameters
+
+# now all the vector-of-double parameters
+# [none]
+
+0  # number of vector-of-string parameters
+
+# now all the vector-of-string parameters
+# [none]
+
+# pointer to the "extra" Configuration
+*  # [none]
+
+# end of ComputeConfig
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -  END BXCfg.txt  - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

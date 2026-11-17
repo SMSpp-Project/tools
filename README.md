@@ -37,6 +37,12 @@ At the moment we provide:
   `InvestmentBlock`, each design an asset, which is the form an
   `InvestmentBlock` accepts
 
+- `trace`: solves a SAT instance (DIMACS, into a `SATBlock`) or a MILP (MPS
+  or LP, into an `AbstractBlock`) with every Solver of a BlockSolverConfig
+  and writes the trace of the search of each as JSON lines: the steps of
+  the SAT solver, the nodes of `BranchAndXSolver`, the incumbent and the
+  bound of a `MILPSolver`
+
 - `chgcfg`: a small utility to change some parameters in a configuration
   file while leaving all the rest unchanged
 

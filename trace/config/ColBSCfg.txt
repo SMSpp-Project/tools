@@ -1,0 +1,44 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - -  ColBSCfg.txt - - - - - - - - - - - - - - - -
+#
+# The BlockSolverConfig of the colouring scene of the arena: the Solver
+# that smspp_trace runs in turn on a SATBlock, each writing the trace of
+# its search. CaDiCaL with its search followed (SATCfg-trace.txt) and not
+# followed (SATCfg.txt), whose answers must be the same; MiniSat, which
+# gives its counters only; the MILP formulation of the SATBlock with HiGHS
+# and SCIP (MILPCfg.txt), which give their incumbent and bound; the
+# enumeration of BranchAndXSolver on the SATSolver with CaDiCaL
+# (BXCfg.txt), which gives its nodes.
+#
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BlockSolverConfig     # exact type of the Configuration object
+
+1  # the BlockSolverConfig is a "differential" one: values are being set
+
+6  # number of (the names of) Solver in this BlockSolverConfig
+
+# now all the names of the Solver - - - - - - - - - - - - - - - - - - - - - -
+CaDiCaLSATSolver  # 1st: CaDiCaL, search followed
+CaDiCaLSATSolver  # 2nd: CaDiCaL, not followed
+MiniSATSolver     # 3rd: MiniSat
+HiGHSMILPSolver   # 4th: the MILP with HiGHS
+SCIPMILPSolver    # 5th: the MILP with SCIP
+BranchAndXSolver  # 6th: the enumeration on CaDiCaL
+
+6  # number of ComputeConfig in this BlockSolverConfig
+
+# now all the ComputeConfig - - - - - - - - - - - - - - - - - - - - - - - - -
+*SATCfg-trace.txt
+*SATCfg.txt
+*SATCfg.txt
+*MILPCfg.txt
+*MILPCfg.txt
+*BXCfg.txt
+
+# end of BlockSolverConfig - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - -  END ColBSCfg.txt - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
