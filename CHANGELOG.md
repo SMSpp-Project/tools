@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- with `-v3` the Solvers registered to the sub-Blocks log too, e.g., those
+  of the subproblems of a Benders or Lagrangian decomposition, whose log
+  nothing showed, as `-v3` already prints their parameters
+
 - the tools keep the modules they link and copy the DLLs as the modules do
   [see `SMSppModule.cmake` of SMS++], with no test on the system or on the
   compiler; CMake 3.24 or later is needed

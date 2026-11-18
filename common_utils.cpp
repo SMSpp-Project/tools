@@ -176,7 +176,7 @@ std::string help =
  "  -n, --nc4problem <file>         write nc4 problem on file\n"
  "  -D, --dryrun                    skip the compute() call\n"
  "  -v[N], --verbose[=N]            verbose output (0 = silent, 1 = basic,\n"
- "                                  2 = debug, with the Solver logs and the\n"
+ "                                  2 = debug, with the logs and the\n"
  "                                  parameters of the Solvers of the Block,\n"
  "                                  3 = those of the sub-Blocks' Solvers"
  " too);\n"

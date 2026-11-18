@@ -138,12 +138,21 @@ extern std::string help;
 /** @name Utility functions
  *  @{ */
 
-/// sets solver log to std::cout if verbosity_level >= 2
+/// sets the log of the Solvers to std::cout, if -v2 or -v3 is given
+/** With verbosity_level == 2 the Solvers are those registered to \p block,
+ * with verbosity_level >= 3 those registered to any of its sub-Blocks as
+ * well, recursively, e.g., those of the subproblems of a decomposition. */
 
 inline void set_solver_logs( Block * block ) {
- if( ( verbosity_level >= 2 ) && block )
-  for( auto solver : block->get_registered_solvers() )
-   solver->set_log( &std::cout );
+ if( ( verbosity_level < 2 ) || ( ! block ) )
+  return;
+
+ for( auto solver : block->get_registered_solvers() )
+  solver->set_log( &std::cout );
+
+ if( verbosity_level >= 3 )
+  for( auto sb : block->get_nested_Blocks() )
+   set_solver_logs( sb );
  }
 
 /*--------------------------------------------------------------------------*/
